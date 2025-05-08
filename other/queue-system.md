@@ -237,15 +237,15 @@ export interface IMessageBroker {
   // Core functionality
   init(): Promise<void>;
   shutdown(): Promise<void>;
-  
+
   // Basic pub/sub operations
   publish(queue: QueueType | string, messageType: MessageType | string, payload: MessagePayload): Promise<boolean>;
   subscribe<T = MessagePayload>(
-    queue: QueueType | string, 
-    messageType: MessageType | string, 
+    queue: QueueType | string,
+    messageType: MessageType | string,
     handler: MessageHandler<T>
   ): Promise<() => Promise<void>>;
-  
+
   // Advanced subscription with options
   subscribeWithOptions<T = MessagePayload>(
     queue: QueueType | string,
@@ -253,7 +253,7 @@ export interface IMessageBroker {
     handler: MessageHandler<T>,
     options: SubscriptionOptions
   ): Promise<() => Promise<void>>;
-  
+
   // Monitoring and statistics
   getStats(): MessageBrokerStats;
   flush(): Promise<void>;
@@ -282,7 +282,7 @@ export class MessageBrokerFactory {
       clientManager: SupabaseClientManager.getInstance()
     });
   }
-  
+
   // Create with options
   public static createBrokerWithOptions(options: BrokerOptions): IMessageBroker {
     const implementation = this.determineBrokerImplementation(options);
@@ -291,14 +291,14 @@ export class MessageBrokerFactory {
       ...options
     });
   }
-  
+
   // Determine appropriate implementation based on requirements
   private static determineBrokerImplementation(options: BrokerOptions): BrokerImplementation {
     // If implementation explicitly specified, use it
     if (options.implementation) {
       return options.implementation;
     }
-    
+
     // If persistence is required, at least ENHANCED is needed
     if (options.persistence === true) {
       // If horizontal scaling is needed, use ADVANCED
@@ -307,7 +307,7 @@ export class MessageBrokerFactory {
       }
       return BrokerImplementation.ENHANCED;
     }
-    
+
     // If only basic pub/sub is needed
     return BrokerImplementation.BASIC;
   }
@@ -329,26 +329,26 @@ export class UnifiedMessageBroker implements IMessageBroker {
   private persistentStorage: Record<string, any> = {};
   private initialized: boolean = false;
   private stats: MessageBrokerStats = this.getDefaultStats();
-  
+
   constructor(options: BrokerOptions) {
     this.implementation = options.implementation || BrokerImplementation.BASIC;
     this.config = this.getConfigForImplementation(this.implementation);
     this.supabase = options.clientManager.getClient();
-    
+
     logger.info(`Unified Message Broker created with implementation: ${this.implementation}`);
   }
-  
+
   // Initialize the broker
   public async init(): Promise<void> {
     if (this.initialized) {
       return;
     }
-    
+
     try {
       if (this.config.persistence) {
         await this.initPersistentStorage();
       }
-      
+
       this.initialized = true;
       logger.info(`Unified Message Broker initialized (${this.implementation})`);
     } catch (error) {
@@ -356,66 +356,66 @@ export class UnifiedMessageBroker implements IMessageBroker {
       throw error;
     }
   }
-  
+
   // Publish a message
   public async publish(
-    queue: QueueType | string, 
-    messageType: MessageType | string, 
+    queue: QueueType | string,
+    messageType: MessageType | string,
     payload: MessagePayload
   ): Promise<boolean> {
     if (!this.initialized) {
       await this.init();
     }
-    
+
     try {
       // Add timestamp if not present
       const messagePayload = {
         ...payload,
         timestamp: payload.timestamp || Date.now()
       };
-      
+
       // Get or create channel
       const channel = await this.getChannel(queue);
-      
+
       // Update stats
       this.stats.messagesSent++;
       this.stats.lastMessageSent = new Date();
-      
+
       // If persistence is enabled, store message first
       if (this.config.persistence) {
         await this.persistMessage(queue, messageType, messagePayload);
       }
-      
+
       // Send the message
       await channel.send({
         type: 'broadcast',
         event: messageType,
         payload: messagePayload
       });
-      
-      logger.debug(`Published message to ${queue}:${messageType}`, { 
+
+      logger.debug(`Published message to ${queue}:${messageType}`, {
         implementation: this.implementation,
-        messageId: messagePayload.id 
+        messageId: messagePayload.id
       });
-      
+
       return true;
     } catch (error) {
       this.stats.errors++;
       logger.error(`Failed to publish message to ${queue}:${messageType}`, error);
-      
+
       // If advanced error handling enabled, handle the error
       if (this.config.advancedErrorHandling) {
         // Retry logic would go here
       }
-      
+
       throw new Error(`Message publishing failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  
+
   // Subscribe to messages
   public async subscribe<T = MessagePayload>(
-    queue: QueueType | string, 
-    messageType: MessageType | string, 
+    queue: QueueType | string,
+    messageType: MessageType | string,
     handler: MessageHandler<T>
   ): Promise<() => Promise<void>> {
     // Default subscription with basic options
@@ -426,7 +426,7 @@ export class UnifiedMessageBroker implements IMessageBroker {
       retryOnReconnect: this.implementation !== BrokerImplementation.BASIC
     });
   }
-  
+
   // Subscribe with advanced options
   public async subscribeWithOptions<T = MessagePayload>(
     queue: QueueType | string,
@@ -437,42 +437,42 @@ export class UnifiedMessageBroker implements IMessageBroker {
     if (!this.initialized) {
       await this.init();
     }
-    
+
     // Ensure handlers exist for this queue and message type
     if (!this.handlers[queue]) {
       this.handlers[queue] = {};
     }
-    
+
     if (!this.handlers[queue][messageType]) {
       this.handlers[queue][messageType] = [];
     }
-    
+
     // Create handler wrapper with options
     const handlerWrapper: HandlerWrapper = {
       handler,
       options,
       timestamp: Date.now()
     };
-    
+
     // Add handler to the list
     this.handlers[queue][messageType].push(handlerWrapper);
-    
+
     // Get or create the channel
     const channel = await this.getChannel(queue);
-    
+
     // Update stats
     this.stats.subscriptions++;
-    
+
     // Return unsubscribe function
     return async () => {
       if (this.handlers[queue] && this.handlers[queue][messageType]) {
         this.handlers[queue][messageType] = this.handlers[queue][messageType]
           .filter(h => h.handler !== handler);
-          
+
         // If no more handlers for this message type, clean up
         if (this.handlers[queue][messageType].length === 0) {
           delete this.handlers[queue][messageType];
-          
+
           // If no more handlers for this queue, clean up channel
           if (Object.keys(this.handlers[queue]).length === 0) {
             delete this.handlers[queue];
@@ -482,12 +482,12 @@ export class UnifiedMessageBroker implements IMessageBroker {
             }
           }
         }
-        
+
         this.stats.subscriptions--;
       }
     };
   }
-  
+
   // Shutdown the broker
   public async shutdown(): Promise<void> {
     try {
@@ -495,18 +495,18 @@ export class UnifiedMessageBroker implements IMessageBroker {
       await Promise.all(
         Object.values(this.channels).map(channel => channel.unsubscribe())
       );
-      
+
       this.channels = {};
       this.handlers = {};
       this.initialized = false;
-      
+
       logger.info(`Unified Message Broker shutdown complete (${this.implementation})`);
     } catch (error) {
       logger.error(`Error during message broker shutdown: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
-  
+
   // Get broker statistics
   public getStats(): MessageBrokerStats {
     return {
@@ -516,23 +516,23 @@ export class UnifiedMessageBroker implements IMessageBroker {
       activeSubscriptions: this.stats.subscriptions
     };
   }
-  
+
   // Flush any pending messages
   public async flush(): Promise<void> {
     if (this.config.persistence) {
       await this.flushPersistentStorage();
     }
   }
-  
+
   // Helper methods for different implementations
   private async getChannel(queue: QueueType | string): Promise<RealtimeChannel> {
     if (this.channels[queue]) {
       return this.channels[queue];
     }
-    
+
     // Create new channel
     const channel = this.supabase.channel(`queue:${queue}`);
-    
+
     // Set up handlers
     if (this.handlers[queue]) {
       Object.entries(this.handlers[queue]).forEach(([eventType, handlers]) => {
@@ -541,17 +541,17 @@ export class UnifiedMessageBroker implements IMessageBroker {
             // Update stats
             this.stats.messagesReceived++;
             this.stats.lastMessageReceived = new Date();
-            
+
             // Execute handlers based on priority if using advanced implementation
             const sortedHandlers = [...handlers];
             if (this.implementation === BrokerImplementation.ADVANCED) {
               sortedHandlers.sort((a, b) => {
                 const priorityMap = { high: 3, normal: 2, low: 1 };
-                return (priorityMap[b.options.priority || 'normal'] || 2) - 
+                return (priorityMap[b.options.priority || 'normal'] || 2) -
                        (priorityMap[a.options.priority || 'normal'] || 2);
               });
             }
-            
+
             // Execute each handler
             await Promise.all(sortedHandlers.map(handlerWrapper => {
               try {
@@ -568,15 +568,15 @@ export class UnifiedMessageBroker implements IMessageBroker {
         });
       });
     }
-    
+
     // Subscribe to the channel with appropriate options
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         logger.info(`Subscribed to channel: ${queue} (${this.implementation})`);
-        
+
         // If using advanced implementation and retry on reconnect
-        if (this.implementation !== BrokerImplementation.BASIC && 
-            this.config.retryOnReconnect && 
+        if (this.implementation !== BrokerImplementation.BASIC &&
+            this.config.retryOnReconnect &&
             this.handlers[queue]) {
           this.handleReconnection(queue);
         }
@@ -587,11 +587,11 @@ export class UnifiedMessageBroker implements IMessageBroker {
         logger.error(`Channel error: ${queue}`);
       }
     });
-    
+
     this.channels[queue] = channel;
     return channel;
   }
-  
+
   // Additional implementation-specific methods would be here
   // ...
 }
@@ -722,12 +722,12 @@ export interface QueueAdapter<T> {
   getJob(jobId: string): Promise<T | null>;
   updateJob(jobId: string, updates: Partial<T>): Promise<T>;
   deleteJob(jobId: string): Promise<boolean>;
-  
+
   // Queue operations
   getJobs(options: QueueQueryOptions): Promise<{ jobs: T[], total: number }>;
   processNextJob(): Promise<T | null>;
   getQueueStats(): Promise<QueueStats>;
-  
+
   // Event handling
   subscribeToEvents(eventTypes: string[], handler: EventHandler): () => void;
   publishEvent(eventType: string, data: any): Promise<void>;
@@ -737,12 +737,12 @@ export interface QueueAdapter<T> {
 export abstract class BaseQueueAdapter<T extends QueueJob> implements QueueAdapter<T> {
   protected queueName: string;
   protected messageBroker: MessageBroker;
-  
+
   constructor(queueName: string, messageBroker: MessageBroker) {
     this.queueName = queueName;
     this.messageBroker = messageBroker;
   }
-  
+
   // Abstract methods to be implemented by specific queue adapters
   abstract createJob(data: Partial<T>): Promise<string>;
   abstract getJob(jobId: string): Promise<T | null>;
@@ -751,7 +751,7 @@ export abstract class BaseQueueAdapter<T extends QueueJob> implements QueueAdapt
   abstract getJobs(options: QueueQueryOptions): Promise<{ jobs: T[], total: number }>;
   abstract processNextJob(): Promise<T | null>;
   abstract getQueueStats(): Promise<QueueStats>;
-  
+
   // Event methods using message broker
   public async publishEvent(eventType: string, data: any): Promise<void> {
     await this.messageBroker.publish(this.queueName, eventType, {
@@ -760,12 +760,12 @@ export abstract class BaseQueueAdapter<T extends QueueJob> implements QueueAdapt
       timestamp: Date.now()
     });
   }
-  
+
   public subscribeToEvents(eventTypes: string[], handler: EventHandler): () => void {
-    const unsubscribers = eventTypes.map(eventType => 
+    const unsubscribers = eventTypes.map(eventType =>
       this.messageBroker.subscribe(this.queueName, eventType, handler)
     );
-    
+
     return () => unsubscribers.forEach(unsubscribe => unsubscribe());
   }
 }
@@ -803,22 +803,22 @@ export interface PDFProcessingJob extends QueueJob {
 // PDF Queue Implementation
 export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
   private db: Database;
-  
+
   constructor(messageBroker: MessageBroker, db: Database) {
     super('pdf', messageBroker);
     this.db = db;
-    
+
     // Subscribe to relevant events from other queues
     this.subscribeToExternalEvents();
   }
-  
+
   /**
    * Create a new PDF processing job
    */
   public async createJob(data: Partial<PDFProcessingJob>): Promise<string> {
     // Generate job ID
     const jobId = uuidv4();
-    
+
     // Create job with defaults
     const job: PDFProcessingJob = {
       id: jobId,
@@ -845,10 +845,10 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
       updatedAt: new Date(),
       ...data
     };
-    
+
     // Save job to database
     await this.db.insert('pdf_jobs', job);
-    
+
     // Publish event
     await this.publishEvent('pdf.job.queued', {
       jobId,
@@ -857,10 +857,10 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
       priority: job.priority,
       options: job.options
     });
-    
+
     return jobId;
   }
-  
+
   /**
    * Get job by ID
    */
@@ -868,7 +868,7 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
     const job = await this.db.selectOne('pdf_jobs', { id: jobId });
     return job as PDFProcessingJob || null;
   }
-  
+
   /**
    * Update job
    */
@@ -878,17 +878,17 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
     if (!currentJob) {
       throw new Error(`Job not found: ${jobId}`);
     }
-    
+
     // Update job
     const updatedJob = {
       ...currentJob,
       ...updates,
       updatedAt: new Date()
     };
-    
+
     // Save to database
     await this.db.update('pdf_jobs', { id: jobId }, updatedJob);
-    
+
     // Publish events based on updates
     if (updates.status) {
       switch (updates.status) {
@@ -915,7 +915,7 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
           break;
       }
     }
-    
+
     // Publish progress updates if progress changed
     if (updates.progress) {
       await this.publishEvent('pdf.job.progress', {
@@ -924,10 +924,10 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
         progress: updatedJob.progress
       });
     }
-    
+
     return updatedJob;
   }
-  
+
   /**
    * Delete job
    */
@@ -935,7 +935,7 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
     const result = await this.db.delete('pdf_jobs', { id: jobId });
     return result.affected > 0;
   }
-  
+
   /**
    * Get jobs with filtering, sorting, and pagination
    */
@@ -950,43 +950,43 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
       sort = 'createdAt',
       order = 'desc'
     } = options;
-    
+
     // Build query
     const query: Record<string, any> = {};
-    
+
     if (status) {
       query.status = Array.isArray(status) ? { $in: status } : status;
     }
-    
+
     if (priority) {
-      query.priority = Array.isArray(priority) 
-        ? { $in: priority } 
+      query.priority = Array.isArray(priority)
+        ? { $in: priority }
         : typeof priority === 'object'
           ? priority
           : { $gte: priority };
     }
-    
+
     if (createdAfter || createdBefore) {
       query.createdAt = {};
       if (createdAfter) query.createdAt.$gte = createdAfter;
       if (createdBefore) query.createdAt.$lte = createdBefore;
     }
-    
+
     // Execute query
     const jobs = await this.db.select('pdf_jobs', query, {
       limit,
       skip,
       sort: { [sort]: order === 'asc' ? 1 : -1 }
     });
-    
+
     const total = await this.db.count('pdf_jobs', query);
-    
-    return { 
+
+    return {
       jobs: jobs as PDFProcessingJob[],
       total
     };
   }
-  
+
   /**
    * Process next job in queue
    */
@@ -995,18 +995,18 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
     const nextJob = await this.db.selectOne('pdf_jobs', { status: 'waiting' }, {
       sort: { priority: -1, createdAt: 1 }
     });
-    
+
     if (!nextJob) {
       return null;
     }
-    
+
     // Update job status to processing
-    return await this.updateJob(nextJob.id, { 
+    return await this.updateJob(nextJob.id, {
       status: 'processing',
       startedAt: new Date()
     });
   }
-  
+
   /**
    * Get queue statistics
    */
@@ -1015,47 +1015,47 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
     const processing = await this.db.count('pdf_jobs', { status: 'processing' });
     const completed = await this.db.count('pdf_jobs', { status: 'completed' });
     const failed = await this.db.count('pdf_jobs', { status: 'failed' });
-    
+
     // Get oldest waiting job
     const oldestJob = await this.db.selectOne('pdf_jobs', { status: 'waiting' }, {
       sort: { createdAt: 1 }
     });
-    
+
     // Calculate throughput
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     const completedLast24h = await this.db.count('pdf_jobs', {
       status: 'completed',
       completedAt: { $gte: oneDayAgo }
     });
-    
+
     const completedLast7d = await this.db.count('pdf_jobs', {
       status: 'completed',
       completedAt: { $gte: sevenDaysAgo }
     });
-    
+
     // Calculate average processing time
     const recentJobs = await this.db.select('pdf_jobs', {
       status: 'completed',
       completedAt: { $gte: sevenDaysAgo }
     });
-    
+
     let totalProcessingTime = 0;
     let jobsWithTime = 0;
-    
+
     recentJobs.forEach(job => {
       if (job.startedAt && job.completedAt) {
         totalProcessingTime += job.completedAt.getTime() - job.startedAt.getTime();
         jobsWithTime++;
       }
     });
-    
-    const averageProcessingTime = jobsWithTime > 0 
-      ? totalProcessingTime / jobsWithTime 
+
+    const averageProcessingTime = jobsWithTime > 0
+      ? totalProcessingTime / jobsWithTime
       : 0;
-    
+
     return {
       queueId: 'pdf',
       name: 'PDF Processing Queue',
@@ -1074,7 +1074,7 @@ export class PDFQueue extends BaseQueueAdapter<PDFProcessingJob> {
       oldestJob: oldestJob?.createdAt || null
     };
   }
-  
+
   /**
    * Subscribe to events from other queues
    */
@@ -1107,11 +1107,11 @@ export class QueueEventsService {
   private supabase: SupabaseClient;
   private channels: Record<string, RealtimeChannel> = {};
   private subscriptions: Record<string, () => void> = {};
-  
+
   constructor(supabaseClient: SupabaseClient) {
     this.supabase = supabaseClient;
   }
-  
+
   /**
    * Subscribe to queue events
    */
@@ -1122,11 +1122,11 @@ export class QueueEventsService {
   ): () => void {
     // Create channel ID
     const channelId = `queue-${queueId}`;
-    
+
     // Initialize channel if it doesn't exist
     if (!this.channels[channelId]) {
       this.channels[channelId] = this.supabase.channel(channelId);
-      
+
       // Subscribe to channel
       this.channels[channelId].subscribe(status => {
         if (status === 'SUBSCRIBED') {
@@ -1134,16 +1134,16 @@ export class QueueEventsService {
         }
       });
     }
-    
+
     // Subscribe to each event type
     eventTypes.forEach(eventType => {
       const subscriptionId = `${channelId}-${eventType}`;
-      
+
       // Unsubscribe if already subscribed
       if (this.subscriptions[subscriptionId]) {
         this.subscriptions[subscriptionId]();
       }
-      
+
       // Subscribe to event
       this.channels[channelId].on('broadcast', { event: eventType }, payload => {
         handler({
@@ -1153,13 +1153,13 @@ export class QueueEventsService {
           timestamp: payload.payload.timestamp || Date.now()
         });
       });
-      
+
       // Store unsubscribe function
       this.subscriptions[subscriptionId] = () => {
         this.channels[channelId].off('broadcast', { event: eventType });
       };
     });
-    
+
     // Return unsubscribe function
     return () => {
       eventTypes.forEach(eventType => {
@@ -1171,7 +1171,7 @@ export class QueueEventsService {
       });
     };
   }
-  
+
   /**
    * Subscribe to PDF queue events
    */
@@ -1186,7 +1186,7 @@ export class QueueEventsService {
       'pdf.job.failed'
     ], handler);
   }
-  
+
   /**
    * Subscribe to crawler queue events
    */
@@ -1201,7 +1201,7 @@ export class QueueEventsService {
       'crawler.job.failed'
     ], handler);
   }
-  
+
   /**
    * Subscribe to training queue events
    */
@@ -1217,7 +1217,7 @@ export class QueueEventsService {
       'training.model.deployed'
     ], handler);
   }
-  
+
   /**
    * Unsubscribe from all events
    */
@@ -1225,7 +1225,7 @@ export class QueueEventsService {
     // Unsubscribe from all subscriptions
     Object.values(this.subscriptions).forEach(unsubscribe => unsubscribe());
     this.subscriptions = {};
-    
+
     // Unsubscribe from all channels
     Object.values(this.channels).forEach(channel => channel.unsubscribe());
     this.channels = {};
@@ -1276,14 +1276,14 @@ export const QueueDashboard: React.FC = () => {
   const [crawlerStats, setCrawlerStats] = useState<QueueStats | null>(null);
   const [recentEvents, setRecentEvents] = useState<QueueEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     // Fetch initial queue stats
     const fetchQueueStats = async () => {
       try {
         const response = await fetch('/api/admin/queues');
         const data = await response.json();
-        
+
         // Update stats
         data.queues.forEach((queueStats: QueueStats) => {
           if (queueStats.queueId === 'pdf') {
@@ -1292,26 +1292,26 @@ export const QueueDashboard: React.FC = () => {
             setCrawlerStats(queueStats);
           }
         });
-        
+
         setIsLoading(false);
       } catch (error) {
         console.error('Failed to fetch queue stats:', error);
         setIsLoading(false);
       }
     };
-    
+
     fetchQueueStats();
-    
+
     // Subscribe to queue events
     const unsubscribePdf = queueEvents.subscribeToPDFEvents(handleQueueEvent);
     const unsubscribeCrawler = queueEvents.subscribeToCrawlerEvents(handleQueueEvent);
-    
+
     return () => {
       unsubscribePdf();
       unsubscribeCrawler();
     };
   }, []);
-  
+
   // Handle queue events
   const handleQueueEvent = (event: QueueEvent) => {
     // Update recent events list
@@ -1319,7 +1319,7 @@ export const QueueDashboard: React.FC = () => {
       const newEvents = [event, ...prevEvents].slice(0, 10);
       return newEvents;
     });
-    
+
     // Update queue stats based on event
     if (event.queueId === 'pdf') {
       if (event.type === 'pdf.job.queued') {
@@ -1368,15 +1368,15 @@ export const QueueDashboard: React.FC = () => {
       // Similar updates for crawler stats
     }
   };
-  
+
   if (isLoading) {
     return <div>Loading queue statistics...</div>;
   }
-  
+
   return (
     <div className="queue-dashboard">
       <h2>Queue Dashboard</h2>
-      
+
       <div className="queue-stats-container">
         {pdfStats && (
           <div className="queue-stats-card">
@@ -1384,7 +1384,7 @@ export const QueueDashboard: React.FC = () => {
             <div className="status-indicator status-{pdfStats.status}">
               {pdfStats.status}
             </div>
-            
+
             <div className="stats-grid">
               <div className="stat-item">
                 <div className="stat-label">Waiting</div>
@@ -1403,25 +1403,25 @@ export const QueueDashboard: React.FC = () => {
                 <div className="stat-value">{pdfStats.jobCount.failed}</div>
               </div>
             </div>
-            
+
             <div className="throughput-section">
               <h4>Throughput</h4>
               <div>Last 24h: {pdfStats.throughput.last24h} jobs</div>
               <div>Last 7d: {pdfStats.throughput.last7d} jobs</div>
             </div>
-            
+
             <div className="processing-time">
               <h4>Average Processing Time</h4>
               <div>{formatTime(pdfStats.averageProcessingTime)}</div>
             </div>
-            
+
             {pdfStats.oldestJob && (
               <div className="oldest-job">
                 <h4>Oldest Waiting Job</h4>
                 <div>{formatDate(pdfStats.oldestJob)}</div>
               </div>
             )}
-            
+
             <div className="action-buttons">
               <button onClick={() => viewQueueJobs('pdf')}>View Jobs</button>
               <button onClick={() => pauseQueue('pdf')}>
@@ -1430,10 +1430,10 @@ export const QueueDashboard: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         {/* Similar card for crawler stats */}
       </div>
-      
+
       <div className="recent-events">
         <h3>Recent Events</h3>
         <ul className="event-list">
@@ -1461,7 +1461,7 @@ const formatTime = (milliseconds: number) => {
   const seconds = Math.floor(milliseconds / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes % 60}m`;
   } else if (minutes > 0) {
@@ -1513,15 +1513,15 @@ async function processPDFCatalog(filePath: string, fileName: string, fileSize: n
         extractStructuredData: true
       }
     });
-    
+
     console.log(`PDF processing job created: ${jobId}`);
-    
+
     // Optionally, subscribe to job events
     const unsubscribe = pdfQueue.subscribeToEvents(['pdf.job.completed', 'pdf.job.failed'], async (event) => {
       if (event.data.jobId === jobId) {
         if (event.type === 'pdf.job.completed') {
           console.log(`Job completed with results:`, event.data.results);
-          
+
           // Do something with the results
           if (event.data.results && event.data.results.materialsIdentified > 0) {
             // Handle extracted materials
@@ -1530,12 +1530,12 @@ async function processPDFCatalog(filePath: string, fileName: string, fileSize: n
           console.error(`Job failed:`, event.data.error);
           // Handle failure
         }
-        
+
         // Unsubscribe after handling event
         unsubscribe();
       }
     });
-    
+
     return jobId;
   } catch (error) {
     console.error('Failed to create PDF processing job:', error);
@@ -1574,7 +1574,7 @@ interface JobDetails {
 export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     // Fetch initial job details
     const fetchJobDetails = async () => {
@@ -1588,9 +1588,9 @@ export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
         setIsLoading(false);
       }
     };
-    
+
     fetchJobDetails();
-    
+
     // Subscribe to job events
     const unsubscribe = queueEvents.subscribeToPDFEvents((event) => {
       if (event.data.jobId === jobId) {
@@ -1617,34 +1617,34 @@ export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
         }
       }
     });
-    
+
     return () => {
       unsubscribe();
     };
   }, [jobId]);
-  
+
   if (isLoading) {
     return <div>Loading job details...</div>;
   }
-  
+
   if (!jobDetails) {
     return <div>Job not found</div>;
   }
-  
+
   return (
     <div className="job-progress-tracker">
       <h2>Job Progress: {jobDetails.fileName}</h2>
-      
+
       <div className="job-status">
         Status: <span className={`status-${jobDetails.status}`}>{jobDetails.status}</span>
       </div>
-      
+
       {jobDetails.status === 'processing' && (
         <div className="progress-section">
           <div className="progress-bar">
-            <div 
+            <div
               className="progress-fill"
-              style={{ width: `${jobDetails.progress.percentComplete}%` }}
+              style={% raw %}{{ width: `${jobDetails.progress.percentComplete}%` }}{% endraw %}
             />
           </div>
           <div className="progress-text">
@@ -1653,9 +1653,9 @@ export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
           <div className="stage-info">
             Current stage: {jobDetails.progress.currentStage}
             <div className="stage-progress-bar">
-              <div 
+              <div
                 className="stage-progress-fill"
-                style={{ width: `${jobDetails.progress.stageProgress}%` }}
+                style={% raw %}{{ width: `${jobDetails.progress.stageProgress}%` }}{% endraw %}
               />
             </div>
           </div>
@@ -1664,7 +1664,7 @@ export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
           </div>
         </div>
       )}
-      
+
       {jobDetails.status === 'completed' && jobDetails.results && (
         <div className="results-section">
           <h3>Processing Results</h3>
@@ -1692,14 +1692,14 @@ export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
               </div>
             )}
           </div>
-          
+
           <div className="action-buttons">
             <button onClick={() => viewResults(jobId)}>View Results</button>
             <button onClick={() => downloadResults(jobId)}>Download Results</button>
           </div>
         </div>
       )}
-      
+
       {jobDetails.status === 'failed' && (
         <div className="error-section">
           <h3>Processing Error</h3>
@@ -1711,7 +1711,7 @@ export const JobProgressTracker: React.FC<{ jobId: string }> = ({ jobId }) => {
           </div>
         </div>
       )}
-      
+
       <div className="job-details">
         <h3>Job Details</h3>
         <div className="details-grid">
