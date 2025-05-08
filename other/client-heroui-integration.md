@@ -58,9 +58,9 @@ import { useTheme } from '@heroui/react';
 
 const MyComponent: React.FC = () => {
   const theme = useTheme();
-  
+
   return (
-    <div style={{ color: theme.colors.primary.main }}>
+    <div style={% raw %}{{ color: theme.colors.primary.main }}{% endraw %}>
       Themed content
     </div>
   );
