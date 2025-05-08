@@ -390,7 +390,7 @@ on:
 
 env:
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
+  ENVIRONMENT: {% raw %}${{ github.event.inputs.environment || 'production' }}{% endraw %}
 
 jobs:
   build-and-test:
@@ -840,7 +840,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_TITLE: "Deployment Status"
           SLACK_MESSAGE: "Kubernetes deployment ${{ job.status }}"
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_COLOR: {% raw %}${{ job.status == 'success' && 'good' || 'danger' }}{% endraw %}
 
   deploy-frontend:
     name: Deploy Frontend to Vercel
@@ -3296,7 +3296,7 @@ jobs:
 
   # Unified deployment job for both staging and production
   deploy:
-    name: Deploy to ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    name: Deploy to {% raw %}${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}{% endraw %}
     needs: build-docker-images
     if: |
       (github.ref == 'refs/heads/staging') ||
@@ -3304,7 +3304,7 @@ jobs:
       (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}_environment
+      group: {% raw %}${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}{% endraw %}_environment
       cancel-in-progress: false
     steps:
       - name: Determine environment
