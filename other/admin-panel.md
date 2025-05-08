@@ -201,11 +201,11 @@ import { useRouter } from 'next/router';
  */
 export default function AdminIndex() {
   const router = useRouter();
-  
+
   useEffect(() => {
     router.replace('/dashboard');
   }, [router]);
-  
+
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="text-center">
@@ -251,8 +251,8 @@ export default function Layout({ children }: { children: ReactNode }) {
 // components/Sidebar.tsx
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { 
-  HomeIcon, UsersIcon, DatabaseIcon, 
+import {
+  HomeIcon, UsersIcon, DatabaseIcon,
   CogIcon, ChartBarIcon, CollectionIcon,
   CloudUploadIcon, QueueListIcon
 } from '@heroicons/react/24/outline';
@@ -271,7 +271,7 @@ export default function Sidebar() {
     { name: 'Reports', href: '/reports', icon: ChartBarIcon },
     { name: 'Settings', href: '/settings', icon: CogIcon },
   ];
-  
+
   return (
     <div className="w-64 bg-white h-screen shadow-sm overflow-y-auto">
       <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
@@ -319,14 +319,14 @@ import { ApiError } from '../utils/apiError';
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       throw new ApiError(401, 'Authentication required');
     }
-    
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
     req.user = decoded;
-    
+
     next();
   } catch (error) {
     next(new ApiError(401, 'Invalid or expired token'));
@@ -341,11 +341,11 @@ export const authorizeRoles = (roles: string[]) => {
     if (!req.user) {
       return next(new ApiError(401, 'Authentication required'));
     }
-    
+
     if (!roles.includes(req.user.role)) {
       return next(new ApiError(403, 'Unauthorized access'));
     }
-    
+
     next();
   };
 };
@@ -431,14 +431,14 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const query = req.query.q;
-  
+
   // Search datasets
   const result = await supabaseDatasetService.searchDatasets({
     query: query as string,
     page,
     limit
   });
-  
+
   return res.json(result);
 }));
 
@@ -450,20 +450,20 @@ router.post('/upload/zip', upload.single('file'), asyncHandler(async (req: Reque
   if (!req.file) {
     throw new ApiError(400, 'No file uploaded');
   }
-  
+
   const { name, description } = req.body;
-  
+
   if (!name) {
     throw new ApiError(400, 'Dataset name is required');
   }
-  
+
   // Process the uploaded ZIP file
   const result = await zipExtractorService.extractDataset(
     req.file.path,
     name,
     description
   );
-  
+
   return res.json(result);
 }));
 
@@ -483,12 +483,12 @@ import { authMiddleware, authorizeRoles } from '../../middleware/auth.middleware
 import { asyncHandler } from '../../utils/asyncHandler';
 import { Request, Response } from 'express';
 import { ApiError } from '../../utils/apiError';
-import { 
-  getJobs, 
-  getJobById, 
-  retryJob, 
-  cancelJob, 
-  clearQueue, 
+import {
+  getJobs,
+  getJobById,
+  retryJob,
+  cancelJob,
+  clearQueue,
   getQueueStats,
   getSourceFilters
 } from '../../controllers/queue.controller';
@@ -507,14 +507,14 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const status = req.query.status as string | undefined;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
-  
+
   const jobs = await getJobs({
     queueSystem,
     status,
     page,
     limit
   });
-  
+
   res.json(jobs);
 }));
 
@@ -654,7 +654,7 @@ export default function DashboardPage() {
     activeJobs: 0,
     systemHealth: 'normal'
   });
-  
+
   useEffect(() => {
     // Fetch dashboard statistics
     async function fetchStats() {
@@ -666,31 +666,31 @@ export default function DashboardPage() {
         console.error('Failed to fetch dashboard stats:', error);
       }
     }
-    
+
     fetchStats();
-    
+
     // Set up polling for real-time updates
     const interval = setInterval(fetchStats, 30000); // Update every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   return (
     <Layout>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
         <p className="text-gray-600">Welcome to the Kai Material Recognition System admin panel.</p>
       </div>
-      
+
       <SystemHealthIndicator status={stats.systemHealth} />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard title="Users" value={stats.users} icon="users" />
         <StatCard title="Materials" value={stats.materials} icon="database" />
         <StatCard title="Datasets" value={stats.datasets} icon="folder" />
         <StatCard title="Active Jobs" value={stats.activeJobs} icon="cog" />
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <QueueStatusChart />
         <RecentActivityList />
@@ -716,7 +716,7 @@ export default function DatasetUploadPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  
+
   const handleFileChange = (selectedFile: File | null) => {
     setFile(selectedFile);
     // Auto-generate name from filename if not already set
@@ -724,35 +724,35 @@ export default function DatasetUploadPage() {
       setName(selectedFile.name.split('.')[0]);
     }
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!file) {
       setError('Please select a file to upload');
       return;
     }
-    
+
     if (!name) {
       setError('Dataset name is required');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     // Create form data
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name);
     formData.append('description', description);
-    
+
     try {
       // Determine endpoint based on file type
-      const endpoint = file.name.endsWith('.zip') 
+      const endpoint = file.name.endsWith('.zip')
         ? '/api/admin/datasets/upload/zip'
         : '/api/admin/datasets/upload/csv';
-      
+
       // Upload the dataset
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -761,14 +761,14 @@ export default function DatasetUploadPage() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to upload dataset');
       }
-      
+
       const result = await response.json();
-      
+
       // Redirect to the dataset details page
       router.push(`/datasets/${result.dataset.id}`);
     } catch (error) {
@@ -776,22 +776,22 @@ export default function DatasetUploadPage() {
       setLoading(false);
     }
   };
-  
+
   const handleDownloadTemplate = () => {
     window.open('/api/admin/datasets/templates/csv', '_blank');
   };
-  
+
   return (
     <Layout>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Upload Dataset</h1>
         <p className="text-gray-600">Upload a new dataset for training and recognition.</p>
       </div>
-      
+
       {error && (
         <Alert type="error" title="Upload Error" message={error} onClose={() => setError(null)} />
       )}
-      
+
       <div className="bg-white shadow-sm rounded-lg p-6">
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
@@ -803,7 +803,7 @@ export default function DatasetUploadPage() {
               placeholder="Enter a descriptive name for the dataset"
             />
           </div>
-          
+
           <div className="mb-6">
             <TextField
               label="Description"
@@ -814,7 +814,7 @@ export default function DatasetUploadPage() {
               placeholder="Optional description of the dataset"
             />
           </div>
-          
+
           <div className="mb-6">
             <FileUpload
               label="Upload Dataset File"
@@ -823,25 +823,25 @@ export default function DatasetUploadPage() {
               helpText="Accepted formats: ZIP (for image datasets) or CSV (for reference data)"
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
-            <Button 
-              type="button" 
-              variant="secondary" 
+            <Button
+              type="button"
+              variant="secondary"
               onClick={handleDownloadTemplate}
             >
               Download CSV Template
             </Button>
-            
-            <Button 
-              type="submit" 
-              variant="primary" 
+
+            <Button
+              type="submit"
+              variant="primary"
               disabled={loading || !file || !name}
             >
               {loading ? 'Uploading...' : 'Upload Dataset'}
             </Button>
           </div>
-          
+
           {loading && (
             <div className="mt-4">
               <ProgressIndicator progress={progress} />
@@ -862,12 +862,12 @@ export default function DatasetUploadPage() {
 ```typescript
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { 
-  Table, 
-  Button, 
-  Select, 
-  Pagination, 
-  Badge, 
+import {
+  Table,
+  Button,
+  Select,
+  Pagination,
+  Badge,
   Dialog,
   Alert
 } from '../../components/ui';
@@ -886,35 +886,35 @@ export default function QueueDashboardPage() {
     pdf: { total: 0, byStatus: {} },
     crawler: { total: 0, byStatus: {}, byProvider: {} }
   });
-  
+
   const [filter, setFilter] = useState({
     queueSystem: 'all',
     status: '',
     page: 1,
     limit: 10
   });
-  
+
   const [detailsDialog, setDetailsDialog] = useState({
     open: false,
     jobId: '',
     system: 'pdf'
   });
-  
+
   const [clearQueueDialog, setClearQueueDialog] = useState({
     open: false,
     system: 'pdf'
   });
-  
+
   const [action, setAction] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
   const [error, setError] = useState(null);
-  
+
   // Load jobs and stats
   useEffect(() => {
     fetchJobs();
     fetchStats();
   }, [filter]);
-  
+
   const fetchJobs = async () => {
     try {
       const data = await getQueueJobs({
@@ -923,13 +923,13 @@ export default function QueueDashboardPage() {
         page: filter.page,
         limit: filter.limit
       });
-      
+
       setJobs(data.jobs);
     } catch (err) {
       setError('Failed to fetch jobs: ' + err.message);
     }
   };
-  
+
   const fetchStats = async () => {
     try {
       const statsData = await getQueueStats();
@@ -938,13 +938,13 @@ export default function QueueDashboardPage() {
       setError('Failed to fetch queue statistics: ' + err.message);
     }
   };
-  
+
   // Handle job actions
   const handleJobAction = async (type, jobId, system) => {
     setAction({ type, jobId, system });
     setActionSuccess(null);
     setError(null);
-    
+
     try {
       if (type === 'retry') {
         const result = await retryQueueJob(jobId, system);
@@ -953,7 +953,7 @@ export default function QueueDashboardPage() {
         const result = await cancelQueueJob(jobId, system);
         setActionSuccess(`Job ${jobId} cancelled successfully`);
       }
-      
+
       // Refresh data
       fetchJobs();
       fetchStats();
@@ -963,14 +963,14 @@ export default function QueueDashboardPage() {
       setAction(null);
     }
   };
-  
+
   // Handle clear queue
   const handleClearQueue = async (system) => {
     try {
       const result = await clearQueue(system);
       setActionSuccess(`Cleared ${result.count} jobs from ${system} queue`);
       setClearQueueDialog({ open: false, system: 'pdf' });
-      
+
       // Refresh data
       fetchJobs();
       fetchStats();
@@ -978,7 +978,7 @@ export default function QueueDashboardPage() {
       setError(`Failed to clear queue: ${err.message}`);
     }
   };
-  
+
   return (
     <Layout>
       <div className="mb-6 flex justify-between items-center">
@@ -986,16 +986,16 @@ export default function QueueDashboardPage() {
           <h1 className="text-2xl font-semibold text-gray-800">Queue Management</h1>
           <p className="text-gray-600">Manage PDF processing and crawler job queues</p>
         </div>
-        
+
         <div className="flex space-x-4">
-          <Button 
+          <Button
             variant="secondary"
             onClick={() => handleOpenClearQueueDialog('pdf')}
           >
             Clear PDF Queue
           </Button>
-          
-          <Button 
+
+          <Button
             variant="secondary"
             onClick={() => handleOpenClearQueueDialog('crawler')}
           >
@@ -1003,7 +1003,7 @@ export default function QueueDashboardPage() {
           </Button>
         </div>
       </div>
-      
+
       {/* Status cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white shadow-sm rounded-lg p-6">
@@ -1017,7 +1017,7 @@ export default function QueueDashboardPage() {
             </div>
             <div>
               {Object.entries(stats.pdf.byStatus).map(([status, count]) => (
-                <Badge 
+                <Badge
                   key={status}
                   color={getStatusColor(status)}
                   className="mr-2 mb-2"
@@ -1028,7 +1028,7 @@ export default function QueueDashboardPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white shadow-sm rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Crawler Queue</h2>
           <div className="flex justify-between items-center">
@@ -1040,7 +1040,7 @@ export default function QueueDashboardPage() {
             </div>
             <div>
               {Object.entries(stats.crawler.byStatus).map(([status, count]) => (
-                <Badge 
+                <Badge
                   key={status}
                   color={getStatusColor(status)}
                   className="mr-2 mb-2"
@@ -1052,7 +1052,7 @@ export default function QueueDashboardPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Filter controls */}
       <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
         <div className="flex flex-wrap gap-4">
@@ -1068,7 +1068,7 @@ export default function QueueDashboardPage() {
               ]}
             />
           </div>
-          
+
           <div className="w-full md:w-auto">
             <Select
               label="Status"
@@ -1086,7 +1086,7 @@ export default function QueueDashboardPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Jobs table */}
       <div className="bg-white shadow-sm rounded-lg overflow-hidden">
         <Table
@@ -1115,7 +1115,7 @@ export default function QueueDashboardPage() {
                 >
                   Details
                 </Button>
-                
+
                 {job.status === 'failed' && (
                   <Button
                     size="sm"
@@ -1126,7 +1126,7 @@ export default function QueueDashboardPage() {
                     Retry
                   </Button>
                 )}
-                
+
                 {['pending', 'processing'].includes(job.status) && (
                   <Button
                     size="sm"
@@ -1140,7 +1140,7 @@ export default function QueueDashboardPage() {
               </div>
             )
           }))}
-          emptyState={{
+          emptyState={% raw %}{{
             message: 'No jobs found matching the current filters',
             action: {
               label: 'Clear Filters',
@@ -1151,31 +1151,31 @@ export default function QueueDashboardPage() {
                 limit: 10
               })
             }
-          }}
+          }}{% endraw %}
         />
-        
+
         <div className="p-4 border-t">
           <Pagination
             currentPage={filter.page}
             pageSize={filter.limit}
             totalItems={100} // This would come from the API
-            onPageChange={(page) => setFilter({...filter, page})}
+            onPageChange={(page) => setFilter({% raw %}{{...filter, page}}{% endraw %})}
           />
         </div>
       </div>
-      
+
       {/* Job details dialog */}
       <JobDetailsDialog
         open={detailsDialog.open}
         jobId={detailsDialog.jobId}
         system={detailsDialog.system}
-        onClose={() => setDetailsDialog({...detailsDialog, open: false})}
+        onClose={() => setDetailsDialog({% raw %}{{...detailsDialog, open: false}}{% endraw %})}
         onActionComplete={() => {
           fetchJobs();
           fetchStats();
         }}
       />
-      
+
       {/* Clear queue confirmation dialog */}
       <Dialog
         open={clearQueueDialog.open}
@@ -1185,7 +1185,7 @@ export default function QueueDashboardPage() {
           {
             label: 'Cancel',
             variant: 'text',
-            onClick: () => setClearQueueDialog({...clearQueueDialog, open: false})
+            onClick: () => setClearQueueDialog({% raw %}{{...clearQueueDialog, open: false}}{% endraw %})
           },
           {
             label: 'Clear Queue',
@@ -1193,9 +1193,9 @@ export default function QueueDashboardPage() {
             onClick: () => handleClearQueue(clearQueueDialog.system)
           }
         ]}
-        onClose={() => setClearQueueDialog({...clearQueueDialog, open: false})}
+        onClose={() => setClearQueueDialog({% raw %}{{...clearQueueDialog, open: false}}{% endraw %})}
       />
-      
+
       {/* Action messages */}
       {actionSuccess && (
         <Alert
@@ -1206,7 +1206,7 @@ export default function QueueDashboardPage() {
           className="fixed bottom-4 right-4 z-50"
         />
       )}
-      
+
       {error && (
         <Alert
           type="error"
