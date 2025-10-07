@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Security &amp; Authentication Guide</h1>
+<h2>🚨 CRITICAL SECURITY ISSUES FOUND</h2>
+<h3>Immediate Action Required</h3>
+<ol>
+<li><strong>Hardcoded API Keys</strong> (CRITICAL)</li>
+<li><strong>Exposed JWT Secrets</strong> (CRITICAL)</li>
+<li><strong>Weak CORS Configuration</strong> (HIGH)</li>
+<li><strong>Missing Input Validation</strong> (HIGH)</li>
+</ol>
+<h2>🔐 Authentication Systems</h2>
+<h3>1. Supabase Authentication</h3>
+<p><strong>Primary authentication system for user management</strong></p>
+<pre><code class="language-typescript">// Frontend: src/contexts/AuthContext.tsx
+export const AuthProvider: React.FC&lt;{ children: React.ReactNode }&gt; = ({ children }) =&gt; {
+  // Handles user sign-up, sign-in, and session management
+}
+</code></pre>
+<p><strong>Configuration</strong>:</p>
+<pre><code class="language-typescript">// src/integrations/supabase/client.ts
+export const supabase = createClient&lt;Database&gt;(url, key, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    flowType: &#39;pkce&#39;, // PKCE flow for better security
+  }
+});
+</code></pre>
+<h3>2. JWT Authentication Middleware</h3>
+<p><strong>Backend JWT validation for API endpoints</strong></p>
+<pre><code class="language-typescript">// src/middleware/jwtAuthMiddleware.ts
+export class JWTAuthMiddleware {
+  // Validates JWT tokens from Supabase
+  // Supports API key authentication
+  // Handles internal connection tokens
+}
+</code></pre>
+<p><strong>SECURITY ISSUE</strong>: Hardcoded internal token found:</p>
+<pre><code class="language-typescript">const INTERNAL_CONNECTION_TOKEN = &#39;Kj9mN2pQ8rT5vY7wE3uI6oP1aS4dF8gH2kL9nM6qR3tY5vX8zA1bC4eG7jK0mP9s&#39;;
+</code></pre>
+<h3>3. Material Kai API Authentication</h3>
+<p><strong>Custom API key system for Material Kai services</strong></p>
+<pre><code class="language-typescript">// src/middleware/materialKaiAuthMiddleware.ts
+// ⚠️ CRITICAL: Contains hardcoded API keys
+private readonly HARDCODED_KEYS: Record&lt;string, MaterialKaiKeyData&gt; = {
+  &#39;mk_api_2024_Kj9mN2pQ8rT5vY7wE3uI6oP1aS4dF8gH2kL9nM6qR3tY5vX8zA1bC4eG7jK0mP9s&#39;: {
+    // Hardcoded key data
+  }
+};
+</code></pre>
+<h3>4. MIVAA Service Authentication</h3>
+<p><strong>JWT-based authentication for Python microservice</strong></p>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/middleware/jwt_auth.py
+class JWTAuthMiddleware(BaseHTTPMiddleware):
+    # Validates JWT tokens
+    # Extracts workspace context
+    # Enforces permission-based access control
+</code></pre>
+<h2>🔑 API Key Management</h2>
+<h3>Current API Key Systems</h3>
+<ol>
+<li><p><strong>Supabase API Keys</strong>:</p>
+<ul>
+<li>Anon Key: <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code> (EXPOSED)</li>
+<li>Service Role Key: Required for admin operations</li>
+</ul>
+</li>
+<li><p><strong>Material Kai API Keys</strong>:</p>
+<ul>
+<li>Format: <code>mk_api_2024_[64-char-string]</code></li>
+<li><strong>CRITICAL</strong>: Hardcoded in source code</li>
+</ul>
+</li>
+<li><p><strong>External Service Keys</strong>:</p>
+<ul>
+<li>OpenAI API Key</li>
+<li>HuggingFace API Key</li>
+<li>Replicate API Token</li>
+</ul>
+</li>
+</ol>
+<h3>API Key Storage Locations</h3>
+<h4>⚠️ SECURITY VIOLATIONS FOUND:</h4>
+<ol>
+<li><p><strong>Supabase Config</strong> (<code>supabase/config.toml</code>):</p>
+<pre><code class="language-toml">[auth]
+jwt_secret = &quot;Kj9mN2pQ8rT5vY7wE3uI6oP1aS4dF8gH2kL9nM6qR3tY5vX8zA1bC4eG7jK0mP9s&quot;
+</code></pre>
+</li>
+<li><p><strong>Supabase Client Config</strong> (<code>src/config/apis/supabaseConfig.ts</code>):</p>
+<pre><code class="language-typescript">anonKey: &#39;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&#39;
+</code></pre>
+</li>
+<li><p><strong>CORS Headers</strong> (<code>supabase/functions/_shared/cors.ts</code>):</p>
+<pre><code class="language-typescript">&#39;Access-Control-Allow-Origin&#39;: &#39;*&#39;, // Wildcard CORS
+</code></pre>
+</li>
+</ol>
+<h2>🛡️ Security Best Practices</h2>
+<h3>1. Environment Variable Management</h3>
+<p><strong>REQUIRED CHANGES</strong>:</p>
+<pre><code class="language-bash"># .env (DO NOT COMMIT)
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=your_actual_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+JWT_SECRET_KEY=your_secure_random_jwt_secret
+MATERIAL_KAI_API_KEY=your_material_kai_key
+</code></pre>
+<h3>2. Secure Configuration</h3>
+<p><strong>Update these files immediately</strong>:</p>
+<ol>
+<li><p><strong>Remove hardcoded secrets from</strong>:</p>
+<ul>
+<li><code>supabase/config.toml</code></li>
+<li><code>src/config/apis/supabaseConfig.ts</code></li>
+<li><code>src/middleware/materialKaiAuthMiddleware.ts</code></li>
+<li><code>src/middleware/jwtAuthMiddleware.ts</code></li>
+</ul>
+</li>
+<li><p><strong>Fix CORS configuration</strong>:</p>
+<pre><code class="language-typescript">// supabase/functions/_shared/cors.ts
+export const corsHeaders = {
+  &#39;Access-Control-Allow-Origin&#39;: process.env.ALLOWED_ORIGINS || &#39;http://localhost:3000&#39;,
+  // Remove wildcard &#39;*&#39;
+};
+</code></pre>
+</li>
+</ol>
+<h3>3. Input Validation</h3>
+<p><strong>Missing validation in</strong>:</p>
+<ul>
+<li>File upload endpoints</li>
+<li>API gateway requests</li>
+<li>User input forms</li>
+</ul>
+<p><strong>Implement validation</strong>:</p>
+<pre><code class="language-typescript">// Example: Zod validation schemas
+const ApiRequestSchema = z.object({
+  action: z.string().min(1).max(100),
+  payload: z.object({}).passthrough(),
+});
+</code></pre>
+<h2>🔒 Authentication Flows</h2>
+<h3>1. User Authentication Flow</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant User
+    participant Frontend
+    participant Supabase
+    participant Backend
+
+    User-&gt;&gt;Frontend: Login Request
+    Frontend-&gt;&gt;Supabase: Auth Request
+    Supabase-&gt;&gt;Frontend: JWT Token
+    Frontend-&gt;&gt;Backend: API Request + JWT
+    Backend-&gt;&gt;Supabase: Validate JWT
+    Supabase-&gt;&gt;Backend: User Data
+    Backend-&gt;&gt;Frontend: Response
+</code></pre>
+<h3>2. API Key Authentication Flow</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Service
+    participant Database
+
+    Client-&gt;&gt;Gateway: Request + API Key
+    Gateway-&gt;&gt;Database: Validate Key
+    Database-&gt;&gt;Gateway: Key Data
+    Gateway-&gt;&gt;Service: Authenticated Request
+    Service-&gt;&gt;Gateway: Response
+    Gateway-&gt;&gt;Client: Response
+</code></pre>
+<h2>🚨 Immediate Security Fixes Required</h2>
+<h3>1. Remove Hardcoded Secrets</h3>
+<pre><code class="language-bash"># Create secure environment files
+echo &quot;JWT_SECRET_KEY=$(openssl rand -hex 32)&quot; &gt;&gt; .env
+echo &quot;MATERIAL_KAI_API_KEY=mk_api_2024_$(openssl rand -hex 32)&quot; &gt;&gt; .env
+</code></pre>
+<h3>2. Update Configuration Files</h3>
+<p><strong>supabase/config.toml</strong>:</p>
+<pre><code class="language-toml">[auth]
+jwt_secret = &quot;${JWT_SECRET_KEY}&quot;  # Use environment variable
+</code></pre>
+<p><strong>src/config/apis/supabaseConfig.ts</strong>:</p>
+<pre><code class="language-typescript">anonKey: process.env.VITE_SUPABASE_ANON_KEY || &#39;&#39;,
+</code></pre>
+<h3>3. Implement Proper CORS</h3>
+<pre><code class="language-typescript">// Environment-based CORS
+const allowedOrigins = process.env.NODE_ENV === &#39;production&#39; 
+  ? [&#39;https://your-domain.com&#39;]
+  : [&#39;http://localhost:3000&#39;, &#39;http://localhost:5173&#39;];
+</code></pre>
+<h3>4. Add Input Validation</h3>
+<pre><code class="language-typescript">// API Gateway validation
+export const validateRequest = (schema: z.ZodSchema) =&gt; {
+  return (req: Request, res: Response, next: NextFunction) =&gt; {
+    try {
+      schema.parse(req.body);
+      next();
+    } catch (error) {
+      res.status(400).json({ error: &#39;Invalid request data&#39; });
+    }
+  };
+};
+</code></pre>
+<h2>🔐 Workspace-Based Security</h2>
+<h3>Row Level Security (RLS)</h3>
+<p><strong>Current Implementation</strong>:</p>
+<ul>
+<li>Workspace isolation in MIVAA service</li>
+<li>User-based access control</li>
+<li>JWT claims validation</li>
+</ul>
+<p><strong>Missing</strong>:</p>
+<ul>
+<li>Database RLS policies</li>
+<li>Proper workspace validation</li>
+<li>Resource-level permissions</li>
+</ul>
+<h2>📋 Security Checklist</h2>
+<h3>Immediate (Critical)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Remove all hardcoded API keys</li>
+<li><input disabled="" type="checkbox"> Move secrets to environment variables</li>
+<li><input disabled="" type="checkbox"> Fix CORS wildcard configuration</li>
+<li><input disabled="" type="checkbox"> Update JWT secret management</li>
+</ul>
+<h3>Short Term (High Priority)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Implement input validation</li>
+<li><input disabled="" type="checkbox"> Add rate limiting</li>
+<li><input disabled="" type="checkbox"> Setup proper logging</li>
+<li><input disabled="" type="checkbox"> Configure security headers</li>
+</ul>
+<h3>Long Term (Medium Priority)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Implement RLS policies</li>
+<li><input disabled="" type="checkbox"> Add API key rotation</li>
+<li><input disabled="" type="checkbox"> Setup security monitoring</li>
+<li><input disabled="" type="checkbox"> Conduct security audit</li>
+</ul>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Environment setup</li>
+<li><a href="./api-documentation.md">API Documentation</a> - API security</li>
+<li><a href="./database-schema.md">Database &amp; Schema</a> - Database security</li>
+</ul>
+
+</div></body></html>

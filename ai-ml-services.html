@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AI &amp; ML Services Documentation</h1>
+<h2>🤖 AI/ML Architecture Overview</h2>
+<p>The Material Kai Vision Platform integrates multiple AI/ML services for comprehensive material analysis:</p>
+<ol>
+<li><strong>OpenAI Services</strong> - Text embeddings, chat completions, vision analysis</li>
+<li><strong>HuggingFace Models</strong> - Alternative ML models, CLIP embeddings</li>
+<li><strong>Replicate API</strong> - 3D generation, advanced AI models</li>
+<li><strong>Custom ML Services</strong> - Material-specific analysis</li>
+<li><strong>RAG System</strong> - Retrieval-Augmented Generation for documents</li>
+</ol>
+<h2>🔧 AI Service Configuration</h2>
+<h3>OpenAI Integration</h3>
+<p><strong>Configuration</strong> (<code>src/config/apis/openaiConfig.ts</code>):</p>
+<pre><code class="language-typescript">export const openaiConfig = {
+  name: &#39;openai&#39;,
+  type: &#39;openai&#39;,
+  baseUrl: &#39;https://api.openai.com/v1&#39;,
+  models: {
+    embedding: &#39;text-embedding-ada-002&#39;,
+    chat: &#39;gpt-4&#39;,
+    vision: &#39;gpt-4-vision-preview&#39;
+  },
+  timeout: 30000,
+  retryAttempts: 3
+};
+</code></pre>
+<p><strong>Environment Variables</strong>:</p>
+<pre><code class="language-bash">OPENAI_API_KEY=your_openai_api_key
+OPENAI_ORG_ID=your_org_id  # Optional
+</code></pre>
+<h3>HuggingFace Integration</h3>
+<p><strong>Configuration</strong> (<code>src/config/apis/huggingfaceConfig.ts</code>):</p>
+<pre><code class="language-typescript">export const huggingfaceConfig = {
+  name: &#39;huggingface&#39;,
+  type: &#39;huggingface&#39;,
+  baseUrl: &#39;https://api-inference.huggingface.co&#39;,
+  models: {
+    clip: &#39;openai/clip-vit-base-patch32&#39;,
+    embedding: &#39;sentence-transformers/all-MiniLM-L6-v2&#39;,
+    classification: &#39;microsoft/DialoGPT-medium&#39;
+  }
+};
+</code></pre>
+<h3>Replicate Integration</h3>
+<p><strong>Configuration</strong> (<code>src/config/apis/replicateConfig.ts</code>):</p>
+<pre><code class="language-typescript">export const replicateConfig = {
+  name: &#39;replicate&#39;,
+  type: &#39;replicate&#39;,
+  baseUrl: &#39;https://api.replicate.com/v1&#39;,
+  models: {
+    &#39;3d-generation&#39;: &#39;stability-ai/stable-diffusion-3d&#39;,
+    &#39;image-analysis&#39;: &#39;yorickvp/llava-13b&#39;
+  }
+};
+</code></pre>
+<h2>🧠 Core AI Services</h2>
+<h3>1. Embedding Generation Service</h3>
+<p><strong>Location</strong>: <code>src/services/embeddingGenerationService.ts</code></p>
+<p><strong>Purpose</strong>: Generate vector embeddings for text and images</p>
+<p><strong>Models Used</strong>:</p>
+<ul>
+<li><strong>OpenAI</strong>: <code>text-embedding-ada-002</code> (1536 dimensions)</li>
+<li><strong>HuggingFace</strong>: <code>sentence-transformers/all-MiniLM-L6-v2</code> (384 dimensions)</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-typescript">import { EmbeddingGenerationService } from &#39;@/services/embeddingGenerationService&#39;;
+
+const embedding = await EmbeddingGenerationService.generateTextEmbedding({
+  text: &quot;Steel with high tensile strength&quot;,
+  model: &quot;text-embedding-ada-002&quot;
+});
+</code></pre>
+<p><strong>⚠️ Issue</strong>: Inconsistent embedding dimensions across services</p>
+<h3>2. Material Recognition API</h3>
+<p><strong>Location</strong>: <code>src/services/materialRecognitionAPI.ts</code></p>
+<p><strong>Purpose</strong>: Analyze images to identify material properties</p>
+<p><strong>Workflow</strong>:</p>
+<ol>
+<li>Image preprocessing</li>
+<li>Feature extraction using CLIP</li>
+<li>Material classification</li>
+<li>Property prediction</li>
+</ol>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-typescript">const analysis = await MaterialRecognitionAPI.analyzeImage({
+  imageUrl: &quot;https://example.com/material.jpg&quot;,
+  analysisType: &quot;material_properties&quot;
+});
+</code></pre>
+<h3>3. Enhanced RAG Service</h3>
+<p><strong>Location</strong>: <code>src/services/enhancedRAGService.ts</code></p>
+<p><strong>Purpose</strong>: Retrieval-Augmented Generation for document queries</p>
+<p><strong>Components</strong>:</p>
+<ul>
+<li>Document chunking</li>
+<li>Vector storage</li>
+<li>Similarity search</li>
+<li>Context-aware response generation</li>
+</ul>
+<p><strong>Architecture</strong>:</p>
+<pre><code class="language-mermaid">graph TD
+    A[Document Upload] --&gt; B[Text Extraction]
+    B --&gt; C[Chunking]
+    C --&gt; D[Embedding Generation]
+    D --&gt; E[Vector Storage]
+    F[User Query] --&gt; G[Query Embedding]
+    G --&gt; H[Similarity Search]
+    H --&gt; I[Context Retrieval]
+    I --&gt; J[LLM Response]
+    E --&gt; H
+</code></pre>
+<h3>4. Hybrid AI Service</h3>
+<p><strong>Location</strong>: <code>src/services/hybridAIService.ts</code></p>
+<p><strong>Purpose</strong>: Intelligent routing between AI providers</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Provider fallback mechanism</li>
+<li>Cost optimization</li>
+<li>Performance monitoring</li>
+<li>Load balancing</li>
+</ul>
+<p><strong>Provider Priority</strong>:</p>
+<ol>
+<li>MIVAA (Primary)</li>
+<li>OpenAI (Secondary)</li>
+<li>HuggingFace (Fallback)</li>
+</ol>
+<h2>🔬 Specialized ML Services</h2>
+<h3>1. Material Analyzer</h3>
+<p><strong>Location</strong>: <code>src/services/ml/materialAnalyzer.ts</code></p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Chemical composition analysis</li>
+<li>Physical property prediction</li>
+<li>Safety classification</li>
+<li>Standards compliance checking</li>
+</ul>
+<h3>2. 3D Processing Services</h3>
+<h4>NeRF Processing</h4>
+<p><strong>Location</strong>: <code>src/services/nerfProcessingAPI.ts</code></p>
+<p><strong>Purpose</strong>: Neural Radiance Fields for 3D reconstruction</p>
+<p><strong>Input</strong>: Multiple images of material samples
+<strong>Output</strong>: 3D model with material properties</p>
+<h4>SVBRDF Extraction</h4>
+<p><strong>Location</strong>: <code>src/services/svbrdfExtractionAPI.ts</code></p>
+<p><strong>Purpose</strong>: Spatially-Varying Bidirectional Reflectance Distribution Function</p>
+<p><strong>Input</strong>: Single material image
+<strong>Output</strong>: Material appearance parameters</p>
+<h3>3. Image Analysis Services</h3>
+<p><strong>Location</strong>: <code>src/services/imageAnalysis/</code></p>
+<p><strong>Components</strong>:</p>
+<ul>
+<li>Color analysis engine</li>
+<li>Texture classification</li>
+<li>Surface roughness estimation</li>
+<li>Defect detection</li>
+</ul>
+<h2>🔄 AI Workflow Orchestration</h2>
+<h3>Integrated AI Service</h3>
+<p><strong>Location</strong>: <code>src/services/integratedAIService.ts</code></p>
+<p><strong>Purpose</strong>: End-to-end AI workflow coordination</p>
+<p><strong>Complete Design Process</strong>:</p>
+<pre><code class="language-typescript">const results = await IntegratedAIService.generateCompleteDesign(
+  images,
+  roomType,
+  userPreferences
+);
+</code></pre>
+<p><strong>Workflow Steps</strong>:</p>
+<ol>
+<li>NeRF reconstruction (if multiple images)</li>
+<li>SVBRDF extraction for each material</li>
+<li>Spatial analysis</li>
+<li>CrewAI coordination for design generation</li>
+</ol>
+<h3>Agent Coordination</h3>
+<p><strong>Location</strong>: <code>src/services/agentMLCoordinator.ts</code></p>
+<p><strong>Purpose</strong>: Multi-agent ML task coordination</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Task distribution</li>
+<li>Result aggregation</li>
+<li>Performance monitoring</li>
+<li>Error handling</li>
+</ul>
+<h2>📊 Model Configurations</h2>
+<h3>OpenAI Models</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Purpose</th>
+<th>Context Length</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>text-embedding-ada-002</code></td>
+<td>Text embeddings</td>
+<td>8,191 tokens</td>
+<td>$0.0001/1K tokens</td>
+</tr>
+<tr>
+<td><code>gpt-4</code></td>
+<td>Chat completions</td>
+<td>8,192 tokens</td>
+<td>$0.03/1K tokens</td>
+</tr>
+<tr>
+<td><code>gpt-4-vision-preview</code></td>
+<td>Image analysis</td>
+<td>128,000 tokens</td>
+<td>$0.01/1K tokens</td>
+</tr>
+</tbody></table>
+<h3>HuggingFace Models</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Purpose</th>
+<th>Dimensions</th>
+<th>Performance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>openai/clip-vit-base-patch32</code></td>
+<td>Image-text embeddings</td>
+<td>512</td>
+<td>Fast</td>
+</tr>
+<tr>
+<td><code>sentence-transformers/all-MiniLM-L6-v2</code></td>
+<td>Text embeddings</td>
+<td>384</td>
+<td>Fast</td>
+</tr>
+<tr>
+<td><code>microsoft/DialoGPT-medium</code></td>
+<td>Conversational AI</td>
+<td>-</td>
+<td>Medium</td>
+</tr>
+</tbody></table>
+<h3>Replicate Models</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Purpose</th>
+<th>Input</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stability-ai/stable-diffusion-3d</code></td>
+<td>3D generation</td>
+<td>Text prompt</td>
+<td>3D model</td>
+</tr>
+<tr>
+<td><code>yorickvp/llava-13b</code></td>
+<td>Vision-language</td>
+<td>Image + text</td>
+<td>Description</td>
+</tr>
+</tbody></table>
+<h2>🎯 Performance Optimization</h2>
+<h3>Caching Strategy</h3>
+<p><strong>Implementation</strong>: <code>src/services/cache/cacheService.ts</code></p>
+<p><strong>Cache Layers</strong>:</p>
+<ol>
+<li><strong>Memory Cache</strong>: Frequently used embeddings</li>
+<li><strong>Redis Cache</strong>: API responses</li>
+<li><strong>Database Cache</strong>: Processed results</li>
+</ol>
+<p><strong>TTL Settings</strong>:</p>
+<ul>
+<li>Embeddings: 24 hours</li>
+<li>API responses: 1 hour</li>
+<li>ML results: 7 days</li>
+</ul>
+<h3>Cost Optimization</h3>
+<p><strong>Location</strong>: <code>src/services/ml/costOptimizer.ts</code></p>
+<p><strong>Strategies</strong>:</p>
+<ul>
+<li>Model selection based on requirements</li>
+<li>Batch processing for embeddings</li>
+<li>Result caching and reuse</li>
+<li>Provider cost comparison</li>
+</ul>
+<h3>Performance Monitoring</h3>
+<p><strong>Metrics Tracked</strong>:</p>
+<ul>
+<li>Response times per model</li>
+<li>Success/failure rates</li>
+<li>Cost per request</li>
+<li>Cache hit rates</li>
+</ul>
+<h2>🚨 Current Issues &amp; Limitations</h2>
+<h3>1. Embedding Dimension Inconsistency</h3>
+<p><strong>Problem</strong>: Different services use different embedding models</p>
+<ul>
+<li>OpenAI: 1536 dimensions</li>
+<li>HuggingFace: 384 dimensions</li>
+<li>Custom models: Various dimensions</li>
+</ul>
+<p><strong>Impact</strong>: Vector search incompatibility</p>
+<p><strong>Solution</strong>: Standardize on single embedding model</p>
+<h3>2. Missing Error Handling</h3>
+<p><strong>Problem</strong>: Inconsistent error handling across AI services</p>
+<p><strong>Examples</strong>:</p>
+<ul>
+<li>API rate limit handling</li>
+<li>Model unavailability</li>
+<li>Network timeouts</li>
+</ul>
+<h3>3. No Model Versioning</h3>
+<p><strong>Problem</strong>: No tracking of model versions used</p>
+<p><strong>Impact</strong>: Reproducibility issues</p>
+<h3>4. Incomplete Fallback Logic</h3>
+<p><strong>Problem</strong>: Limited fallback between providers</p>
+<p><strong>Impact</strong>: Service failures when primary provider is down</p>
+<h2>🔧 Configuration Management</h2>
+<h3>Model Selection Strategy</h3>
+<pre><code class="language-typescript">// src/services/ml/modelSelector.ts
+export class ModelSelector {
+  static selectEmbeddingModel(requirements: {
+    speed: &#39;fast&#39; | &#39;medium&#39; | &#39;slow&#39;;
+    accuracy: &#39;high&#39; | &#39;medium&#39; | &#39;low&#39;;
+    cost: &#39;low&#39; | &#39;medium&#39; | &#39;high&#39;;
+  }) {
+    // Selection logic based on requirements
+  }
+}
+</code></pre>
+<h3>Environment-Specific Configurations</h3>
+<p><strong>Development</strong>:</p>
+<pre><code class="language-typescript">{
+  primaryProvider: &#39;openai&#39;,
+  fallbackProviders: [&#39;huggingface&#39;],
+  cacheEnabled: true,
+  debugMode: true
+}
+</code></pre>
+<p><strong>Production</strong>:</p>
+<pre><code class="language-typescript">{
+  primaryProvider: &#39;mivaa&#39;,
+  fallbackProviders: [&#39;openai&#39;, &#39;huggingface&#39;],
+  cacheEnabled: true,
+  debugMode: false,
+  rateLimiting: true
+}
+</code></pre>
+<h2>📈 Scaling Considerations</h2>
+<h3>Horizontal Scaling</h3>
+<p><strong>Strategies</strong>:</p>
+<ul>
+<li>Load balancing across AI providers</li>
+<li>Distributed caching with Redis</li>
+<li>Microservice architecture</li>
+</ul>
+<h3>Vertical Scaling</h3>
+<p><strong>Optimizations</strong>:</p>
+<ul>
+<li>GPU acceleration for local models</li>
+<li>Memory optimization for embeddings</li>
+<li>Batch processing for efficiency</li>
+</ul>
+<h2>🔗 Integration Points</h2>
+<h3>Frontend Integration</h3>
+<p><strong>React Hooks</strong>:</p>
+<pre><code class="language-typescript">// src/hooks/useImageAnalysis.ts
+export const useImageAnalysis = () =&gt; {
+  // Hook for image analysis functionality
+};
+</code></pre>
+<h3>Backend Integration</h3>
+<p><strong>API Gateway</strong>:</p>
+<pre><code class="language-typescript">// src/services/apiGateway/apiIntegrationService.ts
+export class ApiIntegrationService {
+  // Unified interface for all AI services
+}
+</code></pre>
+<h3>Database Integration</h3>
+<p><strong>Vector Storage</strong>:</p>
+<ul>
+<li>PostgreSQL with pgvector extension</li>
+<li>Supabase vector operations</li>
+<li>Similarity search optimization</li>
+</ul>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./api-documentation.md">API Documentation</a> - AI API endpoints</li>
+<li><a href="./database-schema.md">Database &amp; Schema</a> - Vector storage</li>
+<li><a href="./architecture-services.md">Architecture &amp; Services</a> - Service architecture</li>
+</ul>
+
+</div></body></html>

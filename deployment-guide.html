@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Deployment Guide</h1>
+<h2>🚀 Deployment Architecture</h2>
+<p>The Material Kai Vision Platform uses a multi-service deployment strategy:</p>
+<ol>
+<li><strong>Frontend</strong>: Vercel (Static hosting + Edge functions)</li>
+<li><strong>MIVAA Service</strong>: Docker containers (Self-hosted or cloud)</li>
+<li><strong>Database</strong>: Supabase (Managed PostgreSQL)</li>
+<li><strong>External APIs</strong>: Third-party services (OpenAI, HuggingFace, Replicate)</li>
+</ol>
+<h2>🏗️ Infrastructure Overview</h2>
+<pre><code class="language-mermaid">graph TB
+    subgraph &quot;Production Environment&quot;
+        A[Vercel Frontend&lt;br/&gt;Static + Edge]
+        B[MIVAA Service&lt;br/&gt;Docker Container]
+        C[Supabase&lt;br/&gt;Database + Auth]
+        D[External APIs&lt;br/&gt;OpenAI, HuggingFace]
+    end
+    
+    subgraph &quot;Development Environment&quot;
+        E[Local Frontend&lt;br/&gt;localhost:5173]
+        F[Local MIVAA&lt;br/&gt;localhost:8000]
+        G[Supabase Cloud&lt;br/&gt;Shared Instance]
+    end
+    
+    A --&gt; B
+    A --&gt; C
+    B --&gt; C
+    B --&gt; D
+    E --&gt; F
+    E --&gt; G
+    F --&gt; G
+</code></pre>
+<h2>🔧 Environment Configuration</h2>
+<h3>Production Environment Variables</h3>
+<h4>Frontend (Set in Vercel Production Environment)</h4>
+<pre><code class="language-bash"># Application
+NODE_ENV=production
+VITE_DEBUG=false
+
+# Supabase
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=your_production_anon_key
+
+# Services
+MIVAA_GATEWAY_URL=https://v1api.materialshub.gr
+MIVAA_API_KEY=your_production_mivaa_jwt_token
+
+# External APIs
+VITE_OPENAI_API_KEY=your_production_openai_key
+VITE_HUGGINGFACE_API_KEY=your_production_hf_key
+VITE_REPLICATE_API_TOKEN=your_production_replicate_token
+
+# Security
+VITE_ALLOWED_ORIGINS=https://your-domain.com
+</code></pre>
+<h4>MIVAA Service (Set in Deployment Platform)</h4>
+<pre><code class="language-bash"># Application
+ENVIRONMENT=production
+DEBUG=false
+LOG_LEVEL=ERROR
+HOST=0.0.0.0
+PORT=8000
+
+# Database
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=your_production_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
+
+# Security
+JWT_SECRET_KEY=your_secure_production_jwt_secret
+CORS_ORIGINS=https://your-domain.com
+RATE_LIMIT_REQUESTS=50
+RATE_LIMIT_WINDOW=60
+
+# Performance
+MAX_WORKERS=4
+CACHE_TTL=3600
+DATABASE_POOL_SIZE=20
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn
+LOG_FILE=/var/log/mivaa/app.log
+</code></pre>
+<h2>📦 Frontend Deployment (Vercel)</h2>
+<h3>Vercel Configuration</h3>
+<p><strong>File</strong>: <code>vercel.json</code></p>
+<pre><code class="language-json">{
+  &quot;buildCommand&quot;: &quot;npm run build&quot;,
+  &quot;outputDirectory&quot;: &quot;dist&quot;,
+  &quot;framework&quot;: &quot;vite&quot;,
+  &quot;headers&quot;: [
+    {
+      &quot;source&quot;: &quot;/assets/(.*)&quot;,
+      &quot;headers&quot;: [
+        {
+          &quot;key&quot;: &quot;Cache-Control&quot;,
+          &quot;value&quot;: &quot;public, max-age=31536000, immutable&quot;
+        }
+      ]
+    },
+    {
+      &quot;source&quot;: &quot;/(.*)&quot;,
+      &quot;headers&quot;: [
+        {
+          &quot;key&quot;: &quot;X-Content-Type-Options&quot;,
+          &quot;value&quot;: &quot;nosniff&quot;
+        },
+        {
+          &quot;key&quot;: &quot;X-Frame-Options&quot;,
+          &quot;value&quot;: &quot;DENY&quot;
+        },
+        {
+          &quot;key&quot;: &quot;X-XSS-Protection&quot;,
+          &quot;value&quot;: &quot;1; mode=block&quot;
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<h3>Deployment Steps</h3>
+<ol>
+<li><p><strong>Connect Repository</strong>:</p>
+<pre><code class="language-bash"># Install Vercel CLI
+npm install -g vercel
+
+# Login and link project
+vercel login
+vercel link
+</code></pre>
+</li>
+<li><p><strong>Configure Environment Variables</strong>:</p>
+<pre><code class="language-bash"># Set production environment variables
+vercel env add SUPABASE_URL production
+vercel env add SUPABASE_ANON_KEY production
+vercel env add VITE_MIVAA_SERVICE_URL production
+# ... add all required variables
+</code></pre>
+</li>
+<li><p><strong>Deploy</strong>:</p>
+<pre><code class="language-bash"># Deploy to production
+vercel --prod
+
+# Or use automatic deployment via Git
+git push origin main  # Triggers automatic deployment
+</code></pre>
+</li>
+</ol>
+<h3>Build Optimization</h3>
+<p><strong>Vite Configuration</strong> (<code>vite.config.ts</code>):</p>
+<pre><code class="language-typescript">export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: [&#39;react&#39;, &#39;react-dom&#39;],
+          ui: [&#39;@radix-ui/react-dialog&#39;, &#39;@radix-ui/react-dropdown-menu&#39;],
+          supabase: [&#39;@supabase/supabase-js&#39;],
+          utils: [&#39;clsx&#39;, &#39;tailwind-merge&#39;, &#39;lucide-react&#39;],
+        },
+      },
+    },
+    sourcemap: true,
+    chunkSizeWarningLimit: 1000,
+  },
+});
+</code></pre>
+<h2>🐳 MIVAA Service Deployment (Docker)</h2>
+<h3>🚀 Deployment Options</h3>
+<h4>🔄 Default Deployment (Recommended)</h4>
+<ul>
+<li><strong>Automatic</strong>: Triggers on push to <code>main</code> or <code>production</code> branches</li>
+<li><strong>Fast &amp; Reliable</strong>: Optimized for regular deployments (2-3 minutes)</li>
+<li><strong>Manual Option</strong>: Available via GitHub Actions workflow_dispatch</li>
+<li><strong>Health Monitoring</strong>: Real-time endpoint testing with auto-recovery</li>
+</ul>
+<h4>🚀 Orchestrated Deployment (Advanced)</h4>
+<ul>
+<li><strong>On-Demand Only</strong>: Manual trigger via GitHub Actions</li>
+<li><strong>Multi-Phase Pipeline</strong>: Intelligence, validation, and comprehensive reporting</li>
+<li><strong>Configurable</strong>: Multiple deployment modes (fast-track, intelligent, comprehensive)</li>
+<li><strong>Advanced Diagnostics</strong>: Comprehensive system analysis and auto-recovery</li>
+</ul>
+<h3>🏥 Health Check &amp; Monitoring Features</h3>
+<h4><strong>Real-Time Health Monitoring</strong></h4>
+<ul>
+<li><strong>HTTP Status Code Verification</strong>: Tests actual endpoint responses (200, 502, 404, etc.)</li>
+<li><strong>Multiple Endpoint Testing</strong>: Health, docs, redoc, and OpenAPI schema endpoints</li>
+<li><strong>Response Time Monitoring</strong>: Tracks endpoint response times and availability</li>
+<li><strong>Retry Logic</strong>: Multiple attempts with intelligent backoff</li>
+</ul>
+<h4><strong>Automatic Diagnostics</strong></h4>
+<p>When health checks fail, the system automatically:</p>
+<ul>
+<li><strong>System Resource Analysis</strong>: CPU, memory, disk usage, and load averages</li>
+<li><strong>Service Status Investigation</strong>: systemd service status and configuration</li>
+<li><strong>Network Diagnostics</strong>: Port availability, process binding, and network interfaces</li>
+<li><strong>Application Log Analysis</strong>: Recent logs, error logs, and service history</li>
+<li><strong>Environment Verification</strong>: Python environment, dependencies, and application structure</li>
+</ul>
+<h4><strong>Auto-Recovery Features</strong></h4>
+<ul>
+<li><strong>Automatic Service Restart</strong>: Attempts to restart failed services</li>
+<li><strong>Post-Restart Verification</strong>: Re-tests endpoints after recovery attempts</li>
+<li><strong>Recovery Status Reporting</strong>: Clear indication of recovery success or failure</li>
+<li><strong>Escalation Path</strong>: Provides manual intervention steps when auto-recovery fails</li>
+</ul>
+<h3>🌐 Service Endpoints</h3>
+<p>All MIVAA service endpoints are available at:</p>
+<ul>
+<li><strong>Base URL</strong>: <code>https://v1api.materialshub.gr</code></li>
+<li><strong>Health Check</strong>: <code>https://v1api.materialshub.gr/health</code></li>
+<li><strong>API Documentation</strong>: <code>https://v1api.materialshub.gr/docs</code></li>
+<li><strong>ReDoc</strong>: <code>https://v1api.materialshub.gr/redoc</code></li>
+<li><strong>OpenAPI Schema</strong>: <code>https://v1api.materialshub.gr/openapi.json</code></li>
+<li><strong>PDF Processing</strong>: <code>https://v1api.materialshub.gr/api/v1/pdf/*</code></li>
+<li><strong>AI Analysis</strong>: <code>https://v1api.materialshub.gr/api/v1/ai/*</code></li>
+<li><strong>Vector Search</strong>: <code>https://v1api.materialshub.gr/api/v1/search/*</code></li>
+</ul>
+<h3>Docker Configuration</h3>
+<p><strong>Dockerfile</strong>:</p>
+<pre><code class="language-dockerfile">FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update &amp;&amp; apt-get install -y \
+    gcc \
+    g++ \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser &amp;&amp; chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Start application
+CMD [&quot;uvicorn&quot;, &quot;app.main:app&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8000&quot;]
+</code></pre>
+<p><strong>Docker Compose</strong> (<code>docker-compose.yml</code>):</p>
+<pre><code class="language-yaml">version: &#39;3.8&#39;
+
+services:
+  mivaa-service:
+    build: .
+    ports:
+      - &quot;8000:8000&quot;
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    volumes:
+      - ./logs:/var/log/mivaa
+    restart: unless-stopped
+    healthcheck:
+      test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-f&quot;, &quot;http://localhost:8000/health&quot;]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - &quot;80:80&quot;
+      - &quot;443:443&quot;
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - mivaa-service
+    restart: unless-stopped
+</code></pre>
+<h3>Deployment Options</h3>
+<h4>Option 1: Cloud Provider (AWS/GCP/Azure)</h4>
+<p><strong>AWS ECS Deployment</strong>:</p>
+<pre><code class="language-bash"># Build and push to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin your-account.dkr.ecr.us-east-1.amazonaws.com
+
+docker build -t mivaa-service .
+docker tag mivaa-service:latest your-account.dkr.ecr.us-east-1.amazonaws.com/mivaa-service:latest
+docker push your-account.dkr.ecr.us-east-1.amazonaws.com/mivaa-service:latest
+
+# Deploy to ECS
+aws ecs update-service --cluster mivaa-cluster --service mivaa-service --force-new-deployment
+</code></pre>
+<h4>Option 2: VPS/Dedicated Server</h4>
+<p><strong>Setup Script</strong> (<code>deploy/setup-server.sh</code>):</p>
+<pre><code class="language-bash">#!/bin/bash
+
+# Update system
+sudo apt update &amp;&amp; sudo apt upgrade -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Install Docker Compose
+sudo curl -L &quot;https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)&quot; -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Clone repository
+git clone https://github.com/your-org/material-kai-vision-platform.git
+cd material-kai-vision-platform/mivaa-pdf-extractor
+
+# Set up environment variables for Docker deployment
+# These MUST be available in the shell environment where docker-compose runs
+export SUPABASE_URL=&quot;https://your-project.supabase.co&quot;
+export SUPABASE_ANON_KEY=&quot;your-anon-key&quot;
+export OPENAI_API_KEY=&quot;your-openai-key&quot;
+export MATERIAL_KAI_API_URL=&quot;https://your-platform-url.com&quot;
+export MATERIAL_KAI_API_KEY=&quot;your-api-key&quot;
+export SENTRY_DSN=&quot;your-sentry-dsn&quot;
+
+# Deploy
+docker-compose -f docker-compose.prod.yml up -d
+
+# Set up SSL with Let&#39;s Encrypt
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+</code></pre>
+<h2>🤖 GitHub Actions Deployment Workflows</h2>
+<h3>🚀 Default Deployment Workflow</h3>
+<p><strong>File</strong>: <code>.github/workflows/deploy.yml</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li><strong>Automatic Triggers</strong>: Push to <code>main</code> or <code>production</code> branches</li>
+<li><strong>Manual Triggers</strong>: workflow_dispatch with optional deployment reason</li>
+<li><strong>Comprehensive Overview</strong>: Pre-deployment system architecture and process breakdown</li>
+<li><strong>Real-Time Health Checks</strong>: Tests actual service endpoints with HTTP status verification</li>
+<li><strong>Automatic Diagnostics</strong>: System analysis when health checks fail</li>
+<li><strong>Auto-Recovery</strong>: Service restart attempts with verification</li>
+<li><strong>GitHub Summary</strong>: Detailed deployment results on action summary page</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-bash"># Automatic deployment
+git push origin main
+
+# Manual deployment
+# Go to GitHub Actions → &quot;MIVAA Deployment (Default)&quot; → Run workflow
+</code></pre>
+<h3>🚀 Orchestrated Deployment Workflow</h3>
+<p><strong>File</strong>: <code>.github/workflows/orchestrated-deployment.yml</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li><strong>On-Demand Only</strong>: Manual trigger via workflow_dispatch</li>
+<li><strong>Multi-Phase Pipeline</strong>: 5-phase deployment with validation gates</li>
+<li><strong>Configurable Options</strong>:<ul>
+<li><strong>Deployment Mode</strong>: fast-track, intelligent, comprehensive</li>
+<li><strong>Skip Diagnostics</strong>: For faster deployments</li>
+<li><strong>Target Branch</strong>: main, production</li>
+<li><strong>Deployment Reason</strong>: Custom description for audit trail</li>
+</ul>
+</li>
+<li><strong>Advanced Verification</strong>: Comprehensive endpoint testing and system validation</li>
+<li><strong>Enhanced Diagnostics</strong>: Detailed system analysis and recovery attempts</li>
+<li><strong>Complete Audit Trail</strong>: Full deployment journey with metrics and status</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-bash"># Manual orchestrated deployment
+# Go to GitHub Actions → &quot;Orchestrated MIVAA Deployment Pipeline (On-Demand)&quot;
+# Configure options:
+# - Deployment Mode: intelligent
+# - Target Branch: main
+# - Deployment Reason: &quot;Feature release with enhanced monitoring&quot;
+# Run workflow
+</code></pre>
+<h3>🏥 Health Check Features</h3>
+<p>Both workflows include comprehensive health monitoring:</p>
+<h4><strong>Endpoint Testing</strong></h4>
+<pre><code class="language-bash"># Tested endpoints:
+curl https://v1api.materialshub.gr/health
+curl https://v1api.materialshub.gr/docs
+curl https://v1api.materialshub.gr/redoc
+curl https://v1api.materialshub.gr/openapi.json
+</code></pre>
+<h4><strong>Status Code Verification</strong></h4>
+<ul>
+<li><strong>200</strong>: ✅ Service healthy and responding correctly</li>
+<li><strong>502</strong>: ❌ Bad Gateway - Service not responding</li>
+<li><strong>404</strong>: ❌ Not Found - Endpoint not available</li>
+<li><strong>500</strong>: ❌ Internal Server Error - Application error</li>
+<li><strong>000</strong>: ❌ Connection failed - Service not reachable</li>
+</ul>
+<h4><strong>Automatic Diagnostics on Failure</strong></h4>
+<pre><code class="language-bash"># System diagnostics collected:
+- Server uptime and load averages
+- Memory and disk usage
+- Service status (systemctl status mivaa-pdf-extractor)
+- Recent service logs (last 50 lines)
+- Network status (port 8000 availability)
+- Process binding verification
+- Service restart attempt
+- Post-restart verification
+</code></pre>
+<h4><strong>GitHub Action Summary</strong></h4>
+<p>All deployment results are displayed on the main GitHub Action page with:</p>
+<ul>
+<li><strong>Deployment Overview</strong>: Architecture, components, and process steps</li>
+<li><strong>Health Check Results</strong>: Real-time endpoint status with HTTP codes</li>
+<li><strong>Service Endpoints</strong>: Clickable links to all available endpoints</li>
+<li><strong>Troubleshooting</strong>: Commands and steps for manual intervention</li>
+<li><strong>Quick Actions</strong>: Direct links to health check, docs, and service endpoints</li>
+</ul>
+<h3>📋 Deployment Overview Features</h3>
+<h4><strong>Pre-Deployment Information</strong></h4>
+<ul>
+<li><strong>Deployment Configuration</strong>: Environment, target server, branch, commit details</li>
+<li><strong>Application Architecture</strong>: Runtime (Python 3.9, pyenv, uv), dependencies, process management</li>
+<li><strong>Key Components</strong>: PDF processing, AI/ML models, database, authentication</li>
+<li><strong>Environment Variables</strong>: Verification of all required secrets and configurations (15+ variables)</li>
+<li><strong>Deployment Process</strong>: 8-step breakdown of the deployment pipeline</li>
+<li><strong>Expected Outcomes</strong>: Clear expectations for deployment results</li>
+<li><strong>Summary Table</strong>: All key information displayed on the main action page</li>
+</ul>
+<h4><strong>Post-Deployment Summary</strong></h4>
+<ul>
+<li><strong>Deployment Status</strong>: Success/failure with timestamps and duration</li>
+<li><strong>Service Information</strong>: Server details, service status, process management</li>
+<li><strong>Health Check Results</strong>: Real-time endpoint testing with HTTP status codes</li>
+<li><strong>API Endpoints</strong>: Complete list of available endpoints with clickable URLs</li>
+<li><strong>Verification Checklist</strong>: Confirmation of all deployment steps</li>
+<li><strong>Automatic Diagnostics</strong>: Comprehensive system analysis when health checks fail</li>
+<li><strong>Auto-Recovery</strong>: Automatic service restart and re-testing on failures</li>
+<li><strong>Troubleshooting Guide</strong>: Quick access to logs, status commands, and common fixes</li>
+<li><strong>Next Steps</strong>: Recommended actions after deployment</li>
+<li><strong>Results Table</strong>: Deployment results and service status on the main action page</li>
+</ul>
+<h4><strong>Deployment Process Steps</strong></h4>
+<ol>
+<li><strong>🔄 Code Checkout</strong>: Latest code from target branch</li>
+<li><strong>🐍 Environment Setup</strong>: Python 3.9, pyenv, uv package manager</li>
+<li><strong>📦 Dependency Installation</strong>: Requirements and system packages</li>
+<li><strong>🔧 Service Configuration</strong>: systemd service setup and configuration</li>
+<li><strong>🚀 Service Deployment</strong>: Service restart and process management</li>
+<li><strong>🏥 Health Verification</strong>: Real-time endpoint testing with diagnostics</li>
+<li><strong>📊 Summary Generation</strong>: Comprehensive results on GitHub Action page</li>
+<li><strong>✅ Completion</strong>: Final status and next steps</li>
+</ol>
+<h4><strong>System Architecture Overview</strong></h4>
+<ul>
+<li><strong>Runtime</strong>: Python 3.9+ with pyenv version management</li>
+<li><strong>Package Manager</strong>: uv (ultrafast Python package installer)</li>
+<li><strong>Process Management</strong>: systemd service (mivaa-pdf-extractor.service)</li>
+<li><strong>Web Framework</strong>: FastAPI with Uvicorn ASGI server</li>
+<li><strong>Database</strong>: Supabase PostgreSQL with vector extensions</li>
+<li><strong>AI Integration</strong>: OpenAI, HuggingFace, TogetherAI APIs</li>
+<li><strong>Monitoring</strong>: Sentry error tracking and structured logging</li>
+<li><strong>Security</strong>: JWT authentication and environment-based secrets</li>
+</ul>
+<h3>🔧 Workflow Configuration</h3>
+<h4><strong>Required Secrets</strong></h4>
+<p>Set these in GitHub repository secrets:</p>
+<pre><code class="language-bash"># Server Access
+SSH_PRIVATE_KEY=your_ssh_private_key
+DEPLOY_HOST=104.248.68.3
+
+# Application Environment
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+JWT_SECRET_KEY=your_jwt_secret
+OPENAI_API_KEY=your_openai_key
+HUGGINGFACE_API_KEY=your_huggingface_key
+MATERIAL_KAI_API_URL=https://v1api.materialshub.gr
+MATERIAL_KAI_API_KEY=your_api_key
+SENTRY_DSN=your_sentry_dsn
+</code></pre>
+<h4><strong>Deployment Process</strong></h4>
+<ol>
+<li><strong>Code Checkout</strong>: Latest code from target branch</li>
+<li><strong>Environment Setup</strong>: Python 3.9, pyenv, uv package manager</li>
+<li><strong>Dependency Installation</strong>: Requirements and system packages</li>
+<li><strong>Service Deployment</strong>: systemd service configuration and restart</li>
+<li><strong>Health Verification</strong>: Real-time endpoint testing with diagnostics</li>
+<li><strong>Summary Generation</strong>: Comprehensive results on GitHub Action page</li>
+</ol>
+<h2>🗄️ Database Deployment (Supabase)</h2>
+<h3>Supabase Setup</h3>
+<ol>
+<li><p><strong>Create Project</strong>:</p>
+<ul>
+<li>Go to <a href="https://supabase.com">supabase.com</a></li>
+<li>Create new project</li>
+<li>Note project URL and keys</li>
+</ul>
+</li>
+<li><p><strong>Configure Database</strong>:</p>
+<pre><code class="language-sql">-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS &quot;uuid-ossp&quot;;
+CREATE EXTENSION IF NOT EXISTS &quot;vector&quot;;
+CREATE EXTENSION IF NOT EXISTS &quot;ltree&quot;;
+</code></pre>
+</li>
+<li><p><strong>Set Up Authentication</strong>:</p>
+<pre><code class="language-bash"># Configure JWT settings in Supabase dashboard
+# Set up email templates
+# Configure OAuth providers (if needed)
+</code></pre>
+</li>
+<li><p><strong>Deploy Schema</strong>:</p>
+<pre><code class="language-bash"># Initialize migrations (when available)
+supabase migration new initial_schema
+supabase db push
+</code></pre>
+</li>
+</ol>
+<h3>Database Security</h3>
+<p><strong>Row Level Security (RLS)</strong>:</p>
+<pre><code class="language-sql">-- Enable RLS on all tables
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY &quot;Users can only access their workspace data&quot; ON documents
+  FOR ALL USING (workspace_id IN (
+    SELECT workspace_id FROM user_workspaces 
+    WHERE user_id = auth.uid()
+  ));
+</code></pre>
+<h2>🔐 Security Configuration</h2>
+<h3>SSL/TLS Setup</h3>
+<p><strong>Nginx Configuration</strong> (<code>nginx.conf</code>):</p>
+<pre><code class="language-nginx">server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/nginx/ssl/cert.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
+
+    location / {
+        proxy_pass http://mivaa-service:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+</code></pre>
+<h3>Firewall Configuration</h3>
+<pre><code class="language-bash"># UFW firewall setup
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+</code></pre>
+<h2>📊 Monitoring &amp; Logging</h2>
+<h3>Application Monitoring</h3>
+<p><strong>Health Check Endpoints</strong>:</p>
+<pre><code class="language-bash"># Frontend health
+curl https://your-domain.com/api/health
+
+# MIVAA service health
+curl https://your-mivaa-service.com/health
+
+# Database health
+curl https://your-mivaa-service.com/api/v1/health
+</code></pre>
+<h3>Logging Configuration</h3>
+<p><strong>Structured Logging</strong>:</p>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/utils/logging.py
+import structlog
+
+logger = structlog.get_logger()
+
+# Log with context
+logger.info(&quot;Document processed&quot;, 
+           document_id=doc_id, 
+           processing_time=time_taken,
+           user_id=user_id)
+</code></pre>
+<h3>Error Tracking</h3>
+<p><strong>Sentry Integration</strong>:</p>
+<pre><code class="language-typescript">// Frontend error tracking
+import * as Sentry from &quot;@sentry/react&quot;;
+
+Sentry.init({
+  dsn: process.env.VITE_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+});
+</code></pre>
+<h2>🔄 CI/CD Pipeline</h2>
+<h3>GitHub Actions Workflow</h3>
+<pre><code class="language-yaml"># .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  deploy-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          vercel-args: &#39;--prod&#39;
+
+  deploy-backend:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to server
+        env:
+          # ⚠️ IMPORTANT: Use GH_TOKEN, not GITHUB_TOKEN as env var name
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            cd /app/material-kai-vision-platform
+            git pull origin main
+            # Authenticate with GitHub Container Registry
+            echo &quot;$GH_TOKEN&quot; | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker-compose -f docker-compose.prod.yml up -d --build
+</code></pre>
+<h3>⚠️ GitHub Actions Security Notes</h3>
+<ol>
+<li><p><strong>Token Naming</strong>: GitHub doesn&#39;t allow environment variables starting with <code>GITHUB_</code> prefix</p>
+<ul>
+<li>✅ <strong>Correct</strong>: <code>GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></li>
+<li>❌ <strong>Wrong</strong>: <code>GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></li>
+</ul>
+</li>
+<li><p><strong>Container Registry Authentication</strong>: Always authenticate before pulling private images</p>
+<pre><code class="language-bash">echo &quot;$GH_TOKEN&quot; | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+</code></pre>
+</li>
+</ol>
+<h2>🚨 Deployment Issues &amp; Solutions</h2>
+<h3>Common Issues</h3>
+<ol>
+<li><p><strong>Missing Docker Environment Variables</strong>:</p>
+<ul>
+<li><strong>Problem</strong>: Docker shows warnings like &quot;variable is not set. Defaulting to a blank string&quot;</li>
+<li><strong>Solution</strong>: Ensure all required environment variables are exported on the deployment server:<pre><code class="language-bash">export SUPABASE_URL=&quot;https://your-project.supabase.co&quot;
+export SUPABASE_ANON_KEY=&quot;your-anon-key&quot;
+export OPENAI_API_KEY=&quot;your-openai-key&quot;
+export MATERIAL_KAI_API_URL=&quot;https://your-platform-url.com&quot;
+export MATERIAL_KAI_API_KEY=&quot;your-api-key&quot;
+export SENTRY_DSN=&quot;your-sentry-dsn&quot;
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p><strong>Environment Variable Mismatch</strong>:</p>
+<ul>
+<li><strong>Problem</strong>: Different env vars between environments</li>
+<li><strong>Solution</strong>: Configure environment-specific variables in Vercel (Production/Preview/Development)</li>
+</ul>
+</li>
+<li><p><strong>CORS Errors</strong>:</p>
+<ul>
+<li><strong>Problem</strong>: Frontend can&#39;t connect to backend</li>
+<li><strong>Solution</strong>: Configure CORS_ORIGINS properly</li>
+</ul>
+</li>
+<li><p><strong>Database Connection Issues</strong>:</p>
+<ul>
+<li><strong>Problem</strong>: Can&#39;t connect to Supabase</li>
+<li><strong>Solution</strong>: Verify connection strings and firewall rules</li>
+</ul>
+</li>
+<li><p><strong>SSL Certificate Issues</strong>:</p>
+<ul>
+<li><strong>Problem</strong>: HTTPS not working</li>
+<li><strong>Solution</strong>: Use Let&#39;s Encrypt or proper SSL certificates</li>
+</ul>
+</li>
+</ol>
+<h3>Rollback Strategy</h3>
+<pre><code class="language-bash"># Quick rollback for MIVAA service
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml up -d --scale mivaa-service=0
+docker tag mivaa-service:previous mivaa-service:latest
+docker-compose -f docker-compose.prod.yml up -d
+</code></pre>
+<h2>📋 Deployment Checklist</h2>
+<h3>Pre-Deployment</h3>
+<ul>
+<li><input disabled="" type="checkbox"> All tests passing</li>
+<li><input disabled="" type="checkbox"> Environment variables configured in GitHub Secrets</li>
+<li><input disabled="" type="checkbox"> <strong>Docker environment variables exported on server</strong> (SUPABASE_URL, SUPABASE_ANON_KEY, OPENAI_API_KEY, MATERIAL_KAI_API_URL, MATERIAL_KAI_API_KEY, SENTRY_DSN)</li>
+<li><input disabled="" type="checkbox"> SSL certificates ready</li>
+<li><input disabled="" type="checkbox"> Database migrations prepared</li>
+<li><input disabled="" type="checkbox"> Backup strategy in place</li>
+</ul>
+<h3>Deployment</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Frontend deployed to Vercel</li>
+<li><input disabled="" type="checkbox"> Backend deployed to production server</li>
+<li><input disabled="" type="checkbox"> Database schema updated</li>
+<li><input disabled="" type="checkbox"> Health checks passing</li>
+<li><input disabled="" type="checkbox"> SSL/HTTPS working</li>
+</ul>
+<h3>Post-Deployment</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Monitor application logs</li>
+<li><input disabled="" type="checkbox"> Verify all endpoints working</li>
+<li><input disabled="" type="checkbox"> Check performance metrics</li>
+<li><input disabled="" type="checkbox"> Validate security headers</li>
+<li><input disabled="" type="checkbox"> Test critical workflows</li>
+</ul>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Environment setup</li>
+<li><a href="./security-authentication.md">Security &amp; Authentication</a> - Security configuration</li>
+<li><a href="./testing-strategy.md">Testing Strategy</a> - Pre-deployment testing</li>
+<li><a href="./troubleshooting.md">Troubleshooting</a> - Issue resolution</li>
+</ul>
+
+</div></body></html>

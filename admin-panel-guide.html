@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Admin Panel Complete Guide</h1>
+<h2>🔐 Admin Panel Overview</h2>
+<p>The Material Kai Vision Platform provides a comprehensive admin panel for system management, monitoring, and configuration. This guide covers all admin functionality and access methods.</p>
+<h2>🚪 Admin Panel Access</h2>
+<h3>How to Access Admin Panel</h3>
+<ol>
+<li><strong>Authentication Required</strong>: Must be logged in with admin privileges</li>
+<li><strong>URL Access</strong>: Navigate to <code>/admin</code> or click &quot;Admin Panel&quot; in the sidebar</li>
+<li><strong>Permission Check</strong>: Admin role verification through Supabase RLS</li>
+<li><strong>Security</strong>: Protected by authentication middleware and role-based access</li>
+</ol>
+<h3>Admin Role Configuration</h3>
+<p><strong>Supabase Configuration</strong>:</p>
+<pre><code class="language-sql">-- Grant admin role to user
+UPDATE auth.users 
+SET raw_user_meta_data = raw_user_meta_data || &#39;{&quot;role&quot;: &quot;admin&quot;}&#39;::jsonb 
+WHERE email = &#39;admin@example.com&#39;;
+
+-- Create admin policy
+CREATE POLICY &quot;Admin access&quot; ON admin_functions
+FOR ALL USING (
+  auth.jwt() -&gt;&gt; &#39;role&#39; = &#39;admin&#39;
+);
+</code></pre>
+<h2>📊 Admin Dashboard Components</h2>
+<h3>1. AdminDashboard</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/AdminDashboard.tsx</code></p>
+<p><strong>Purpose</strong>: Main admin dashboard with system overview</p>
+<p><strong>Key Sections</strong>:</p>
+<ul>
+<li><strong>PDF Knowledge Base</strong>: Primary document processing system</li>
+<li><strong>Deployment Package Validation</strong>: Real-time verification of all required packages</li>
+<li><strong>Search Hub</strong>: Multi-modal search interface management</li>
+<li><strong>3D Material Suggestions</strong>: AI-powered 3D generation management</li>
+<li><strong>System Analytics</strong>: Performance and usage metrics</li>
+<li><strong>Package Management</strong>: Monitor and manage system dependencies</li>
+<li><strong>Quick Actions</strong>: Common administrative tasks</li>
+</ul>
+<p><strong>Dashboard Features</strong>:</p>
+<ul>
+<li>Real-time system status</li>
+<li>Processing queue monitoring</li>
+<li>Performance metrics display</li>
+<li>Error tracking and alerts</li>
+<li>Resource usage monitoring</li>
+</ul>
+<h3>2. AdminPanel</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/AdminPanel.tsx</code></p>
+<p><strong>Purpose</strong>: Comprehensive admin control panel with multiple tabs</p>
+<p><strong>Tab Structure</strong>:</p>
+<ul>
+<li><strong>Recent Activity</strong>: System activity monitoring</li>
+<li><strong>Score Analysis</strong>: AI model performance analysis</li>
+<li><strong>Performance</strong>: System performance metrics</li>
+<li><strong>RAG System</strong>: Knowledge base management</li>
+<li><strong>Metadata Fields</strong>: Custom field configuration</li>
+<li><strong>AI Testing</strong>: Model testing and validation</li>
+</ul>
+<h2>🔧 Core Admin Features</h2>
+<h3>1. PDF Knowledge Base Management</h3>
+<p><strong>Access</strong>: <code>/admin/pdf-processing</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li><strong>Bulk Document Processing</strong>: Process multiple PDFs simultaneously</li>
+<li><strong>Processing Queue Management</strong>: Monitor and control processing queue</li>
+<li><strong>Document Quality Control</strong>: Review and approve processed documents</li>
+<li><strong>Error Resolution</strong>: Handle failed processing attempts</li>
+<li><strong>Storage Management</strong>: Monitor document storage usage</li>
+</ul>
+<p><strong>Admin Capabilities</strong>:</p>
+<pre><code class="language-typescript">interface PDFAdminFeatures {
+  bulkUpload: boolean;
+  queueManagement: boolean;
+  qualityControl: boolean;
+  errorHandling: boolean;
+  storageMonitoring: boolean;
+  performanceAnalytics: boolean;
+}
+</code></pre>
+<h3>2. Search Hub Administration</h3>
+<p><strong>Access</strong>: <code>/admin/search-hub</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li><strong>Search Configuration</strong>: Configure search algorithms and weights</li>
+<li><strong>Index Management</strong>: Rebuild and optimize search indexes</li>
+<li><strong>Query Analytics</strong>: Analyze search patterns and performance</li>
+<li><strong>Result Quality</strong>: Monitor search result relevance</li>
+<li><strong>Cache Management</strong>: Control search result caching</li>
+</ul>
+<p><strong>Search Admin Tools</strong>:</p>
+<ul>
+<li>Search performance monitoring</li>
+<li>Index optimization tools</li>
+<li>Query pattern analysis</li>
+<li>Result quality assessment</li>
+<li>Cache management interface</li>
+</ul>
+<h3>3. 3D Material Suggestions</h3>
+<p><strong>Access</strong>: <code>/admin/3d-suggestions</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li><strong>AI Model Configuration</strong>: Configure 3D generation models</li>
+<li><strong>Material Library Management</strong>: Manage 3D material database</li>
+<li><strong>Generation Queue</strong>: Monitor 3D model generation requests</li>
+<li><strong>Quality Control</strong>: Review generated 3D models</li>
+<li><strong>Performance Tuning</strong>: Optimize 3D generation parameters</li>
+</ul>
+<h2>🤖 AI &amp; ML Administration</h2>
+<h3>1. AITestingPanel</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/AITestingPanel.tsx</code></p>
+<p><strong>Purpose</strong>: Test and validate AI models and configurations</p>
+<p><strong>Testing Features</strong>:</p>
+<ul>
+<li><strong>Model Performance Testing</strong>: Test different AI models</li>
+<li><strong>A/B Testing</strong>: Compare model performance</li>
+<li><strong>Prompt Engineering</strong>: Test and optimize AI prompts</li>
+<li><strong>Response Quality</strong>: Evaluate AI response quality</li>
+<li><strong>Cost Analysis</strong>: Track AI service costs and usage</li>
+</ul>
+<h3>2. AgentMLCoordination</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/AgentMLCoordination.tsx</code></p>
+<p><strong>Purpose</strong>: Manage AI agent coordination and workflows</p>
+<p><strong>Agent Management</strong>:</p>
+<ul>
+<li><strong>Agent Status Monitoring</strong>: View active agents and status</li>
+<li><strong>Task Queue Visualization</strong>: Monitor task execution</li>
+<li><strong>Performance Metrics</strong>: Agent performance analytics</li>
+<li><strong>Configuration Management</strong>: Configure agent parameters</li>
+<li><strong>Error Tracking</strong>: Handle agent failures and recovery</li>
+</ul>
+<h3>3. ModelDebuggingPanel</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/ModelDebuggingPanel.tsx</code></p>
+<p><strong>Purpose</strong>: Debug and optimize AI model performance</p>
+<p><strong>Debugging Features</strong>:</p>
+<ul>
+<li><strong>Model Performance Analysis</strong>: Debug AI model issues</li>
+<li><strong>Error Diagnostics</strong>: Analyze model failures</li>
+<li><strong>Parameter Tuning</strong>: Adjust model parameters</li>
+<li><strong>Version Management</strong>: Manage different model versions</li>
+<li><strong>Testing Environment</strong>: Safe model testing environment</li>
+</ul>
+<h2>📊 Analytics &amp; Monitoring</h2>
+<h3>1. AnalyticsDashboard</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/AnalyticsDashboard.tsx</code></p>
+<p><strong>Purpose</strong>: Comprehensive analytics and reporting</p>
+<p><strong>Analytics Features</strong>:</p>
+<ul>
+<li><strong>Usage Analytics</strong>: User engagement and feature adoption</li>
+<li><strong>Performance Metrics</strong>: System performance tracking</li>
+<li><strong>Business Intelligence</strong>: Platform value and ROI analysis</li>
+<li><strong>Growth Metrics</strong>: Platform growth and scaling</li>
+<li><strong>Cost Analysis</strong>: Service costs and resource usage</li>
+</ul>
+<h3>2. SystemPerformance</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/SystemPerformance.tsx</code></p>
+<p><strong>Purpose</strong>: System performance monitoring and optimization</p>
+<p><strong>Performance Monitoring</strong>:</p>
+<ul>
+<li><strong>System Health</strong>: CPU, memory, disk usage</li>
+<li><strong>Database Performance</strong>: Query times and connections</li>
+<li><strong>API Response Times</strong>: Service latency monitoring</li>
+<li><strong>Error Rates</strong>: System error tracking</li>
+<li><strong>Throughput Metrics</strong>: Requests per second</li>
+</ul>
+<h3>3. IntegratedRAGManagement</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/IntegratedRAGManagement.tsx</code></p>
+<p><strong>Purpose</strong>: Comprehensive RAG system management</p>
+<p><strong>RAG Management Tabs</strong>:</p>
+<ul>
+<li><strong>🔍 Enhanced Search</strong>: Advanced search testing</li>
+<li><strong>📚 Knowledge Base</strong>: Document management</li>
+<li><strong>🚀 Model Training</strong>: AI model training</li>
+<li><strong>📊 Analytics</strong>: Performance metrics</li>
+<li><strong>⚙️ System Config</strong>: RAG configuration</li>
+</ul>
+<h2>🔧 Configuration Management</h2>
+<h3>1. MetadataFieldsManagement</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/MetadataFieldsManagement.tsx</code></p>
+<p><strong>Purpose</strong>: Manage custom metadata fields</p>
+<p><strong>Field Management</strong>:</p>
+<ul>
+<li><strong>Custom Field Configuration</strong>: Add/edit material metadata fields</li>
+<li><strong>Field Type Management</strong>: Text, number, boolean, date fields</li>
+<li><strong>Validation Rules</strong>: Set field validation and constraints</li>
+<li><strong>Field Usage Analytics</strong>: Track field usage across materials</li>
+<li><strong>Import/Export</strong>: Backup and restore field configurations</li>
+</ul>
+<h3>2. ApiGatewayAdmin</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/ApiGatewayAdmin.tsx</code></p>
+<p><strong>Purpose</strong>: API gateway configuration and monitoring</p>
+<p><strong>Gateway Management</strong>:</p>
+<ul>
+<li><strong>API Configuration</strong>: Configure external API settings</li>
+<li><strong>Rate Limiting</strong>: Set API rate limits and quotas</li>
+<li><strong>Authentication</strong>: Manage API authentication</li>
+<li><strong>Monitoring</strong>: Track API usage and performance</li>
+<li><strong>Error Handling</strong>: Configure error handling policies</li>
+</ul>
+<h2>📈 Knowledge Base Administration</h2>
+<h3>1. KnowledgeBaseManagement</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/KnowledgeBaseManagement.tsx</code></p>
+<p><strong>Purpose</strong>: Manage knowledge base content and quality</p>
+<p><strong>Knowledge Management</strong>:</p>
+<ul>
+<li><strong>Content Curation</strong>: Quality control and validation</li>
+<li><strong>Knowledge Entry Management</strong>: Add/edit knowledge entries</li>
+<li><strong>Category Management</strong>: Organize knowledge categories</li>
+<li><strong>Quality Scoring</strong>: Assess content quality</li>
+<li><strong>Expert Validation</strong>: Expert review workflows</li>
+</ul>
+<h3>2. IntegratedRAGManagement</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/IntegratedRAGManagement.tsx</code></p>
+<p><strong>Purpose</strong>: Consolidated RAG system configuration, optimization, and training</p>
+<p><strong>Note</strong>: RAGManagementPanel has been consolidated into IntegratedRAGManagement for better functionality and reduced duplication.</p>
+<p><strong>RAG Management</strong>:</p>
+<ul>
+<li><strong>Document Index Status</strong>: Vector database health</li>
+<li><strong>Embedding Statistics</strong>: Embedding generation metrics</li>
+<li><strong>Search Performance</strong>: Query response times</li>
+<li><strong>Vector Storage</strong>: Database optimization</li>
+<li><strong>Index Maintenance</strong>: Reindexing tools</li>
+</ul>
+<h3>3. EmbeddingGenerationPanel</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/EmbeddingGenerationPanel.tsx</code></p>
+<p><strong>Purpose</strong>: Manage embedding generation and optimization</p>
+<p><strong>Embedding Management</strong>:</p>
+<ul>
+<li><strong>Generation Monitoring</strong>: Track embedding generation</li>
+<li><strong>Model Configuration</strong>: Configure embedding models</li>
+<li><strong>Performance Optimization</strong>: Optimize generation speed</li>
+<li><strong>Quality Assessment</strong>: Validate embedding quality</li>
+<li><strong>Batch Processing</strong>: Manage bulk embedding generation</li>
+</ul>
+<h2>🔐 Security &amp; Access Control</h2>
+<h3>Admin Security Features</h3>
+<p><strong>Security Monitoring</strong>:</p>
+<ul>
+<li><strong>Access Logs</strong>: Monitor admin access and actions</li>
+<li><strong>Permission Management</strong>: Control admin permissions</li>
+<li><strong>Audit Trails</strong>: Track administrative changes</li>
+<li><strong>Security Alerts</strong>: Monitor for security threats</li>
+<li><strong>Compliance Tracking</strong>: Ensure regulatory compliance</li>
+</ul>
+<p><strong>Data Protection</strong>:</p>
+<ul>
+<li><strong>Privacy Controls</strong>: Manage user data privacy</li>
+<li><strong>Data Retention</strong>: Configure retention policies</li>
+<li><strong>Backup Management</strong>: Monitor data backups</li>
+<li><strong>Encryption Status</strong>: Monitor data encryption</li>
+<li><strong>GDPR Compliance</strong>: Ensure compliance features</li>
+</ul>
+<h2>📋 Admin Workflows</h2>
+<h3>1. Document Processing Workflow</h3>
+<p><strong>Admin Steps</strong>:</p>
+<ol>
+<li>Monitor processing queue</li>
+<li>Review processing results</li>
+<li>Handle failed processes</li>
+<li>Optimize processing parameters</li>
+<li>Manage storage and cleanup</li>
+</ol>
+<h3>2. Quality Assurance Workflow</h3>
+<p><strong>QA Process</strong>:</p>
+<ol>
+<li>Review processed content</li>
+<li>Validate AI results</li>
+<li>Approve or reject content</li>
+<li>Provide feedback for improvement</li>
+<li>Update quality standards</li>
+</ol>
+<h3>3. Performance Optimization Workflow</h3>
+<p><strong>Optimization Steps</strong>:</p>
+<ol>
+<li>Monitor performance metrics</li>
+<li>Identify bottlenecks</li>
+<li>Adjust configuration parameters</li>
+<li>Test performance improvements</li>
+<li>Deploy optimizations</li>
+</ol>
+<h2>🚨 Error Handling &amp; Troubleshooting</h2>
+<h3>Admin Error Management</h3>
+<p><strong>Error Types</strong>:</p>
+<ul>
+<li>Processing failures</li>
+<li>Service unavailability</li>
+<li>Performance degradation</li>
+<li>Security incidents</li>
+<li>Data integrity issues</li>
+</ul>
+<p><strong>Resolution Tools</strong>:</p>
+<ul>
+<li>Error log analysis</li>
+<li>Performance diagnostics</li>
+<li>Service health checks</li>
+<li>Recovery procedures</li>
+<li>Escalation protocols</li>
+</ul>
+<h2>📊 Reporting &amp; Analytics</h2>
+<h3>Admin Reports</h3>
+<p><strong>Available Reports</strong>:</p>
+<ul>
+<li>System usage reports</li>
+<li>Performance analytics</li>
+<li>Error analysis reports</li>
+<li>User activity reports</li>
+<li>Cost analysis reports</li>
+</ul>
+<p><strong>Report Features</strong>:</p>
+<ul>
+<li>Automated report generation</li>
+<li>Custom date ranges</li>
+<li>Export capabilities</li>
+<li>Scheduled delivery</li>
+<li>Interactive dashboards</li>
+</ul>
+<h2>🔗 Integration Management</h2>
+<h3>External Service Management</h3>
+<p><strong>Service Integration</strong>:</p>
+<ul>
+<li>API key management</li>
+<li>Service health monitoring</li>
+<li>Performance tracking</li>
+<li>Cost monitoring</li>
+<li>Error handling</li>
+</ul>
+<p><strong>Supported Services</strong>:</p>
+<ul>
+<li>OpenAI API management</li>
+<li>HuggingFace integration</li>
+<li>Replicate service monitoring</li>
+<li>Supabase administration</li>
+<li>Third-party APIs</li>
+</ul>
+<h2>🔍 Deployment Package Validation</h2>
+<h3>Overview</h3>
+<p><strong>Location</strong>: Admin Dashboard Overview Tab
+<strong>Component</strong>: Integrated into <code>AdminDashboard.tsx</code></p>
+<p>The Deployment Package Validation section provides real-time verification that all packages from <code>requirements.txt</code> are properly installed on the server.</p>
+<h3>Features</h3>
+<h4><strong>Real-time Validation</strong></h4>
+<ul>
+<li><strong>Automatic Checking</strong>: Validates packages on dashboard load</li>
+<li><strong>Requirements.txt Parsing</strong>: Reads actual requirements file to check all dependencies</li>
+<li><strong>Import Testing</strong>: Tests if each package can be imported successfully</li>
+<li><strong>Version Detection</strong>: Shows installed version for each package</li>
+</ul>
+<h4><strong>Visual Status Indicators</strong></h4>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Description</th>
+<th>Color</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Installed</strong></td>
+<td>Successfully imported packages</td>
+<td>Green</td>
+</tr>
+<tr>
+<td><strong>Missing</strong></td>
+<td>Packages that failed to import</td>
+<td>Red</td>
+</tr>
+<tr>
+<td><strong>Critical Missing</strong></td>
+<td>Essential packages not available</td>
+<td>Orange</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td>All packages from requirements.txt</td>
+<td>Blue</td>
+</tr>
+</tbody></table>
+<h4><strong>Deployment Readiness</strong></h4>
+<ul>
+<li><strong>Green Status</strong>: All critical packages installed ✅</li>
+<li><strong>Red Status</strong>: Missing critical packages ⚠️</li>
+<li><strong>Quick Actions</strong>: Refresh status and view detailed packages</li>
+</ul>
+<h4><strong>Critical Package Detection</strong></h4>
+<p>Essential packages for system operation:</p>
+<ul>
+<li><code>fastapi</code>, <code>uvicorn</code> (Web framework)</li>
+<li><code>opencv-python-headless</code> (Image processing)</li>
+<li><code>pymupdf4llm</code> (PDF processing)</li>
+<li><code>supabase</code> (Database)</li>
+<li><code>numpy</code>, <code>pandas</code> (Data processing)</li>
+</ul>
+<h2>📦 Package Management Panel</h2>
+<h3>Overview</h3>
+<p><strong>Location</strong>: <code>/admin/packages</code>
+<strong>Component</strong>: <code>src/components/admin/PackagesPanel.tsx</code></p>
+<p>The Package Management panel provides comprehensive monitoring and management of system dependencies across both NodeJS and MIVAA Python services.</p>
+<h3>Features</h3>
+<h4><strong>Real-time Package Status</strong></h4>
+<ul>
+<li>Live monitoring of package availability</li>
+<li>Version information display</li>
+<li>Critical vs optional package indicators</li>
+<li>Error reporting for missing dependencies</li>
+</ul>
+<h4><strong>Multi-Platform Support</strong></h4>
+<ul>
+<li><strong>NodeJS Packages</strong>: Frontend dependencies (React, Next.js, TypeScript, etc.)</li>
+<li><strong>MIVAA Packages</strong>: Python backend dependencies (FastAPI, OpenCV, ML libraries, etc.)</li>
+</ul>
+<h4><strong>Advanced Filtering</strong></h4>
+<ul>
+<li>Search by package name or description</li>
+<li>Filter by category (Frontend, AI/ML, Database, etc.)</li>
+<li>Filter by status (Active, Inactive, Error)</li>
+<li>Critical package highlighting</li>
+</ul>
+<h4><strong>Package Categories</strong></h4>
+<p><strong>NodeJS Categories</strong>:</p>
+<ul>
+<li>Frontend (React, Next.js)</li>
+<li>Styling (Tailwind CSS)</li>
+<li>Development (TypeScript, ESLint)</li>
+<li>Database (Supabase client)</li>
+<li>UI Components (Lucide icons, Framer Motion)</li>
+</ul>
+<p><strong>MIVAA Categories</strong>:</p>
+<ul>
+<li>Web Framework (FastAPI, Uvicorn)</li>
+<li>AI/ML (LlamaIndex, Transformers, Scikit-learn)</li>
+<li>Image Processing (OpenCV headless, Pillow)</li>
+<li>PDF Processing (PyMuPDF4LLM)</li>
+<li>Database (Supabase Python client)</li>
+<li>Scientific Computing (NumPy, Pandas)</li>
+</ul>
+<h4><strong>Package Status Indicators</strong></h4>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Icon</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Active</td>
+<td>✅</td>
+<td>Package installed and functional</td>
+</tr>
+<tr>
+<td>Inactive</td>
+<td>❌</td>
+<td>Package missing or not installed</td>
+</tr>
+<tr>
+<td>Error</td>
+<td>⚠️</td>
+<td>Package installed but has issues</td>
+</tr>
+<tr>
+<td>Checking</td>
+<td>🔄</td>
+<td>Status verification in progress</td>
+</tr>
+</tbody></table>
+<h4><strong>Critical Package Monitoring</strong></h4>
+<p>Critical packages are marked with special indicators:</p>
+<ul>
+<li><strong>Red badge</strong>: Critical package</li>
+<li><strong>Bold text</strong>: Essential for system operation</li>
+<li><strong>Priority alerts</strong>: Immediate attention required if missing</li>
+</ul>
+<h4><strong>API Integration</strong></h4>
+<p>The panel integrates with the MIVAA service API:</p>
+<pre><code class="language-http">GET /api/packages/status
+</code></pre>
+<p>This endpoint provides:</p>
+<ul>
+<li>Real-time package availability</li>
+<li>Version information</li>
+<li>Deployment readiness status</li>
+<li>Error details for troubleshooting</li>
+</ul>
+<h4><strong>Usage Instructions</strong></h4>
+<ol>
+<li><strong>Access Panel</strong>: Navigate to <code>/admin/packages</code></li>
+<li><strong>Refresh Status</strong>: Click &quot;Refresh Status&quot; to update package information</li>
+<li><strong>Filter Packages</strong>: Use search and filter options to find specific packages</li>
+<li><strong>Monitor Critical</strong>: Pay attention to critical package status</li>
+<li><strong>Troubleshoot</strong>: Use error messages to resolve package issues</li>
+</ol>
+<h4><strong>Troubleshooting</strong></h4>
+<p><strong>Common Issues</strong>:</p>
+<ul>
+<li><strong>Package Not Found</strong>: Check installation and virtual environment</li>
+<li><strong>Version Mismatch</strong>: Update to required version</li>
+<li><strong>Import Errors</strong>: Verify package dependencies</li>
+<li><strong>Permission Issues</strong>: Check file system permissions</li>
+</ul>
+<p><strong>OpenCV Specific</strong>:</p>
+<ul>
+<li>Ensure <code>opencv-python-headless</code> is installed (not regular <code>opencv-python</code>)</li>
+<li>Package is automatically installed from requirements.txt during deployment</li>
+<li>Headless version prevents GUI dependency issues on servers</li>
+</ul>
+<h2>📋 Admin Best Practices</h2>
+<h3>Security Best Practices</h3>
+<ol>
+<li><strong>Regular Access Review</strong>: Review admin access regularly</li>
+<li><strong>Audit Trail Monitoring</strong>: Monitor all admin actions</li>
+<li><strong>Secure Configuration</strong>: Use secure configuration settings</li>
+<li><strong>Regular Backups</strong>: Ensure regular data backups</li>
+<li><strong>Incident Response</strong>: Have incident response procedures</li>
+</ol>
+<h3>Performance Best Practices</h3>
+<ol>
+<li><strong>Regular Monitoring</strong>: Monitor system performance continuously</li>
+<li><strong>Proactive Optimization</strong>: Optimize before issues occur</li>
+<li><strong>Capacity Planning</strong>: Plan for growth and scaling</li>
+<li><strong>Resource Management</strong>: Efficiently manage resources</li>
+<li><strong>Quality Assurance</strong>: Maintain high quality standards</li>
+</ol>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./platform-functionality.md">Platform Functionality</a></li>
+<li><a href="./security-authentication.md">Security &amp; Authentication</a></li>
+<li><a href="./api-documentation.md">API Documentation</a></li>
+<li><a href="./troubleshooting.md">Troubleshooting Guide</a></li>
+</ul>
+
+</div></body></html>

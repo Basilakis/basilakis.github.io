@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>🔄 <strong>Material Kai Vision Platform - Complete Flows Documentation</strong></h1>
+<p>This document provides a comprehensive overview of all platform flows, describing how data moves through the system and what happens at each step.</p>
+<hr>
+<h2>📋 <strong>Table of Contents</strong></h2>
+<ol>
+<li><a href="#pdf-processing-flow">PDF Processing Flow</a></li>
+<li><a href="#material-search-flow">Material Search Flow</a></li>
+<li><a href="#multi-modal-ai-analysis-flow">Multi-Modal AI Analysis Flow</a></li>
+<li><a href="#moodboard-management-flow">MoodBoard Management Flow</a></li>
+<li><a href="#chat-agent-interaction-flow">Chat Agent Interaction Flow</a></li>
+<li><a href="#knowledge-base-integration-flow">Knowledge Base Integration Flow</a></li>
+<li><a href="#3d-generation-flow">3D Generation Flow</a></li>
+<li><a href="#visual-search--clip-analysis-flow">Visual Search &amp; CLIP Analysis Flow</a></li>
+<li><a href="#rag-system-flow">RAG System Flow</a></li>
+<li><a href="#admin-panel-management-flow">Admin Panel Management Flow</a></li>
+<li><a href="#user-authentication-flow">User Authentication Flow</a></li>
+<li><a href="#system-monitoring-flow">System Monitoring Flow</a></li>
+</ol>
+<hr>
+<h2>📄 <strong>PDF Processing Flow</strong></h2>
+<p><strong>Description</strong>: Complete document processing pipeline from upload to searchable knowledge base integration</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Document Upload
+↓
+Step 2: File Validation &amp; Storage
+↓
+Step 3: Content Extraction (Text + Images)
+↓
+Step 4: AI Analysis &amp; Entity Recognition
+↓
+Step 5: Material Identification
+↓
+Step 6: Metadata Generation
+↓
+Step 7: Knowledge Base Integration
+↓
+Step 8: Search Index Update
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Document Upload</strong> 📤</h4>
+<ul>
+<li><strong>Component</strong>: <code>MivaaPDFProcessor.tsx</code></li>
+<li><strong>Action</strong>: User drags/drops PDF file</li>
+<li><strong>Validation</strong>: File type (PDF only), size limit (50MB)</li>
+<li><strong>Duration</strong>: 1-5 seconds</li>
+<li><strong>Output</strong>: File reference and upload confirmation</li>
+</ul>
+<h4><strong>Step 2: File Validation &amp; Storage</strong> 💾</h4>
+<ul>
+<li><strong>Service</strong>: Supabase Storage</li>
+<li><strong>Action</strong>: Store PDF in secure bucket</li>
+<li><strong>Processing</strong>: Generate unique file ID, create metadata record</li>
+<li><strong>Duration</strong>: 2-5 seconds</li>
+<li><strong>Output</strong>: Storage URL and document ID</li>
+</ul>
+<h4><strong>Step 3: Content Extraction</strong> 🔍</h4>
+<ul>
+<li><strong>Service</strong>: MIVAA PDF Extractor</li>
+<li><strong>Action</strong>: OCR text extraction, image identification</li>
+<li><strong>Processing</strong>: <ul>
+<li>Extract all text content using OCR</li>
+<li>Identify and extract embedded images</li>
+<li>Parse document structure (headers, paragraphs, tables)</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: 5-15 seconds</li>
+<li><strong>Output</strong>: Raw text content, image files, document structure</li>
+</ul>
+<h4><strong>Step 4: AI Analysis &amp; Entity Recognition</strong> 🤖</h4>
+<ul>
+<li><strong>Service</strong>: MIVAA Multi-Modal Analysis</li>
+<li><strong>Action</strong>: Analyze text and images for entities</li>
+<li><strong>Processing</strong>:<ul>
+<li>Named Entity Recognition (NER) for materials, organizations, locations</li>
+<li>Confidence scoring for each entity (0-100%)</li>
+<li>Cross-reference entities between text and images</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: 10-20 seconds</li>
+<li><strong>Output</strong>: Extracted entities with confidence scores</li>
+</ul>
+<h4><strong>Step 5: Material Identification</strong> 🏗️</h4>
+<ul>
+<li><strong>Service</strong>: MIVAA Material Recognition</li>
+<li><strong>Action</strong>: Identify specific materials and properties</li>
+<li><strong>Processing</strong>:<ul>
+<li>Visual material recognition from images</li>
+<li>Text-based material property extraction</li>
+<li>Material classification and categorization</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: 15-30 seconds</li>
+<li><strong>Output</strong>: Material classifications, properties, categories</li>
+</ul>
+<h4><strong>Step 6: Metadata Generation</strong> 📊</h4>
+<ul>
+<li><strong>Service</strong>: Auto-Metadata Population</li>
+<li><strong>Action</strong>: Generate structured metadata</li>
+<li><strong>Processing</strong>:<ul>
+<li>Map entities to metadata fields</li>
+<li>Apply confidence thresholds</li>
+<li>Generate searchable metadata</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: 5-10 seconds</li>
+<li><strong>Output</strong>: Structured metadata record</li>
+</ul>
+<h4><strong>Step 7: Knowledge Base Integration</strong> 🧠</h4>
+<ul>
+<li><strong>Service</strong>: Supabase Database</li>
+<li><strong>Action</strong>: Store processed data</li>
+<li><strong>Processing</strong>:<ul>
+<li>Insert document record</li>
+<li>Store extracted entities</li>
+<li>Create material associations</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: 2-5 seconds</li>
+<li><strong>Output</strong>: Database records with relationships</li>
+</ul>
+<h4><strong>Step 8: Search Index Update</strong> 🔍</h4>
+<ul>
+<li><strong>Service</strong>: Vector Similarity Search</li>
+<li><strong>Action</strong>: Update search indexes</li>
+<li><strong>Processing</strong>:<ul>
+<li>Generate vector embeddings</li>
+<li>Update search indexes</li>
+<li>Enable semantic search</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: 5-10 seconds</li>
+<li><strong>Output</strong>: Searchable document in knowledge base</li>
+</ul>
+<p><strong>Total Processing Time</strong>: 30-90 seconds<br><strong>Success Rate</strong>: 95%+<br><strong>Manual Review Required</strong>: &lt;20% of extractions</p>
+<hr>
+<h2>🔍 <strong>Material Search Flow</strong></h2>
+<p><strong>Description</strong>: Multi-modal search system enabling text, visual, hybrid, and semantic search capabilities</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Search Input (Text/Image/Combined)
+↓
+Step 2: Search Mode Selection
+↓
+Step 3: Query Processing &amp; Analysis
+↓
+Step 4: Database/Vector Search
+↓
+Step 5: Entity Filtering (Optional)
+↓
+Step 6: Results Ranking &amp; Scoring
+↓
+Step 7: Results Display with Metadata
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Search Input</strong> 📝</h4>
+<ul>
+<li><strong>Component</strong>: <code>MaterialAgentSearchInterface.tsx</code> / <code>UnifiedSearchInterface.tsx</code></li>
+<li><strong>Action</strong>: User enters search query or uploads image</li>
+<li><strong>Input Types</strong>: Text query, image file, or combination</li>
+<li><strong>Duration</strong>: Instant</li>
+<li><strong>Output</strong>: Search parameters and input data</li>
+</ul>
+<h4><strong>Step 2: Search Mode Selection</strong> 🎯</h4>
+<ul>
+<li><strong>Options</strong>: <ul>
+<li><strong>Text Search</strong>: Keyword-based search</li>
+<li><strong>Visual Search</strong>: Image-based material recognition</li>
+<li><strong>Hybrid Search</strong>: Combined text and image analysis</li>
+<li><strong>Similarity Search</strong>: Vector-based semantic search</li>
+</ul>
+</li>
+<li><strong>Duration</strong>: Instant (user selection)</li>
+<li><strong>Output</strong>: Selected search mode and parameters</li>
+</ul>
+<h4><strong>Step 3: Query Processing &amp; Analysis</strong> 🔄</h4>
+<ul>
+<li><strong>Text Processing</strong>: Query parsing, keyword extraction</li>
+<li><strong>Image Processing</strong>: Visual feature extraction via MIVAA</li>
+<li><strong>Semantic Processing</strong>: Vector embedding generation</li>
+<li><strong>Duration</strong>: 200ms - 2 seconds</li>
+<li><strong>Output</strong>: Processed query parameters</li>
+</ul>
+<h4><strong>Step 4: Database/Vector Search</strong> 🗄️</h4>
+<ul>
+<li><strong>Text Search</strong>: Direct database queries with filters</li>
+<li><strong>Visual Search</strong>: MIVAA image analysis and matching</li>
+<li><strong>Similarity Search</strong>: Vector database search with configurable threshold</li>
+<li><strong>Duration</strong>: 100ms - 1 second</li>
+<li><strong>Output</strong>: Initial result set</li>
+</ul>
+<h4><strong>Step 5: Entity Filtering (Optional)</strong> 🏷️</h4>
+<ul>
+<li><strong>Filter Types</strong>: Materials, Organizations, Locations, People</li>
+<li><strong>Processing</strong>: Apply selected entity filters to results</li>
+<li><strong>Real-time</strong>: Results update instantly on filter changes</li>
+<li><strong>Duration</strong>: &lt;50ms</li>
+<li><strong>Output</strong>: Filtered result set</li>
+</ul>
+<h4><strong>Step 6: Results Ranking &amp; Scoring</strong> 📊</h4>
+<ul>
+<li><strong>Relevance Scoring</strong>: Calculate relevance scores</li>
+<li><strong>Confidence Scoring</strong>: Apply confidence thresholds</li>
+<li><strong>Similarity Scoring</strong>: Vector similarity percentages</li>
+<li><strong>Duration</strong>: &lt;100ms</li>
+<li><strong>Output</strong>: Ranked and scored results</li>
+</ul>
+<h4><strong>Step 7: Results Display</strong> 📋</h4>
+<ul>
+<li><strong>Components</strong>: Material cards with metadata</li>
+<li><strong>Visual Elements</strong>: Similarity badges, confidence scores</li>
+<li><strong>Metadata</strong>: Extracted entities, material properties</li>
+<li><strong>Duration</strong>: &lt;200ms</li>
+<li><strong>Output</strong>: User-friendly search results</li>
+</ul>
+<p><strong>Total Search Time</strong>: 500ms - 4 seconds<br><strong>Accuracy Rate</strong>: 85%+ semantic relevance<br><strong>Results Per Page</strong>: 20 materials</p>
+<hr>
+<h2>🤖 <strong>Multi-Modal AI Analysis Flow</strong></h2>
+<p><strong>Description</strong>: Advanced AI-powered analysis system combining LLaMA Vision, CLIP embeddings, and multi-modal processing for comprehensive material intelligence</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Analysis Request (Manual/Automatic)
+↓
+Step 2: Content Preparation &amp; Validation
+↓
+Step 3: Multi-Modal AI Processing
+↓
+Step 4: Entity Extraction &amp; Classification
+↓
+Step 5: Confidence Scoring &amp; Validation
+↓
+Step 6: Results Integration &amp; Storage
+↓
+Step 7: Quality Assurance &amp; Testing
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Analysis Request</strong> 🎯</h4>
+<ul>
+<li><strong>Triggers</strong>: <ul>
+<li><strong>Automatic</strong>: PDF upload, search queries</li>
+<li><strong>Manual</strong>: AI Testing Panel, admin requests</li>
+</ul>
+</li>
+<li><strong>Input Types</strong>: Text content, images, combined data</li>
+<li><strong>Duration</strong>: Instant</li>
+<li><strong>Output</strong>: Analysis job creation</li>
+</ul>
+<h4><strong>Step 2: Content Preparation</strong> 📋</h4>
+<ul>
+<li><strong>Text Processing</strong>: Clean and format text content</li>
+<li><strong>Image Processing</strong>: Validate and optimize images</li>
+<li><strong>Parameter Setup</strong>: Configure analysis parameters</li>
+<li><strong>Duration</strong>: 100-500ms</li>
+<li><strong>Output</strong>: Prepared content for analysis</li>
+</ul>
+<h4><strong>Step 3: Multi-Modal AI Processing</strong> 🧠</h4>
+<ul>
+<li><strong>Text Analysis</strong>: NER, material identification, property extraction</li>
+<li><strong>Image Analysis</strong>: Visual recognition, material classification</li>
+<li><strong>Combined Analysis</strong>: Cross-modal validation and enhancement</li>
+<li><strong>Service</strong>: MIVAA Multi-Modal Analysis API</li>
+<li><strong>Duration</strong>: 1-4 seconds</li>
+<li><strong>Output</strong>: Raw AI analysis results</li>
+</ul>
+<h4><strong>Step 4: Entity Extraction &amp; Classification</strong> 🏷️</h4>
+<ul>
+<li><strong>Entity Types</strong>: Materials, Organizations, Locations, People</li>
+<li><strong>Classification</strong>: Categorize and structure entities</li>
+<li><strong>Relationship Mapping</strong>: Identify entity relationships</li>
+<li><strong>Duration</strong>: 500ms - 1 second</li>
+<li><strong>Output</strong>: Structured entity data</li>
+</ul>
+<h4><strong>Step 5: Confidence Scoring &amp; Validation</strong> ✅</h4>
+<ul>
+<li><strong>Confidence Calculation</strong>: Generate 0-100% confidence scores</li>
+<li><strong>Threshold Application</strong>: Apply minimum confidence thresholds</li>
+<li><strong>Quality Validation</strong>: Flag low-confidence results</li>
+<li><strong>Duration</strong>: 200-500ms</li>
+<li><strong>Output</strong>: Validated results with confidence scores</li>
+</ul>
+<h4><strong>Step 6: Results Integration &amp; Storage</strong> 💾</h4>
+<ul>
+<li><strong>Database Storage</strong>: Store analysis results</li>
+<li><strong>Metadata Integration</strong>: Link to existing metadata</li>
+<li><strong>Search Index Update</strong>: Update search capabilities</li>
+<li><strong>Duration</strong>: 500ms - 1 second</li>
+<li><strong>Output</strong>: Integrated analysis results</li>
+</ul>
+<h4><strong>Step 7: Quality Assurance &amp; Testing</strong> 🧪</h4>
+<ul>
+<li><strong>Automated Testing</strong>: Validate analysis quality</li>
+<li><strong>Performance Monitoring</strong>: Track processing times</li>
+<li><strong>Error Detection</strong>: Identify and flag issues</li>
+<li><strong>Component</strong>: AI Testing Panel</li>
+<li><strong>Duration</strong>: Ongoing monitoring</li>
+<li><strong>Output</strong>: Quality metrics and alerts</li>
+</ul>
+<p><strong>Total Analysis Time</strong>: 2-8 seconds
+<strong>Accuracy Rate</strong>: 85%+ for high-confidence results
+<strong>Quality Threshold</strong>: 60% minimum confidence</p>
+<h3><strong>🔬 Why Multi-Modal Analysis?</strong></h3>
+<p>The platform uses multi-modal AI analysis because materials have both visual and textual characteristics that need to be understood together:</p>
+<ul>
+<li><strong>Visual Properties</strong>: Color, texture, pattern, surface finish, structural details</li>
+<li><strong>Textual Context</strong>: Specifications, descriptions, usage instructions, technical data</li>
+<li><strong>Combined Intelligence</strong>: Cross-validation between visual and textual information for higher accuracy</li>
+</ul>
+<h3><strong>🧠 AI Technologies Used</strong></h3>
+<h4><strong>1. LLaMA Vision Analysis</strong></h4>
+<ul>
+<li><strong>Purpose</strong>: Advanced visual understanding of material properties</li>
+<li><strong>Technology</strong>: Large Language Model with vision capabilities</li>
+<li><strong>Benefits</strong>:<ul>
+<li>Understands complex visual patterns and textures</li>
+<li>Provides detailed material property analysis</li>
+<li>Generates human-readable descriptions</li>
+<li>High accuracy in material classification</li>
+</ul>
+</li>
+</ul>
+<h4><strong>2. CLIP (Contrastive Language-Image Pre-training)</strong></h4>
+<ul>
+<li><strong>Purpose</strong>: Generate visual embeddings for similarity search</li>
+<li><strong>Technology</strong>: OpenAI&#39;s CLIP model (ViT-Base-Patch32)</li>
+<li><strong>Benefits</strong>:<ul>
+<li>Creates 512-dimensional visual embeddings</li>
+<li>Enables semantic visual search</li>
+<li>Links visual and textual concepts</li>
+<li>Powers visual similarity recommendations</li>
+</ul>
+</li>
+</ul>
+<h4><strong>3. Parallel Processing Architecture</strong></h4>
+<ul>
+<li><strong>Why Parallel</strong>: Combines strengths of both models simultaneously</li>
+<li><strong>Performance</strong>: Reduces total processing time by 40%</li>
+<li><strong>Reliability</strong>: Provides fallback if one model fails</li>
+<li><strong>Quality</strong>: Cross-validates results for higher confidence</li>
+</ul>
+<hr>
+<h2>📊 <strong>Metadata Management Flow</strong></h2>
+<p><strong>Description</strong>: Intelligent metadata schema management and AI-powered auto-population system</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Metadata Schema Definition
+↓
+Step 2: Document Selection for Auto-Population
+↓
+Step 3: AI-Powered Entity Extraction
+↓
+Step 4: Field Mapping &amp; Validation
+↓
+Step 5: Batch Processing &amp; Population
+↓
+Step 6: Results Review &amp; Approval
+↓
+Step 7: Database Update &amp; Integration
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Metadata Schema Definition</strong> 📋</h4>
+<ul>
+<li><strong>Component</strong>: <code>MetadataFieldsManagement.tsx</code></li>
+<li><strong>Action</strong>: Admin defines metadata fields and types</li>
+<li><strong>Field Types</strong>: String, Number, Boolean, Date, Select, Multi-select, JSON</li>
+<li><strong>Configuration</strong>: Field validation, extraction hints, category assignment</li>
+<li><strong>Duration</strong>: Manual configuration</li>
+<li><strong>Output</strong>: Metadata schema definition</li>
+</ul>
+<h4><strong>Step 2: Document Selection</strong> 📄</h4>
+<ul>
+<li><strong>Interface</strong>: Multi-select document interface</li>
+<li><strong>Criteria</strong>: Available documents with incomplete metadata</li>
+<li><strong>Batch Size</strong>: Up to 100 documents per batch</li>
+<li><strong>Duration</strong>: Manual selection</li>
+<li><strong>Output</strong>: Selected document list</li>
+</ul>
+<h4><strong>Step 3: AI-Powered Entity Extraction</strong> 🤖</h4>
+<ul>
+<li><strong>Service</strong>: MIVAA Auto-Population API</li>
+<li><strong>Processing</strong>: Extract entities from document content</li>
+<li><strong>Analysis Types</strong>: Text analysis, image analysis, combined analysis</li>
+<li><strong>Duration</strong>: 2-5 seconds per document</li>
+<li><strong>Output</strong>: Extracted entities with confidence scores</li>
+</ul>
+<h4><strong>Step 4: Field Mapping &amp; Validation</strong> 🎯</h4>
+<ul>
+<li><strong>Mapping Logic</strong>: Map extracted entities to metadata fields</li>
+<li><strong>Validation</strong>: Apply confidence thresholds and validation rules</li>
+<li><strong>Conflict Resolution</strong>: Handle mapping conflicts and duplicates</li>
+<li><strong>Duration</strong>: 500ms - 1 second per document</li>
+<li><strong>Output</strong>: Mapped metadata fields</li>
+</ul>
+<h4><strong>Step 5: Batch Processing &amp; Population</strong> ⚡</h4>
+<ul>
+<li><strong>Processing</strong>: Populate metadata for all selected documents</li>
+<li><strong>Progress Tracking</strong>: Real-time progress indicators</li>
+<li><strong>Error Handling</strong>: Handle individual document failures</li>
+<li><strong>Duration</strong>: 2-5 seconds per document</li>
+<li><strong>Output</strong>: Population results and statistics</li>
+</ul>
+<h4><strong>Step 6: Results Review &amp; Approval</strong> ✅</h4>
+<ul>
+<li><strong>Review Interface</strong>: Detailed results dashboard</li>
+<li><strong>Validation</strong>: Manual review of low-confidence extractions</li>
+<li><strong>Approval</strong>: Approve or reject extracted metadata</li>
+<li><strong>Duration</strong>: Manual review process</li>
+<li><strong>Output</strong>: Approved metadata changes</li>
+</ul>
+<h4><strong>Step 7: Database Update &amp; Integration</strong> 💾</h4>
+<ul>
+<li><strong>Database Update</strong>: Store approved metadata in database</li>
+<li><strong>Search Integration</strong>: Update search indexes</li>
+<li><strong>Audit Trail</strong>: Log metadata changes for tracking</li>
+<li><strong>Duration</strong>: 100-500ms per document</li>
+<li><strong>Output</strong>: Updated material records</li>
+</ul>
+<p><strong>Total Processing Time</strong>: 3-7 seconds per document<br><strong>Automation Rate</strong>: 80% reduction in manual work<br><strong>Accuracy Rate</strong>: 90%+ for entity-to-field mapping</p>
+<hr>
+<h2>🎨 <strong>MoodBoard Management Flow</strong></h2>
+<p><strong>Description</strong>: Creative material organization and mood board creation system for design inspiration and project planning</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: MoodBoard Creation/Selection
+↓
+Step 2: Material Discovery &amp; Search
+↓
+Step 3: Material Addition to Board
+↓
+Step 4: Board Organization &amp; Layout
+↓
+Step 5: Collaboration &amp; Sharing
+↓
+Step 6: Export &amp; Integration
+↓
+Step 7: Project Application
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: MoodBoard Creation/Selection</strong> 🎨</h4>
+<ul>
+<li><strong>Component</strong>: <code>MoodBoardPage.tsx</code></li>
+<li><strong>Action</strong>: User creates new moodboard or selects existing one</li>
+<li><strong>Features</strong>: Title, description, privacy settings, category assignment</li>
+<li><strong>Duration</strong>: Instant</li>
+<li><strong>Output</strong>: MoodBoard instance with unique ID</li>
+</ul>
+<h4><strong>Step 2: Material Discovery &amp; Search</strong> 🔍</h4>
+<ul>
+<li><strong>Integration</strong>: Connected to Material Search Flow</li>
+<li><strong>Methods</strong>: Text search, visual search, AI recommendations</li>
+<li><strong>Filters</strong>: Category, color, style, properties</li>
+<li><strong>Duration</strong>: 500ms - 4 seconds</li>
+<li><strong>Output</strong>: Curated material suggestions</li>
+</ul>
+<h4><strong>Step 3: Material Addition to Board</strong> ➕</h4>
+<ul>
+<li><strong>Component</strong>: <code>AddToBoardModal.tsx</code></li>
+<li><strong>Action</strong>: Add materials to selected moodboard</li>
+<li><strong>Features</strong>: Drag &amp; drop, bulk addition, position control</li>
+<li><strong>Processing</strong>: Material metadata extraction and storage</li>
+<li><strong>Duration</strong>: 200-500ms per material</li>
+<li><strong>Output</strong>: Updated moodboard with new materials</li>
+</ul>
+<h4><strong>Step 4: Board Organization &amp; Layout</strong> 📐</h4>
+<ul>
+<li><strong>Features</strong>: Grid/list view, drag &amp; drop reordering, grouping</li>
+<li><strong>Layout Options</strong>: Automatic grid, custom positioning, category grouping</li>
+<li><strong>Visual Tools</strong>: Zoom, pan, full-screen preview</li>
+<li><strong>Duration</strong>: Real-time interaction</li>
+<li><strong>Output</strong>: Organized visual layout</li>
+</ul>
+<h4><strong>Step 5: Collaboration &amp; Sharing</strong> 👥</h4>
+<ul>
+<li><strong>Sharing Options</strong>: Public/private boards, link sharing, team collaboration</li>
+<li><strong>Permissions</strong>: View-only, edit access, admin controls</li>
+<li><strong>Comments</strong>: Material-specific comments and annotations</li>
+<li><strong>Duration</strong>: Instant sharing</li>
+<li><strong>Output</strong>: Collaborative workspace</li>
+</ul>
+<h4><strong>Step 6: Export &amp; Integration</strong> 📤</h4>
+<ul>
+<li><strong>Export Formats</strong>: PDF, image collections, material lists</li>
+<li><strong>Integration</strong>: 3D design tools, CAD software, project management</li>
+<li><strong>Data Export</strong>: Material specifications, supplier information</li>
+<li><strong>Duration</strong>: 2-10 seconds depending on size</li>
+<li><strong>Output</strong>: Exportable design assets</li>
+</ul>
+<h4><strong>Step 7: Project Application</strong> 🏗️</h4>
+<ul>
+<li><strong>Usage</strong>: Apply moodboard materials to actual projects</li>
+<li><strong>Integration</strong>: 3D generation, specification documents</li>
+<li><strong>Tracking</strong>: Material usage and project progress</li>
+<li><strong>Duration</strong>: Ongoing project lifecycle</li>
+<li><strong>Output</strong>: Implemented design solutions</li>
+</ul>
+<p><strong>Total Workflow Time</strong>: 2-15 minutes for complete moodboard
+<strong>Collaboration Features</strong>: Real-time sharing and editing
+<strong>Export Options</strong>: 5+ format options</p>
+<h3><strong>🎯 Why MoodBoards?</strong></h3>
+<p>MoodBoards serve as the creative bridge between inspiration and implementation:</p>
+<ul>
+<li><strong>Visual Organization</strong>: Organize materials by style, project, or theme</li>
+<li><strong>Design Exploration</strong>: Experiment with material combinations</li>
+<li><strong>Client Presentation</strong>: Professional presentation of design concepts</li>
+<li><strong>Project Planning</strong>: Plan material usage before implementation</li>
+<li><strong>Team Collaboration</strong>: Share and collaborate on design ideas</li>
+</ul>
+<hr>
+<h2>💬 <strong>Chat Agent Interaction Flow</strong></h2>
+<p><strong>Description</strong>: AI-powered conversational interface for material queries, design assistance, and platform guidance</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Chat Interface Initialization
+↓
+Step 2: User Query Processing
+↓
+Step 3: Intent Analysis &amp; Context Understanding
+↓
+Step 4: Multi-Modal Response Generation
+↓
+Step 5: Knowledge Base Integration
+↓
+Step 6: Response Delivery &amp; Interaction
+↓
+Step 7: Conversation Memory &amp; Learning
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Chat Interface Initialization</strong> 💬</h4>
+<ul>
+<li><strong>Component</strong>: <code>MaterialAgentSearchInterface.tsx</code></li>
+<li><strong>Features</strong>: Conversation history, context awareness, multi-modal input</li>
+<li><strong>Models</strong>: Hybrid AI (OpenAI, Claude, Vertex AI)</li>
+<li><strong>Duration</strong>: &lt;500ms initialization</li>
+<li><strong>Output</strong>: Ready chat interface</li>
+</ul>
+<h4><strong>Step 2: User Query Processing</strong> 🔍</h4>
+<ul>
+<li><strong>Input Types</strong>: Text queries, image uploads, voice input (future)</li>
+<li><strong>Processing</strong>: Query parsing, intent detection, context extraction</li>
+<li><strong>Features</strong>: Multi-language support, technical terminology understanding</li>
+<li><strong>Duration</strong>: 100-300ms</li>
+<li><strong>Output</strong>: Structured query parameters</li>
+</ul>
+<h4><strong>Step 3: Intent Analysis &amp; Context Understanding</strong> 🧠</h4>
+<ul>
+<li><strong>Intent Categories</strong>:<ul>
+<li>Material search and discovery</li>
+<li>Technical specifications inquiry</li>
+<li>Design recommendations</li>
+<li>Project assistance</li>
+<li>Platform navigation help</li>
+</ul>
+</li>
+<li><strong>Context Sources</strong>: Conversation history, user profile, current project</li>
+<li><strong>Duration</strong>: 200-500ms</li>
+<li><strong>Output</strong>: Classified intent with context</li>
+</ul>
+<h4><strong>Step 4: Multi-Modal Response Generation</strong> 🎯</h4>
+<ul>
+<li><strong>AI Models</strong>:<ul>
+<li><strong>Primary</strong>: OpenAI GPT-4 for general queries</li>
+<li><strong>Fallback</strong>: Claude for complex reasoning</li>
+<li><strong>Specialized</strong>: MIVAA for material-specific analysis</li>
+</ul>
+</li>
+<li><strong>Response Types</strong>: Text, images, material suggestions, 3D previews</li>
+<li><strong>Duration</strong>: 1-5 seconds depending on complexity</li>
+<li><strong>Output</strong>: Rich, contextual response</li>
+</ul>
+<h4><strong>Step 5: Knowledge Base Integration</strong> 📚</h4>
+<ul>
+<li><strong>RAG System</strong>: Enhanced RAG search for relevant information</li>
+<li><strong>Sources</strong>: PDF documents, material database, technical specifications</li>
+<li><strong>Processing</strong>: Vector similarity search, context ranking</li>
+<li><strong>Duration</strong>: 500ms - 2 seconds</li>
+<li><strong>Output</strong>: Contextually relevant information</li>
+</ul>
+<h4><strong>Step 6: Response Delivery &amp; Interaction</strong> 📤</h4>
+<ul>
+<li><strong>Delivery</strong>: Streaming response for real-time feedback</li>
+<li><strong>Interactions</strong>: Follow-up questions, material recommendations, action buttons</li>
+<li><strong>Features</strong>: Copy responses, save to moodboard, export information</li>
+<li><strong>Duration</strong>: Real-time streaming</li>
+<li><strong>Output</strong>: Interactive response interface</li>
+</ul>
+<h4><strong>Step 7: Conversation Memory &amp; Learning</strong> 🧠</h4>
+<ul>
+<li><strong>Memory</strong>: Conversation context, user preferences, project history</li>
+<li><strong>Learning</strong>: Improve responses based on user feedback</li>
+<li><strong>Personalization</strong>: Adapt to user&#39;s design style and preferences</li>
+<li><strong>Duration</strong>: Background processing</li>
+<li><strong>Output</strong>: Enhanced future interactions</li>
+</ul>
+<p><strong>Average Response Time</strong>: 2-6 seconds
+<strong>Context Retention</strong>: Full conversation history
+<strong>Accuracy Rate</strong>: 90%+ for material-related queries</p>
+<h3><strong>🤖 Why Chat Agents?</strong></h3>
+<p>Chat agents provide intuitive, natural language interaction with the platform:</p>
+<ul>
+<li><strong>Natural Interface</strong>: Ask questions in plain language</li>
+<li><strong>Expert Knowledge</strong>: Access to comprehensive material database</li>
+<li><strong>Contextual Help</strong>: Understands your current project and needs</li>
+<li><strong>Multi-Modal</strong>: Combine text and visual queries</li>
+<li><strong>Learning</strong>: Improves with each interaction</li>
+</ul>
+<hr>
+<h2>🔐 <strong>User Authentication Flow</strong></h2>
+<p><strong>Description</strong>: Secure JWT-based authentication system with role-based access control</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: User Login Request
+↓
+Step 2: Credential Validation
+↓
+Step 3: JWT Token Generation
+↓
+Step 4: Role &amp; Permission Assignment
+↓
+Step 5: Session Management
+↓
+Step 6: API Request Authentication
+↓
+Step 7: Token Refresh &amp; Logout
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: User Login Request</strong> 🔑</h4>
+<ul>
+<li><strong>Component</strong>: Authentication forms</li>
+<li><strong>Input</strong>: Email/username and password</li>
+<li><strong>Validation</strong>: Client-side input validation</li>
+<li><strong>Duration</strong>: Instant</li>
+<li><strong>Output</strong>: Login credentials</li>
+</ul>
+<h4><strong>Step 2: Credential Validation</strong> ✅</h4>
+<ul>
+<li><strong>Service</strong>: Supabase Auth</li>
+<li><strong>Processing</strong>: Validate credentials against database</li>
+<li><strong>Security</strong>: Password hashing and verification</li>
+<li><strong>Duration</strong>: 200-500ms</li>
+<li><strong>Output</strong>: Authentication result</li>
+</ul>
+<h4><strong>Step 3: JWT Token Generation</strong> 🎫</h4>
+<ul>
+<li><strong>Service</strong>: Supabase Auth / Custom JWT</li>
+<li><strong>Processing</strong>: Generate signed JWT token</li>
+<li><strong>Expiry</strong>: 24-hour token lifetime</li>
+<li><strong>Duration</strong>: 100-200ms</li>
+<li><strong>Output</strong>: JWT access token</li>
+</ul>
+<h4><strong>Step 4: Role &amp; Permission Assignment</strong> 👥</h4>
+<ul>
+<li><strong>Processing</strong>: Assign user roles and permissions</li>
+<li><strong>Roles</strong>: Admin, User, Viewer</li>
+<li><strong>Permissions</strong>: Feature-level access control</li>
+<li><strong>Duration</strong>: 100ms</li>
+<li><strong>Output</strong>: User profile with permissions</li>
+</ul>
+<h4><strong>Step 5: Session Management</strong> 📱</h4>
+<ul>
+<li><strong>Storage</strong>: Secure token storage</li>
+<li><strong>Persistence</strong>: Session persistence across browser sessions</li>
+<li><strong>Security</strong>: Secure HTTP-only cookies</li>
+<li><strong>Duration</strong>: Ongoing</li>
+<li><strong>Output</strong>: Active user session</li>
+</ul>
+<h4><strong>Step 6: API Request Authentication</strong> 🔒</h4>
+<ul>
+<li><strong>Process</strong>: Validate JWT on each API request</li>
+<li><strong>Headers</strong>: Bearer token authentication</li>
+<li><strong>Validation</strong>: Token signature and expiry verification</li>
+<li><strong>Duration</strong>: &lt;10ms per request</li>
+<li><strong>Output</strong>: Authenticated API access</li>
+</ul>
+<h4><strong>Step 7: Token Refresh &amp; Logout</strong> 🔄</h4>
+<ul>
+<li><strong>Refresh</strong>: Automatic token refresh before expiry</li>
+<li><strong>Logout</strong>: Secure token invalidation</li>
+<li><strong>Cleanup</strong>: Clear session data and tokens</li>
+<li><strong>Duration</strong>: 100-200ms</li>
+<li><strong>Output</strong>: Updated or cleared authentication state</li>
+</ul>
+<p><strong>Authentication Time</strong>: 500ms - 1 second<br><strong>Session Duration</strong>: 24 hours<br><strong>Security Level</strong>: Enterprise-grade JWT security</p>
+<hr>
+<h2>🎨 <strong>3D Generation Flow</strong></h2>
+<p><strong>Description</strong>: AI-powered 3D model and SVBRDF generation from material images and descriptions</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Material Input (Image + Description)
+↓
+Step 2: Image Analysis &amp; Processing
+↓
+Step 3: SVBRDF Parameter Extraction
+↓
+Step 4: 3D Model Generation
+↓
+Step 5: Texture Mapping &amp; Rendering
+↓
+Step 6: Quality Validation &amp; Optimization
+↓
+Step 7: 3D Asset Storage &amp; Integration
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Material Input</strong> 🖼️</h4>
+<ul>
+<li><strong>Input Types</strong>: Material images, text descriptions</li>
+<li><strong>Requirements</strong>: High-resolution images, detailed descriptions</li>
+<li><strong>Validation</strong>: Image quality and format validation</li>
+<li><strong>Duration</strong>: Instant (user input)</li>
+<li><strong>Output</strong>: Material data for processing</li>
+</ul>
+<h4><strong>Step 2: Image Analysis &amp; Processing</strong> 🔍</h4>
+<ul>
+<li><strong>Service</strong>: MIVAA Image Analysis</li>
+<li><strong>Processing</strong>: Extract visual features, material properties</li>
+<li><strong>Analysis</strong>: Surface texture, color, reflectance properties</li>
+<li><strong>Duration</strong>: 2-5 seconds</li>
+<li><strong>Output</strong>: Visual feature data</li>
+</ul>
+<h4><strong>Step 3: SVBRDF Parameter Extraction</strong> ⚙️</h4>
+<ul>
+<li><strong>Processing</strong>: Extract Spatially-Varying BRDF parameters</li>
+<li><strong>Parameters</strong>: Diffuse, specular, roughness, normal maps</li>
+<li><strong>AI Models</strong>: Specialized SVBRDF extraction models</li>
+<li><strong>Duration</strong>: 5-15 seconds</li>
+<li><strong>Output</strong>: SVBRDF parameter maps</li>
+</ul>
+<h4><strong>Step 4: 3D Model Generation</strong> 🎯</h4>
+<ul>
+<li><strong>Service</strong>: AI 3D Generation APIs</li>
+<li><strong>Processing</strong>: Generate 3D geometry from material data</li>
+<li><strong>Models</strong>: Mesh generation, surface modeling</li>
+<li><strong>Duration</strong>: 30-120 seconds</li>
+<li><strong>Output</strong>: 3D mesh and geometry</li>
+</ul>
+<h4><strong>Step 5: Texture Mapping &amp; Rendering</strong> 🎨</h4>
+<ul>
+<li><strong>Processing</strong>: Apply SVBRDF textures to 3D model</li>
+<li><strong>Rendering</strong>: Generate realistic material appearance</li>
+<li><strong>Optimization</strong>: Optimize for real-time rendering</li>
+<li><strong>Duration</strong>: 10-30 seconds</li>
+<li><strong>Output</strong>: Textured 3D model</li>
+</ul>
+<h4><strong>Step 6: Quality Validation &amp; Optimization</strong> ✅</h4>
+<ul>
+<li><strong>Validation</strong>: Check model quality and accuracy</li>
+<li><strong>Optimization</strong>: Reduce polygon count, optimize textures</li>
+<li><strong>Testing</strong>: Validate rendering performance</li>
+<li><strong>Duration</strong>: 5-15 seconds</li>
+<li><strong>Output</strong>: Optimized 3D asset</li>
+</ul>
+<h4><strong>Step 7: 3D Asset Storage &amp; Integration</strong> 💾</h4>
+<ul>
+<li><strong>Storage</strong>: Store 3D models and textures</li>
+<li><strong>Integration</strong>: Link to material database</li>
+<li><strong>Formats</strong>: Multiple export formats (OBJ, FBX, GLTF)</li>
+<li><strong>Duration</strong>: 2-5 seconds</li>
+<li><strong>Output</strong>: Available 3D material asset</li>
+</ul>
+<p><strong>Total Generation Time</strong>: 1-3 minutes<br><strong>Success Rate</strong>: 80%+ quality 3D models<br><strong>Supported Formats</strong>: OBJ, FBX, GLTF, USD</p>
+<hr>
+<h2>🧠 <strong>Knowledge Base Integration Flow</strong></h2>
+<p><strong>Description</strong>: Comprehensive knowledge management system integrating all platform data</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Data Collection from All Sources
+↓
+Step 2: Content Normalization &amp; Standardization
+↓
+Step 3: Relationship Mapping &amp; Linking
+↓
+Step 4: Vector Embedding Generation
+↓
+Step 5: Knowledge Graph Construction
+↓
+Step 6: Search Index Optimization
+↓
+Step 7: Real-time Knowledge Updates
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Data Collection</strong> 📊</h4>
+<ul>
+<li><strong>Sources</strong>: PDFs, images, metadata, user interactions</li>
+<li><strong>Processing</strong>: Aggregate data from all platform sources</li>
+<li><strong>Validation</strong>: Ensure data quality and completeness</li>
+<li><strong>Duration</strong>: Continuous background process</li>
+<li><strong>Output</strong>: Comprehensive data collection</li>
+</ul>
+<h4><strong>Step 2: Content Normalization</strong> 📋</h4>
+<ul>
+<li><strong>Standardization</strong>: Normalize data formats and structures</li>
+<li><strong>Cleaning</strong>: Remove duplicates and inconsistencies</li>
+<li><strong>Validation</strong>: Apply data quality rules</li>
+<li><strong>Duration</strong>: 1-5 seconds per item</li>
+<li><strong>Output</strong>: Standardized content</li>
+</ul>
+<h4><strong>Step 3: Relationship Mapping</strong> 🔗</h4>
+<ul>
+<li><strong>Entity Linking</strong>: Connect related entities and materials</li>
+<li><strong>Relationship Types</strong>: Material properties, usage contexts, suppliers</li>
+<li><strong>Graph Construction</strong>: Build knowledge graph relationships</li>
+<li><strong>Duration</strong>: 2-10 seconds per item</li>
+<li><strong>Output</strong>: Linked knowledge entities</li>
+</ul>
+<h4><strong>Step 4: Vector Embedding Generation</strong> 🎯</h4>
+<ul>
+<li><strong>Service</strong>: Vector embedding models</li>
+<li><strong>Processing</strong>: Generate semantic embeddings for all content</li>
+<li><strong>Optimization</strong>: Optimize for similarity search</li>
+<li><strong>Duration</strong>: 1-3 seconds per item</li>
+<li><strong>Output</strong>: Vector representations</li>
+</ul>
+<h4><strong>Step 5: Knowledge Graph Construction</strong> 🕸️</h4>
+<ul>
+<li><strong>Graph Building</strong>: Construct comprehensive knowledge graph</li>
+<li><strong>Optimization</strong>: Optimize graph structure for queries</li>
+<li><strong>Validation</strong>: Validate graph consistency</li>
+<li><strong>Duration</strong>: Background processing</li>
+<li><strong>Output</strong>: Structured knowledge graph</li>
+</ul>
+<h4><strong>Step 6: Search Index Optimization</strong> 🔍</h4>
+<ul>
+<li><strong>Indexing</strong>: Create optimized search indexes</li>
+<li><strong>Performance</strong>: Optimize for fast retrieval</li>
+<li><strong>Updates</strong>: Incremental index updates</li>
+<li><strong>Duration</strong>: 5-30 seconds for full reindex</li>
+<li><strong>Output</strong>: Optimized search capabilities</li>
+</ul>
+<h4><strong>Step 7: Real-time Updates</strong> ⚡</h4>
+<ul>
+<li><strong>Monitoring</strong>: Monitor for new content and changes</li>
+<li><strong>Updates</strong>: Real-time knowledge base updates</li>
+<li><strong>Synchronization</strong>: Keep all systems synchronized</li>
+<li><strong>Duration</strong>: &lt;1 second for updates</li>
+<li><strong>Output</strong>: Current and accurate knowledge base</li>
+</ul>
+<p><strong>Update Frequency</strong>: Real-time<br><strong>Knowledge Coverage</strong>: 100% of platform content<br><strong>Search Performance</strong>: &lt;500ms query response</p>
+<hr>
+<h2>📊 <strong>System Monitoring Flow</strong></h2>
+<p><strong>Description</strong>: Comprehensive system monitoring and performance tracking across all platform services</p>
+<h3><strong>Flow Steps</strong>:</h3>
+<pre><code>Step 1: Real-time Metrics Collection
+↓
+Step 2: Performance Data Aggregation
+↓
+Step 3: Trend Analysis &amp; Alerting
+↓
+Step 4: Error Detection &amp; Classification
+↓
+Step 5: Performance Optimization Recommendations
+↓
+Step 6: Dashboard Updates &amp; Reporting
+↓
+Step 7: Proactive Issue Resolution
+</code></pre>
+<h3><strong>Detailed Process</strong>:</h3>
+<h4><strong>Step 1: Real-time Metrics Collection</strong> 📊</h4>
+<ul>
+<li><strong>Component</strong>: <code>SystemPerformance.tsx</code></li>
+<li><strong>Metrics</strong>: Response times, success rates, resource usage</li>
+<li><strong>Frequency</strong>: Every 5 seconds for active monitoring</li>
+<li><strong>Duration</strong>: Continuous</li>
+<li><strong>Output</strong>: Real-time performance data</li>
+</ul>
+<h4><strong>Step 2: Performance Data Aggregation</strong> 📈</h4>
+<ul>
+<li><strong>Processing</strong>: Aggregate metrics across time periods</li>
+<li><strong>Analysis</strong>: Calculate trends and patterns</li>
+<li><strong>Storage</strong>: Store historical performance data</li>
+<li><strong>Duration</strong>: Background processing</li>
+<li><strong>Output</strong>: Aggregated performance metrics</li>
+</ul>
+<h4><strong>Step 3: Trend Analysis &amp; Alerting</strong> 🚨</h4>
+<ul>
+<li><strong>Analysis</strong>: Identify performance trends and anomalies</li>
+<li><strong>Alerting</strong>: Generate alerts for performance issues</li>
+<li><strong>Thresholds</strong>: Configurable alert thresholds</li>
+<li><strong>Duration</strong>: Real-time analysis</li>
+<li><strong>Output</strong>: Performance alerts and trends</li>
+</ul>
+<h4><strong>Step 4: Error Detection &amp; Classification</strong> 🔍</h4>
+<ul>
+<li><strong>Detection</strong>: Identify errors and failures</li>
+<li><strong>Classification</strong>: Categorize error types and severity</li>
+<li><strong>Context</strong>: Provide error context and debugging information</li>
+<li><strong>Duration</strong>: Immediate error detection</li>
+<li><strong>Output</strong>: Classified error reports</li>
+</ul>
+<h4><strong>Step 5: Performance Optimization</strong> ⚡</h4>
+<ul>
+<li><strong>Analysis</strong>: Identify optimization opportunities</li>
+<li><strong>Recommendations</strong>: Generate performance improvement suggestions</li>
+<li><strong>Automation</strong>: Automatic performance optimizations</li>
+<li><strong>Duration</strong>: Background analysis</li>
+<li><strong>Output</strong>: Optimization recommendations</li>
+</ul>
+<h4><strong>Step 6: Dashboard Updates</strong> 📋</h4>
+<ul>
+<li><strong>Display</strong>: Update monitoring dashboards</li>
+<li><strong>Visualization</strong>: Create performance visualizations</li>
+<li><strong>Reporting</strong>: Generate performance reports</li>
+<li><strong>Duration</strong>: Real-time updates</li>
+<li><strong>Output</strong>: Updated monitoring interface</li>
+</ul>
+<h4><strong>Step 7: Proactive Issue Resolution</strong> 🛠️</h4>
+<ul>
+<li><strong>Prevention</strong>: Proactive issue identification</li>
+<li><strong>Resolution</strong>: Automatic issue resolution where possible</li>
+<li><strong>Escalation</strong>: Escalate critical issues to administrators</li>
+<li><strong>Duration</strong>: Immediate response</li>
+<li><strong>Output</strong>: Resolved or escalated issues</li>
+</ul>
+<p><strong>Monitoring Coverage</strong>: 100% of platform services<br><strong>Alert Response Time</strong>: &lt;30 seconds<br><strong>Issue Resolution</strong>: 80% automatic resolution</p>
+<hr>
+<h2>🎯 <strong>Flow Integration Summary</strong></h2>
+<p>All platform flows are interconnected and work together to provide a seamless user experience:</p>
+<ul>
+<li><strong>PDF Processing</strong> feeds into <strong>Knowledge Base Integration</strong></li>
+<li><strong>AI Analysis</strong> powers <strong>Material Search</strong> and <strong>Metadata Management</strong></li>
+<li><strong>User Authentication</strong> secures all flows</li>
+<li><strong>System Monitoring</strong> ensures optimal performance across all flows</li>
+<li><strong>3D Generation</strong> enhances material visualization</li>
+<li><strong>Knowledge Base</strong> enables intelligent search and discovery</li>
+</ul>
+<p><strong>Total Platform Flows</strong>: 8 major flows<br><strong>Integration Points</strong>: 25+ interconnections<br><strong>Overall Performance</strong>: 95%+ system reliability</p>
+
+</div></body></html>
