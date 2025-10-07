@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>🤖 MIVAA Service - Complete Documentation</h1>
+<h2>🎯 Overview</h2>
+<p><strong>MIVAA (Material Intelligence Vision and Analysis Agent)</strong> is the core microservice that powers the Material Kai Vision Platform&#39;s document processing, AI analysis, and knowledge extraction capabilities.</p>
+<h3>🏗️ Architecture</h3>
+<ul>
+<li><strong>Framework</strong>: FastAPI + Python 3.9+</li>
+<li><strong>Purpose</strong>: PDF processing, RAG system, AI coordination</li>
+<li><strong>Features</strong>: Document extraction, vector embeddings, semantic search</li>
+<li><strong>AI Integration</strong>: OpenAI, HuggingFace, Replicate APIs</li>
+<li><strong>Database</strong>: Supabase PostgreSQL with vector extensions</li>
+<li><strong>Deployment</strong>: Docker containers with systemd service management</li>
+</ul>
+<h3>🌐 Service Endpoints</h3>
+<p><strong>Production Base URL</strong>: <code>https://v1api.materialshub.gr</code></p>
+<h4><strong>Core Endpoints</strong></h4>
+<ul>
+<li><strong>Health Check</strong>: <code>https://v1api.materialshub.gr/health</code></li>
+<li><strong>API Documentation</strong>: <code>https://v1api.materialshub.gr/docs</code></li>
+<li><strong>ReDoc Documentation</strong>: <code>https://v1api.materialshub.gr/redoc</code></li>
+<li><strong>OpenAPI Schema</strong>: <code>https://v1api.materialshub.gr/openapi.json</code></li>
+</ul>
+<h4><strong>Functional Endpoints</strong></h4>
+<ul>
+<li><strong>PDF Processing</strong>: <code>https://v1api.materialshub.gr/api/v1/pdf/*</code></li>
+<li><strong>AI Analysis</strong>: <code>https://v1api.materialshub.gr/api/v1/ai/*</code></li>
+<li><strong>Vector Search</strong>: <code>https://v1api.materialshub.gr/api/v1/search/*</code></li>
+<li><strong>RAG System</strong>: <code>https://v1api.materialshub.gr/api/v1/rag/*</code></li>
+<li><strong>Document Management</strong>: <code>https://v1api.materialshub.gr/api/v1/documents/*</code></li>
+</ul>
+<h2>🚀 Deployment Options</h2>
+<h3>🔄 Default Deployment (Recommended)</h3>
+<ul>
+<li><strong>Workflow</strong>: <code>.github/workflows/deploy.yml</code></li>
+<li><strong>Trigger</strong>: Automatic on push to <code>main</code> or <code>production</code> branches</li>
+<li><strong>Duration</strong>: 2-3 minutes</li>
+<li><strong>Features</strong>: Fast, reliable deployment with comprehensive health monitoring</li>
+<li><strong>Manual Option</strong>: Available via GitHub Actions workflow_dispatch</li>
+</ul>
+<h3>🚀 Orchestrated Deployment (Advanced)</h3>
+<ul>
+<li><strong>Workflow</strong>: <code>.github/workflows/orchestrated-deployment.yml</code></li>
+<li><strong>Trigger</strong>: Manual only via GitHub Actions workflow_dispatch</li>
+<li><strong>Duration</strong>: 5-8 minutes</li>
+<li><strong>Features</strong>: Multi-phase pipeline with intelligence, validation, and comprehensive reporting</li>
+<li><strong>Options</strong>: Deployment mode (fast-track, intelligent, comprehensive), target branch, diagnostics control</li>
+</ul>
+<h2>🏥 Health Monitoring &amp; Diagnostics</h2>
+<h3>🔍 Real-Time Health Checks</h3>
+<ul>
+<li><strong>HTTP Status Code Verification</strong>: Tests actual endpoint responses (200, 502, 404, etc.)</li>
+<li><strong>Multiple Endpoint Testing</strong>: Health, docs, redoc, and OpenAPI schema endpoints</li>
+<li><strong>Response Time Monitoring</strong>: Tracks endpoint response times and availability</li>
+<li><strong>Retry Logic</strong>: Multiple attempts with intelligent backoff</li>
+</ul>
+<h3>🔧 Automatic Diagnostics</h3>
+<p>When health checks fail, the system automatically collects:</p>
+<ul>
+<li><strong>System Resources</strong>: CPU, memory, disk usage, load averages</li>
+<li><strong>Service Status</strong>: systemd service status and configuration</li>
+<li><strong>Network Analysis</strong>: Port availability, process binding, network interfaces</li>
+<li><strong>Application Logs</strong>: Recent logs, error logs, and service history</li>
+<li><strong>Environment Verification</strong>: Python environment, dependencies, application structure</li>
+</ul>
+<h3>🔄 Auto-Recovery Features</h3>
+<ul>
+<li><strong>Automatic Service Restart</strong>: Attempts to restart failed services</li>
+<li><strong>Post-Restart Verification</strong>: Re-tests endpoints after recovery attempts</li>
+<li><strong>Recovery Status Reporting</strong>: Clear indication of recovery success or failure</li>
+<li><strong>Escalation Path</strong>: Provides manual intervention steps when auto-recovery fails</li>
+</ul>
+<h2>🛠️ System Requirements</h2>
+<h3>🐍 Runtime Environment</h3>
+<ul>
+<li><strong>Python</strong>: 3.9+ (managed via pyenv)</li>
+<li><strong>Package Manager</strong>: uv (ultrafast Python package installer)</li>
+<li><strong>Process Management</strong>: systemd service (mivaa-pdf-extractor.service)</li>
+<li><strong>Web Server</strong>: FastAPI with Uvicorn ASGI server</li>
+<li><strong>Port</strong>: 8000 (internal), 443/80 (external via nginx)</li>
+</ul>
+<h3>📦 Dependencies</h3>
+<ul>
+<li><strong>Core</strong>: FastAPI, Uvicorn, PyMuPDF4LLM, LlamaIndex</li>
+<li><strong>AI/ML</strong>: OpenAI, HuggingFace Transformers, Sentence Transformers</li>
+<li><strong>Database</strong>: Supabase Python client, SQLAlchemy, asyncpg</li>
+<li><strong>Utilities</strong>: Pydantic, python-multipart, python-jose</li>
+<li><strong>Monitoring</strong>: Sentry SDK, structlog</li>
+</ul>
+<h3>🔐 Environment Variables</h3>
+<pre><code class="language-bash"># Application
+ENVIRONMENT=production
+DEBUG=false
+LOG_LEVEL=ERROR
+
+# Database
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Authentication
+JWT_SECRET_KEY=your_jwt_secret
+
+# AI Services
+OPENAI_API_KEY=your_openai_key
+HUGGINGFACE_API_KEY=your_huggingface_key
+
+# External APIs
+MATERIAL_KAI_API_URL=https://v1api.materialshub.gr
+MATERIAL_KAI_API_KEY=your_api_key
+
+# Performance
+CACHE_TTL=3600
+DATABASE_POOL_SIZE=20
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn
+LOG_FILE=/var/log/mivaa/app.log
+</code></pre>
+<h2>🔧 Service Management</h2>
+<h3>📋 Service Commands</h3>
+<pre><code class="language-bash"># Service status
+sudo systemctl status mivaa-pdf-extractor
+
+# Start service
+sudo systemctl start mivaa-pdf-extractor
+
+# Stop service
+sudo systemctl stop mivaa-pdf-extractor
+
+# Restart service
+sudo systemctl restart mivaa-pdf-extractor
+
+# Enable auto-start
+sudo systemctl enable mivaa-pdf-extractor
+
+# View logs
+sudo journalctl -u mivaa-pdf-extractor -f
+
+# View recent logs
+sudo journalctl -u mivaa-pdf-extractor --since &quot;1 hour ago&quot;
+</code></pre>
+<h3>🏥 Health Check Commands</h3>
+<pre><code class="language-bash"># Basic health check
+curl https://v1api.materialshub.gr/health
+
+# Detailed health check with headers
+curl -I https://v1api.materialshub.gr/health
+
+# API documentation availability
+curl https://v1api.materialshub.gr/docs
+
+# Service status check
+curl -s https://v1api.materialshub.gr/health | jq &#39;.&#39;
+</code></pre>
+<h3>📊 Monitoring Commands</h3>
+<pre><code class="language-bash"># System resources
+htop
+free -h
+df -h
+
+# Network status
+ss -tlnp | grep :8000
+lsof -i :8000
+
+# Process information
+ps aux | grep mivaa
+pgrep -f mivaa-pdf-extractor
+</code></pre>
+<h2>🔍 Troubleshooting</h2>
+<h3>❌ Common Issues</h3>
+<h4><strong>Service Not Starting</strong></h4>
+<pre><code class="language-bash"># Check service status
+sudo systemctl status mivaa-pdf-extractor
+
+# Check logs for errors
+sudo journalctl -u mivaa-pdf-extractor --since &quot;10 minutes ago&quot;
+
+# Verify Python environment
+which python3
+python3 --version
+
+# Check port availability
+ss -tlnp | grep :8000
+</code></pre>
+<h4><strong>Health Check Failures</strong></h4>
+<pre><code class="language-bash"># Test local endpoint
+curl http://localhost:8000/health
+
+# Check service binding
+netstat -tlnp | grep :8000
+
+# Verify nginx configuration
+sudo nginx -t
+sudo systemctl status nginx
+</code></pre>
+<h4><strong>Performance Issues</strong></h4>
+<pre><code class="language-bash"># Check system resources
+top
+free -h
+df -h
+
+# Monitor service logs
+sudo journalctl -u mivaa-pdf-extractor -f
+
+# Check database connections
+# (Check Supabase dashboard for connection pool status)
+</code></pre>
+<h3>🔄 Recovery Procedures</h3>
+<h4><strong>Automatic Recovery</strong></h4>
+<p>The deployment workflows include automatic recovery features:</p>
+<ol>
+<li>Health check failure detection</li>
+<li>Automatic service restart</li>
+<li>Post-restart verification</li>
+<li>Status reporting</li>
+</ol>
+<h4><strong>Manual Recovery</strong></h4>
+<pre><code class="language-bash"># Full service restart
+sudo systemctl restart mivaa-pdf-extractor
+
+# Clear logs and restart
+sudo journalctl --vacuum-time=1d
+sudo systemctl restart mivaa-pdf-extractor
+
+# Rebuild and restart (if needed)
+cd /path/to/mivaa-pdf-extractor
+git pull origin main
+sudo systemctl restart mivaa-pdf-extractor
+</code></pre>
+<h2>📈 Performance Optimization</h2>
+<h3>🚀 Configuration Tuning</h3>
+<ul>
+<li><strong>Database Pool Size</strong>: Adjust <code>DATABASE_POOL_SIZE</code> based on load</li>
+<li><strong>Cache TTL</strong>: Optimize <code>CACHE_TTL</code> for your use case</li>
+<li><strong>Worker Processes</strong>: Configure Uvicorn workers for concurrent requests</li>
+<li><strong>Memory Management</strong>: Monitor and adjust Python memory settings</li>
+</ul>
+<h3>📊 Monitoring Metrics</h3>
+<ul>
+<li><strong>Response Times</strong>: Track API endpoint response times</li>
+<li><strong>Error Rates</strong>: Monitor 4xx/5xx error rates</li>
+<li><strong>Resource Usage</strong>: CPU, memory, and disk utilization</li>
+<li><strong>Database Performance</strong>: Query times and connection pool usage</li>
+</ul>
+<h2>🔗 Integration Points</h2>
+<h3>🌐 Frontend Integration</h3>
+<ul>
+<li><strong>API Calls</strong>: React application communicates via REST API</li>
+<li><strong>Authentication</strong>: JWT tokens for secure communication</li>
+<li><strong>Error Handling</strong>: Structured error responses with proper HTTP codes</li>
+</ul>
+<h3>🗄️ Database Integration</h3>
+<ul>
+<li><strong>Supabase</strong>: PostgreSQL with vector extensions</li>
+<li><strong>Connection Pooling</strong>: Managed connection pool for performance</li>
+<li><strong>Migrations</strong>: Database schema management (when available)</li>
+</ul>
+<h3>🤖 AI Service Integration</h3>
+<ul>
+<li><strong>OpenAI</strong>: GPT models for text generation and analysis</li>
+<li><strong>HuggingFace</strong>: Embedding models and transformers</li>
+<li><strong>Vector Search</strong>: Semantic similarity search with optimized embeddings</li>
+</ul>
+<h2>📚 Additional Resources</h2>
+<ul>
+<li><strong>API Documentation</strong>: <a href="https://v1api.materialshub.gr/docs">https://v1api.materialshub.gr/docs</a></li>
+<li><strong>ReDoc Documentation</strong>: <a href="https://v1api.materialshub.gr/redoc">https://v1api.materialshub.gr/redoc</a></li>
+<li><strong>GitHub Repository</strong>: <a href="https://github.com/creativeghq/material-kai-vision-platform">Material Kai Vision Platform</a></li>
+<li><strong>Deployment Guide</strong>: See <code>docs/deployment-guide.md</code> for comprehensive deployment information</li>
+<li><strong>API Reference</strong>: See <code>docs/api-documentation.md</code> for complete API documentation</li>
+</ul>
+
+</div></body></html>

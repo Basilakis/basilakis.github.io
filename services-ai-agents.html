@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AI Agents &amp; Coordination Services Documentation</h1>
+<h2>🤖 AI Agent Architecture</h2>
+<p>The Material Kai Vision Platform implements a sophisticated multi-agent system for coordinated AI workflows, specialized task execution, and intelligent automation.</p>
+<h2>🎯 Core Agent Services</h2>
+<h3>1. AgentMLCoordinator</h3>
+<p><strong>Location</strong>: <code>src/services/agentMLCoordinator.ts</code></p>
+<p><strong>Purpose</strong>: Central coordinator for multi-agent ML workflows</p>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>Multi-agent task distribution</li>
+<li>Workflow orchestration</li>
+<li>Performance monitoring</li>
+<li>Resource allocation</li>
+<li>Error handling and recovery</li>
+</ul>
+<p><strong>Coordination Capabilities</strong>:</p>
+<pre><code class="language-typescript">interface AgentTask {
+  id: string;
+  type: &#39;material_analysis&#39; | &#39;pdf_processing&#39; | &#39;3d_generation&#39; | &#39;search&#39;;
+  priority: number;
+  requirements: {
+    models: string[];
+    resources: ResourceRequirements;
+    timeout: number;
+  };
+  dependencies: string[];
+  workspace_id: string;
+}
+</code></pre>
+<p><strong>Agent Management</strong>:</p>
+<ul>
+<li>Task queue management</li>
+<li>Agent health monitoring</li>
+<li>Load balancing</li>
+<li>Performance optimization</li>
+<li>Failure recovery</li>
+</ul>
+<h3>2. AgentSpecializationManager</h3>
+<p><strong>Location</strong>: <code>src/services/agentSpecializationManager.ts</code></p>
+<p><strong>Purpose</strong>: Manage specialized AI agents for different domains</p>
+<p><strong>Specialized Agents</strong>:</p>
+<ul>
+<li><strong>Material Recognition Agent</strong>: Image analysis and material identification</li>
+<li><strong>Document Processing Agent</strong>: PDF extraction and analysis</li>
+<li><strong>3D Generation Agent</strong>: 3D model creation and optimization</li>
+<li><strong>Search Agent</strong>: Intelligent search and retrieval</li>
+<li><strong>Quality Assurance Agent</strong>: Content validation and quality control</li>
+</ul>
+<p><strong>Agent Specialization</strong>:</p>
+<pre><code class="language-typescript">interface SpecializedAgent {
+  id: string;
+  name: string;
+  specialization: AgentSpecialization;
+  capabilities: string[];
+  performance_metrics: PerformanceMetrics;
+  model_configs: ModelConfiguration[];
+  status: &#39;active&#39; | &#39;idle&#39; | &#39;busy&#39; | &#39;error&#39;;
+}
+</code></pre>
+<h3>3. AgentCollaborationWorkflows</h3>
+<p><strong>Location</strong>: <code>src/services/agentCollaborationWorkflows.ts</code></p>
+<p><strong>Purpose</strong>: Define and execute collaborative agent workflows</p>
+<p><strong>Collaboration Patterns</strong>:</p>
+<ul>
+<li><strong>Sequential Processing</strong>: Step-by-step agent execution</li>
+<li><strong>Parallel Processing</strong>: Concurrent agent execution</li>
+<li><strong>Hierarchical Processing</strong>: Master-worker agent patterns</li>
+<li><strong>Peer-to-Peer</strong>: Direct agent communication</li>
+<li><strong>Consensus Building</strong>: Multi-agent decision making</li>
+</ul>
+<p><strong>Workflow Examples</strong>:</p>
+<pre><code class="language-typescript">// Material Analysis Workflow
+const materialWorkflow = {
+  name: &#39;comprehensive_material_analysis&#39;,
+  agents: [
+    &#39;image_analysis_agent&#39;,
+    &#39;property_prediction_agent&#39;,
+    &#39;safety_assessment_agent&#39;,
+    &#39;standards_compliance_agent&#39;
+  ],
+  execution_pattern: &#39;parallel_then_consensus&#39;,
+  quality_gates: [&#39;confidence_threshold&#39;, &#39;consistency_check&#39;]
+};
+</code></pre>
+<h3>4. AgentLearningSystem</h3>
+<p><strong>Location</strong>: <code>src/services/agentLearningSystem.ts</code></p>
+<p><strong>Purpose</strong>: Implement learning and adaptation for AI agents</p>
+<p><strong>Learning Capabilities</strong>:</p>
+<ul>
+<li><strong>Performance Learning</strong>: Improve based on success metrics</li>
+<li><strong>User Feedback Learning</strong>: Adapt based on user interactions</li>
+<li><strong>Cross-Agent Learning</strong>: Share knowledge between agents</li>
+<li><strong>Domain Adaptation</strong>: Adapt to specific material domains</li>
+<li><strong>Continuous Improvement</strong>: Ongoing optimization</li>
+</ul>
+<p><strong>Learning Mechanisms</strong>:</p>
+<ul>
+<li>Reinforcement learning from user feedback</li>
+<li>Transfer learning between similar tasks</li>
+<li>Meta-learning for quick adaptation</li>
+<li>Ensemble learning for improved accuracy</li>
+<li>Active learning for data efficiency</li>
+</ul>
+<h3>5. AgentPerformanceOptimizer</h3>
+<p><strong>Location</strong>: <code>src/services/agentPerformanceOptimizer.ts</code></p>
+<p><strong>Purpose</strong>: Optimize agent performance and resource utilization</p>
+<p><strong>Optimization Features</strong>:</p>
+<ul>
+<li><strong>Model Selection</strong>: Choose optimal models for tasks</li>
+<li><strong>Resource Allocation</strong>: Efficient resource distribution</li>
+<li><strong>Caching Strategies</strong>: Intelligent result caching</li>
+<li><strong>Load Balancing</strong>: Distribute workload across agents</li>
+<li><strong>Performance Tuning</strong>: Continuous performance optimization</li>
+</ul>
+<h2>🔄 Workflow Orchestration</h2>
+<h3>1. IntegratedWorkflowService</h3>
+<p><strong>Location</strong>: <code>src/services/integratedWorkflowService.ts</code></p>
+<p><strong>Purpose</strong>: Orchestrate complex multi-service workflows</p>
+<p><strong>Workflow Types</strong>:</p>
+<ul>
+<li><strong>Enhanced Material Recognition</strong>: Multi-modal material analysis</li>
+<li><strong>Document Processing Pipeline</strong>: End-to-end PDF processing</li>
+<li><strong>3D Generation Workflow</strong>: Complete 3D model creation</li>
+<li><strong>Knowledge Extraction</strong>: Intelligent content extraction</li>
+<li><strong>Quality Assurance</strong>: Multi-stage validation</li>
+</ul>
+<p><strong>Workflow Execution</strong>:</p>
+<pre><code class="language-typescript">interface WorkflowExecution {
+  id: string;
+  workflow_type: string;
+  status: &#39;pending&#39; | &#39;running&#39; | &#39;completed&#39; | &#39;failed&#39;;
+  progress: number;
+  current_stage: string;
+  results: WorkflowResult[];
+  performance_metrics: PerformanceMetrics;
+  error_log: ErrorLog[];
+}
+</code></pre>
+<h3>2. IntegratedAIService</h3>
+<p><strong>Location</strong>: <code>src/services/integratedAIService.ts</code></p>
+<p><strong>Purpose</strong>: Unified interface for all AI services and agents</p>
+<p><strong>Integration Features</strong>:</p>
+<ul>
+<li>Service discovery and routing</li>
+<li>Unified API interface</li>
+<li>Error handling and fallbacks</li>
+<li>Performance monitoring</li>
+<li>Cost optimization</li>
+</ul>
+<p><strong>Complete Design Process</strong>:</p>
+<pre><code class="language-typescript">async generateCompleteDesign(
+  images: File[],
+  roomType: string,
+  userPreferences: Record&lt;string, unknown&gt;
+): Promise&lt;CompleteDesignResult&gt; {
+  // 1. NeRF Reconstruction (if multiple images)
+  // 2. SVBRDF Extraction for each material
+  // 3. Spatial Analysis
+  // 4. CrewAI Coordination for design generation
+  // 5. Quality validation and optimization
+}
+</code></pre>
+<h2>🎯 Agent Components</h2>
+<h3>1. AgentMLCoordination (Admin Component)</h3>
+<p><strong>Location</strong>: <code>src/components/Admin/AgentMLCoordination.tsx</code></p>
+<p><strong>Purpose</strong>: Admin interface for agent coordination management</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Agent status monitoring</li>
+<li>Task queue visualization</li>
+<li>Performance metrics dashboard</li>
+<li>Configuration management</li>
+<li>Error tracking and resolution</li>
+</ul>
+<p><strong>Admin Capabilities</strong>:</p>
+<ul>
+<li>View active agents and their status</li>
+<li>Monitor task execution and performance</li>
+<li>Configure agent parameters</li>
+<li>Handle agent failures and recovery</li>
+<li>Analyze agent performance trends</li>
+</ul>
+<h3>2. AIStudioPage</h3>
+<p><strong>Location</strong>: <code>src/components/AI/AIStudioPage.tsx</code></p>
+<p><strong>Purpose</strong>: User interface for AI agent interaction</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Agent selection and configuration</li>
+<li>Task creation and submission</li>
+<li>Real-time progress monitoring</li>
+<li>Result visualization</li>
+<li>Performance analytics</li>
+</ul>
+<h3>3. MaterialAgentSearchInterface</h3>
+<p><strong>Location</strong>: <code>src/components/AI/MaterialAgentSearchInterface.tsx</code></p>
+<p><strong>Purpose</strong>: Specialized interface for material search agents</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Material-specific search queries</li>
+<li>Agent-powered result ranking</li>
+<li>Multi-modal search capabilities</li>
+<li>Expert knowledge integration</li>
+<li>Real-time suggestions</li>
+</ul>
+<h2>🔬 Specialized Agent Services</h2>
+<h3>1. MaterialAgent3DGenerationAPI</h3>
+<p><strong>Location</strong>: <code>src/services/materialAgent3DGenerationAPI.ts</code></p>
+<p><strong>Purpose</strong>: Specialized agent for 3D model generation</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Material-aware 3D generation</li>
+<li>Property-based model optimization</li>
+<li>Quality assessment and validation</li>
+<li>Performance optimization</li>
+<li>Integration with 3D pipeline</li>
+</ul>
+<h3>2. RealtimeAgentMonitor</h3>
+<p><strong>Location</strong>: <code>src/services/realtimeAgentMonitor.ts</code></p>
+<p><strong>Purpose</strong>: Real-time monitoring of agent activities</p>
+<p><strong>Monitoring Features</strong>:</p>
+<ul>
+<li>Live agent status tracking</li>
+<li>Performance metrics collection</li>
+<li>Error detection and alerting</li>
+<li>Resource usage monitoring</li>
+<li>Health check automation</li>
+</ul>
+<h3>3. HybridAIService</h3>
+<p><strong>Location</strong>: <code>src/services/hybridAIService.ts</code></p>
+<p><strong>Purpose</strong>: Intelligent routing between AI providers and agents</p>
+<p><strong>Hybrid Features</strong>:</p>
+<ul>
+<li>Provider selection optimization</li>
+<li>Fallback mechanisms</li>
+<li>Cost optimization</li>
+<li>Performance monitoring</li>
+<li>Quality assurance</li>
+</ul>
+<h2>📊 Agent Analytics &amp; Monitoring</h2>
+<h3>Performance Metrics</h3>
+<p><strong>Agent Performance Indicators</strong>:</p>
+<ul>
+<li>Task completion rate</li>
+<li>Average processing time</li>
+<li>Error rate and types</li>
+<li>Resource utilization</li>
+<li>User satisfaction scores</li>
+</ul>
+<p><strong>Workflow Metrics</strong>:</p>
+<ul>
+<li>End-to-end processing time</li>
+<li>Stage completion rates</li>
+<li>Quality scores</li>
+<li>Cost per workflow</li>
+<li>Scalability metrics</li>
+</ul>
+<h3>Real-time Monitoring</h3>
+<p><strong>Monitoring Capabilities</strong>:</p>
+<ul>
+<li>Live agent status dashboard</li>
+<li>Task queue visualization</li>
+<li>Performance trend analysis</li>
+<li>Error tracking and alerting</li>
+<li>Resource usage monitoring</li>
+</ul>
+<h2>🔧 Agent Configuration</h2>
+<h3>Agent Settings</h3>
+<pre><code class="language-typescript">interface AgentConfiguration {
+  agent_id: string;
+  specialization: string;
+  model_configs: {
+    primary_model: string;
+    fallback_models: string[];
+    confidence_threshold: number;
+    timeout: number;
+  };
+  resource_limits: {
+    max_concurrent_tasks: number;
+    memory_limit: string;
+    cpu_limit: string;
+  };
+  learning_config: {
+    enable_learning: boolean;
+    feedback_weight: number;
+    adaptation_rate: number;
+  };
+}
+</code></pre>
+<h3>Workflow Configuration</h3>
+<p><strong>Workflow Settings</strong>:</p>
+<ul>
+<li>Agent selection criteria</li>
+<li>Execution patterns</li>
+<li>Quality gates</li>
+<li>Error handling policies</li>
+<li>Performance thresholds</li>
+</ul>
+<h2>🎯 Advanced Agent Features</h2>
+<h3>1. Multi-Agent Consensus</h3>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Multiple agent validation</li>
+<li>Confidence scoring</li>
+<li>Disagreement resolution</li>
+<li>Quality assurance</li>
+<li>Expert validation</li>
+</ul>
+<h3>2. Agent Learning &amp; Adaptation</h3>
+<p><strong>Learning Mechanisms</strong>:</p>
+<ul>
+<li>User feedback integration</li>
+<li>Performance-based optimization</li>
+<li>Cross-domain knowledge transfer</li>
+<li>Continuous model improvement</li>
+<li>Adaptive parameter tuning</li>
+</ul>
+<h3>3. Intelligent Task Routing</h3>
+<p><strong>Routing Features</strong>:</p>
+<ul>
+<li>Capability-based routing</li>
+<li>Load balancing</li>
+<li>Performance optimization</li>
+<li>Cost consideration</li>
+<li>Quality requirements</li>
+</ul>
+<h2>🚨 Known Issues &amp; Limitations</h2>
+<h3>Current Challenges</h3>
+<ol>
+<li><strong>Agent Coordination Complexity</strong>: Managing complex multi-agent workflows</li>
+<li><strong>Performance Variability</strong>: Inconsistent performance across different agents</li>
+<li><strong>Resource Management</strong>: Efficient resource allocation challenges</li>
+<li><strong>Error Propagation</strong>: Handling errors in multi-agent workflows</li>
+</ol>
+<h3>Planned Improvements</h3>
+<ol>
+<li><strong>Enhanced Coordination</strong>: Improved workflow orchestration</li>
+<li><strong>Performance Standardization</strong>: Consistent performance across agents</li>
+<li><strong>Resource Optimization</strong>: Better resource allocation algorithms</li>
+<li><strong>Robust Error Handling</strong>: Improved error recovery mechanisms</li>
+</ol>
+<h2>🔗 Integration Points</h2>
+<h3>Frontend Integration</h3>
+<ul>
+<li>AI Studio interface</li>
+<li>Admin coordination panels</li>
+<li>Real-time monitoring dashboards</li>
+<li>Performance analytics</li>
+</ul>
+<h3>Backend Integration</h3>
+<ul>
+<li>PDF processing workflows</li>
+<li>Material recognition pipelines</li>
+<li>3D generation processes</li>
+<li>Search and retrieval systems</li>
+</ul>
+<h3>External Services</h3>
+<ul>
+<li>OpenAI API integration</li>
+<li>HuggingFace model access</li>
+<li>Replicate service coordination</li>
+<li>Custom model deployment</li>
+</ul>
+<h2>📋 Usage Examples</h2>
+<h3>Basic Agent Coordination</h3>
+<pre><code class="language-typescript">const coordinator = new AgentMLCoordinator();
+const taskId = await coordinator.submitTask({
+  type: &#39;material_analysis&#39;,
+  input: imageFile,
+  requirements: {
+    models: [&#39;vision-model&#39;, &#39;property-predictor&#39;],
+    timeout: 30000
+  },
+  workspace_id: &#39;workspace-123&#39;
+});
+</code></pre>
+<h3>Multi-Agent Workflow</h3>
+<pre><code class="language-typescript">const workflowService = new IntegratedWorkflowService();
+const result = await workflowService.enhancedMaterialRecognition([imageFile], {
+  enable_ocr: true,
+  enable_svbrdf: true,
+  enable_knowledge_search: true,
+  quality_threshold: 0.8
+});
+</code></pre>
+<h3>Agent Performance Monitoring</h3>
+<pre><code class="language-typescript">const monitor = new RealtimeAgentMonitor();
+const metrics = await monitor.getAgentPerformance(&#39;material-agent-001&#39;, {
+  timeRange: &#39;24h&#39;,
+  includeDetails: true
+});
+</code></pre>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./ai-ml-services.md">AI/ML Services Documentation</a></li>
+<li><a href="./services-3d-processing.md">3D Processing Services</a></li>
+<li><a href="./services-material-recognition.md">Material Recognition Services</a></li>
+<li><a href="./admin-panel-guide.md">Admin Panel Documentation</a></li>
+</ul>
+
+</div></body></html>

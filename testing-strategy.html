@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Testing Strategy Documentation</h1>
+<h2>🧪 Testing Architecture Overview</h2>
+<p>The Material Kai Vision Platform implements a comprehensive testing strategy across multiple layers:</p>
+<ol>
+<li><strong>Unit Testing</strong> - Individual component/function testing</li>
+<li><strong>Integration Testing</strong> - Service interaction testing</li>
+<li><strong>End-to-End Testing</strong> - Complete workflow testing</li>
+<li><strong>Performance Testing</strong> - Load and stress testing</li>
+<li><strong>Security Testing</strong> - Vulnerability and penetration testing</li>
+</ol>
+<h2>📊 Current Testing Infrastructure</h2>
+<h3>Frontend Testing (Jest + React Testing Library)</h3>
+<p><strong>Configuration</strong>: <code>jest.config.js</code></p>
+<pre><code class="language-javascript">{
+  preset: &#39;ts-jest/presets/default-esm&#39;,
+  testEnvironment: &#39;node&#39;,
+  coverageThreshold: {
+    global: {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95
+    }
+  }
+}
+</code></pre>
+<p><strong>Test Structure</strong>:</p>
+<pre><code>tests/
+├── unit/                    # Unit tests
+│   ├── validation/         # Validation layer tests
+│   ├── batch/             # Batch processing tests
+│   └── integration/       # Integration layer tests
+├── integration/           # Service composition tests
+├── performance/          # Performance and load tests
+├── e2e/                 # End-to-end pipeline tests
+├── fixtures/            # Test data and sample files
+├── mocks/              # Mock implementations
+└── utils/              # Test utilities and helpers
+</code></pre>
+<h3>Backend Testing (Python/pytest)</h3>
+<p><strong>Configuration</strong>: <code>mivaa-pdf-extractor/pytest.ini</code></p>
+<pre><code class="language-ini">[tool:pytest]
+testpaths = tests
+python_files = test_*.py
+addopts = -v --tb=short --strict-markers --color=yes
+markers =
+    unit: Unit tests
+    integration: Integration tests
+    e2e: End-to-end tests
+    performance: Performance tests
+    security: Security tests
+</code></pre>
+<p><strong>Test Categories</strong>:</p>
+<ul>
+<li><code>unit/</code> - Individual function testing</li>
+<li><code>integration/</code> - Service interaction testing</li>
+<li><code>e2e/</code> - Complete workflow testing</li>
+<li><code>performance/</code> - Load testing</li>
+<li><code>security/</code> - Security validation</li>
+</ul>
+<h2>🎯 Testing Coverage Goals</h2>
+<h3>Coverage Targets</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Target Coverage</th>
+<th>Current Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Frontend Components</td>
+<td>95%</td>
+<td>⚠️ Unknown</td>
+</tr>
+<tr>
+<td>Backend Services</td>
+<td>95%</td>
+<td>⚠️ Unknown</td>
+</tr>
+<tr>
+<td>MIVAA Service</td>
+<td>98%</td>
+<td>⚠️ Unknown</td>
+</tr>
+<tr>
+<td>API Endpoints</td>
+<td>100%</td>
+<td>⚠️ Unknown</td>
+</tr>
+<tr>
+<td>Critical Paths</td>
+<td>100%</td>
+<td>⚠️ Unknown</td>
+</tr>
+</tbody></table>
+<h3>Quality Gates</h3>
+<p><strong>Unit Tests</strong>:</p>
+<ul>
+<li>Execution time: &lt;5 minutes</li>
+<li>Pass rate: &gt;99%</li>
+<li>Coverage: &gt;95%</li>
+</ul>
+<p><strong>Integration Tests</strong>:</p>
+<ul>
+<li>Execution time: &lt;15 minutes</li>
+<li>Pass rate: &gt;95%</li>
+<li>Service compatibility: 100%</li>
+</ul>
+<p><strong>E2E Tests</strong>:</p>
+<ul>
+<li>Execution time: &lt;30 minutes</li>
+<li>Pass rate: &gt;90%</li>
+<li>Critical workflows: 100%</li>
+</ul>
+<h2>🔧 Test Implementation</h2>
+<h3>1. Unit Testing Strategy</h3>
+<h4>Frontend Unit Tests</h4>
+<pre><code class="language-typescript">// Example: Component testing
+import { render, screen } from &#39;@testing-library/react&#39;;
+import { MaterialRecognition } from &#39;@/components/Recognition/MaterialRecognition&#39;;
+
+describe(&#39;MaterialRecognition&#39;, () =&gt; {
+  it(&#39;should render upload interface&#39;, () =&gt; {
+    render(&lt;MaterialRecognition /&gt;);
+    expect(screen.getByText(&#39;Upload Image&#39;)).toBeInTheDocument();
+  });
+});
+</code></pre>
+<h4>Backend Unit Tests</h4>
+<pre><code class="language-python"># Example: Service testing
+import pytest
+from app.services.pdf_processor import PDFProcessor
+
+class TestPDFProcessor:
+    def test_extract_text_from_pdf(self):
+        processor = PDFProcessor()
+        result = processor.extract_text(sample_pdf)
+        assert result.success is True
+        assert len(result.text) &gt; 0
+</code></pre>
+<h3>2. Integration Testing Strategy</h3>
+<h4>API Integration Tests</h4>
+<pre><code class="language-typescript">// Example: API endpoint testing
+describe(&#39;MIVAA Gateway Integration&#39;, () =&gt; {
+  it(&#39;should process document successfully&#39;, async () =&gt; {
+    const response = await fetch(&#39;/api/mivaa/gateway&#39;, {
+      method: &#39;POST&#39;,
+      body: JSON.stringify({
+        action: &#39;process_document&#39;,
+        payload: { file: mockPdfFile }
+      })
+    });
+    
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
+  });
+});
+</code></pre>
+<h4>Service Integration Tests</h4>
+<pre><code class="language-python"># Example: Service interaction testing
+@pytest.mark.integration
+async def test_pdf_to_rag_workflow():
+    # Test complete PDF processing to RAG workflow
+    pdf_processor = PDFProcessor()
+    rag_service = RAGService()
+    
+    # Process PDF
+    pdf_result = await pdf_processor.process(sample_pdf)
+    assert pdf_result.success
+    
+    # Store in RAG
+    rag_result = await rag_service.store_document(pdf_result.chunks)
+    assert rag_result.success
+    
+    # Query RAG
+    query_result = await rag_service.query(&quot;test query&quot;)
+    assert len(query_result.results) &gt; 0
+</code></pre>
+<h3>3. End-to-End Testing Strategy</h3>
+<h4>Complete Workflow Tests</h4>
+<pre><code class="language-typescript">// Example: E2E workflow testing
+describe(&#39;Material Analysis Workflow&#39;, () =&gt; {
+  it(&#39;should complete full material analysis&#39;, async () =&gt; {
+    // 1. Upload image
+    await uploadImage(&#39;material-sample.jpg&#39;);
+    
+    // 2. Process with AI
+    await waitForProcessing();
+    
+    // 3. Verify results
+    const results = await getAnalysisResults();
+    expect(results.materialType).toBeDefined();
+    expect(results.properties).toHaveLength.greaterThan(0);
+    
+    // 4. Save to database
+    await saveResults();
+    
+    // 5. Verify persistence
+    const saved = await getStoredResults();
+    expect(saved.id).toBeDefined();
+  });
+});
+</code></pre>
+<h3>4. Performance Testing Strategy</h3>
+<h4>Load Testing</h4>
+<pre><code class="language-python"># Example: Performance testing with locust
+from locust import HttpUser, task, between
+
+class MaterialKaiUser(HttpUser):
+    wait_time = between(1, 3)
+    
+    @task(3)
+    def upload_document(self):
+        with open(&#39;test-document.pdf&#39;, &#39;rb&#39;) as f:
+            self.client.post(&#39;/api/documents/process&#39;, files={&#39;file&#39;: f})
+    
+    @task(1)
+    def query_rag(self):
+        self.client.post(&#39;/api/rag/query&#39;, json={
+            &#39;query&#39;: &#39;material properties&#39;,
+            &#39;workspace_id&#39;: &#39;test-workspace&#39;
+        })
+</code></pre>
+<h4>Performance Benchmarks</h4>
+<pre><code class="language-typescript">// Example: Performance benchmarking
+describe(&#39;Performance Benchmarks&#39;, () =&gt; {
+  it(&#39;should process PDF under 30 seconds&#39;, async () =&gt; {
+    const startTime = Date.now();
+    
+    await processPDF(largePdfFile);
+    
+    const processingTime = Date.now() - startTime;
+    expect(processingTime).toBeLessThan(30000); // 30 seconds
+  });
+  
+  it(&#39;should handle 100 concurrent requests&#39;, async () =&gt; {
+    const requests = Array(100).fill().map(() =&gt; 
+      fetch(&#39;/api/health&#39;)
+    );
+    
+    const responses = await Promise.all(requests);
+    const successCount = responses.filter(r =&gt; r.ok).length;
+    
+    expect(successCount).toBeGreaterThan(95); // 95% success rate
+  });
+});
+</code></pre>
+<h2>🔒 Security Testing</h2>
+<h3>Security Test Suite</h3>
+<p><strong>Location</strong>: <code>tests/suites/security_feature_testing_suite.md</code></p>
+<h4>1. Authentication Testing</h4>
+<pre><code class="language-python">@pytest.mark.security
+def test_jwt_token_validation():
+    # Test invalid tokens
+    invalid_tokens = [&#39;invalid&#39;, &#39;expired&#39;, &#39;malformed&#39;]
+    for token in invalid_tokens:
+        response = client.get(&#39;/api/protected&#39;, headers={&#39;Authorization&#39;: f&#39;Bearer {token}&#39;})
+        assert response.status_code == 401
+
+@pytest.mark.security
+def test_api_key_validation():
+    # Test API key security
+    invalid_keys = [&#39;short&#39;, &#39;invalid-format&#39;, &#39;&#39;]
+    for key in invalid_keys:
+        response = client.post(&#39;/api/mivaa/gateway&#39;, headers={&#39;X-API-Key&#39;: key})
+        assert response.status_code == 401
+</code></pre>
+<h4>2. Input Validation Testing</h4>
+<pre><code class="language-python">@pytest.mark.security
+def test_input_sanitization():
+    # Test XSS prevention
+    malicious_inputs = [
+        &#39;&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;&#39;,
+        &#39;javascript:alert(&quot;xss&quot;)&#39;,
+        &#39;&lt;iframe src=&quot;malicious.com&quot;&gt;&lt;/iframe&gt;&#39;
+    ]
+    
+    for malicious_input in malicious_inputs:
+        response = client.post(&#39;/api/documents/process&#39;, json={
+            &#39;content&#39;: malicious_input
+        })
+        # Should either reject or sanitize
+        assert response.status_code in [400, 422] or &#39;script&#39; not in response.json()
+</code></pre>
+<h4>3. Rate Limiting Testing</h4>
+<pre><code class="language-python">@pytest.mark.security
+def test_rate_limiting():
+    # Test rate limiting enforcement
+    for i in range(150):  # Exceed rate limit
+        response = client.get(&#39;/api/health&#39;)
+    
+    # Should be rate limited
+    assert response.status_code == 429
+</code></pre>
+<h2>📈 Test Automation &amp; CI/CD</h2>
+<h3>GitHub Actions Integration</h3>
+<pre><code class="language-yaml"># .github/workflows/test.yml
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: &#39;18&#39;
+      - run: npm install
+      - run: npm run test
+      - run: npm run test:coverage
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: &#39;3.9&#39;
+      - run: pip install -r requirements.txt
+      - run: pytest tests/unit/ -v --cov=app
+      - run: pytest tests/integration/ -v
+      - run: pytest tests/security/ -v
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+    steps:
+      - uses: actions/checkout@v3
+      - run: docker-compose up -d
+      - run: npm run test:e2e
+      - run: docker-compose down
+</code></pre>
+<h3>Test Execution Commands</h3>
+<pre><code class="language-bash"># Frontend tests
+npm run test                    # Run all tests
+npm run test:watch             # Watch mode
+npm run test:coverage          # With coverage
+npm run test:ci               # CI mode
+
+# Backend tests
+cd mivaa-pdf-extractor
+pytest tests/unit/ -v          # Unit tests
+pytest tests/integration/ -v   # Integration tests
+pytest tests/e2e/ -v          # E2E tests
+pytest tests/performance/ -v   # Performance tests
+pytest tests/security/ -v      # Security tests
+
+# All tests
+make test-all                  # Run complete test suite
+</code></pre>
+<h2>🚨 Current Testing Issues</h2>
+<h3>1. Missing Test Coverage</h3>
+<p><strong>Problems Identified</strong>:</p>
+<ul>
+<li>No actual test files found in <code>tests/</code> directories</li>
+<li>Test configuration exists but no implementation</li>
+<li>Unknown current coverage levels</li>
+</ul>
+<p><strong>Impact</strong>: No quality assurance for deployments</p>
+<h3>2. Broken Test Commands</h3>
+<p><strong>Issue</strong>: ESLint configuration error affects test pipeline</p>
+<pre><code class="language-bash"># Current error
+npm run lint
+# Invalid option &#39;--ext&#39; - perhaps you meant &#39;-c&#39;?
+</code></pre>
+<h3>3. Missing Test Data</h3>
+<p><strong>Problems</strong>:</p>
+<ul>
+<li>No test fixtures for PDF processing</li>
+<li>No mock data for AI services</li>
+<li>No sample images for material recognition</li>
+</ul>
+<h3>4. No Performance Baselines</h3>
+<p><strong>Missing</strong>:</p>
+<ul>
+<li>Performance benchmarks</li>
+<li>Load testing scenarios</li>
+<li>Memory usage monitoring</li>
+</ul>
+<h2>🔧 Immediate Testing Improvements</h2>
+<h3>1. Fix ESLint Configuration</h3>
+<pre><code class="language-javascript">// Update package.json
+{
+  &quot;scripts&quot;: {
+    &quot;lint&quot;: &quot;eslint . --report-unused-disable-directives --max-warnings 0&quot;
+  }
+}
+</code></pre>
+<h3>2. Create Test Fixtures</h3>
+<pre><code>tests/fixtures/
+├── pdfs/
+│   ├── sample-document.pdf
+│   ├── large-document.pdf
+│   └── malformed.pdf
+├── images/
+│   ├── material-samples/
+│   └── test-images/
+└── data/
+    ├── mock-responses.json
+    └── test-materials.json
+</code></pre>
+<h3>3. Implement Basic Test Suite</h3>
+<p><strong>Priority Order</strong>:</p>
+<ol>
+<li>Health check tests</li>
+<li>Authentication tests</li>
+<li>Core API endpoint tests</li>
+<li>PDF processing tests</li>
+<li>RAG system tests</li>
+</ol>
+<h3>4. Set Up Test Environment</h3>
+<pre><code class="language-bash"># Create test database
+supabase db reset --local
+
+# Set up test environment variables
+cp .env.test.example .env.test
+
+# Install test dependencies
+npm install --save-dev @testing-library/react @testing-library/jest-dom
+</code></pre>
+<h2>📊 Test Metrics &amp; Reporting</h2>
+<h3>Key Metrics</h3>
+<ol>
+<li><strong>Test Coverage</strong>: Line, branch, function coverage</li>
+<li><strong>Test Execution Time</strong>: Per test suite and total</li>
+<li><strong>Test Reliability</strong>: Pass/fail rates over time</li>
+<li><strong>Performance Metrics</strong>: Response times, throughput</li>
+<li><strong>Security Metrics</strong>: Vulnerability detection rates</li>
+</ol>
+<h3>Reporting Tools</h3>
+<ul>
+<li><strong>Coverage</strong>: Istanbul/nyc for JavaScript, pytest-cov for Python</li>
+<li><strong>Performance</strong>: Custom benchmarking utilities</li>
+<li><strong>Security</strong>: Bandit, Safety, custom security tests</li>
+<li><strong>CI Integration</strong>: GitHub Actions with artifact uploads</li>
+</ul>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Test environment setup</li>
+<li><a href="./security-authentication.md">Security &amp; Authentication</a> - Security testing</li>
+<li><a href="./api-documentation.md">API Documentation</a> - API testing</li>
+<li><a href="./deployment-guide.md">Deployment Guide</a> - Production testing</li>
+</ul>
+
+</div></body></html>

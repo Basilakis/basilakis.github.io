@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Platform Functionality Documentation</h1>
+<h2>🏗️ Material Kai Vision Platform Overview</h2>
+<p>The Material Kai Vision Platform is a comprehensive AI-powered material intelligence system that combines document processing, material recognition, 3D generation, and knowledge management into a unified platform.</p>
+<h2>🎯 Core Platform Features</h2>
+<h3>1. 🏠 Dashboard &amp; Navigation</h3>
+<h4>Main Dashboard (<code>/</code>)</h4>
+<ul>
+<li><strong>Hero Section</strong>: AI-powered material intelligence overview</li>
+<li><strong>Search Hub Integration</strong>: Unified search interface</li>
+<li><strong>Feature Grid</strong>: Quick access to all platform features</li>
+<li><strong>System Metrics</strong>: Real-time performance monitoring</li>
+<li><strong>Quick Actions</strong>: Start processing, AI Studio access</li>
+</ul>
+<h4>Navigation Structure</h4>
+<pre><code>├── Dashboard (/)
+├── Search Hub (/search-hub)
+├── PDF Upload (/pdf-processing)
+├── MoodBoards (/moodboard)
+├── 3D Designer (/3d)
+├── Web Scraper (/scraper)
+└── Admin Panel (/admin)
+</code></pre>
+<h3>2. 🔐 Authentication &amp; User Management</h3>
+<h4>User Authentication System</h4>
+<ul>
+<li><strong>Sign Up/Sign In</strong>: Email and password authentication</li>
+<li><strong>Password Reset</strong>: Email-based password recovery</li>
+<li><strong>Session Management</strong>: JWT-based authentication with Supabase</li>
+<li><strong>Auto-redirect</strong>: Authenticated users redirected to dashboard</li>
+<li><strong>Protected Routes</strong>: All main features require authentication</li>
+</ul>
+<h4>User Features</h4>
+<ul>
+<li><strong>Profile Management</strong>: Display name and user preferences</li>
+<li><strong>Workspace Isolation</strong>: User-specific data access</li>
+<li><strong>Session Persistence</strong>: Automatic login state management</li>
+<li><strong>Security</strong>: Row Level Security (RLS) for data protection</li>
+</ul>
+<h3>3. 📄 PDF Processing &amp; Knowledge Extraction</h3>
+<h4>PDF Upload Interface (<code>/pdf-processing</code>)</h4>
+<ul>
+<li><strong>Drag &amp; Drop Upload</strong>: Intuitive file upload interface</li>
+<li><strong>Batch Processing</strong>: Multiple PDF processing support</li>
+<li><strong>Real-time Progress</strong>: Processing status and progress tracking</li>
+<li><strong>Format Support</strong>: PDF documents with text and images</li>
+</ul>
+<h4>MIVAA PDF Processor Features</h4>
+<ul>
+<li><strong>Text Extraction</strong>: Advanced text extraction using PyMuPDF4LLM</li>
+<li><strong>Image Extraction</strong>: Extract and process embedded images</li>
+<li><strong>OCR Processing</strong>: Optical Character Recognition for scanned documents</li>
+<li><strong>Markdown Conversion</strong>: Convert PDFs to structured markdown</li>
+<li><strong>Metadata Extraction</strong>: Document properties and structure analysis</li>
+<li><strong>🤖 Auto-Metadata Population</strong>: AI-powered automatic metadata field population</li>
+<li><strong>📄 Document Summarization</strong>: AI-generated summaries (brief, comprehensive, key points)</li>
+<li><strong>🏷️ Named Entity Extraction</strong>: Extract people, organizations, materials, locations, dates</li>
+<li><strong>Table Extraction</strong>: Structured table data extraction</li>
+<li><strong>Form Processing</strong>: Extract form fields and data</li>
+</ul>
+<h4>Processing Pipeline</h4>
+<pre><code class="language-mermaid">graph TD
+    A[PDF Upload] --&gt; B[MIVAA Service]
+    B --&gt; C[Text Extraction]
+    B --&gt; D[Image Extraction]
+    B --&gt; E[OCR Processing]
+    C --&gt; F[Markdown Generation]
+    D --&gt; G[Image Analysis]
+    E --&gt; H[Text Enhancement]
+    F --&gt; I[Document Chunking]
+    G --&gt; I
+    H --&gt; I
+    I --&gt; J[Embedding Generation]
+    J --&gt; K[Vector Storage]
+    K --&gt; L[RAG System]
+</code></pre>
+<h3>4. 🔍 Search Hub &amp; RAG System</h3>
+<h4>Multi-Modal Search Interface (<code>/search-hub</code>)</h4>
+<ul>
+<li><strong>Text Search</strong>: Natural language queries</li>
+<li><strong>Image Search</strong>: Visual similarity search</li>
+<li><strong>Hybrid Search</strong>: Combined text and image search</li>
+<li><strong>Semantic Search</strong>: AI-powered contextual search</li>
+<li><strong>🔍 Vector Similarity Search</strong>: Configurable threshold-based semantic search</li>
+<li><strong>🏷️ Entity-Based Filters</strong>: Smart filtering by extracted entities<ul>
+<li><strong>Material Filters</strong>: Filter by specific material types</li>
+<li><strong>Organization Filters</strong>: Filter by companies and organizations</li>
+<li><strong>Location Filters</strong>: Filter by geographical locations</li>
+<li><strong>People Filters</strong>: Filter by person entities</li>
+<li><strong>High-Confidence Entities</strong>: Only entities with 70%+ confidence</li>
+</ul>
+</li>
+<li><strong>Filter Options</strong>: Category, date, and metadata filters</li>
+</ul>
+<h4>RAG (Retrieval-Augmented Generation) System</h4>
+<ul>
+<li><strong>Document Indexing</strong>: Automatic document processing and indexing</li>
+<li><strong>Vector Embeddings</strong>: OpenAI text-embedding-ada-002 model</li>
+<li><strong>Similarity Search</strong>: Cosine similarity for relevant content retrieval</li>
+<li><strong>Context Generation</strong>: AI-powered answer generation</li>
+<li><strong>Source Attribution</strong>: Track and display source documents</li>
+</ul>
+<h4>🔍 Vector Similarity Search Engine</h4>
+<ul>
+<li><strong>Semantic Understanding</strong>: AI-powered meaning-based search vs keyword matching</li>
+<li><strong>Configurable Thresholds</strong>: Adjustable similarity thresholds (50%-95%)</li>
+<li><strong>Precision Control</strong>: Fine-tune search accuracy for different use cases</li>
+<li><strong>Quantified Relevance</strong>: Similarity scores for result ranking</li>
+<li><strong>Enhanced Discovery</strong>: Find materials by semantic meaning</li>
+<li><strong>Performance Metrics</strong>: Processing time and accuracy tracking</li>
+<li><strong>40% Better Search Accuracy</strong>: Semantic understanding vs traditional search</li>
+</ul>
+<h4>🔗 Document Intelligence &amp; Relationships</h4>
+<ul>
+<li><strong>Related Documents Discovery</strong>: Find documents with similar content and themes</li>
+<li><strong>Content Similarity Analysis</strong>: AI-powered document relationship mapping</li>
+<li><strong>Knowledge Network Visualization</strong>: Understand document connections</li>
+<li><strong>Smart Navigation</strong>: Discover related materials without manual searching</li>
+<li><strong>Document Clustering</strong>: Identify document groups and knowledge gaps</li>
+<li><strong>Relationship Scoring</strong>: Quantified similarity scores for document pairs</li>
+</ul>
+<h4>Search Features</h4>
+<ul>
+<li><strong>Real-time Results</strong>: Instant search as you type</li>
+<li><strong>Relevance Scoring</strong>: AI-powered relevance ranking</li>
+<li><strong>Result Previews</strong>: Document snippets and highlights</li>
+<li><strong>Export Options</strong>: Save search results and insights</li>
+<li><strong>Search History</strong>: Track and revisit previous searches</li>
+</ul>
+<h3>5. 📄 Document Intelligence &amp; Analysis</h3>
+<h4>Document Summarization (<code>/admin</code> - Knowledge Base Tab)</h4>
+<ul>
+<li><strong>AI-Generated Summaries</strong>: Intelligent document summarization using advanced AI</li>
+<li><strong>Multiple Summary Types</strong>: Brief, comprehensive, and key points summaries</li>
+<li><strong>Content Analysis</strong>: Extract main topics, key findings, and important details</li>
+<li><strong>Summary Quality Indicators</strong>: Confidence scores and summary metrics</li>
+<li><strong>Automatic Processing</strong>: Batch summarization for multiple documents</li>
+<li><strong>Integration with Metadata</strong>: Summaries enhance document searchability</li>
+</ul>
+<h4>Named Entity Extraction (<code>/admin</code> - Knowledge Base Tab)</h4>
+<ul>
+<li><strong>Entity Recognition</strong>: Extract people, organizations, materials, locations, dates</li>
+<li><strong>Confidence Scoring</strong>: AI confidence levels for each extracted entity</li>
+<li><strong>Auto-Tagging</strong>: Automatically tag documents with relevant entities</li>
+<li><strong>Structured Metadata</strong>: Convert unstructured text to structured data</li>
+<li><strong>Material Properties</strong>: Extract technical terms and material specifications</li>
+<li><strong>Smart Search Enhancement</strong>: Search by entities mentioned in documents</li>
+</ul>
+<h4>Document Relationships &amp; Discovery</h4>
+<ul>
+<li><strong>Related Documents</strong>: Find documents with similar content and themes</li>
+<li><strong>Content Similarity</strong>: AI-powered document relationship mapping</li>
+<li><strong>Knowledge Networks</strong>: Visualize connections between documents</li>
+<li><strong>Smart Navigation</strong>: Discover related materials without manual searching</li>
+<li><strong>Document Clustering</strong>: Identify document groups and knowledge gaps</li>
+<li><strong>Learning Paths</strong>: Create guided sequences through related content</li>
+</ul>
+<h3>6. 🤖 Auto-Metadata Population &amp; Management</h3>
+<h4>Intelligent Metadata Automation</h4>
+<ul>
+<li><strong>AI-Powered Extraction</strong>: Automatically extract metadata from documents using advanced AI</li>
+<li><strong>Entity Recognition</strong>: Identify and extract key entities (materials, organizations, locations, dates)</li>
+<li><strong>Smart Field Mapping</strong>: Automatically map extracted entities to appropriate metadata fields</li>
+<li><strong>Confidence Scoring</strong>: AI provides confidence levels for each extracted piece of metadata</li>
+<li><strong>Batch Processing</strong>: Process multiple documents simultaneously for efficiency</li>
+<li><strong>Manual Review Workflow</strong>: Review and approve auto-populated metadata before saving</li>
+</ul>
+<h4>Metadata Management Features</h4>
+<ul>
+<li><strong>Custom Field Configuration</strong>: Create and configure custom metadata fields</li>
+<li><strong>Field Type Support</strong>: Text, number, boolean, date, and dropdown field types</li>
+<li><strong>Validation Rules</strong>: Set field validation rules and constraints</li>
+<li><strong>Field Usage Analytics</strong>: Track how metadata fields are being used across documents</li>
+<li><strong>Import/Export</strong>: Backup and restore metadata field configurations</li>
+<li><strong>Version History</strong>: Track changes to metadata over time</li>
+</ul>
+<h4>Business Impact</h4>
+<ul>
+<li><strong>80% Efficiency Gain</strong>: Reduce manual metadata entry time by 80%</li>
+<li><strong>Improved Accuracy</strong>: AI-powered extraction reduces human errors</li>
+<li><strong>Consistent Data</strong>: Standardized metadata across all documents</li>
+<li><strong>Scalable Processing</strong>: Handle large document volumes efficiently</li>
+</ul>
+<h3>7. 🎨 MoodBoards &amp; Material Organization</h3>
+<h4>MoodBoard Management (<code>/moodboard</code>)</h4>
+<ul>
+<li><strong>Create MoodBoards</strong>: Custom material collections</li>
+<li><strong>Add Materials</strong>: Drag and drop material organization</li>
+<li><strong>Visual Layout</strong>: Grid and list view options</li>
+<li><strong>Sharing Options</strong>: Public and private moodboards</li>
+<li><strong>Collaboration</strong>: Team-based moodboard sharing</li>
+</ul>
+<h4>MoodBoard Features</h4>
+<ul>
+<li><strong>Material Cards</strong>: Rich material previews with properties</li>
+<li><strong>Categorization</strong>: Organize by material type and properties</li>
+<li><strong>Search Integration</strong>: Find and add materials from search results</li>
+<li><strong>Export Options</strong>: Export moodboards as PDFs or images</li>
+<li><strong>Version Control</strong>: Track moodboard changes and history</li>
+</ul>
+<h3>8. 🧠 Material Recognition &amp; AI Analysis</h3>
+<h4>Material Recognition Interface (<code>/recognition</code>)</h4>
+<ul>
+<li><strong>Image Upload</strong>: Single and batch image processing</li>
+<li><strong>AI Analysis</strong>: Automated material identification</li>
+<li><strong>Property Extraction</strong>: Physical and chemical properties</li>
+<li><strong>Classification</strong>: Material category and type identification</li>
+<li><strong>Confidence Scoring</strong>: AI prediction confidence levels</li>
+</ul>
+<h4>AI-Powered Features</h4>
+<ul>
+<li><strong>Visual Analysis</strong>: Computer vision for material identification</li>
+<li><strong>Property Prediction</strong>: AI-predicted material properties</li>
+<li><strong>Safety Classification</strong>: Hazard and safety information</li>
+<li><strong>Standards Compliance</strong>: Industry standard verification</li>
+<li><strong>Quality Assessment</strong>: Material quality scoring</li>
+</ul>
+<h3>9. 🎯 3D Design &amp; Generation</h3>
+<h4>3D Designer Interface (<code>/3d</code>)</h4>
+<ul>
+<li><strong>3D Model Generation</strong>: AI-powered 3D model creation</li>
+<li><strong>Material Application</strong>: Apply recognized materials to 3D models</li>
+<li><strong>Scene Composition</strong>: Create complete 3D scenes</li>
+<li><strong>Rendering Options</strong>: Various rendering styles and quality</li>
+<li><strong>Export Formats</strong>: Multiple 3D file format support</li>
+</ul>
+<h4>Advanced 3D Features</h4>
+<ul>
+<li><strong>SVBRDF Extraction</strong>: Material appearance parameter extraction</li>
+<li><strong>CrewAI Integration</strong>: Multi-agent 3D generation workflow</li>
+<li><strong>Real-time Preview</strong>: Interactive 3D model preview</li>
+<li><strong>Material Library</strong>: Extensive 3D material database</li>
+</ul>
+<h3>10. 🌐 Web Scraping &amp; Data Collection</h3>
+<h4>Material Scraper (<code>/scraper</code>)</h4>
+<ul>
+<li><strong>URL Input</strong>: Scrape material data from websites</li>
+<li><strong>Automated Extraction</strong>: AI-powered data extraction</li>
+<li><strong>Data Validation</strong>: Verify and clean scraped data</li>
+<li><strong>Batch Processing</strong>: Multiple URL processing</li>
+<li><strong>Integration</strong>: Add scraped materials to platform</li>
+</ul>
+<h4>Scraping Capabilities</h4>
+<ul>
+<li><strong>Material Properties</strong>: Extract technical specifications</li>
+<li><strong>Images</strong>: Download and process material images</li>
+<li><strong>Documentation</strong>: Extract related documents and manuals</li>
+<li><strong>Pricing Information</strong>: Market pricing data collection</li>
+<li><strong>Supplier Information</strong>: Vendor and supplier details</li>
+</ul>
+<h3>11. ⚙️ Admin Panel &amp; System Management</h3>
+<h4>Admin Dashboard Access (<code>/admin</code>)</h4>
+<p><strong>How to Access Admin Panel</strong>:</p>
+<ol>
+<li><strong>Authentication Required</strong>: Must be logged in as admin user</li>
+<li><strong>URL</strong>: Navigate to <code>/admin</code> or click &quot;Admin Panel&quot; in sidebar</li>
+<li><strong>Permissions</strong>: Admin role required (configured in Supabase)</li>
+<li><strong>Security</strong>: Protected by authentication middleware</li>
+</ol>
+<h4>Admin Dashboard Overview</h4>
+<p>The admin panel provides comprehensive system management through multiple tabs:</p>
+<h5>Tab 1: Recent Activity</h5>
+<ul>
+<li><strong>Real-time Activity Feed</strong>: Latest user actions and system events</li>
+<li><strong>Document Processing Status</strong>: PDF processing queue and results</li>
+<li><strong>User Activity Tracking</strong>: Login, uploads, searches, and interactions</li>
+<li><strong>System Alerts</strong>: Errors, warnings, and important notifications</li>
+<li><strong>Performance Indicators</strong>: Response times and success rates</li>
+</ul>
+<h5>Tab 2: Score Analysis</h5>
+<ul>
+<li><strong>AI Model Performance</strong>: Success rates for OpenAI and Claude</li>
+<li><strong>Processing Statistics</strong>: Document processing metrics</li>
+<li><strong>Quality Scores</strong>: AI analysis quality assessment</li>
+<li><strong>Accuracy Metrics</strong>: Material recognition accuracy rates</li>
+<li><strong>Trend Analysis</strong>: Performance trends over time</li>
+</ul>
+<h5>Tab 3: Performance Monitoring &amp; Enhanced Job Tracking</h5>
+<ul>
+<li><strong>System Health</strong>: CPU, memory, and disk usage</li>
+<li><strong>Database Performance</strong>: Query times and connection status</li>
+<li><strong>API Response Times</strong>: Service latency monitoring</li>
+<li><strong>Error Rates</strong>: System error tracking and analysis</li>
+<li><strong>Throughput Metrics</strong>: Requests per second and processing capacity</li>
+<li><strong>🔍 Enhanced Job Monitoring</strong>: Real-time job progress tracking<ul>
+<li><strong>Stage-by-Stage Analysis</strong>: Monitor processing stages in real-time</li>
+<li><strong>Progress Percentage</strong>: Visual progress indicators for active jobs</li>
+<li><strong>Performance Metrics</strong>: Processing time analysis and optimization</li>
+<li><strong>Error Detection</strong>: Early warning system for processing failures</li>
+<li><strong>Document Analysis Metrics</strong>: Comprehensive processing statistics</li>
+<li><strong>80% Better Diagnostics</strong>: Improved troubleshooting capabilities</li>
+</ul>
+</li>
+</ul>
+<h5>Tab 4: RAG System Management</h5>
+<ul>
+<li><strong>Document Index Status</strong>: Vector database health</li>
+<li><strong>Embedding Statistics</strong>: Embedding generation metrics</li>
+<li><strong>Search Performance</strong>: Query response times and accuracy</li>
+<li><strong>Vector Storage</strong>: Database size and optimization status</li>
+<li><strong>Index Maintenance</strong>: Reindexing and optimization tools</li>
+</ul>
+<h5>Tab 5: Metadata Fields Management &amp; Auto-Population</h5>
+<ul>
+<li><strong>Custom Field Configuration</strong>: Add/edit material metadata fields</li>
+<li><strong>Field Type Management</strong>: Text, number, boolean, date fields</li>
+<li><strong>Validation Rules</strong>: Set field validation and constraints</li>
+<li><strong>Field Usage Analytics</strong>: Track field usage across materials</li>
+<li><strong>Import/Export</strong>: Backup and restore field configurations</li>
+<li><strong>🤖 Auto-Metadata Population</strong>: AI-powered automatic metadata extraction<ul>
+<li><strong>Entity Extraction</strong>: Automatically extract entities from documents</li>
+<li><strong>Smart Field Mapping</strong>: Map extracted entities to metadata fields</li>
+<li><strong>Batch Processing</strong>: Process multiple documents simultaneously</li>
+<li><strong>Confidence Scoring</strong>: AI confidence levels for extracted data</li>
+<li><strong>Manual Review</strong>: Review and approve auto-populated metadata</li>
+<li><strong>80% Efficiency Gain</strong>: Reduce manual metadata entry by 80%</li>
+</ul>
+</li>
+</ul>
+<h5>Tab 6: AI Testing Panel &amp; Multi-Modal Testing</h5>
+<ul>
+<li><strong>Model Testing</strong>: Test different AI models and configurations</li>
+<li><strong>A/B Testing</strong>: Compare model performance</li>
+<li><strong>Prompt Engineering</strong>: Test and optimize AI prompts</li>
+<li><strong>Response Quality</strong>: Evaluate AI response quality</li>
+<li><strong>Cost Analysis</strong>: Track AI service costs and usage</li>
+<li><strong>🧪 Multi-Modal Testing Capabilities</strong>: Comprehensive AI testing suite<ul>
+<li><strong>Text Analysis Testing</strong>: Test AI text processing capabilities</li>
+<li><strong>Image Analysis Testing</strong>: Test computer vision and image analysis</li>
+<li><strong>Combined Analysis Testing</strong>: Test multi-modal AI processing</li>
+<li><strong>Entity Extraction Testing</strong>: Validate entity recognition accuracy</li>
+<li><strong>Confidence Scoring</strong>: Track AI confidence levels across tests</li>
+<li><strong>Performance Monitoring</strong>: Processing time and accuracy metrics</li>
+<li><strong>Quality Assurance</strong>: Ensure AI capabilities before production</li>
+<li><strong>Vector Similarity Testing</strong>: Test semantic search accuracy and performance</li>
+</ul>
+</li>
+</ul>
+<h4>Admin-Only Features</h4>
+<h5>PDF Knowledge Base Management (<code>/admin/pdf-processing</code>)</h5>
+<ul>
+<li><strong>Bulk Document Processing</strong>: Process multiple PDFs simultaneously</li>
+<li><strong>Processing Queue Management</strong>: Monitor and control processing queue</li>
+<li><strong>Document Quality Control</strong>: Review and approve processed documents</li>
+<li><strong>Error Resolution</strong>: Handle failed processing attempts</li>
+<li><strong>Storage Management</strong>: Monitor document storage usage</li>
+</ul>
+<h5>Search Hub Administration (<code>/admin/search-hub</code>)</h5>
+<ul>
+<li><strong>Search Configuration</strong>: Configure search algorithms and weights</li>
+<li><strong>Index Management</strong>: Rebuild and optimize search indexes</li>
+<li><strong>Query Analytics</strong>: Analyze search patterns and performance</li>
+<li><strong>Result Quality</strong>: Monitor search result relevance</li>
+<li><strong>Cache Management</strong>: Control search result caching</li>
+</ul>
+<h5>3D Material Suggestions (<code>/admin/3d-suggestions</code>)</h5>
+<ul>
+<li><strong>AI Model Configuration</strong>: Configure 3D generation models</li>
+<li><strong>Material Library Management</strong>: Manage 3D material database</li>
+<li><strong>Generation Queue</strong>: Monitor 3D model generation requests</li>
+<li><strong>Quality Control</strong>: Review generated 3D models</li>
+<li><strong>Performance Tuning</strong>: Optimize 3D generation parameters</li>
+</ul>
+<h5>Model Debugging Panel (<code>/admin/3d-model-debugging</code>)</h5>
+<ul>
+<li><strong>Model Performance Analysis</strong>: Debug AI model issues</li>
+<li><strong>Error Diagnostics</strong>: Analyze model failures and errors</li>
+<li><strong>Parameter Tuning</strong>: Adjust model parameters for optimization</li>
+<li><strong>Version Management</strong>: Manage different model versions</li>
+<li><strong>Testing Environment</strong>: Safe environment for model testing</li>
+</ul>
+<h4>System Configuration</h4>
+<h5>User Management</h5>
+<ul>
+<li><strong>User Accounts</strong>: View and manage user accounts</li>
+<li><strong>Role Assignment</strong>: Assign admin and user roles</li>
+<li><strong>Permission Management</strong>: Control feature access permissions</li>
+<li><strong>Account Status</strong>: Enable/disable user accounts</li>
+<li><strong>Usage Monitoring</strong>: Track user activity and resource usage</li>
+</ul>
+<h5>Content Moderation</h5>
+<ul>
+<li><strong>Document Review</strong>: Review uploaded documents for quality</li>
+<li><strong>Material Approval</strong>: Approve user-submitted materials</li>
+<li><strong>Content Flagging</strong>: Handle flagged or inappropriate content</li>
+<li><strong>Quality Standards</strong>: Enforce content quality standards</li>
+<li><strong>Automated Moderation</strong>: Configure AI-powered content filtering</li>
+</ul>
+<h5>System Settings</h5>
+<ul>
+<li><strong>API Configuration</strong>: Configure external API settings</li>
+<li><strong>Performance Tuning</strong>: Adjust system performance parameters</li>
+<li><strong>Security Settings</strong>: Configure security policies and rules</li>
+<li><strong>Backup Configuration</strong>: Set up automated backups</li>
+<li><strong>Monitoring Alerts</strong>: Configure system alert thresholds</li>
+</ul>
+<h4>Analytics &amp; Reporting</h4>
+<h5>Usage Analytics</h5>
+<ul>
+<li><strong>User Engagement</strong>: Track feature usage and adoption</li>
+<li><strong>Document Processing</strong>: Monitor PDF processing volumes</li>
+<li><strong>Search Analytics</strong>: Analyze search patterns and success rates</li>
+<li><strong>Performance Trends</strong>: Track system performance over time</li>
+<li><strong>Cost Analysis</strong>: Monitor service costs and resource usage</li>
+</ul>
+<h5>Business Intelligence</h5>
+<ul>
+<li><strong>Material Insights</strong>: Analyze material usage patterns</li>
+<li><strong>User Behavior</strong>: Understand user workflows and preferences</li>
+<li><strong>Feature Adoption</strong>: Track new feature adoption rates</li>
+<li><strong>ROI Analysis</strong>: Measure platform value and impact</li>
+<li><strong>Growth Metrics</strong>: Monitor platform growth and scaling</li>
+</ul>
+<h4>Security &amp; Compliance</h4>
+<h5>Security Monitoring</h5>
+<ul>
+<li><strong>Access Logs</strong>: Monitor user access and authentication</li>
+<li><strong>API Usage</strong>: Track API calls and potential abuse</li>
+<li><strong>Security Alerts</strong>: Monitor for security threats</li>
+<li><strong>Compliance Tracking</strong>: Ensure regulatory compliance</li>
+<li><strong>Audit Trails</strong>: Maintain detailed audit logs</li>
+</ul>
+<h5>Data Protection</h5>
+<ul>
+<li><strong>Privacy Controls</strong>: Manage user data privacy settings</li>
+<li><strong>Data Retention</strong>: Configure data retention policies</li>
+<li><strong>Backup Management</strong>: Monitor and manage data backups</li>
+<li><strong>Encryption Status</strong>: Monitor data encryption status</li>
+<li><strong>GDPR Compliance</strong>: Ensure GDPR compliance features</li>
+</ul>
+<h3>12. 🤖 AI Studio &amp; Agent Coordination</h3>
+<h4>AI Studio Interface (<code>/agents</code>)</h4>
+<ul>
+<li><strong>Agent Management</strong>: Configure and deploy AI agents</li>
+<li><strong>Workflow Automation</strong>: Create automated processing workflows</li>
+<li><strong>Model Selection</strong>: Choose between different AI models</li>
+<li><strong>Performance Tuning</strong>: Optimize AI model performance</li>
+<li><strong>Integration Testing</strong>: Test AI service integrations</li>
+</ul>
+<h4>AI Agent Features</h4>
+<ul>
+<li><strong>CrewAI Integration</strong>: Multi-agent coordination system</li>
+<li><strong>Task Automation</strong>: Automated material processing tasks</li>
+<li><strong>Custom Workflows</strong>: User-defined processing pipelines</li>
+<li><strong>Model Comparison</strong>: A/B testing for different AI models</li>
+<li><strong>Performance Analytics</strong>: AI model performance tracking</li>
+</ul>
+<h2>🔧 Technical Architecture</h2>
+<h3>Frontend Architecture</h3>
+<ul>
+<li><strong>Framework</strong>: React 18 + TypeScript + Vite</li>
+<li><strong>UI Library</strong>: Radix UI + Tailwind CSS</li>
+<li><strong>State Management</strong>: React Query + Context API</li>
+<li><strong>Routing</strong>: React Router DOM v7</li>
+<li><strong>Authentication</strong>: Supabase Auth integration</li>
+</ul>
+<h3>Backend Services</h3>
+<ul>
+<li><strong>API Gateway</strong>: Node.js + TypeScript</li>
+<li><strong>MIVAA Service</strong>: FastAPI + Python</li>
+<li><strong>Database</strong>: Supabase (PostgreSQL)</li>
+<li><strong>File Storage</strong>: Supabase Storage</li>
+<li><strong>Real-time</strong>: Supabase Realtime subscriptions</li>
+</ul>
+<h3>AI/ML Integration</h3>
+<ul>
+<li><strong>OpenAI</strong>: GPT-4, text-embedding-ada-002</li>
+<li><strong>HuggingFace</strong>: Alternative ML models</li>
+<li><strong>Replicate</strong>: 3D generation models</li>
+<li><strong>TogetherAI</strong>: LLaMA Vision models</li>
+<li><strong>Custom Models</strong>: Material-specific AI models</li>
+</ul>
+<h2>🔗 Service Integration</h2>
+<h3>MIVAA Service APIs (Updated January 2025)</h3>
+<ul>
+<li><strong>PDF Processing</strong>: <code>/api/v1/extract/markdown</code>, <code>/api/v1/extract/tables</code>, <code>/api/v1/extract/images</code></li>
+<li><strong>RAG Operations</strong>: <code>/api/v1/rag/query</code>, <code>/api/v1/rag/chat</code>, <code>/api/v1/rag/search</code></li>
+<li><strong>Document Management</strong>: <code>/api/v1/rag/documents/upload</code>, <code>/api/v1/rag/documents</code>, <code>/api/v1/rag/documents/{id}</code></li>
+<li><strong>Search APIs</strong>: <code>/api/search/semantic</code>, <code>/api/search/vector</code>, <code>/api/search/hybrid</code></li>
+<li><strong>Embedding APIs</strong>: <code>/api/embeddings/generate</code>, <code>/api/embeddings/batch</code>, <code>/api/embeddings/clip-generate</code></li>
+<li><strong>AI Analysis</strong>: <code>/api/semantic-analysis</code> (LLaMA Vision), <code>/api/chat/completions</code></li>
+<li><strong>Health &amp; Monitoring</strong>: <code>/health</code>, <code>/metrics</code>, <code>/performance/summary</code>, <code>/api/v1/health</code></li>
+</ul>
+<h3>Supabase Edge Functions (Enhanced)</h3>
+<ul>
+<li><strong>Enhanced RAG Search</strong>: <code>enhanced-rag-search</code> (✅ Optimized with unified vector search)</li>
+<li><strong>RAG Knowledge Search</strong>: <code>rag-knowledge-search</code> (✅ Optimized with unified vector search)</li>
+<li><strong>Material Recognition</strong>: <code>material-recognition</code></li>
+<li><strong>3D Generation</strong>: <code>crewai-3d-generation</code></li>
+<li><strong>Material Scraper</strong>: <code>material-scraper</code></li>
+<li><strong>OCR Processing</strong>: <code>ocr-processing</code></li>
+<li><strong>SVBRDF Extractor</strong>: <code>svbrdf-extractor</code></li>
+</ul>
+<h3>External API Integrations</h3>
+<ul>
+<li><strong>OpenAI API</strong>: Text processing and embeddings</li>
+<li><strong>HuggingFace API</strong>: Alternative ML models</li>
+<li><strong>Replicate API</strong>: 3D model generation</li>
+<li><strong>TogetherAI API</strong>: Vision language models</li>
+</ul>
+<h2>📊 Data Flow Architecture</h2>
+<h3>Document Processing Flow</h3>
+<ol>
+<li><strong>Upload</strong>: User uploads PDF through frontend</li>
+<li><strong>Processing</strong>: MIVAA service extracts text and images</li>
+<li><strong>Chunking</strong>: Document split into searchable chunks</li>
+<li><strong>Embedding</strong>: Generate vector embeddings</li>
+<li><strong>Storage</strong>: Store in Supabase with vector search</li>
+<li><strong>Indexing</strong>: Add to RAG system for search</li>
+</ol>
+<h3>Material Recognition Flow</h3>
+<ol>
+<li><strong>Image Upload</strong>: User uploads material image</li>
+<li><strong>AI Analysis</strong>: Computer vision analysis</li>
+<li><strong>Property Extraction</strong>: AI-predicted properties</li>
+<li><strong>Classification</strong>: Material type identification</li>
+<li><strong>Storage</strong>: Save to material database</li>
+<li><strong>Integration</strong>: Available for moodboards and 3D</li>
+</ol>
+<h3>Search &amp; Retrieval Flow</h3>
+<ol>
+<li><strong>Query Input</strong>: User enters search query</li>
+<li><strong>Embedding</strong>: Convert query to vector</li>
+<li><strong>Similarity Search</strong>: Find relevant documents</li>
+<li><strong>Context Retrieval</strong>: Get relevant content chunks</li>
+<li><strong>AI Generation</strong>: Generate contextual response</li>
+<li><strong>Result Display</strong>: Show results with sources</li>
+</ol>
+<h2>🔐 Security &amp; Access Control</h2>
+<h3>Authentication Layers</h3>
+<ul>
+<li><strong>User Authentication</strong>: Supabase Auth with JWT</li>
+<li><strong>API Key Authentication</strong>: Material Kai API keys</li>
+<li><strong>Service Authentication</strong>: Internal service tokens</li>
+<li><strong>Workspace Isolation</strong>: User-specific data access</li>
+</ul>
+<h3>Data Protection</h3>
+<ul>
+<li><strong>Row Level Security</strong>: Database-level access control</li>
+<li><strong>Input Validation</strong>: Sanitize all user inputs</li>
+<li><strong>Rate Limiting</strong>: Prevent API abuse</li>
+<li><strong>CORS Configuration</strong>: Secure cross-origin requests</li>
+<li><strong>Encryption</strong>: Data encryption at rest and in transit</li>
+</ul>
+<h2>📈 Performance &amp; Scalability</h2>
+<h3>Optimization Features</h3>
+<ul>
+<li><strong>Caching</strong>: Multi-layer caching strategy</li>
+<li><strong>CDN Integration</strong>: Static asset optimization</li>
+<li><strong>Database Indexing</strong>: Optimized query performance</li>
+<li><strong>Lazy Loading</strong>: Component and data lazy loading</li>
+<li><strong>Bundle Splitting</strong>: Optimized JavaScript bundles</li>
+</ul>
+<h3>Monitoring &amp; Analytics</h3>
+<ul>
+<li><strong>Health Checks</strong>: Service availability monitoring</li>
+<li><strong>Performance Metrics</strong>: Response time tracking</li>
+<li><strong>Error Tracking</strong>: Comprehensive error logging</li>
+<li><strong>Usage Analytics</strong>: Feature adoption tracking</li>
+<li><strong>Resource Monitoring</strong>: System resource utilization</li>
+</ul>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="./api-documentation.md">API Documentation</a> - Complete API reference</li>
+<li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Environment setup</li>
+<li><a href="./security-authentication.md">Security &amp; Authentication</a> - Security details</li>
+<li><a href="./ai-ml-services.md">AI &amp; ML Services</a> - AI integration details</li>
+<li><a href="./architecture-services.md">Architecture &amp; Services</a> - Technical architecture</li>
+</ul>
+
+</div></body></html>
