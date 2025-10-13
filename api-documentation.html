@@ -96,6 +96,182 @@ options: {
   &quot;extractImages&quot;: true
 }
 </code></pre>
+<h4>Additional Document Processing Endpoints</h4>
+<p><strong>Process Document from URL</strong>:</p>
+<pre><code class="language-http">POST /api/documents/process-url
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Analyze Document</strong>:</p>
+<pre><code class="language-http">POST /api/documents/analyze
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Batch Process Documents</strong>:</p>
+<pre><code class="language-http">POST /api/documents/batch-process-fixed
+Content-Type: application/json
+</code></pre>
+<p><strong>List Documents</strong>:</p>
+<pre><code class="language-http">GET /api/documents/documents
+</code></pre>
+<p><strong>Document Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/documents/health
+</code></pre>
+<h3>PDF Processing Endpoints</h3>
+<p><strong>Extract Markdown from PDF</strong>:</p>
+<pre><code class="language-http">POST /api/pdf/extract/markdown
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Extract Tables from PDF</strong>:</p>
+<pre><code class="language-http">POST /api/pdf/extract/tables
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Extract Images from PDF</strong>:</p>
+<pre><code class="language-http">POST /api/pdf/extract/images
+Content-Type: multipart/form-data
+</code></pre>
+<h3>Image Analysis Endpoints</h3>
+<p><strong>Analyze Image</strong>:</p>
+<pre><code class="language-http">POST /api/images/analyze
+Content-Type: application/json
+</code></pre>
+<p><strong>Batch Analyze Images</strong>:</p>
+<pre><code class="language-http">POST /api/images/analyze/batch
+Content-Type: application/json
+</code></pre>
+<p><strong>Search Images</strong>:</p>
+<pre><code class="language-http">POST /api/images/search
+Content-Type: application/json
+</code></pre>
+<p><strong>Upload and Analyze Image</strong>:</p>
+<pre><code class="language-http">POST /api/images/upload-and-analyze
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Image Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/images/health
+</code></pre>
+<h3>Material Analysis Endpoints</h3>
+<p><strong>Analyze Material Image</strong>:</p>
+<pre><code class="language-http">POST /api/analyze/materials/image
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Visual Material Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/materials/visual
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Generate Material Embeddings</strong>:</p>
+<pre><code class="language-http">POST /api/embeddings/materials/generate
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Material Search Health</strong>:</p>
+<pre><code class="language-http">GET /api/search/materials/health
+Authorization: Bearer {token}
+</code></pre>
+<h3>Search Endpoints</h3>
+<p><strong>Semantic Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/semantic
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Similarity Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/similarity
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Multimodal Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/multimodal
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Image Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/images
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Search Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/search/health
+Authorization: Bearer {token}
+</code></pre>
+<h3>RAG System Endpoints</h3>
+<p><strong>RAG Query</strong>:</p>
+<pre><code class="language-http">POST /api/rag/query
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>RAG Search</strong>:</p>
+<pre><code class="language-http">POST /api/rag/search
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>RAG Chat</strong>:</p>
+<pre><code class="language-http">POST /api/rag/chat
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Upload RAG Document</strong>:</p>
+<pre><code class="language-http">POST /api/rag/documents/upload
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>List RAG Documents</strong>:</p>
+<pre><code class="language-http">GET /api/rag/documents
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>RAG Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/rag/health
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>RAG Statistics</strong>:</p>
+<pre><code class="language-http">GET /api/rag/stats
+Authorization: Bearer {token}
+</code></pre>
+<h3>AI Analysis Endpoints</h3>
+<p><strong>Semantic Analysis</strong>:</p>
+<pre><code class="language-http">POST /api/semantic-analysis
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Multimodal Analysis</strong>:</p>
+<pre><code class="language-http">POST /api/analyze/multimodal
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Multimodal Query</strong>:</p>
+<pre><code class="language-http">POST /api/query/multimodal
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<h3>Data Management Endpoints</h3>
+<p><strong>Export Data</strong>:</p>
+<pre><code class="language-http">GET /api/data/export
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Backup Data</strong>:</p>
+<pre><code class="language-http">POST /api/data/backup
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Cleanup Data</strong>:</p>
+<pre><code class="language-http">DELETE /api/data/cleanup
+Authorization: Bearer {token}
+</code></pre>
+<h3>System Endpoints</h3>
+<p><strong>List Models</strong>:</p>
+<pre><code class="language-http">GET /api/models
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Package Status</strong>:</p>
+<pre><code class="language-http">GET /api/packages/status
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>System Health</strong>:</p>
+<pre><code class="language-http">GET /api/system/health
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>System Metrics</strong>:</p>
+<pre><code class="language-http">GET /api/system/metrics
+Authorization: Bearer {token}
+</code></pre>
 <h2>🤖 MIVAA Service API</h2>
 <h3>What is MIVAA?</h3>
 <p><strong>MIVAA (Material Intelligence Vision and Analysis Agent)</strong> is the core microservice that powers the Material Kai Vision Platform&#39;s document processing, AI analysis, and knowledge extraction capabilities.</p>
@@ -904,6 +1080,185 @@ const replicateConfig = {
 <li><strong>Performance Metrics</strong>: Response times and throughput</li>
 <li><strong>Error Tracking</strong>: Error rates and types</li>
 </ol>
+<h3>Job Management Endpoints</h3>
+<h4>List All Jobs</h4>
+<pre><code class="language-http">GET /api/jobs
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Query Parameters</strong>:</p>
+<ul>
+<li><code>status</code> (optional): Filter by job status (queued, running, completed, failed)</li>
+<li><code>job_type</code> (optional): Filter by job type (document_processing, bulk_processing, etc.)</li>
+<li><code>page</code> (optional): Page number for pagination (default: 1)</li>
+<li><code>page_size</code> (optional): Items per page (default: 20, max: 100)</li>
+</ul>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Jobs retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;jobs&quot;: [
+    {
+      &quot;job_id&quot;: &quot;bulk_20251011_175237&quot;,
+      &quot;job_type&quot;: &quot;bulk_processing&quot;,
+      &quot;status&quot;: &quot;completed&quot;,
+      &quot;priority&quot;: &quot;normal&quot;,
+      &quot;created_at&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+      &quot;completed_at&quot;: &quot;2025-01-01T00:02:00Z&quot;,
+      &quot;progress_percentage&quot;: 100,
+      &quot;description&quot;: &quot;Process research paper&quot;,
+      &quot;success&quot;: true
+    }
+  ],
+  &quot;total_count&quot;: 1,
+  &quot;page&quot;: 1,
+  &quot;page_size&quot;: 20
+}
+</code></pre>
+<h4>Get Job Status</h4>
+<pre><code class="language-http">GET /api/jobs/{job_id}
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Note</strong>: This endpoint currently has validation issues. Use the jobs list endpoint as a workaround.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job status retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;job_id&quot;: &quot;job_123&quot;,
+    &quot;job_type&quot;: &quot;document_processing&quot;,
+    &quot;status&quot;: &quot;running&quot;,
+    &quot;priority&quot;: &quot;normal&quot;,
+    &quot;created_at&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+    &quot;progress&quot;: {
+      &quot;current_step&quot;: &quot;Processing page 5&quot;,
+      &quot;completed_steps&quot;: 5,
+      &quot;total_steps&quot;: 10,
+      &quot;progress_percentage&quot;: 50
+    }
+  }
+}
+</code></pre>
+<h4>Cancel Job</h4>
+<pre><code class="language-http">DELETE /api/jobs/{job_id}
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job cancelled successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;
+}
+</code></pre>
+<h4>Get Job Statistics</h4>
+<pre><code class="language-http">GET /api/jobs/statistics
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job statistics retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;total_jobs&quot;: 150,
+    &quot;status_counts&quot;: {
+      &quot;queued&quot;: 5,
+      &quot;running&quot;: 3,
+      &quot;completed&quot;: 140,
+      &quot;failed&quot;: 2
+    },
+    &quot;average_processing_time&quot;: 45.2,
+    &quot;success_rate&quot;: 0.987
+  }
+}
+</code></pre>
+<h4>Bulk Processing (Async)</h4>
+<pre><code class="language-http">POST /api/bulk/process
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;urls&quot;: [
+    &quot;https://example.com/document1.pdf&quot;,
+    &quot;https://example.com/document2.pdf&quot;
+  ],
+  &quot;batch_size&quot;: 5,
+  &quot;processing_options&quot;: {
+    &quot;extract_text&quot;: true,
+    &quot;extract_images&quot;: true,
+    &quot;extract_tables&quot;: true
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Bulk processing started successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;job_id&quot;: &quot;bulk_20251011_175237&quot;,
+    &quot;total_documents&quot;: 2,
+    &quot;estimated_completion_time&quot;: &quot;2025-01-01T00:05:00Z&quot;
+  }
+}
+</code></pre>
+<h3>Async Processing Workflow</h3>
+<p>The Material Kai Vision Platform supports asynchronous processing for large PDFs and bulk operations to avoid timeout issues.</p>
+<h4>When to Use Async Processing</h4>
+<ul>
+<li><strong>Large PDFs</strong> (&gt;20MB): Files that may take longer than 2-3 minutes to process</li>
+<li><strong>Bulk Operations</strong>: Processing multiple documents simultaneously</li>
+<li><strong>Complex Processing</strong>: Full extraction with images, tables, and text analysis</li>
+<li><strong>Timeout Avoidance</strong>: When synchronous processing hits Supabase Edge Function limits</li>
+</ul>
+<h4>Async Workflow Steps</h4>
+<ol>
+<li><strong>Submit Job</strong>: Use <code>/api/bulk/process</code> endpoint to submit documents for async processing</li>
+<li><strong>Get Job ID</strong>: Response contains a unique job ID for tracking</li>
+<li><strong>Poll Status</strong>: Use <code>/api/jobs</code> to check job status (recommended: 5-second intervals)</li>
+<li><strong>Retrieve Results</strong>: When status = &quot;completed&quot;, results are available in the job data</li>
+</ol>
+<h4>Example Async Implementation</h4>
+<pre><code class="language-javascript">// Step 1: Submit async job
+const response = await fetch(&#39;/api/bulk/process&#39;, {
+  method: &#39;POST&#39;,
+  headers: {
+    &#39;Authorization&#39;: &#39;Bearer &#39; + token,
+    &#39;Content-Type&#39;: &#39;application/json&#39;
+  },
+  body: JSON.stringify({
+    urls: [pdfUrl],
+    batch_size: 1
+  })
+});
+
+const { data } = await response.json();
+const jobId = data.job_id;
+
+// Step 2: Poll for completion
+const pollJob = async () =&gt; {
+  const jobsResponse = await fetch(&#39;/api/jobs&#39;, {
+    headers: { &#39;Authorization&#39;: &#39;Bearer &#39; + token }
+  });
+
+  const { jobs } = await jobsResponse.json();
+  const job = jobs.find(j =&gt; j.job_id === jobId);
+
+  if (job.status === &#39;completed&#39;) {
+    return job; // Processing complete
+  } else if (job.status === &#39;failed&#39;) {
+    throw new Error(&#39;Job failed&#39;);
+  } else {
+    // Still processing, wait and retry
+    await new Promise(resolve =&gt; setTimeout(resolve, 5000));
+    return pollJob();
+  }
+};
+
+const completedJob = await pollJob();
+</code></pre>
 <h3>Metrics Endpoints</h3>
 <pre><code class="language-http">GET /metrics
 GET /api/v1/health
