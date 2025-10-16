@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Test Environment Configuration</h1>
+<p>This document describes how to configure and use test authentication in the Material Kai Vision Platform, specifically for the MIVAA PDF Extractor service.</p>
+<h2>Overview</h2>
+<p>The platform implements a secure test authentication system that allows developers to test functionality without requiring full production authentication setup. This system is designed with multiple security layers to prevent accidental use in production environments.</p>
+<h2>Security Model</h2>
+<h3>Multi-Layer Security Validation</h3>
+<p>A user is considered a test user ONLY if ALL of these conditions are met:</p>
+<ol>
+<li><strong>Environment Check</strong>: Environment must be one of: <code>development</code>, <code>testing</code>, <code>dev</code>, <code>test</code></li>
+<li><strong>Explicit Enable Flag</strong>: <code>ENABLE_TEST_AUTHENTICATION=true</code> must be set</li>
+<li><strong>Test User Flag</strong>: JWT claims must include <code>is_test_user: true</code></li>
+<li><strong>UUID Validation</strong>: User ID must match the specific test UUID: <code>00000000-0000-0000-0000-000000000001</code></li>
+<li><strong>API Key Validation</strong>: API key must be in the configured test keys list</li>
+</ol>
+<h3>Production Safety Features</h3>
+<ul>
+<li><strong>Defaults to production mode</strong> - test auth is disabled by default</li>
+<li><strong>Explicit opt-in required</strong> - must set <code>ENABLE_TEST_AUTHENTICATION=true</code></li>
+<li><strong>Environment validation</strong> - rejects test users in production environments</li>
+<li><strong>Comprehensive logging</strong> - all test user access is logged with environment info</li>
+</ul>
+<h2>Environment Variables</h2>
+<h3>Required for Test Authentication</h3>
+<pre><code class="language-bash"># Environment type (must be development/testing/dev/test for test auth)
+ENVIRONMENT=development
+
+# Explicitly enable test authentication (required)
+ENABLE_TEST_AUTHENTICATION=true
+
+# Custom test API keys (optional, comma-separated)
+TEST_API_KEYS=my-dev-key,another-test-key,team-test-key
+</code></pre>
+<h3>Default Test API Keys</h3>
+<p>If <code>TEST_API_KEYS</code> is not configured, these default keys are available:</p>
+<ul>
+<li><code>test-key</code></li>
+<li><code>test-api-key</code> </li>
+<li><code>development-key</code></li>
+</ul>
+<h2>Configuration Examples</h2>
+<h3>Development Environment</h3>
+<pre><code class="language-bash"># .env.development
+ENVIRONMENT=development
+ENABLE_TEST_AUTHENTICATION=true
+TEST_API_KEYS=dev-team-key,local-test-key
+
+# Optional: Custom test workspace
+TEST_WORKSPACE_ID=00000000-0000-0000-0000-000000000002
+</code></pre>
+<h3>Testing/CI Environment</h3>
+<pre><code class="language-bash"># .env.testing
+ENVIRONMENT=testing
+ENABLE_TEST_AUTHENTICATION=true
+TEST_API_KEYS=ci-test-key,automated-test-key
+
+# Disable external services for testing
+MATERIAL_KAI_PLATFORM_URL=
+MATERIAL_KAI_SYNC_ENABLED=false
+</code></pre>
+<h3>Production Environment (Test Auth Disabled)</h3>
+<pre><code class="language-bash"># .env.production
+ENVIRONMENT=production
+ENABLE_TEST_AUTHENTICATION=false
+# TEST_API_KEYS not set - test auth completely disabled
+</code></pre>
+<h2>Usage</h2>
+<h3>API Authentication</h3>
+<p>Use test API keys in the Authorization header:</p>
+<pre><code class="language-bash"># Using default test key
+curl -H &quot;Authorization: Bearer test-key&quot; \
+     http://localhost:8000/api/v1/documents/health
+
+# Using custom test key
+curl -H &quot;Authorization: Bearer dev-team-key&quot; \
+     http://localhost:8000/api/v1/documents/process
+</code></pre>
+<h3>Test User Properties</h3>
+<p>When authenticated with a test API key, the user receives these properties:</p>
+<pre><code class="language-json">{
+  &quot;sub&quot;: &quot;00000000-0000-0000-0000-000000000001&quot;,
+  &quot;user_id&quot;: &quot;00000000-0000-0000-0000-000000000001&quot;,
+  &quot;workspace_id&quot;: &quot;00000000-0000-0000-0000-000000000002&quot;,
+  &quot;role&quot;: &quot;admin&quot;,
+  &quot;permissions&quot;: [
+    &quot;admin:all&quot;, &quot;pdf:read&quot;, &quot;pdf:write&quot;, 
+    &quot;document:read&quot;, &quot;document:write&quot;, 
+    &quot;search:read&quot;, &quot;image:read&quot;, &quot;image:write&quot;
+  ],
+  &quot;is_test_user&quot;: true,
+  &quot;environment&quot;: &quot;development&quot;
+}
+</code></pre>
+<h2>Security Features</h2>
+<h3>Workspace Validation Bypass</h3>
+<p>Test users bypass workspace validation in development environments:</p>
+<pre><code class="language-python"># Workspace access is automatically granted for test users
+# No database lookup required
+# Logged for security monitoring
+</code></pre>
+<h3>Comprehensive Logging</h3>
+<p>All test authentication events are logged:</p>
+<pre><code>INFO - Valid test API key authenticated: dev-team-key (environment: development)
+INFO - Bypassing workspace validation for test user in development environment
+</code></pre>
+<h2>Troubleshooting</h2>
+<h3>Test Authentication Not Working</h3>
+<ol>
+<li><strong>Check Environment</strong>: Ensure <code>ENVIRONMENT</code> is set to development/testing</li>
+<li><strong>Verify Enable Flag</strong>: Confirm <code>ENABLE_TEST_AUTHENTICATION=true</code></li>
+<li><strong>Check API Key</strong>: Verify key is in <code>TEST_API_KEYS</code> or using default keys</li>
+<li><strong>Review Logs</strong>: Check application logs for authentication errors</li>
+</ol>
+<h3>Common Error Messages</h3>
+<pre><code class="language-bash"># Test auth disabled in production
+&quot;Test API key rejected in production environment&quot;
+
+# Test auth not enabled
+&quot;Invalid authentication token&quot; (when ENABLE_TEST_AUTHENTICATION=false)
+
+# Wrong environment
+&quot;Test API key rejected in staging environment&quot;
+</code></pre>
+<h3>Debugging Commands</h3>
+<pre><code class="language-bash"># Check current environment configuration
+curl -H &quot;Authorization: Bearer test-key&quot; \
+     http://localhost:8000/api/v1/health
+
+# View authentication logs
+journalctl -u mivaa-pdf-extractor -f | grep &quot;test&quot;
+</code></pre>
+<h2>Best Practices</h2>
+<h3>Development Teams</h3>
+<ol>
+<li><strong>Use custom test keys</strong> for each developer/team</li>
+<li><strong>Set unique TEST_API_KEYS</strong> per environment</li>
+<li><strong>Never commit test keys</strong> to version control</li>
+<li><strong>Rotate test keys</strong> regularly</li>
+</ol>
+<h3>CI/CD Pipelines</h3>
+<ol>
+<li><strong>Use dedicated CI test keys</strong></li>
+<li><strong>Set ENVIRONMENT=testing</strong> in CI</li>
+<li><strong>Enable test auth only for test stages</strong></li>
+<li><strong>Disable external service connections</strong></li>
+</ol>
+<h3>Security Guidelines</h3>
+<ol>
+<li><strong>Never enable test auth in production</strong></li>
+<li><strong>Monitor test auth usage</strong> in logs</li>
+<li><strong>Use environment-specific configurations</strong></li>
+<li><strong>Regularly audit test key usage</strong></li>
+</ol>
+<h2>Integration with MIVAA Advanced Processing</h2>
+<p>The test authentication system resolves the &quot;MIVAA Advanced Processing&quot; 411ms failure by:</p>
+<ol>
+<li><strong>Bypassing Material Kai platform connection</strong> (disabled by default)</li>
+<li><strong>Providing valid authentication</strong> for PDF processing endpoints</li>
+<li><strong>Skipping workspace validation</strong> for test users</li>
+<li><strong>Enabling full API access</strong> for development/testing</li>
+</ol>
+<p>This allows developers to test the complete PDF processing pipeline without requiring production authentication infrastructure.</p>
+
+</div></body></html>
