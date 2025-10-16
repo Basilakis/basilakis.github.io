@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Phase 1: Foundation Implementation Guide</h1>
+<h2>Overview</h2>
+<p>Phase 1 focuses on establishing baseline metrics and implementing semantic coherence scoring for chunks.</p>
+<h2>Current Status: IN PROGRESS</h2>
+<h3>Completed ✅</h3>
+<ul>
+<li>Updated chunking configuration (1500/100/500/3000)</li>
+<li>Fixed MIVAA progress calculation</li>
+<li>Added layout-analysis step execution</li>
+<li>Fixed document naming</li>
+<li>Created document records in database</li>
+<li>Build verified and working</li>
+</ul>
+<h3>In Progress 🔄</h3>
+<ul>
+<li>Processing WIFI MOMO PDF with new config</li>
+<li>Measuring baseline metrics</li>
+<li>Implementing semantic coherence scoring</li>
+</ul>
+<hr>
+<h2>Step 1: Process WIFI MOMO PDF</h2>
+<h3>Option A: Via Frontend UI</h3>
+<ol>
+<li>Navigate to PDF Processing page</li>
+<li>Upload WIFI MOMO PDF (or use URL)</li>
+<li>Monitor progress in modal</li>
+<li>Wait for completion</li>
+</ol>
+<h3>Option B: Via Script</h3>
+<pre><code class="language-bash"># Set environment variables
+export SUPABASE_KEY=your_key
+export MIVAA_API_URL=http://localhost:8000
+
+# Run baseline test
+node scripts/test-pdf-processing-baseline.js
+</code></pre>
+<h3>Expected Results</h3>
+<ul>
+<li><strong>Chunk Count</strong>: 30-35 chunks for 40-page catalog</li>
+<li><strong>Average Size</strong>: 1200-1500 characters</li>
+<li><strong>Processing Time</strong>: &lt; 5 minutes</li>
+<li><strong>Images Extracted</strong>: 15-25 images</li>
+</ul>
+<hr>
+<h2>Step 2: Measure Baseline Metrics</h2>
+<h3>Run Quality Metrics Script</h3>
+<pre><code class="language-bash">export SUPABASE_KEY=your_key
+node scripts/measure-chunk-quality.js
+</code></pre>
+<h3>Metrics Collected</h3>
+<ol>
+<li><p><strong>Chunk Metrics</strong></p>
+<ul>
+<li>Total chunks</li>
+<li>Size distribution</li>
+<li>Coherence indicators</li>
+<li>Metadata coverage</li>
+</ul>
+</li>
+<li><p><strong>Image Metrics</strong></p>
+<ul>
+<li>Total images</li>
+<li>Confidence distribution</li>
+<li>Caption coverage</li>
+<li>Page number tracking</li>
+</ul>
+</li>
+<li><p><strong>Quality Scores</strong></p>
+<ul>
+<li>Chunk quality: % of chunks in optimal size range</li>
+<li>Image quality: % of high-confidence images</li>
+<li>Metadata coverage: % of chunks with document_name</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Step 3: Implement Semantic Coherence Scoring</h2>
+<h3>Database Setup</h3>
+<pre><code class="language-bash"># Apply SQL migration to add quality metrics columns
+# This adds:
+# - coherence_score (decimal 0-1)
+# - coherence_metrics (JSONB with detailed scores)
+# - quality_assessment (text: Excellent/Very Good/Good/Fair/Acceptable/Poor)
+# - quality_recommendations (text array)
+
+# Execute via Supabase dashboard or CLI
+psql -h db.supabase.co -U postgres -d postgres -f scripts/add-quality-metrics-columns.sql
+</code></pre>
+<h3>Service Integration</h3>
+<p>The <code>chunkQualityService.ts</code> provides:</p>
+<pre><code class="language-typescript">// Score a single chunk
+const qualityData = chunkQualityService.scoreChunk(
+  chunkId,
+  content,
+  metadata
+);
+
+// Update database
+await chunkQualityService.updateChunkQuality(chunkId, qualityData);
+
+// Calculate document-level metrics
+await chunkQualityService.calculateDocumentQuality(documentId);
+</code></pre>
+<h3>Coherence Metrics Calculated</h3>
+<ol>
+<li><p><strong>Semantic Completeness</strong> (25% weight)</p>
+<ul>
+<li>Complete sentences</li>
+<li>Paragraph structure</li>
+<li>Proper boundaries</li>
+</ul>
+</li>
+<li><p><strong>Boundary Quality</strong> (25% weight)</p>
+<ul>
+<li>Ends at sentence boundary</li>
+<li>Ends at paragraph boundary</li>
+<li>Ends at section boundary</li>
+</ul>
+</li>
+<li><p><strong>Context Preservation</strong> (20% weight)</p>
+<ul>
+<li>Context references</li>
+<li>Topic consistency</li>
+<li>Word diversity</li>
+</ul>
+</li>
+<li><p><strong>Metadata Richness</strong> (15% weight)</p>
+<ul>
+<li>Required fields present</li>
+<li>Additional metadata</li>
+<li>Field completeness</li>
+</ul>
+</li>
+<li><p><strong>Structural Integrity</strong> (15% weight)</p>
+<ul>
+<li>Heading preservation</li>
+<li>List preservation</li>
+<li>Code block preservation</li>
+<li>Table preservation</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Step 4: Integrate into PDF Workflow</h2>
+<h3>Location: <code>src/services/consolidatedPDFWorkflowService.ts</code></h3>
+<p>After storing chunks (around line 1200), add:</p>
+<pre><code class="language-typescript">// Score chunk quality
+const qualityData = chunkQualityService.scoreChunk(
+  chunkId,
+  content,
+  metadata
+);
+
+// Update chunk with quality metrics
+await chunkQualityService.updateChunkQuality(chunkId, qualityData);
+
+// Track quality in job metadata
+job.metadata.qualityMetrics = job.metadata.qualityMetrics || [];
+job.metadata.qualityMetrics.push({
+  chunkId,
+  coherenceScore: qualityData.coherence_score,
+  assessment: qualityData.quality_assessment,
+});
+</code></pre>
+<h3>Update Quality Assessment Step</h3>
+<p>Modify the &#39;quality-assessment&#39; step to:</p>
+<ol>
+<li>Calculate document-level metrics</li>
+<li>Generate quality report</li>
+<li>Store in database</li>
+<li>Return summary to UI</li>
+</ol>
+<hr>
+<h2>Step 5: Validation &amp; Testing</h2>
+<h3>Test Checklist</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Upload WIFI MOMO PDF</li>
+<li><input disabled="" type="checkbox"> Verify chunks have coherence_score</li>
+<li><input disabled="" type="checkbox"> Check coherence_metrics JSONB structure</li>
+<li><input disabled="" type="checkbox"> Verify quality_assessment values</li>
+<li><input disabled="" type="checkbox"> Check quality_recommendations array</li>
+<li><input disabled="" type="checkbox"> Validate document_quality_metrics table</li>
+<li><input disabled="" type="checkbox"> Test with multiple PDFs</li>
+</ul>
+<h3>Expected Quality Scores</h3>
+<ul>
+<li><strong>Excellent</strong> (0.9-1.0): Well-structured, complete chunks</li>
+<li><strong>Very Good</strong> (0.8-0.9): Good structure, minor issues</li>
+<li><strong>Good</strong> (0.7-0.8): Acceptable quality</li>
+<li><strong>Fair</strong> (0.6-0.7): Some quality issues</li>
+<li><strong>Acceptable</strong> (0.5-0.6): Needs improvement</li>
+<li><strong>Poor</strong> (&lt;0.5): Significant issues</li>
+</ul>
+<hr>
+<h2>Step 6: Monitoring &amp; Reporting</h2>
+<h3>Dashboard Queries</h3>
+<pre><code class="language-sql">-- Get average coherence by document
+SELECT 
+  d.title,
+  AVG(dc.coherence_score) as avg_coherence,
+  COUNT(*) as chunk_count
+FROM documents d
+JOIN document_chunks dc ON d.id = dc.document_id
+GROUP BY d.id, d.title
+ORDER BY avg_coherence DESC;
+
+-- Get low-quality chunks
+SELECT 
+  dc.id,
+  dc.content,
+  dc.coherence_score,
+  dc.quality_assessment,
+  dc.quality_recommendations
+FROM document_chunks dc
+WHERE dc.coherence_score &lt; 0.6
+ORDER BY dc.coherence_score ASC;
+
+-- Get document quality summary
+SELECT 
+  d.title,
+  dqm.average_coherence_score,
+  dqm.chunks_with_high_coherence,
+  dqm.chunks_with_low_coherence,
+  dqm.quality_assessment
+FROM documents d
+JOIN document_quality_metrics dqm ON d.id = dqm.document_id
+ORDER BY dqm.average_coherence_score DESC;
+</code></pre>
+<hr>
+<h2>Files Created/Modified</h2>
+<h3>New Files</h3>
+<ul>
+<li><code>scripts/test-pdf-processing-baseline.js</code> - Baseline metrics collection</li>
+<li><code>scripts/measure-chunk-quality.js</code> - Quality metrics measurement</li>
+<li><code>scripts/semantic-coherence-scorer.ts</code> - Coherence scoring logic</li>
+<li><code>scripts/add-quality-metrics-columns.sql</code> - Database migration</li>
+<li><code>src/services/chunkQualityService.ts</code> - Quality service integration</li>
+</ul>
+<h3>Modified Files</h3>
+<ul>
+<li><code>src/services/consolidatedPDFWorkflowService.ts</code> - Will integrate quality scoring</li>
+</ul>
+<hr>
+<h2>Next Steps</h2>
+<ol>
+<li><p><strong>Execute Database Migration</strong></p>
+<ul>
+<li>Apply SQL migration to add quality columns</li>
+<li>Verify new tables and indexes created</li>
+</ul>
+</li>
+<li><p><strong>Process Test PDF</strong></p>
+<ul>
+<li>Upload WIFI MOMO PDF</li>
+<li>Collect baseline metrics</li>
+<li>Document results</li>
+</ul>
+</li>
+<li><p><strong>Integrate Quality Scoring</strong></p>
+<ul>
+<li>Add chunkQualityService to workflow</li>
+<li>Score all chunks during processing</li>
+<li>Store metrics in database</li>
+</ul>
+</li>
+<li><p><strong>Validate Results</strong></p>
+<ul>
+<li>Query database for quality metrics</li>
+<li>Verify coherence scores</li>
+<li>Check recommendations</li>
+</ul>
+</li>
+<li><p><strong>Move to Phase 2</strong></p>
+<ul>
+<li>Implement embedding stability metrics</li>
+<li>Add context-aware embeddings</li>
+<li>Build chunk relationship graph</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Success Criteria</h2>
+<p>✅ Baseline metrics collected and documented<br>✅ Semantic coherence scoring implemented<br>✅ Quality metrics stored in database<br>✅ Document-level aggregation working<br>✅ All chunks have coherence scores<br>✅ Quality assessment visible in UI<br>✅ Recommendations generated for low-quality chunks  </p>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Issue: Low coherence scores</h3>
+<p><strong>Solution</strong>: Review chunk boundaries, ensure proper metadata, check for incomplete sentences</p>
+<h3>Issue: Missing metadata</h3>
+<p><strong>Solution</strong>: Verify document_name is being set during chunk creation</p>
+<h3>Issue: Database migration fails</h3>
+<p><strong>Solution</strong>: Check Supabase permissions, ensure authenticated role has access</p>
+<h3>Issue: Performance degradation</h3>
+<p><strong>Solution</strong>: Add indexes on coherence_score, batch quality calculations</p>
+<hr>
+<h2>Performance Targets</h2>
+<ul>
+<li>Coherence scoring: &lt; 100ms per chunk</li>
+<li>Database updates: &lt; 50ms per chunk</li>
+<li>Document aggregation: &lt; 1s for 100 chunks</li>
+<li>Overall quality assessment step: &lt; 30s</li>
+</ul>
+<hr>
+<h2>References</h2>
+<ul>
+<li>Chunking Configuration: <code>docs/PENDING_TASKS.md</code></li>
+<li>Quality Metrics Schema: <code>scripts/add-quality-metrics-columns.sql</code></li>
+<li>Service Implementation: <code>src/services/chunkQualityService.ts</code></li>
+<li>Baseline Metrics: <code>scripts/measure-chunk-quality.js</code></li>
+</ul>
+
+</div></body></html>
