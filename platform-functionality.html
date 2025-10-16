@@ -24,8 +24,11 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>Platform Functionality Documentation</h1>
+<p><strong>Last Updated</strong>: 2025-10-16
+<strong>Phase Status</strong>: Phase 2 ✅ Complete, Phase 3 ⏳ Partial (Chunk Relationships Integrated)</p>
 <h2>🏗️ Material Kai Vision Platform Overview</h2>
 <p>The Material Kai Vision Platform is a comprehensive AI-powered material intelligence system that combines document processing, material recognition, 3D generation, and knowledge management into a unified platform.</p>
+<p><strong>Phase 2-3 Enhancements</strong>: Quality scoring, embedding stability analysis, chunk relationships, retrieval quality measurement, and response quality validation.</p>
 <h2>🎯 Core Platform Features</h2>
 <h3>1. 🏠 Dashboard &amp; Navigation</h3>
 <h4>Main Dashboard (<code>/</code>)</h4>
@@ -575,6 +578,73 @@
 <li><strong>Lazy Loading</strong>: Component and data lazy loading</li>
 <li><strong>Bundle Splitting</strong>: Optimized JavaScript bundles</li>
 </ul>
+<h3>Phase 2: Quality Scoring &amp; Embedding Stability ✅</h3>
+<h4>Quality Scoring System</h4>
+<ul>
+<li><strong>5-Dimensional Scoring Algorithm</strong>:<ul>
+<li>Semantic Completeness (28% weight): How well chunk captures document meaning</li>
+<li>Boundary Quality (30% weight): How well chunk boundaries are defined</li>
+<li>Context Preservation (15% weight): How well surrounding context is maintained</li>
+<li>Structural Integrity (20% weight): How well document structure is preserved</li>
+<li>Metadata Richness (7% weight): How complete metadata is</li>
+</ul>
+</li>
+<li><strong>Automatic Scoring</strong>: Applied to every chunk during PDF processing</li>
+<li><strong>Quality Metrics</strong>: Stored in database for analysis and monitoring</li>
+<li><strong>Admin Visibility</strong>: Real-time dashboard at <code>/admin/quality-stability-metrics</code></li>
+</ul>
+<h4>Embedding Stability Analysis</h4>
+<ul>
+<li><strong>Stability Metrics</strong>:<ul>
+<li>Stability Score: Consistency of embeddings</li>
+<li>Variance Score: Embedding variance analysis</li>
+<li>Consistency Score: Cross-chunk consistency</li>
+<li>Anomaly Detection: Identifies outlier embeddings</li>
+</ul>
+</li>
+<li><strong>Automatic Analysis</strong>: Applied after quality scoring</li>
+<li><strong>Anomaly Alerts</strong>: Flags problematic embeddings for review</li>
+<li><strong>Admin Visibility</strong>: Displayed in quality metrics dashboard</li>
+</ul>
+<h3>Phase 3: Validation &amp; Relationship Building ⭐</h3>
+<h4>Chunk Relationship Graph ✅ INTEGRATED</h4>
+<ul>
+<li><strong>Relationship Types</strong>:<ul>
+<li>Sequential: Chunk order relationships (confidence: 0.95)</li>
+<li>Semantic: Content similarity relationships (Jaccard &gt; 0.6)</li>
+<li>Hierarchical: Section structure relationships (level-based)</li>
+</ul>
+</li>
+<li><strong>Automatic Building</strong>: Built after quality scoring in PDF workflow</li>
+<li><strong>Database Storage</strong>: Stored in <code>knowledge_relationships</code> table</li>
+<li><strong>Admin Visibility</strong>: Displayed in Phase 3 metrics panel at <code>/admin/phase3-metrics</code></li>
+</ul>
+<h4>Retrieval Quality Measurement ⏳ PENDING INTEGRATION</h4>
+<ul>
+<li><strong>Metrics Tracked</strong>:<ul>
+<li>Precision: Relevant chunks / retrieved chunks</li>
+<li>Recall: Relevant chunks retrieved / total relevant</li>
+<li>Mean Reciprocal Rank (MRR): Ranking quality</li>
+<li>Latency: Search response time</li>
+</ul>
+</li>
+<li><strong>Success Criteria</strong>: Precision &gt; 0.85, Recall &gt; 0.85, MRR &gt; 0.5, Latency &lt; 500ms</li>
+<li><strong>Integration Point</strong>: Will be added to search services</li>
+<li><strong>Admin Visibility</strong>: Will display in Phase 3 metrics panel</li>
+</ul>
+<h4>Response Quality Validation ⏳ PENDING INTEGRATION</h4>
+<ul>
+<li><strong>Quality Metrics</strong>:<ul>
+<li>Coherence Score (25% weight): Response structure and flow</li>
+<li>Hallucination Detection (35% weight): Factual accuracy vs sources</li>
+<li>Source Attribution (20% weight): Citation completeness</li>
+<li>Factual Consistency (20% weight): Internal consistency</li>
+</ul>
+</li>
+<li><strong>Quality Assessment</strong>: Excellent (&gt;0.90), Very Good (0.80-0.90), Good (0.70-0.80), Fair (0.60-0.70), Poor (&lt;0.60)</li>
+<li><strong>Integration Point</strong>: Will be added to LLM services</li>
+<li><strong>Admin Visibility</strong>: Will display in Phase 3 metrics panel</li>
+</ul>
 <h3>Monitoring &amp; Analytics</h3>
 <ul>
 <li><strong>Health Checks</strong>: Service availability monitoring</li>
@@ -582,6 +652,8 @@
 <li><strong>Error Tracking</strong>: Comprehensive error logging</li>
 <li><strong>Usage Analytics</strong>: Feature adoption tracking</li>
 <li><strong>Resource Monitoring</strong>: System resource utilization</li>
+<li><strong>Quality Metrics</strong>: Phase 2-3 quality and validation metrics</li>
+<li><strong>Relationship Analytics</strong>: Chunk relationship statistics and trends</li>
 </ul>
 <h2>🔗 Related Documentation</h2>
 <ul>
