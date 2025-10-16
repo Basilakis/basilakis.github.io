@@ -527,6 +527,68 @@ FOR ALL USING (
 <li>Package is automatically installed from requirements.txt during deployment</li>
 <li>Headless version prevents GUI dependency issues on servers</li>
 </ul>
+<h2>📊 Phase 3 Validation Metrics Panel</h2>
+<p><strong>Access</strong>: <code>/admin/phase3-metrics</code></p>
+<p><strong>Purpose</strong>: Monitor chunk relationships, retrieval quality, and response quality metrics</p>
+<h3>Chunk Relationships Tab</h3>
+<p><strong>Displays</strong>:</p>
+<ul>
+<li>Total relationships built</li>
+<li>Sequential relationships (chunk order)</li>
+<li>Semantic relationships (content similarity)</li>
+<li>Hierarchical relationships (section structure)</li>
+<li>Average confidence score</li>
+<li>Relationship statistics</li>
+</ul>
+<p><strong>Metrics</strong>:</p>
+<ul>
+<li><strong>Sequential Confidence</strong>: 0.95 (chunk order reliability)</li>
+<li><strong>Semantic Threshold</strong>: 0.6 (Jaccard similarity)</li>
+<li><strong>Hierarchical Levels</strong>: Document structure depth</li>
+</ul>
+<h3>Retrieval Quality Tab</h3>
+<p><strong>Displays</strong> (when integrated):</p>
+<ul>
+<li>Precision: Relevant chunks / retrieved chunks</li>
+<li>Recall: Relevant chunks retrieved / total relevant</li>
+<li>Mean Reciprocal Rank (MRR): Ranking quality</li>
+<li>Latency: Search response time</li>
+</ul>
+<p><strong>Success Criteria</strong>:</p>
+<ul>
+<li>Precision &gt; 0.85</li>
+<li>Recall &gt; 0.85</li>
+<li>MRR &gt; 0.5</li>
+<li>Latency &lt; 500ms</li>
+</ul>
+<h3>Response Quality Tab</h3>
+<p><strong>Displays</strong> (when integrated):</p>
+<ul>
+<li>Coherence Score: Response structure and flow</li>
+<li>Hallucination Score: Factual accuracy vs sources</li>
+<li>Source Attribution: Citation completeness</li>
+<li>Factual Consistency: Internal consistency</li>
+</ul>
+<p><strong>Quality Assessment</strong>:</p>
+<ul>
+<li>Excellent: &gt; 0.90</li>
+<li>Very Good: 0.80-0.90</li>
+<li>Good: 0.70-0.80</li>
+<li>Fair: 0.60-0.70</li>
+<li>Poor: &lt; 0.60</li>
+</ul>
+<h3>Overall Health Score</h3>
+<p><strong>Calculation</strong>:</p>
+<pre><code>Health = (Relationships × 0.3) + (Retrieval × 0.35) + (Response × 0.35)
+</code></pre>
+<p><strong>Interpretation</strong>:</p>
+<ul>
+<li>90-100: Excellent</li>
+<li>80-89: Very Good</li>
+<li>70-79: Good</li>
+<li>60-69: Fair</li>
+<li>&lt; 60: Needs Attention</li>
+</ul>
 <h2>📋 Admin Best Practices</h2>
 <h3>Security Best Practices</h3>
 <ol>
@@ -544,11 +606,20 @@ FOR ALL USING (
 <li><strong>Resource Management</strong>: Efficiently manage resources</li>
 <li><strong>Quality Assurance</strong>: Maintain high quality standards</li>
 </ol>
+<h3>Quality Metrics Best Practices</h3>
+<ol>
+<li><strong>Monitor Chunk Relationships</strong>: Ensure relationships are building correctly</li>
+<li><strong>Track Retrieval Quality</strong>: Monitor search effectiveness</li>
+<li><strong>Validate Response Quality</strong>: Ensure LLM outputs are accurate</li>
+<li><strong>Review Health Score</strong>: Check overall platform health regularly</li>
+<li><strong>Investigate Anomalies</strong>: Address any quality drops immediately</li>
+</ol>
 <h2>🔗 Related Documentation</h2>
 <ul>
 <li><a href="./platform-functionality.md">Platform Functionality</a></li>
 <li><a href="./security-authentication.md">Security &amp; Authentication</a></li>
 <li><a href="./api-documentation.md">API Documentation</a></li>
+<li><a href="./platform-flows.md">Platform Flows</a></li>
 <li><a href="./troubleshooting.md">Troubleshooting Guide</a></li>
 </ul>
 
