@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>System Diagrams - Knowledge Base &amp; Products</h1>
+<p><strong>Document Version</strong>: 1.0<br><strong>Date</strong>: 2025-10-19</p>
+<hr>
+<h2>1. OVERALL SYSTEM ARCHITECTURE</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     MATERIAL KAI VISION PLATFORM                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────────┐         ┌──────────────────┐              │
+│  │   PDF UPLOAD     │         │  XML/SCRAPING    │              │
+│  │   (Frontend)     │         │   (External)     │              │
+│  └────────┬─────────┘         └────────┬─────────┘              │
+│           │                            │                         │
+│           └────────────┬───────────────┘                         │
+│                        ▼                                         │
+│        ┌──────────────────────────────┐                         │
+│        │  PDF PROCESSING PIPELINE     │                         │
+│        │  (MIVAA Integration)         │                         │
+│        ├──────────────────────────────┤                         │
+│        │ • Extract text               │                         │
+│        │ • Create chunks              │                         │
+│        │ • Extract images             │                         │
+│        │ • Generate embeddings        │                         │
+│        └────────────┬─────────────────┘                         │
+│                     │                                            │
+│        ┌────────────┴────────────┐                              │
+│        ▼                         ▼                              │
+│   ┌─────────────┐         ┌──────────────┐                     │
+│   │  KNOWLEDGE  │         │   PRODUCT    │                     │
+│   │    BASE     │         │   BUILDER    │                     │
+│   │  (Storage)  │         │  (Service)   │                     │
+│   └─────────────┘         └──────┬───────┘                     │
+│        │                         │                              │
+│        │                         ▼                              │
+│        │                  ┌──────────────┐                     │
+│        │                  │   PRODUCTS   │                     │
+│        │                  │  (Database)  │                     │
+│        │                  └──────┬───────┘                     │
+│        │                         │                              │
+│        └────────────┬────────────┘                              │
+│                     ▼                                            │
+│        ┌──────────────────────────────┐                         │
+│        │   UNIFIED SEARCH SERVICE     │                         │
+│        │  (Embeddings + Keywords)     │                         │
+│        └────────────┬─────────────────┘                         │
+│                     │                                            │
+│        ┌────────────┴────────────┐                              │
+│        ▼                         ▼                              │
+│   ┌─────────────┐         ┌──────────────┐                     │
+│   │  MATERIALS  │         │    AGENT     │                     │
+│   │    PAGE     │         │ RECOMMENDER  │                     │
+│   │ (Discovery) │         │ (AI)         │                     │
+│   └─────────────┘         └──────────────┘                     │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>2. DATA FLOW - PDF TO PRODUCT</h2>
+<pre><code>PDF Document
+│
+├─ Metadata
+│  ├─ filename: &quot;materials.pdf&quot;
+│  ├─ upload_date: 2025-10-19
+│  ├─ file_size: 2.5MB
+│  └─ page_count: 45
+│
+├─ Chunks (Text Segments)
+│  ├─ Chunk 1: &quot;Ceramic tiles are durable...&quot;
+│  │  ├─ Embedding: [0.234, -0.156, 0.892, ...]
+│  │  ├─ Page: 5
+│  │  └─ Position: 1
+│  │
+│  ├─ Chunk 2: &quot;Available in red, blue, green...&quot;
+│  │  ├─ Embedding: [0.445, 0.123, -0.234, ...]
+│  │  ├─ Page: 6
+│  │  └─ Position: 2
+│  │
+│  └─ Chunk 3: &quot;Fire resistant properties...&quot;
+│     ├─ Embedding: [0.156, 0.234, 0.567, ...]
+│     ├─ Page: 7
+│     └─ Position: 3
+│
+├─ Images (Extracted)
+│  ├─ Image 1: red_tile_1.jpg
+│  │  ├─ Page: 5
+│  │  ├─ Embedding: [0.300, 0.200, 0.500, ...]
+│  │  └─ Confidence: 0.95
+│  │
+│  └─ Image 2: red_tile_2.jpg
+│     ├─ Page: 6
+│     ├─ Embedding: [0.310, 0.210, 0.510, ...]
+│     └─ Confidence: 0.92
+│
+└─ Product (Built from Chunks)
+   ├─ Name: &quot;Fire-Resistant Red Ceramic Tiles&quot;
+   ├─ Description: &quot;Durable ceramic tiles with fire resistance&quot;
+   ├─ Properties:
+   │  ├─ color: &quot;red&quot;
+   │  ├─ material: &quot;ceramic&quot;
+   │  ├─ fireResistant: true
+   │  └─ durability: &quot;high&quot;
+   ├─ Images: [red_tile_1.jpg, red_tile_2.jpg]
+   ├─ Embedding: [0.330, 0.190, 0.520, ...] (combined)
+   └─ Source Chunks: [Chunk1, Chunk2, Chunk3]
+</code></pre>
+<hr>
+<h2>3. KNOWLEDGE BASE UI STRUCTURE</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    KNOWLEDGE BASE                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Tabs: [Overview] [Documents] [Chunks] [Images] [Embeddings]│
+│         [Products] [Metadata]                                │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ DOCUMENTS TAB                                           │ │
+│  ├─────────────────────────────────────────────────────────┤ │
+│  │                                                           │ │
+│  │  📄 materials.pdf                                        │ │
+│  │  ├─ Filename: materials.pdf                             │ │
+│  │  ├─ Upload Date: 2025-10-19                             │ │
+│  │  ├─ File Size: 2.5 MB                                   │ │
+│  │  ├─ Pages: 45                                           │ │
+│  │  ├─ Chunks: 127                                         │ │
+│  │  ├─ Images: 23                                          │ │
+│  │  ├─ Status: ✅ Processed                                │ │
+│  │  └─ [View Details Modal]                                │ │
+│  │                                                           │ │
+│  │  📄 specifications.pdf                                   │ │
+│  │  ├─ Filename: specifications.pdf                        │ │
+│  │  ├─ Upload Date: 2025-10-18                             │ │
+│  │  ├─ File Size: 1.8 MB                                   │ │
+│  │  ├─ Pages: 32                                           │ │
+│  │  ├─ Chunks: 89                                          │ │
+│  │  ├─ Images: 15                                          │ │
+│  │  ├─ Status: ✅ Processed                                │ │
+│  │  └─ [View Details Modal]                                │ │
+│  │                                                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ CHUNKS TAB                                              │ │
+│  ├─────────────────────────────────────────────────────────┤ │
+│  │                                                           │ │
+│  │  📝 Chunk #1                                            │ │
+│  │  ├─ Source: materials.pdf (Page 5)                      │ │
+│  │  ├─ Content: &quot;Ceramic tiles are durable...&quot;             │ │
+│  │  ├─ Embedding: ✅ Generated (1536D)                     │ │
+│  │  ├─ Related Chunks: 3 (similarity: 0.92, 0.85, 0.78)   │ │
+│  │  ├─ Related Images: 2                                   │ │
+│  │  └─ [View Details Modal]                                │ │
+│  │                                                           │ │
+│  │  📝 Chunk #2                                            │ │
+│  │  ├─ Source: materials.pdf (Page 6)                      │ │
+│  │  ├─ Content: &quot;Available in red, blue, green...&quot;         │ │
+│  │  ├─ Embedding: ✅ Generated (1536D)                     │ │
+│  │  ├─ Related Chunks: 2 (similarity: 0.88, 0.81)         │ │
+│  │  ├─ Related Images: 3                                   │ │
+│  │  └─ [View Details Modal]                                │ │
+│  │                                                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ IMAGES TAB                                              │ │
+│  ├─────────────────────────────────────────────────────────┤ │
+│  │                                                           │ │
+│  │  [Image Grid]                                           │ │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │ │
+│  │  │ Image 1  │  │ Image 2  │  │ Image 3  │              │ │
+│  │  │ red_tile │  │ red_tile │  │ blue_tile│              │ │
+│  │  │ Page: 5  │  │ Page: 6  │  │ Page: 8  │              │ │
+│  │  │ Conf: 95%│  │ Conf: 92%│  │ Conf: 88%│              │ │
+│  │  │ [Details]│  │ [Details]│  │ [Details]│              │ │
+│  │  └──────────┘  └──────────┘  └──────────┘              │ │
+│  │                                                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ PRODUCTS TAB (NEW)                                      │ │
+│  ├─────────────────────────────────────────────────────────┤ │
+│  │                                                           │ │
+│  │  🏷️ Fire-Resistant Red Ceramic Tiles                    │ │
+│  │  ├─ Status: Published                                   │ │
+│  │  ├─ Source Chunks: 3                                    │ │
+│  │  ├─ Images: 2                                           │ │
+│  │  ├─ Embedding: ✅ Generated                             │ │
+│  │  ├─ Properties: color=red, material=ceramic, ...        │ │
+│  │  └─ [Edit] [View] [Delete]                              │ │
+│  │                                                           │ │
+│  │  🏷️ Waterproof Blue Porcelain Tiles                     │ │
+│  │  ├─ Status: Draft                                       │ │
+│  │  ├─ Source Chunks: 2                                    │ │
+│  │  ├─ Images: 1                                           │ │
+│  │  ├─ Embedding: ✅ Generated                             │ │
+│  │  ├─ Properties: color=blue, material=porcelain, ...     │ │
+│  │  └─ [Edit] [View] [Delete]                              │ │
+│  │                                                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>4. SEARCH FLOW DIAGRAM</h2>
+<pre><code>User Query: &quot;red waterproof tiles&quot;
+│
+├─ Query Preprocessing
+│  ├─ Normalize: &quot;red waterproof tiles&quot;
+│  ├─ Remove stopwords: &quot;red waterproof tiles&quot;
+│  └─ Identify intent: &quot;find material&quot;
+│
+├─ Generate Query Embedding
+│  └─ Result: [0.210, -0.145, 0.895, ...] (1536D)
+│
+├─ Parallel Search
+│  │
+│  ├─ Search A: Product Embeddings
+│  │  ├─ Query: product_embeddings table
+│  │  ├─ Find similar: cosine_similarity &gt; 0.7
+│  │  └─ Results:
+│  │     ├─ Product1 (0.92) - &quot;Fire-Resistant Red Ceramic Tiles&quot;
+│  │     ├─ Product2 (0.85) - &quot;Waterproof Red Porcelain Tiles&quot;
+│  │     └─ Product3 (0.78) - &quot;Red Tile Collection&quot;
+│  │
+│  ├─ Search B: Chunk Embeddings
+│  │  ├─ Query: document_vectors table
+│  │  ├─ Find similar: cosine_similarity &gt; 0.7
+│  │  └─ Results:
+│  │     ├─ Chunk1 (0.88) - &quot;Red tiles are ideal for bathrooms...&quot;
+│  │     ├─ Chunk2 (0.81) - &quot;Waterproof properties ensure durability...&quot;
+│  │     └─ Chunk3 (0.75) - &quot;Available in red, blue, green...&quot;
+│  │
+│  └─ Search C: Keyword Search
+│     ├─ Match: &quot;red&quot;, &quot;waterproof&quot;, &quot;tiles&quot;
+│     └─ Results: [Product4, Chunk4, Chunk5]
+│
+├─ Result Merging &amp; Ranking
+│  ├─ Combine all results
+│  ├─ Remove duplicates
+│  ├─ Calculate final score:
+│  │  score = (embedding_similarity * 0.6) + (keyword_match * 0.3) + (popularity * 0.1)
+│  └─ Sort by score
+│
+└─ Return Results
+   ├─ 1. Product1 (0.92) - &quot;Fire-Resistant Red Ceramic Tiles&quot;
+   ├─ 2. Product2 (0.85) - &quot;Waterproof Red Porcelain Tiles&quot;
+   ├─ 3. Chunk1 (0.88) - &quot;Red tiles are ideal for bathrooms...&quot;
+   ├─ 4. Chunk2 (0.81) - &quot;Waterproof properties ensure durability...&quot;
+   └─ 5. Product3 (0.78) - &quot;Red Tile Collection&quot;
+</code></pre>
+<hr>
+<h2>5. DATABASE RELATIONSHIPS</h2>
+<pre><code>┌──────────────────┐
+│   documents      │
+├──────────────────┤
+│ id (PK)          │
+│ filename         │
+│ file_size        │
+│ processing_status│
+│ created_at       │
+└────────┬─────────┘
+         │ 1:N
+         │
+    ┌────▼──────────────────┐
+    │                        │
+    ▼                        ▼
+┌──────────────────┐  ┌──────────────────┐
+│ document_chunks  │  │ document_images  │
+├──────────────────┤  ├──────────────────┤
+│ id (PK)          │  │ id (PK)          │
+│ document_id (FK) │  │ document_id (FK) │
+│ content          │  │ image_url        │
+│ chunk_index      │  │ page_number      │
+│ metadata         │  │ confidence       │
+└────┬─────────────┘  └────┬─────────────┘
+     │ 1:1                 │ 1:1
+     │                     │
+     ▼                     ▼
+┌──────────────────┐  ┌──────────────────┐
+│ document_vectors │  │ image_embeddings │
+├──────────────────┤  ├──────────────────┤
+│ id (PK)          │  │ id (PK)          │
+│ chunk_id (FK)    │  │ image_id (FK)    │
+│ embedding        │  │ embedding        │
+│ model_name       │  │ embedding_type   │
+└──────────────────┘  └──────────────────┘
+
+┌──────────────────┐
+│    products      │ (NEW)
+├──────────────────┤
+│ id (PK)          │
+│ name             │
+│ description      │
+│ category_id      │
+│ embedding        │
+│ status           │
+└────┬─────────────┘
+     │ 1:N
+     │
+    ┌┴──────────────────────┐
+    │                        │
+    ▼                        ▼
+┌──────────────────┐  ┌──────────────────┐
+│ product_images   │  │product_embeddings│
+├──────────────────┤  ├──────────────────┤
+│ id (PK)          │  │ id (PK)          │
+│ product_id (FK)  │  │ product_id (FK)  │
+│ image_url        │  │ embedding        │
+│ display_order    │  │ embedding_type   │
+└──────────────────┘  └──────────────────┘
+
+┌──────────────────────────────┐
+│product_chunk_relationships   │ (NEW)
+├──────────────────────────────┤
+│ id (PK)                      │
+│ product_id (FK)              │
+│ chunk_id (FK)                │
+│ relationship_type            │
+│ relevance_score              │
+└──────────────────────────────┘
+</code></pre>
+<hr>
+<h2>6. MATERIALS PAGE LAYOUT</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    MATERIALS PAGE                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Search: [red waterproof tiles          ] [Search]           │
+│                                                               │
+│  ┌──────────────────┐  ┌─────────────────────────────────┐  │
+│  │ FILTERS          │  │ PRODUCTS (127 results)          │  │
+│  ├──────────────────┤  ├─────────────────────────────────┤  │
+│  │ Category         │  │                                 │  │
+│  │ ☑ Tiles          │  │  ┌──────────┐  ┌──────────┐    │  │
+│  │ ☑ Ceramics       │  │  │ Product1 │  │ Product2 │    │  │
+│  │ ☐ Stone          │  │  │ Red      │  │ Blue     │    │  │
+│  │ ☐ Wood           │  │  │ Ceramic  │  │ Porcelain│    │  │
+│  │                  │  │  │ Tiles    │  │ Tiles    │    │  │
+│  │ Color            │  │  │ $45/m²   │  │ $52/m²   │    │  │
+│  │ ☑ Red            │  │  │ [Details]│  │ [Details]│    │  │
+│  │ ☐ Blue           │  │  └──────────┘  └──────────┘    │  │
+│  │ ☐ Green          │  │                                 │  │
+│  │ ☐ White          │  │  ┌──────────┐  ┌──────────┐    │  │
+│  │                  │  │  │ Product3 │  │ Product4 │    │  │
+│  │ Properties       │  │  │ Red Tile │  │ Waterproof   │  │
+│  │ ☑ Waterproof     │  │  │ Collection   │ Tiles    │    │  │
+│  │ ☑ Fire Resistant │  │  │ $38/m²   │  │ $48/m²   │    │  │
+│  │ ☐ Slip Resistant │  │  │ [Details]│  │ [Details]│    │  │
+│  │ ☐ Eco-Friendly   │  │  └──────────┘  └──────────┘    │  │
+│  │                  │  │                                 │  │
+│  │ [Clear Filters]  │  │  [Load More Products]           │  │
+│  │                  │  │                                 │  │
+│  └──────────────────┘  └─────────────────────────────────┘  │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>7. AGENT RECOMMENDATION FLOW</h2>
+<pre><code>User Query: &quot;I need red waterproof tiles for a bathroom&quot;
+│
+├─ Agent Receives
+│  ├─ Search Results: [Product1, Product2, Chunk1, Chunk2]
+│  └─ User Context: bathroom, red, waterproof
+│
+├─ Agent Analysis
+│  ├─ Identify Needs:
+│  │  ├─ Color: red
+│  │  ├─ Property: waterproof
+│  │  ├─ Use case: bathroom
+│  │  └─ Type: tiles
+│  │
+│  ├─ Match Products:
+│  │  ├─ Product1: Matches all (score: 0.95)
+│  │  ├─ Product2: Matches 3/4 (score: 0.85)
+│  │  └─ Product3: Matches 2/4 (score: 0.65)
+│  │
+│  └─ Generate Recommendations:
+│     ├─ Primary: Product1 (perfect match)
+│     ├─ Alternative: Product2 (good alternative)
+│     └─ Consider: Product3 (budget option)
+│
+└─ Agent Response
+   ├─ &quot;I recommend Product1 - it&#39;s perfect for your needs&quot;
+   ├─ &quot;It&#39;s red, waterproof, and ideal for bathrooms&quot;
+   ├─ &quot;Alternative: Product2 is also excellent&quot;
+   ├─ [Product1 Card with Images]
+   ├─ [Product2 Card with Images]
+   └─ [Link to Materials Page]
+</code></pre>
+<hr>
+<h2>8. IMPLEMENTATION PHASES</h2>
+<pre><code>Week 1-2: Knowledge Base Fixes
+├─ Fix UI Issues (12 items)
+├─ Implement Modals
+└─ Add Real-time Updates
+    ▼
+Week 2-3: Database &amp; APIs
+├─ Create Tables
+├─ Implement CRUD
+└─ Set up Relationships
+    ▼
+Week 3-4: Product Creation
+├─ Build ProductBuilderService
+├─ Implement Embeddings
+└─ Create Product UI
+    ▼
+Week 4-5: Search &amp; Materials
+├─ Unified Search
+├─ Materials Page
+└─ Agent Integration
+    ▼
+Week 5-6: Testing &amp; Deploy
+├─ Comprehensive Testing
+├─ Performance Optimization
+└─ Deployment
+    ▼
+✅ COMPLETE SYSTEM LIVE
+</code></pre>
+
+</div></body></html>
