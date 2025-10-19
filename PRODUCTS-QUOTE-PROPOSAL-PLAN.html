@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Products System with Quote/Proposal &amp; Moodboard Integration Plan</h1>
+<p><strong>Comprehensive Implementation Plan</strong><br><strong>Date</strong>: 2025-10-19<br><strong>Status</strong>: Ready for Task Generation</p>
+<hr>
+<h2>📋 OVERVIEW</h2>
+<p>This plan extends the Products system with:</p>
+<ol>
+<li><strong>Product Testing Framework</strong> - Comprehensive .js test file</li>
+<li><strong>Quote/Proposal System</strong> - Cart → Request → Quote → Proposal</li>
+<li><strong>Moodboard Integration</strong> - Products in moodboards + commission tracking</li>
+<li><strong>Admin Panel</strong> - Proposal management and pricing</li>
+</ol>
+<hr>
+<h2>🎯 PHASE 1: PRODUCT TESTING FRAMEWORK</h2>
+<h3>1.1 Test File: <code>scripts/test-products-complete-flow.js</code></h3>
+<p><strong>Purpose</strong>: Comprehensive testing of products system</p>
+<p><strong>Test Coverage</strong>:</p>
+<ul>
+<li>✅ Product creation with all fields</li>
+<li>✅ Product search by description</li>
+<li>✅ Product search by relevancy (image + metadata)</li>
+<li>✅ Product search by metadata fields (category, material type)</li>
+<li>✅ Product fetch and validation</li>
+<li>✅ Product update and verification</li>
+<li>✅ Product deletion</li>
+<li>✅ Batch operations</li>
+<li>✅ Error handling</li>
+</ul>
+<p><strong>Test Scenarios</strong>:</p>
+<ol>
+<li>Create product with complete metadata</li>
+<li>Search by description (text similarity)</li>
+<li>Search by image relevancy (CLIP embeddings)</li>
+<li>Search by metadata (category, material, properties)</li>
+<li>Verify embeddings are properly stored</li>
+<li>Verify MIVAA API integration</li>
+<li>Test pagination and filtering</li>
+<li>Test concurrent operations</li>
+</ol>
+<p><strong>Output Format</strong>:</p>
+<pre><code>✅ Product Created: [ID] - [Name]
+   - Description: [text]
+   - Category: [category]
+   - Metadata: [fields]
+   - Embeddings: [status]
+   - MIVAA Integration: [status]
+
+✅ Search Results: [count] products found
+   - Product 1: [name] (relevancy: 0.95)
+   - Product 2: [name] (relevancy: 0.87)
+   ...
+
+✅ All Tests Passed: [count] tests
+</code></pre>
+<hr>
+<h2>🛒 PHASE 2: QUOTE/PROPOSAL SYSTEM</h2>
+<h3>2.1 Database Tables (Supabase MCP)</h3>
+<h4><code>shopping_carts</code></h4>
+<pre><code class="language-sql">CREATE TABLE shopping_carts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  workspace_id UUID,
+  status VARCHAR DEFAULT &#39;active&#39;, -- active, submitted, quoted, ordered
+  total_items INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h4><code>cart_items</code></h4>
+<pre><code class="language-sql">CREATE TABLE cart_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cart_id UUID REFERENCES shopping_carts(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES products(id),
+  quantity INTEGER DEFAULT 1,
+  unit_price DECIMAL(10,2),
+  notes TEXT,
+  added_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h4><code>quote_requests</code></h4>
+<pre><code class="language-sql">CREATE TABLE quote_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  cart_id UUID REFERENCES shopping_carts(id),
+  workspace_id UUID,
+  status VARCHAR DEFAULT &#39;pending&#39;, -- pending, updated, approved, rejected
+  items_count INTEGER,
+  total_estimated DECIMAL(10,2),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h4><code>proposals</code></h4>
+<pre><code class="language-sql">CREATE TABLE proposals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_request_id UUID REFERENCES quote_requests(id),
+  user_id UUID REFERENCES auth.users(id),
+  admin_id UUID REFERENCES auth.users(id),
+  workspace_id UUID,
+  status VARCHAR DEFAULT &#39;draft&#39;, -- draft, sent, accepted, rejected
+  items JSONB, -- Array of {product_id, quantity, unit_price, total}
+  subtotal DECIMAL(10,2),
+  tax DECIMAL(10,2),
+  discount DECIMAL(10,2),
+  total DECIMAL(10,2),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  sent_at TIMESTAMPTZ,
+  accepted_at TIMESTAMPTZ
+);
+</code></pre>
+<h3>2.2 User Flow</h3>
+<pre><code>User → Add Products to Cart
+     → Submit Quote Request
+     → View Status (Pending/Updated)
+     
+Admin → View Quote Requests
+      → Create Proposal
+      → Set Final Prices
+      → Send to User
+      
+User → View Proposal
+     → Accept/Reject
+</code></pre>
+<h3>2.3 Edge Functions</h3>
+<h4><code>shopping-cart-api</code></h4>
+<ul>
+<li>POST <code>/api/cart</code> - Create cart</li>
+<li>GET <code>/api/cart/:id</code> - Get cart</li>
+<li>POST <code>/api/cart/:id/items</code> - Add item</li>
+<li>DELETE <code>/api/cart/:id/items/:itemId</code> - Remove item</li>
+<li>PATCH <code>/api/cart/:id</code> - Update cart</li>
+</ul>
+<h4><code>quote-request-api</code></h4>
+<ul>
+<li>POST <code>/api/quote-requests</code> - Submit request</li>
+<li>GET <code>/api/quote-requests</code> - List requests (admin)</li>
+<li>GET <code>/api/quote-requests/:id</code> - Get request</li>
+<li>PATCH <code>/api/quote-requests/:id</code> - Update status</li>
+</ul>
+<h4><code>proposals-api</code></h4>
+<ul>
+<li>POST <code>/api/proposals</code> - Create proposal (admin)</li>
+<li>GET <code>/api/proposals</code> - List proposals</li>
+<li>GET <code>/api/proposals/:id</code> - Get proposal</li>
+<li>PATCH <code>/api/proposals/:id</code> - Update proposal (pricing)</li>
+<li>PATCH <code>/api/proposals/:id/send</code> - Send to user</li>
+<li>PATCH <code>/api/proposals/:id/accept</code> - User accepts</li>
+</ul>
+<hr>
+<h2>🎨 PHASE 3: MOODBOARD INTEGRATION</h2>
+<h3>3.1 Database Tables (Supabase MCP)</h3>
+<h4><code>moodboard_products</code></h4>
+<pre><code class="language-sql">CREATE TABLE moodboard_products (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  moodboard_id UUID REFERENCES moodboards(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES products(id),
+  position_x INTEGER,
+  position_y INTEGER,
+  notes TEXT,
+  added_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h4><code>moodboard_quote_requests</code></h4>
+<pre><code class="language-sql">CREATE TABLE moodboard_quote_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  moodboard_id UUID REFERENCES moodboards(id),
+  moodboard_creator_id UUID REFERENCES auth.users(id),
+  requester_id UUID REFERENCES auth.users(id),
+  quote_request_id UUID REFERENCES quote_requests(id),
+  commission_percentage DECIMAL(5,2) DEFAULT 10.0,
+  commission_amount DECIMAL(10,2),
+  status VARCHAR DEFAULT &#39;pending&#39;, -- pending, quoted, accepted, rejected
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h3>3.2 User Flow</h3>
+<pre><code>User A → Create Moodboard
+       → Add Products
+       → Make Public
+       
+User B → View Public Moodboard
+       → &quot;Request Quote for This Moodboard&quot;
+       → Auto-create cart with all products
+       → Submit quote request
+       
+User A → View Commission Status
+       → See pending/accepted quotes
+       → Earn commission on accepted proposals
+</code></pre>
+<h3>3.3 Edge Functions</h3>
+<h4><code>moodboard-products-api</code></h4>
+<ul>
+<li>POST <code>/api/moodboards/:id/products</code> - Add product</li>
+<li>GET <code>/api/moodboards/:id/products</code> - List products</li>
+<li>DELETE <code>/api/moodboards/:id/products/:productId</code> - Remove product</li>
+</ul>
+<h4><code>moodboard-quote-api</code></h4>
+<ul>
+<li>POST <code>/api/moodboards/:id/request-quote</code> - Request quote</li>
+<li>GET <code>/api/moodboards/:id/quote-requests</code> - List requests</li>
+<li>GET <code>/api/user/commissions</code> - View commissions</li>
+</ul>
+<hr>
+<h2>📊 PHASE 4: ADMIN PANEL ENHANCEMENTS</h2>
+<h3>4.1 New Admin Sections</h3>
+<h4>Quote Requests Dashboard</h4>
+<ul>
+<li>List all pending quote requests</li>
+<li>View cart items</li>
+<li>View customer details</li>
+<li>Create proposal button</li>
+</ul>
+<h4>Proposals Management</h4>
+<ul>
+<li>List all proposals (draft, sent, accepted, rejected)</li>
+<li>Edit proposal (change prices, add notes)</li>
+<li>Send proposal to customer</li>
+<li>Track acceptance status</li>
+</ul>
+<h4>Commission Tracking</h4>
+<ul>
+<li>View all moodboard commissions</li>
+<li>Filter by status (pending, paid)</li>
+<li>Export commission reports</li>
+</ul>
+<h3>4.2 Components</h3>
+<ul>
+<li><code>QuoteRequestsPanel.tsx</code> - List and manage requests</li>
+<li><code>ProposalEditor.tsx</code> - Create/edit proposals</li>
+<li><code>CommissionTracker.tsx</code> - View commissions</li>
+</ul>
+<hr>
+<h2>📚 PHASE 5: DOCUMENTATION UPDATES</h2>
+<h3>5.1 New Documentation Files</h3>
+<ol>
+<li><p><strong>products-quote-proposal-api.md</strong></p>
+<ul>
+<li>All API endpoints</li>
+<li>Request/response examples</li>
+<li>Error codes</li>
+</ul>
+</li>
+<li><p><strong>moodboard-products-integration.md</strong></p>
+<ul>
+<li>How to add products to moodboards</li>
+<li>Commission system explanation</li>
+<li>User flows</li>
+</ul>
+</li>
+<li><p><strong>shopping-cart-system.md</strong></p>
+<ul>
+<li>Cart management</li>
+<li>Quote request process</li>
+<li>Proposal workflow</li>
+</ul>
+</li>
+</ol>
+<h3>5.2 Updates to Existing Docs</h3>
+<ul>
+<li><code>api-documentation.md</code> - Add new endpoints</li>
+<li><code>platform-functionality.md</code> - Add quote/proposal section</li>
+<li><code>admin-panel-guide.md</code> - Add new admin features</li>
+</ul>
+<hr>
+<h2>🧪 PHASE 6: TESTING STRATEGY</h2>
+<h3>6.1 Test File: <code>scripts/test-products-quote-proposal.js</code></h3>
+<p><strong>Test Scenarios</strong>:</p>
+<ol>
+<li>Create product and add to cart</li>
+<li>Submit quote request</li>
+<li>Admin creates proposal</li>
+<li>Admin updates pricing</li>
+<li>Admin sends proposal</li>
+<li>User accepts proposal</li>
+<li>Commission tracking</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<pre><code>✅ Cart Created: [ID]
+✅ Product Added: [product] x [qty]
+✅ Quote Request Submitted: [ID]
+✅ Proposal Created: [ID]
+✅ Pricing Updated: $[amount]
+✅ Proposal Sent: [timestamp]
+✅ Proposal Accepted: [timestamp]
+✅ Commission Tracked: $[amount] (10%)
+</code></pre>
+<h3>6.2 Test File: <code>scripts/test-moodboard-products.js</code></h3>
+<p><strong>Test Scenarios</strong>:</p>
+<ol>
+<li>Create moodboard</li>
+<li>Add products to moodboard</li>
+<li>Make moodboard public</li>
+<li>Request quote from moodboard</li>
+<li>Verify commission tracking</li>
+<li>Accept proposal and verify commission</li>
+</ol>
+<hr>
+<h2>🔄 IMPLEMENTATION PHASES</h2>
+<h3>Phase 1: Product Testing (Week 1)</h3>
+<ul>
+<li>Create test file</li>
+<li>Test all product operations</li>
+<li>Verify MIVAA integration</li>
+<li>Verify embeddings</li>
+</ul>
+<h3>Phase 2: Quote/Proposal System (Week 2-3)</h3>
+<ul>
+<li>Create database tables (Supabase MCP)</li>
+<li>Create Edge Functions</li>
+<li>Create frontend services</li>
+<li>Create UI components</li>
+</ul>
+<h3>Phase 3: Moodboard Integration (Week 3-4)</h3>
+<ul>
+<li>Create database tables (Supabase MCP)</li>
+<li>Create Edge Functions</li>
+<li>Update moodboard components</li>
+<li>Add commission tracking</li>
+</ul>
+<h3>Phase 4: Admin Panel (Week 4)</h3>
+<ul>
+<li>Create admin components</li>
+<li>Add proposal management</li>
+<li>Add commission tracking</li>
+<li>Add reporting</li>
+</ul>
+<h3>Phase 5: Documentation (Week 4)</h3>
+<ul>
+<li>Create API documentation</li>
+<li>Update platform docs</li>
+<li>Create user guides</li>
+</ul>
+<h3>Phase 6: Testing &amp; Deployment (Week 5)</h3>
+<ul>
+<li>Run comprehensive tests</li>
+<li>Fix issues</li>
+<li>Deploy to production</li>
+</ul>
+<hr>
+<h2>📋 DELIVERABLES</h2>
+<h3>Code</h3>
+<ul>
+<li>✅ 1 Product test file</li>
+<li>✅ 2 Quote/Proposal test files</li>
+<li>✅ 5 Edge Functions</li>
+<li>✅ 5 Frontend services</li>
+<li>✅ 8 React components</li>
+<li>✅ 3 Database tables (Supabase MCP)</li>
+</ul>
+<h3>Documentation</h3>
+<ul>
+<li>✅ 3 New API documentation files</li>
+<li>✅ 5 Updated existing docs</li>
+<li>✅ Complete user flows</li>
+<li>✅ Admin guides</li>
+</ul>
+<h3>Testing</h3>
+<ul>
+<li>✅ Comprehensive test coverage</li>
+<li>✅ End-to-end workflows</li>
+<li>✅ Error scenarios</li>
+</ul>
+<hr>
+<h2>✅ SUCCESS CRITERIA</h2>
+<ul>
+<li>✅ All products can be created with metadata</li>
+<li>✅ Products searchable by description, image, metadata</li>
+<li>✅ Shopping cart fully functional</li>
+<li>✅ Quote requests work end-to-end</li>
+<li>✅ Proposals can be created and priced</li>
+<li>✅ Moodboard products integration works</li>
+<li>✅ Commission tracking accurate</li>
+<li>✅ Admin panel shows all features</li>
+<li>✅ All tests pass</li>
+<li>✅ Documentation complete</li>
+</ul>
+<hr>
+<h2>🚀 NEXT STEPS</h2>
+<ol>
+<li>✅ Review this plan</li>
+<li>⏳ Generate task list from this plan</li>
+<li>⏳ Create database tables (Supabase MCP)</li>
+<li>⏳ Create test files</li>
+<li>⏳ Build Edge Functions</li>
+<li>⏳ Build frontend components</li>
+<li>⏳ Update documentation</li>
+<li>⏳ Run comprehensive tests</li>
+<li>⏳ Deploy to production</li>
+</ol>
+<hr>
+<p><strong>Ready to generate tasks! 🚀</strong></p>
+
+</div></body></html>
