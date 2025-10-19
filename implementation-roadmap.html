@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Implementation Roadmap - Knowledge Base &amp; Products System</h1>
+<p><strong>Document Version</strong>: 1.0<br><strong>Date</strong>: 2025-10-19<br><strong>Timeline</strong>: 6 weeks</p>
+<hr>
+<h2>📅 PHASE 1: KNOWLEDGE BASE UI FIXES (Week 1-2)</h2>
+<h3>Sprint 1.1: Modal Infrastructure &amp; Issue #1-3</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create reusable Modal component system</p>
+<ul>
+<li>Base modal with header, body, footer</li>
+<li>Modal manager for state</li>
+<li>Animation/transitions</li>
+</ul>
+</li>
+<li><p>Fix Issue #1: Documents by Source</p>
+<ul>
+<li>Enhance document display with: filename, upload date, file size, page count</li>
+<li>Add document metadata modal</li>
+<li>Show processing status</li>
+</ul>
+</li>
+<li><p>Fix Issue #2: Chunks - Missing Context</p>
+<ul>
+<li>Add source PDF name to chunk display</li>
+<li>Show page number and chunk position</li>
+<li>Display related chunks count</li>
+<li>Create chunk detail modal</li>
+</ul>
+</li>
+<li><p>Fix Issue #3: Embeddings - False &quot;No Embedding&quot; Messages</p>
+<ul>
+<li>Query embeddings table properly</li>
+<li>Display embedding metadata: model, dimensions, timestamp</li>
+<li>Show embedding generation status</li>
+</ul>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Modal component library</li>
+<li>Updated MaterialKnowledgeBase component</li>
+<li>Chunk detail modal</li>
+<li>Document detail modal</li>
+</ul>
+<hr>
+<h3>Sprint 1.2: Images &amp; Metadata (Issue #4-6)</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Fix Issue #4: Related Chunks</p>
+<ul>
+<li>Implement semantic similarity calculation</li>
+<li>Display related chunks with scores</li>
+<li>Show relationship reasons</li>
+</ul>
+</li>
+<li><p>Fix Issue #5: Images - Not Displayed</p>
+<ul>
+<li>Query document_images table</li>
+<li>Display images in grid</li>
+<li>Show image metadata</li>
+</ul>
+</li>
+<li><p>Fix Issue #6: Image Metadata - Incomplete</p>
+<ul>
+<li>Display: image type, source chunk, page number, confidence</li>
+<li>Show OCR text if available</li>
+<li>Display analysis results</li>
+<li>Create image detail modal</li>
+</ul>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Related chunks display</li>
+<li>Image gallery component</li>
+<li>Image detail modal</li>
+<li>Enhanced image metadata display</li>
+</ul>
+<hr>
+<h3>Sprint 1.3: UI/UX &amp; Functional Issues (Issue #7-12)</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Fix Issue #7: Convert Accordions to Modals</p>
+<ul>
+<li>Replace accordion-based layout</li>
+<li>Implement modal-based navigation</li>
+<li>Improve information hierarchy</li>
+</ul>
+</li>
+<li><p>Fix Issue #8: Embeddings - Unclear Content Type</p>
+<ul>
+<li>Add embedding type indicator</li>
+<li>Show source content preview</li>
+<li>Display model and dimensions</li>
+</ul>
+</li>
+<li><p>Fix Issue #9: PDF Upload - Duplicate Close Buttons</p>
+<ul>
+<li>Remove duplicate close button</li>
+<li>Ensure single button works properly</li>
+<li>Test close functionality</li>
+</ul>
+</li>
+<li><p>Fix Issue #10: Metadata - Eye Icon Non-Functional</p>
+<ul>
+<li>Implement metadata detail modal</li>
+<li>Show all metadata fields</li>
+<li>Display relationships</li>
+</ul>
+</li>
+<li><p>Fix Issue #11: Metadata - Missing Relationships</p>
+<ul>
+<li>Query related chunks</li>
+<li>Query associated images</li>
+<li>Query embedding references</li>
+<li>Display in relationship panel</li>
+</ul>
+</li>
+<li><p>Fix Issue #12: Processing Status - Not Updatable</p>
+<ul>
+<li>Implement real-time polling</li>
+<li>Update status on changes</li>
+<li>Show progress indicators</li>
+</ul>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Refactored MaterialKnowledgeBase UI</li>
+<li>Metadata detail modal</li>
+<li>Real-time status updates</li>
+<li>Relationship visualization</li>
+</ul>
+<hr>
+<h2>📅 PHASE 2: DATABASE &amp; PRODUCTS FOUNDATION (Week 2-3)</h2>
+<h3>Sprint 2.1: Database Schema &amp; Migrations</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create products table</li>
+<li>Create product_images table</li>
+<li>Create product_embeddings table</li>
+<li>Create product_chunk_relationships table</li>
+<li>Set up indexes and constraints</li>
+<li>Configure RLS policies</li>
+<li>Create migration scripts</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Migration files</li>
+<li>Schema documentation</li>
+<li>Index performance tests</li>
+</ul>
+<hr>
+<h3>Sprint 2.2: Product APIs - CRUD</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create ProductService class</p>
+<ul>
+<li>createProduct()</li>
+<li>getProduct()</li>
+<li>updateProduct()</li>
+<li>deleteProduct()</li>
+<li>listProducts()</li>
+</ul>
+</li>
+<li><p>Create API endpoints</p>
+<ul>
+<li>POST /api/products</li>
+<li>GET /api/products</li>
+<li>GET /api/products/:id</li>
+<li>PATCH /api/products/:id</li>
+<li>DELETE /api/products/:id</li>
+</ul>
+</li>
+<li><p>Add validation and error handling</p>
+</li>
+<li><p>Implement pagination</p>
+</li>
+<li><p>Add filtering and sorting</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>ProductService implementation</li>
+<li>API endpoints</li>
+<li>Request/response types</li>
+<li>Error handling</li>
+</ul>
+<hr>
+<h3>Sprint 2.3: Product-Chunk Relationships</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create relationship service</p>
+<ul>
+<li>linkChunksToProduct()</li>
+<li>getProductChunks()</li>
+<li>getChunkProducts()</li>
+<li>calculateRelevanceScore()</li>
+</ul>
+</li>
+<li><p>Create API endpoints</p>
+<ul>
+<li>POST /api/products/:id/chunks</li>
+<li>GET /api/products/:id/chunks</li>
+<li>DELETE /api/products/:id/chunks/:chunkId</li>
+</ul>
+</li>
+<li><p>Implement relationship queries</p>
+</li>
+<li><p>Add relevance scoring</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Relationship service</li>
+<li>API endpoints</li>
+<li>Relevance scoring algorithm</li>
+</ul>
+<hr>
+<h2>📅 PHASE 3: PRODUCT CREATION &amp; EMBEDDINGS (Week 3-4)</h2>
+<h3>Sprint 3.1: Product Builder Service</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create ProductBuilderService</p>
+<ul>
+<li>buildProductFromChunks()</li>
+<li>extractProductProperties()</li>
+<li>generateProductName()</li>
+<li>generateProductDescription()</li>
+</ul>
+</li>
+<li><p>Implement property extraction</p>
+<ul>
+<li>Parse chunk content</li>
+<li>Extract key properties</li>
+<li>Identify material characteristics</li>
+<li>Extract specifications</li>
+</ul>
+</li>
+<li><p>Create product builder UI</p>
+<ul>
+<li>Chunk selection interface</li>
+<li>Property review/edit</li>
+<li>Image selection</li>
+<li>Preview before creation</li>
+</ul>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>ProductBuilderService</li>
+<li>Property extraction logic</li>
+<li>Product builder UI component</li>
+</ul>
+<hr>
+<h3>Sprint 3.2: Product Embeddings</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create ProductEmbeddingService</p>
+<ul>
+<li>generateProductEmbedding()</li>
+<li>generateMultiTypeEmbeddings()</li>
+<li>storeEmbeddings()</li>
+<li>updateEmbeddings()</li>
+</ul>
+</li>
+<li><p>Implement embedding generation</p>
+<ul>
+<li>Text embedding from product description</li>
+<li>Image embeddings from product images</li>
+<li>Hybrid embeddings combining both</li>
+<li>CLIP embeddings for visual search</li>
+</ul>
+</li>
+<li><p>Create embedding storage</p>
+</li>
+<li><p>Add embedding quality metrics</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>ProductEmbeddingService</li>
+<li>Embedding generation pipeline</li>
+<li>Embedding storage and retrieval</li>
+</ul>
+<hr>
+<h3>Sprint 3.3: Product Management UI</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create Products tab in Knowledge Base</p>
+<ul>
+<li>List products</li>
+<li>Create product button</li>
+<li>Edit product modal</li>
+<li>Delete product confirmation</li>
+</ul>
+</li>
+<li><p>Implement product form</p>
+<ul>
+<li>Name, description, long_description</li>
+<li>Category selection</li>
+<li>Properties editor</li>
+<li>Image uploader</li>
+<li>Status selector</li>
+</ul>
+</li>
+<li><p>Add product preview</p>
+</li>
+<li><p>Implement publish workflow</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Products tab component</li>
+<li>Product form component</li>
+<li>Product list component</li>
+<li>Product detail modal</li>
+</ul>
+<hr>
+<h2>📅 PHASE 4: SEARCH &amp; MATERIALS PAGE (Week 4-5)</h2>
+<h3>Sprint 4.1: Unified Search Service</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create ProductSearchService</p>
+<ul>
+<li>unifiedSearch()</li>
+<li>searchProducts()</li>
+<li>searchChunks()</li>
+<li>mergeResults()</li>
+<li>rankResults()</li>
+</ul>
+</li>
+<li><p>Implement search logic</p>
+<ul>
+<li>Query product embeddings</li>
+<li>Query chunk embeddings</li>
+<li>Keyword search</li>
+<li>Filter by properties</li>
+<li>Filter by category</li>
+</ul>
+</li>
+<li><p>Add result ranking</p>
+</li>
+<li><p>Implement deduplication</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>ProductSearchService</li>
+<li>Search API endpoints</li>
+<li>Result ranking algorithm</li>
+</ul>
+<hr>
+<h3>Sprint 4.2: Materials Page</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Create Materials page component</p>
+<ul>
+<li>Product grid/list view</li>
+<li>Category filter sidebar</li>
+<li>Property filter panel</li>
+<li>Search bar</li>
+<li>Sort options</li>
+</ul>
+</li>
+<li><p>Implement product detail modal</p>
+<ul>
+<li>Product images gallery</li>
+<li>Properties display</li>
+<li>Specifications table</li>
+<li>Related products</li>
+<li>Source document link</li>
+</ul>
+</li>
+<li><p>Add filtering logic</p>
+</li>
+<li><p>Implement pagination</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Materials page component</li>
+<li>Product detail modal</li>
+<li>Filter components</li>
+<li>Pagination</li>
+</ul>
+<hr>
+<h3>Sprint 4.3: Search Integration</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Update search interface</p>
+<ul>
+<li>Add product results section</li>
+<li>Show product suggestions</li>
+<li>Display related products</li>
+<li>Add product filters</li>
+</ul>
+</li>
+<li><p>Integrate with existing search</p>
+<ul>
+<li>Update UnifiedSearchInterface</li>
+<li>Update SemanticSearch</li>
+<li>Update search results display</li>
+</ul>
+</li>
+<li><p>Add search analytics</p>
+</li>
+<li><p>Implement search suggestions</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Updated search interface</li>
+<li>Product search results</li>
+<li>Search analytics</li>
+</ul>
+<hr>
+<h2>📅 PHASE 5: AGENT INTEGRATION (Week 5)</h2>
+<h3>Sprint 5.1: Agent Product Recommendations</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Update Material Agent</p>
+<ul>
+<li>Query products in search</li>
+<li>Identify matching products</li>
+<li>Generate recommendations</li>
+<li>Explain product suggestions</li>
+</ul>
+</li>
+<li><p>Create product recommendation logic</p>
+<ul>
+<li>Match query to products</li>
+<li>Calculate relevance</li>
+<li>Generate explanation</li>
+<li>Format for display</li>
+</ul>
+</li>
+<li><p>Add product links to agent responses</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Updated Material Agent</li>
+<li>Product recommendation logic</li>
+<li>Agent response formatting</li>
+</ul>
+<hr>
+<h2>📅 PHASE 6: TESTING &amp; DEPLOYMENT (Week 5-6)</h2>
+<h3>Sprint 6.1: Testing</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>Unit tests</p>
+<ul>
+<li>Service methods</li>
+<li>Embedding generation</li>
+<li>Search logic</li>
+<li>Property extraction</li>
+</ul>
+</li>
+<li><p>Integration tests</p>
+<ul>
+<li>End-to-end product creation</li>
+<li>Search functionality</li>
+<li>Relationship integrity</li>
+<li>Permission checks</li>
+</ul>
+</li>
+<li><p>Performance tests</p>
+<ul>
+<li>Search latency</li>
+<li>Embedding generation time</li>
+<li>Database query performance</li>
+<li>Concurrent user load</li>
+</ul>
+</li>
+<li><p>UI/UX testing</p>
+<ul>
+<li>Modal functionality</li>
+<li>Form validation</li>
+<li>Error handling</li>
+<li>Responsive design</li>
+</ul>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Test suite</li>
+<li>Performance benchmarks</li>
+<li>Bug reports and fixes</li>
+</ul>
+<hr>
+<h3>Sprint 6.2: Documentation &amp; Deployment</h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li><p>API documentation</p>
+<ul>
+<li>Endpoint descriptions</li>
+<li>Request/response examples</li>
+<li>Error codes</li>
+<li>Rate limits</li>
+</ul>
+</li>
+<li><p>User documentation</p>
+<ul>
+<li>Knowledge Base guide</li>
+<li>Materials page guide</li>
+<li>Product creation guide</li>
+<li>Search guide</li>
+</ul>
+</li>
+<li><p>Developer documentation</p>
+<ul>
+<li>Service architecture</li>
+<li>Database schema</li>
+<li>API integration</li>
+<li>Deployment guide</li>
+</ul>
+</li>
+<li><p>Deployment</p>
+<ul>
+<li>Database migrations</li>
+<li>Service deployment</li>
+<li>UI deployment</li>
+<li>Monitoring setup</li>
+</ul>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Complete documentation</li>
+<li>Deployment checklist</li>
+<li>Monitoring dashboard</li>
+<li>Rollback plan</li>
+</ul>
+<hr>
+<h2>🎯 SUCCESS METRICS</h2>
+<h3>Knowledge Base</h3>
+<ul>
+<li>✅ All 12 issues resolved</li>
+<li>✅ Modal UI fully functional</li>
+<li>✅ Real-time status updates working</li>
+<li>✅ All relationships visible</li>
+</ul>
+<h3>Products System</h3>
+<ul>
+<li>✅ 100+ products can be created</li>
+<li>✅ Products appear in search</li>
+<li>✅ Embeddings generated for all products</li>
+<li>✅ Materials page fully functional</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li>✅ Search &lt;500ms</li>
+<li>✅ Page load &lt;2s</li>
+<li>✅ Embedding generation &lt;5s per product</li>
+<li>✅ 99.9% uptime</li>
+</ul>
+<h3>User Experience</h3>
+<ul>
+<li>✅ Intuitive product creation</li>
+<li>✅ Clear product discovery</li>
+<li>✅ Helpful recommendations</li>
+<li>✅ Responsive design</li>
+</ul>
+<hr>
+<h2>📊 RESOURCE ALLOCATION</h2>
+<ul>
+<li><strong>Backend Development</strong>: 40%</li>
+<li><strong>Frontend Development</strong>: 35%</li>
+<li><strong>Database/Infrastructure</strong>: 15%</li>
+<li><strong>Testing/QA</strong>: 10%</li>
+</ul>
+<hr>
+<h2>⚠️ RISKS &amp; MITIGATION</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Embedding generation slow</td>
+<td>High</td>
+<td>Batch processing, caching</td>
+</tr>
+<tr>
+<td>Search results poor quality</td>
+<td>High</td>
+<td>Ranking algorithm tuning</td>
+</tr>
+<tr>
+<td>Database performance</td>
+<td>Medium</td>
+<td>Proper indexing, partitioning</td>
+</tr>
+<tr>
+<td>UI complexity</td>
+<td>Medium</td>
+<td>Component reuse, testing</td>
+</tr>
+<tr>
+<td>Data migration issues</td>
+<td>Medium</td>
+<td>Backup, rollback plan</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>📞 NEXT STEPS</h2>
+<ol>
+<li>✅ Review and approve plan</li>
+<li>⏳ Create detailed task tickets</li>
+<li>⏳ Set up development environment</li>
+<li>⏳ Begin Phase 1 implementation</li>
+<li>⏳ Weekly progress reviews</li>
+</ol>
+
+</div></body></html>
