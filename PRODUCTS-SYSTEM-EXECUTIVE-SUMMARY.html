@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Products System with Quote/Proposal &amp; Moodboard Integration</h1>
+<h2>Executive Summary</h2>
+<p><strong>Date</strong>: 2025-10-19<br><strong>Status</strong>: Ready for Implementation<br><strong>Total Tasks</strong>: 45<br><strong>Timeline</strong>: 5 weeks<br><strong>Team Size</strong>: 1-2 developers</p>
+<hr>
+<h2>🎯 OVERVIEW</h2>
+<p>Complete implementation plan for:</p>
+<ol>
+<li><strong>Product Testing Framework</strong> - Comprehensive .js test file</li>
+<li><strong>Quote/Proposal System</strong> - Shopping cart → Quote request → Proposal → Acceptance</li>
+<li><strong>Moodboard Integration</strong> - Products in moodboards + commission tracking</li>
+<li><strong>Admin Panel</strong> - Proposal management and pricing</li>
+</ol>
+<hr>
+<h2>📊 WHAT&#39;S BEING BUILT</h2>
+<h3>1. Product Testing Framework</h3>
+<p><strong>Purpose</strong>: Ensure products work correctly with all features</p>
+<p><strong>Test Coverage</strong>:</p>
+<ul>
+<li>✅ Product creation with metadata</li>
+<li>✅ Search by description (text similarity)</li>
+<li>✅ Search by image relevancy (CLIP embeddings)</li>
+<li>✅ Search by metadata (category, material, properties)</li>
+<li>✅ Embeddings properly stored</li>
+<li>✅ MIVAA API integration working</li>
+<li>✅ Pagination and filtering</li>
+</ul>
+<p><strong>Deliverable</strong>: <code>scripts/test-products-complete-flow.js</code></p>
+<hr>
+<h3>2. Quote/Proposal System</h3>
+<p><strong>Purpose</strong>: Allow users to request quotes and admins to create proposals</p>
+<p><strong>User Flow</strong>:</p>
+<pre><code>User adds products to cart
+    ↓
+Submits quote request
+    ↓
+Views status (Pending/Updated)
+    ↓
+Receives proposal from admin
+    ↓
+Accepts/rejects proposal
+</code></pre>
+<p><strong>Admin Flow</strong>:</p>
+<pre><code>Views quote requests
+    ↓
+Creates proposal
+    ↓
+Sets final prices
+    ↓
+Sends to user
+    ↓
+Tracks acceptance
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>shopping_carts</code> - User shopping carts</li>
+<li><code>cart_items</code> - Items in carts</li>
+<li><code>quote_requests</code> - Quote requests from users</li>
+<li><code>proposals</code> - Proposals created by admins</li>
+</ul>
+<p><strong>Edge Functions</strong>:</p>
+<ul>
+<li><code>shopping-cart-api</code> - Cart management</li>
+<li><code>quote-request-api</code> - Quote request handling</li>
+<li><code>proposals-api</code> - Proposal management</li>
+</ul>
+<p><strong>UI Components</strong>:</p>
+<ul>
+<li><code>ShoppingCart.tsx</code> - Display cart</li>
+<li><code>QuoteRequestForm.tsx</code> - Submit request</li>
+<li><code>QuoteStatusTracker.tsx</code> - Track status</li>
+<li><code>ProposalEditor.tsx</code> - Admin proposal creation</li>
+</ul>
+<hr>
+<h3>3. Moodboard Integration</h3>
+<p><strong>Purpose</strong>: Allow users to add products to moodboards and earn commissions</p>
+<p><strong>User Flow</strong>:</p>
+<pre><code>User A creates moodboard
+    ↓
+Adds products to moodboard
+    ↓
+Makes moodboard public
+    ↓
+User B views moodboard
+    ↓
+Clicks &quot;Request Quote for This Moodboard&quot;
+    ↓
+Auto-creates cart with all products
+    ↓
+Submits quote request
+    ↓
+User A earns commission (10% default)
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>moodboard_products</code> - Products in moodboards</li>
+<li><code>moodboard_quote_requests</code> - Quote requests from moodboards</li>
+</ul>
+<p><strong>Edge Functions</strong>:</p>
+<ul>
+<li><code>moodboard-products-api</code> - Product management</li>
+<li><code>moodboard-quote-api</code> - Quote and commission tracking</li>
+</ul>
+<p><strong>UI Components</strong>:</p>
+<ul>
+<li><code>MoodboardProductSelector.tsx</code> - Add products</li>
+<li><code>CommissionTracker.tsx</code> - View commissions</li>
+</ul>
+<hr>
+<h3>4. Admin Panel Enhancements</h3>
+<p><strong>Purpose</strong>: Give admins tools to manage quotes and proposals</p>
+<p><strong>New Admin Sections</strong>:</p>
+<ul>
+<li>Quote Requests Dashboard - View and manage requests</li>
+<li>Proposals Management - Create, edit, and send proposals</li>
+<li>Commission Tracking - View and export commissions</li>
+</ul>
+<p><strong>Admin Components</strong>:</p>
+<ul>
+<li><code>QuoteRequestsPanel.tsx</code> - List requests</li>
+<li><code>ProposalEditor.tsx</code> - Create/edit proposals</li>
+<li><code>CommissionTracker.tsx</code> - View commissions</li>
+</ul>
+<hr>
+<h2>🗄️ DATABASE SCHEMA</h2>
+<h3>Shopping Cart Tables</h3>
+<pre><code class="language-sql">shopping_carts (id, user_id, status, total_items, created_at)
+cart_items (id, cart_id, product_id, quantity, unit_price)
+</code></pre>
+<h3>Quote/Proposal Tables</h3>
+<pre><code class="language-sql">quote_requests (id, user_id, cart_id, status, items_count, total_estimated)
+proposals (id, quote_request_id, user_id, admin_id, status, items, subtotal, tax, discount, total)
+</code></pre>
+<h3>Moodboard Integration Tables</h3>
+<pre><code class="language-sql">moodboard_products (id, moodboard_id, product_id, position_x, position_y)
+moodboard_quote_requests (id, moodboard_id, moodboard_creator_id, requester_id, quote_request_id, commission_percentage, commission_amount)
+</code></pre>
+<hr>
+<h2>⚡ EDGE FUNCTIONS</h2>
+<h3>Shopping Cart API</h3>
+<ul>
+<li>POST <code>/api/cart</code> - Create cart</li>
+<li>GET <code>/api/cart/:id</code> - Get cart</li>
+<li>POST <code>/api/cart/:id/items</code> - Add item</li>
+<li>DELETE <code>/api/cart/:id/items/:itemId</code> - Remove item</li>
+<li>PATCH <code>/api/cart/:id</code> - Update cart</li>
+</ul>
+<h3>Quote Request API</h3>
+<ul>
+<li>POST <code>/api/quote-requests</code> - Submit request</li>
+<li>GET <code>/api/quote-requests</code> - List requests (admin)</li>
+<li>GET <code>/api/quote-requests/:id</code> - Get request</li>
+<li>PATCH <code>/api/quote-requests/:id</code> - Update status</li>
+</ul>
+<h3>Proposals API</h3>
+<ul>
+<li>POST <code>/api/proposals</code> - Create proposal (admin)</li>
+<li>GET <code>/api/proposals</code> - List proposals</li>
+<li>GET <code>/api/proposals/:id</code> - Get proposal</li>
+<li>PATCH <code>/api/proposals/:id</code> - Update pricing</li>
+<li>PATCH <code>/api/proposals/:id/send</code> - Send to user</li>
+<li>PATCH <code>/api/proposals/:id/accept</code> - User accepts</li>
+</ul>
+<h3>Moodboard Products API</h3>
+<ul>
+<li>POST <code>/api/moodboards/:id/products</code> - Add product</li>
+<li>GET <code>/api/moodboards/:id/products</code> - List products</li>
+<li>DELETE <code>/api/moodboards/:id/products/:productId</code> - Remove product</li>
+</ul>
+<h3>Moodboard Quote API</h3>
+<ul>
+<li>POST <code>/api/moodboards/:id/request-quote</code> - Request quote</li>
+<li>GET <code>/api/moodboards/:id/quote-requests</code> - List requests</li>
+<li>GET <code>/api/user/commissions</code> - View commissions</li>
+</ul>
+<hr>
+<h2>🎨 FRONTEND COMPONENTS</h2>
+<h3>Shopping &amp; Quote</h3>
+<ul>
+<li><code>ShoppingCart.tsx</code> - Display cart items</li>
+<li><code>QuoteRequestForm.tsx</code> - Submit quote request</li>
+<li><code>QuoteStatusTracker.tsx</code> - Track quote status</li>
+<li><code>ProposalEditor.tsx</code> - Admin proposal creation</li>
+</ul>
+<h3>Moodboard Integration</h3>
+<ul>
+<li><code>MoodboardProductSelector.tsx</code> - Add products to moodboard</li>
+<li><code>CommissionTracker.tsx</code> - View commissions</li>
+</ul>
+<h3>Admin Panel</h3>
+<ul>
+<li><code>QuoteRequestsPanel.tsx</code> - Manage quote requests</li>
+<li><code>ProposalEditor.tsx</code> - Create/edit proposals</li>
+</ul>
+<hr>
+<h2>📚 DOCUMENTATION</h2>
+<h3>New Documentation Files</h3>
+<ol>
+<li><code>docs/api/products-quote-proposal-api.md</code> - API endpoints</li>
+<li><code>docs/moodboard-products-integration.md</code> - Moodboard integration guide</li>
+<li><code>docs/shopping-cart-system.md</code> - Shopping cart guide</li>
+</ol>
+<h3>Updated Documentation Files</h3>
+<ol>
+<li><code>docs/api-documentation.md</code> - Add new endpoints</li>
+<li><code>docs/platform-functionality.md</code> - Add quote/proposal section</li>
+<li><code>docs/admin-panel-guide.md</code> - Add admin features</li>
+</ol>
+<hr>
+<h2>🧪 TESTING</h2>
+<h3>Test Files</h3>
+<ol>
+<li><code>scripts/test-products-complete-flow.js</code> - Product testing</li>
+<li><code>scripts/test-products-quote-proposal.js</code> - Quote/proposal testing</li>
+<li><code>scripts/test-moodboard-products.js</code> - Moodboard testing</li>
+</ol>
+<h3>Test Coverage</h3>
+<ul>
+<li>✅ Product creation and search</li>
+<li>✅ Cart operations</li>
+<li>✅ Quote request submission</li>
+<li>✅ Proposal creation and pricing</li>
+<li>✅ Proposal sending and acceptance</li>
+<li>✅ Commission tracking</li>
+<li>✅ Moodboard product operations</li>
+<li>✅ Error scenarios</li>
+</ul>
+<hr>
+<h2>📋 IMPLEMENTATION PHASES</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Tasks</th>
+<th>Deliverables</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1: Testing</td>
+<td>Week 1</td>
+<td>5</td>
+<td>Test file</td>
+</tr>
+<tr>
+<td>2: Database</td>
+<td>Week 2</td>
+<td>3</td>
+<td>3 tables</td>
+</tr>
+<tr>
+<td>3: Edge Functions</td>
+<td>Week 2-3</td>
+<td>5</td>
+<td>5 functions</td>
+</tr>
+<tr>
+<td>4: Services</td>
+<td>Week 3</td>
+<td>5</td>
+<td>5 services</td>
+</tr>
+<tr>
+<td>5: Components</td>
+<td>Week 3-4</td>
+<td>8</td>
+<td>8 components</td>
+</tr>
+<tr>
+<td>6: Documentation</td>
+<td>Week 4</td>
+<td>6</td>
+<td>6 docs</td>
+</tr>
+<tr>
+<td>7: Testing</td>
+<td>Week 4-5</td>
+<td>3</td>
+<td>Test results</td>
+</tr>
+<tr>
+<td>8: Deployment</td>
+<td>Week 5</td>
+<td>3</td>
+<td>Production</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>✅ SUCCESS CRITERIA</h2>
+<ul>
+<li>✅ All products can be created with metadata</li>
+<li>✅ Products searchable by description, image, metadata</li>
+<li>✅ Shopping cart fully functional</li>
+<li>✅ Quote requests work end-to-end</li>
+<li>✅ Proposals can be created and priced</li>
+<li>✅ Moodboard products integration works</li>
+<li>✅ Commission tracking accurate</li>
+<li>✅ Admin panel shows all features</li>
+<li>✅ All tests pass</li>
+<li>✅ Documentation complete</li>
+</ul>
+<hr>
+<h2>📊 DELIVERABLES SUMMARY</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Count</th>
+<th>Items</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Test Files</td>
+<td>2</td>
+<td>Product, Quote/Proposal, Moodboard</td>
+</tr>
+<tr>
+<td>Edge Functions</td>
+<td>5</td>
+<td>Cart, Quote, Proposal, Moodboard, Commission</td>
+</tr>
+<tr>
+<td>Frontend Services</td>
+<td>5</td>
+<td>Cart, Quote, Proposal, Moodboard, Commission</td>
+</tr>
+<tr>
+<td>React Components</td>
+<td>8</td>
+<td>Cart, Form, Tracker, Editor, Selector, etc.</td>
+</tr>
+<tr>
+<td>Database Tables</td>
+<td>5</td>
+<td>Carts, Requests, Proposals, Moodboard items</td>
+</tr>
+<tr>
+<td>Documentation Files</td>
+<td>6</td>
+<td>API, Integration, System guides</td>
+</tr>
+<tr>
+<td>Total Tasks</td>
+<td>45</td>
+<td>Across 8 phases</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🚀 NEXT STEPS</h2>
+<ol>
+<li>✅ Review this plan</li>
+<li>✅ Review detailed task list (<code>PRODUCTS-IMPLEMENTATION-TASKS.md</code>)</li>
+<li>⏳ Create database tables using Supabase MCP</li>
+<li>⏳ Create test file</li>
+<li>⏳ Build Edge Functions</li>
+<li>⏳ Build frontend services</li>
+<li>⏳ Build React components</li>
+<li>⏳ Update documentation</li>
+<li>⏳ Run comprehensive tests</li>
+<li>⏳ Deploy to production</li>
+</ol>
+<hr>
+<h2>💡 KEY FEATURES</h2>
+<h3>For Users</h3>
+<ul>
+<li>🛒 Shopping cart for products</li>
+<li>📋 Quote request submission</li>
+<li>📊 Quote status tracking</li>
+<li>💰 Proposal acceptance</li>
+<li>🎨 Moodboard product integration</li>
+<li>💵 Commission earning (moodboard creators)</li>
+</ul>
+<h3>For Admins</h3>
+<ul>
+<li>📥 Quote request management</li>
+<li>📝 Proposal creation and editing</li>
+<li>💰 Pricing control</li>
+<li>📊 Commission tracking</li>
+<li>📈 Reporting and analytics</li>
+</ul>
+<h3>For Platform</h3>
+<ul>
+<li>🔍 Product search optimization</li>
+<li>📊 Sales tracking</li>
+<li>💼 Commission management</li>
+<li>📈 Revenue tracking</li>
+<li>🎯 User engagement</li>
+</ul>
+<hr>
+<h2>🎯 CONFIDENCE LEVEL</h2>
+<p><strong>VERY HIGH</strong> ✅✅✅</p>
+<p><strong>Why?</strong></p>
+<ul>
+<li>Clear architecture</li>
+<li>Proven patterns (existing CRM system)</li>
+<li>Well-defined database schema</li>
+<li>Comprehensive task breakdown</li>
+<li>Detailed documentation</li>
+<li>Complete test coverage</li>
+</ul>
+<hr>
+<h2>📞 QUESTIONS?</h2>
+<p>Refer to:</p>
+<ul>
+<li><code>PRODUCTS-QUOTE-PROPOSAL-PLAN.md</code> - Detailed plan</li>
+<li><code>PRODUCTS-IMPLEMENTATION-TASKS.md</code> - Task breakdown</li>
+<li><code>docs/api-documentation.md</code> - API reference</li>
+<li><code>docs/admin-panel-guide.md</code> - Admin guide</li>
+</ul>
+<hr>
+<p><strong>Ready to build! 🚀</strong></p>
+
+</div></body></html>

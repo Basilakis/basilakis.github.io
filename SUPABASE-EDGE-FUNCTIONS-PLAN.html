@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Supabase Edge Functions Plan - Knowledge Base &amp; Products System</h1>
+<p><strong>Document Version</strong>: 1.0<br><strong>Date</strong>: 2025-10-19<br><strong>Status</strong>: Ready for Implementation</p>
+<hr>
+<h2>📋 OVERVIEW</h2>
+<p>This document identifies which tasks from the implementation roadmap require Supabase Edge Functions and maps them to your existing architectural patterns.</p>
+<h3>Your Existing Pattern</h3>
+<p>Your platform uses a <strong>hybrid approach</strong>:</p>
+<ol>
+<li><strong>Supabase Edge Functions</strong> (Deno/TypeScript) for backend operations</li>
+<li><strong>Frontend Services</strong> (TypeScript/React) for client-side logic</li>
+<li><strong>Shared utilities</strong> in <code>supabase/functions/_shared/</code> for common patterns</li>
+</ol>
+<hr>
+<h2>🎯 WHICH TASKS NEED SUPABASE EDGE FUNCTIONS?</h2>
+<h3>✅ PHASE 1: Knowledge Base UI Fixes (Week 1-2)</h3>
+<p><strong>No new Edge Functions needed</strong> - These are frontend-only fixes</p>
+<ul>
+<li>Sprint 1.1-1.3: UI components, modals, real-time polling</li>
+<li>All work in <code>src/components/Admin/MaterialKnowledgeBase.tsx</code></li>
+</ul>
+<hr>
+<h3>✅ PHASE 2: Database &amp; Products Foundation (Week 2-3)</h3>
+<h4>Sprint 2.1: Database Schema &amp; Migrations</h4>
+<p><strong>No Edge Functions</strong> - Direct database operations via Supabase client</p>
+<h4>Sprint 2.2: Product APIs - CRUD</h4>
+<p><strong>✅ CREATE NEW EDGE FUNCTION</strong>: <code>products-api</code></p>
+<ul>
+<li><strong>Pattern</strong>: Similar to <code>crm-users-api</code> and <code>crm-contacts-api</code></li>
+<li><strong>Operations</strong>: POST/GET/PATCH/DELETE for products</li>
+<li><strong>Location</strong>: <code>supabase/functions/products-api/index.ts</code></li>
+<li><strong>Responsibilities</strong>:<ul>
+<li>Create product: <code>POST /api/products</code></li>
+<li>List products: <code>GET /api/products</code></li>
+<li>Get product: <code>GET /api/products/:id</code></li>
+<li>Update product: <code>PATCH /api/products/:id</code></li>
+<li>Delete product: <code>DELETE /api/products/:id</code></li>
+</ul>
+</li>
+</ul>
+<h4>Sprint 2.3: Product-Chunk Relationships</h4>
+<p><strong>✅ CREATE NEW EDGE FUNCTION</strong>: <code>product-relationships-api</code></p>
+<ul>
+<li><strong>Pattern</strong>: Similar to existing relationship APIs</li>
+<li><strong>Operations</strong>: Link/unlink chunks to products</li>
+<li><strong>Location</strong>: <code>supabase/functions/product-relationships-api/index.ts</code></li>
+<li><strong>Responsibilities</strong>:<ul>
+<li>Link chunks: <code>POST /api/products/:id/chunks</code></li>
+<li>Get product chunks: <code>GET /api/products/:id/chunks</code></li>
+<li>Unlink chunk: <code>DELETE /api/products/:id/chunks/:chunkId</code></li>
+<li>Calculate relevance scores</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>✅ PHASE 3: Product Creation &amp; Embeddings (Week 3-4)</h3>
+<h4>Sprint 3.1: Product Builder Service</h4>
+<p><strong>✅ CREATE NEW EDGE FUNCTION</strong>: <code>product-builder</code></p>
+<ul>
+<li><strong>Pattern</strong>: Similar to <code>extract-material-knowledge</code>, <code>extract-categories</code></li>
+<li><strong>Operations</strong>: Build products from chunks</li>
+<li><strong>Location</strong>: <code>supabase/functions/product-builder/index.ts</code></li>
+<li><strong>Responsibilities</strong>:<ul>
+<li>Extract properties from chunks</li>
+<li>Generate product name/description</li>
+<li>Validate product data</li>
+<li>Return structured product</li>
+</ul>
+</li>
+</ul>
+<h4>Sprint 3.2: Product Embeddings</h4>
+<p><strong>✅ CREATE NEW EDGE FUNCTION</strong>: <code>product-embeddings</code></p>
+<ul>
+<li><strong>Pattern</strong>: Similar to <code>document-vector-search</code>, <code>unified-material-search</code></li>
+<li><strong>Operations</strong>: Generate and store embeddings</li>
+<li><strong>Location</strong>: <code>supabase/functions/product-embeddings/index.ts</code></li>
+<li><strong>Responsibilities</strong>:<ul>
+<li>Generate text embeddings (OpenAI)</li>
+<li>Generate image embeddings (CLIP)</li>
+<li>Generate hybrid embeddings</li>
+<li>Store in <code>product_embeddings</code> table</li>
+<li>Update product embedding reference</li>
+</ul>
+</li>
+</ul>
+<h4>Sprint 3.3: Product Management UI</h4>
+<p><strong>No new Edge Functions</strong> - Frontend-only work</p>
+<hr>
+<h3>✅ PHASE 4: Search &amp; Materials Page (Week 4-5)</h3>
+<h4>Sprint 4.1: Unified Search Service</h4>
+<p><strong>✅ CREATE NEW EDGE FUNCTION</strong>: <code>products-search</code></p>
+<ul>
+<li><strong>Pattern</strong>: Similar to <code>unified-material-search</code>, <code>enhanced-rag-search</code></li>
+<li><strong>Operations</strong>: Search products and chunks</li>
+<li><strong>Location</strong>: <code>supabase/functions/products-search/index.ts</code></li>
+<li><strong>Responsibilities</strong>:<ul>
+<li>Search product embeddings (vector similarity)</li>
+<li>Search chunk embeddings (vector similarity)</li>
+<li>Keyword search</li>
+<li>Merge and rank results</li>
+<li>Filter by properties/category</li>
+</ul>
+</li>
+</ul>
+<h4>Sprint 4.2: Materials Page</h4>
+<p><strong>No new Edge Functions</strong> - Frontend-only work</p>
+<h4>Sprint 4.3: Search Integration</h4>
+<p><strong>No new Edge Functions</strong> - Uses existing search function</p>
+<hr>
+<h3>✅ PHASE 5: Agent Integration (Week 5)</h3>
+<h4>Sprint 5.1: Agent Product Recommendations</h4>
+<p><strong>✅ UPDATE EXISTING EDGE FUNCTION</strong>: <code>material-agent-orchestrator</code></p>
+<ul>
+<li><strong>Pattern</strong>: Already exists, add product recommendation logic</li>
+<li><strong>Location</strong>: <code>supabase/functions/material-agent-orchestrator/index.ts</code></li>
+<li><strong>Changes</strong>:<ul>
+<li>Query products in search results</li>
+<li>Match products to user query</li>
+<li>Generate recommendations</li>
+<li>Format product suggestions in response</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>✅ PHASE 6: Testing &amp; Deployment (Week 5-6)</h3>
+<p><strong>No new Edge Functions</strong> - Testing and deployment</p>
+<hr>
+<h2>📊 SUMMARY TABLE</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Sprint</th>
+<th>Task</th>
+<th>Edge Function</th>
+<th>Type</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td>2.2</td>
+<td>Product CRUD</td>
+<td><code>products-api</code></td>
+<td>NEW</td>
+<td>crm-users-api</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2.3</td>
+<td>Relationships</td>
+<td><code>product-relationships-api</code></td>
+<td>NEW</td>
+<td>crm-contacts-api</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3.1</td>
+<td>Product Builder</td>
+<td><code>product-builder</code></td>
+<td>NEW</td>
+<td>extract-material-knowledge</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3.2</td>
+<td>Embeddings</td>
+<td><code>product-embeddings</code></td>
+<td>NEW</td>
+<td>document-vector-search</td>
+</tr>
+<tr>
+<td>4</td>
+<td>4.1</td>
+<td>Search</td>
+<td><code>products-search</code></td>
+<td>NEW</td>
+<td>unified-material-search</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5.1</td>
+<td>Agent</td>
+<td><code>material-agent-orchestrator</code></td>
+<td>UPDATE</td>
+<td>existing</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🏗️ ARCHITECTURAL PATTERNS TO FOLLOW</h2>
+<h3>1. <strong>Edge Function Structure</strong> (from <code>crm-users-api</code>)</h3>
+<pre><code class="language-typescript">// supabase/functions/products-api/index.ts
+import { createClient } from &#39;https://esm.sh/@supabase/supabase-js@2.38.4&#39;;
+import { corsHeaders } from &#39;../_shared/cors.ts&#39;;
+
+const supabaseUrl = Deno.env.get(&#39;SUPABASE_URL&#39;) || &#39;&#39;;
+const supabaseServiceKey = Deno.env.get(&#39;SUPABASE_SERVICE_ROLE_KEY&#39;) || &#39;&#39;;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+Deno.serve(async (req) =&gt; {
+  // 1. Handle CORS
+  if (req.method === &#39;OPTIONS&#39;) {
+    return new Response(&#39;ok&#39;, { headers: corsHeaders });
+  }
+
+  try {
+    // 2. Parse URL and method
+    const url = new URL(req.url);
+    const method = req.method;
+    const path = url.pathname.split(&#39;/&#39;).slice(4);
+
+    // 3. Authenticate user
+    const authHeader = req.headers.get(&#39;Authorization&#39;);
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: &#39;Missing authorization&#39; }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const token = authHeader.replace(&#39;Bearer &#39;, &#39;&#39;);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: &#39;Unauthorized&#39; }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // 4. Route to handlers
+    switch (method) {
+      case &#39;POST&#39;:
+        return await handleCreate(req, supabase, user);
+      case &#39;GET&#39;:
+        return await handleGet(url, supabase, user, path);
+      case &#39;PATCH&#39;:
+        return await handleUpdate(req, supabase, user, path);
+      case &#39;DELETE&#39;:
+        return await handleDelete(supabase, user, path);
+      default:
+        return new Response(
+          JSON.stringify({ error: &#39;Method not allowed&#39; }),
+          { status: 405, headers: corsHeaders }
+        );
+    }
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+});
+</code></pre>
+<h3>2. <strong>Response Pattern</strong> (from <code>_shared/types.ts</code>)</h3>
+<pre><code class="language-typescript">// Use standardized response format
+export interface EdgeFunctionResponse&lt;T = any&gt; {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: Record&lt;string, any&gt;;
+  };
+  metadata: {
+    processingTime: number;
+    timestamp: string;
+    version?: string;
+    requestId?: string;
+  };
+}
+
+// Helper functions
+export function createSuccessResponse&lt;T&gt;(data: T, metadata = {}) { ... }
+export function createErrorResponse(code, message, details, metadata) { ... }
+export function createJSONResponse(body, status = 200) { ... }
+</code></pre>
+<h3>3. <strong>Authentication Pattern</strong> (from <code>crm-users-api</code>)</h3>
+<pre><code class="language-typescript">// 1. Get token from Authorization header
+const token = authHeader.replace(&#39;Bearer &#39;, &#39;&#39;);
+
+// 2. Verify user
+const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+// 3. Check role/permissions
+const { data: userProfile } = await supabase
+  .from(&#39;user_profiles&#39;)
+  .select(&#39;role_id&#39;)
+  .eq(&#39;user_id&#39;, user.id)
+  .single();
+
+// 4. Verify access
+if (!userProfile || !allowedRoles.includes(userProfile.role_id)) {
+  return new Response(
+    JSON.stringify({ error: &#39;Access denied&#39; }),
+    { status: 403, headers: corsHeaders }
+  );
+}
+</code></pre>
+<h3>4. <strong>Database Operations Pattern</strong> (from <code>crm-contacts-api</code>)</h3>
+<pre><code class="language-typescript">// CREATE
+const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .insert({ name, description, ... })
+  .select();
+
+// READ
+const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .select(&#39;*&#39;)
+  .eq(&#39;id&#39;, productId)
+  .single();
+
+// UPDATE
+const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .update({ name, description, ... })
+  .eq(&#39;id&#39;, productId)
+  .select();
+
+// DELETE
+const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .delete()
+  .eq(&#39;id&#39;, productId);
+
+// LIST with pagination
+const { data, error, count } = await supabase
+  .from(&#39;products&#39;)
+  .select(&#39;*&#39;, { count: &#39;exact&#39; })
+  .range(offset, offset + limit - 1);
+</code></pre>
+<h3>5. <strong>Vector Search Pattern</strong> (from <code>unified-material-search</code>)</h3>
+<pre><code class="language-typescript">// Search embeddings using pgvector
+const { data, error } = await supabase.rpc(&#39;search_products&#39;, {
+  query_embedding: queryVector,
+  similarity_threshold: 0.7,
+  match_count: 10,
+});
+</code></pre>
+<hr>
+<h2>📁 FILE ORGANIZATION</h2>
+<pre><code>supabase/functions/
+├── _shared/
+│   ├── cors.ts                    (existing)
+│   ├── types.ts                   (existing)
+│   ├── embedding-utils.ts         (existing)
+│   └── unified-vector-search.ts   (existing)
+│
+├── products-api/                  (NEW)
+│   └── index.ts
+│
+├── product-relationships-api/     (NEW)
+│   └── index.ts
+│
+├── product-builder/               (NEW)
+│   └── index.ts
+│
+├── product-embeddings/            (NEW)
+│   └── index.ts
+│
+├── products-search/               (NEW)
+│   └── index.ts
+│
+└── material-agent-orchestrator/   (UPDATE)
+    └── index.ts
+</code></pre>
+<hr>
+<h2>🔄 FRONTEND SERVICE INTEGRATION</h2>
+<h3>Frontend Services (TypeScript)</h3>
+<p>For frontend integration, create services in <code>src/services/</code>:</p>
+<pre><code class="language-typescript">// src/services/products/ProductService.ts
+export class ProductService {
+  async createProduct(data: CreateProductInput): Promise&lt;Product&gt; {
+    return await supabaseApiService.call(&#39;products-api&#39;, {
+      method: &#39;POST&#39;,
+      data,
+    });
+  }
+
+  async getProduct(id: string): Promise&lt;Product&gt; {
+    return await supabaseApiService.call(&#39;products-api&#39;, {
+      method: &#39;GET&#39;,
+      id,
+    });
+  }
+
+  // ... other methods
+}
+</code></pre>
+<hr>
+<h2>🚀 IMPLEMENTATION ORDER</h2>
+<ol>
+<li><strong>Phase 2.2</strong>: <code>products-api</code> (CRUD operations)</li>
+<li><strong>Phase 2.3</strong>: <code>product-relationships-api</code> (Relationships)</li>
+<li><strong>Phase 3.1</strong>: <code>product-builder</code> (Product creation)</li>
+<li><strong>Phase 3.2</strong>: <code>product-embeddings</code> (Embeddings)</li>
+<li><strong>Phase 4.1</strong>: <code>products-search</code> (Search)</li>
+<li><strong>Phase 5.1</strong>: Update <code>material-agent-orchestrator</code> (Recommendations)</li>
+</ol>
+<hr>
+<h2>✅ CHECKLIST FOR EACH EDGE FUNCTION</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Create function directory in <code>supabase/functions/</code></li>
+<li><input disabled="" type="checkbox"> Implement <code>index.ts</code> following existing patterns</li>
+<li><input disabled="" type="checkbox"> Add CORS headers from <code>_shared/cors.ts</code></li>
+<li><input disabled="" type="checkbox"> Implement authentication (JWT token verification)</li>
+<li><input disabled="" type="checkbox"> Implement authorization (role-based access)</li>
+<li><input disabled="" type="checkbox"> Add error handling with standardized responses</li>
+<li><input disabled="" type="checkbox"> Use standardized response format from <code>_shared/types.ts</code></li>
+<li><input disabled="" type="checkbox"> Add database operations with proper error handling</li>
+<li><input disabled="" type="checkbox"> Test with curl/Postman</li>
+<li><input disabled="" type="checkbox"> Deploy via GitHub Actions</li>
+<li><input disabled="" type="checkbox"> Update API documentation</li>
+</ul>
+<hr>
+<h2>📞 NEXT STEPS</h2>
+<ol>
+<li><strong>Review this plan</strong> - Confirm Edge Functions needed</li>
+<li><strong>Create database tables</strong> - Phase 2.1 (before Edge Functions)</li>
+<li><strong>Implement Edge Functions</strong> - Follow order above</li>
+<li><strong>Create frontend services</strong> - Wrap Edge Functions</li>
+<li><strong>Test end-to-end</strong> - Verify all flows work</li>
+</ol>
+<hr>
+<h2>🎯 KEY PRINCIPLES</h2>
+<p>✅ <strong>Follow existing patterns</strong> - Use <code>crm-users-api</code>, <code>crm-contacts-api</code> as templates<br>✅ <strong>Use shared utilities</strong> - Leverage <code>_shared/</code> for CORS, types, responses<br>✅ <strong>Standardize responses</strong> - All functions return <code>EdgeFunctionResponse</code><br>✅ <strong>Authenticate all endpoints</strong> - Verify JWT token on every request<br>✅ <strong>Authorize properly</strong> - Check user roles before operations<br>✅ <strong>Handle errors gracefully</strong> - Return standardized error responses<br>✅ <strong>Document APIs</strong> - Update <code>/docs/api-documentation.md</code>  </p>
+<hr>
+<p><strong>Ready to implement! 🚀</strong></p>
+
+</div></body></html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Products System - Technical Architecture</h1>
+<p><strong>Document Version</strong>: 1.0<br><strong>Date</strong>: 2025-10-19</p>
+<hr>
+<h2>🏗️ SYSTEM ARCHITECTURE</h2>
+<h3>High-Level Flow</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    PDF PROCESSING PIPELINE                   │
+├─────────────────────────────────────────────────────────────┤
+│  Upload → Extract → Chunk → Embed → Store → Analyze        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+        ┌──────────────────────────────┐
+        │   PRODUCT BUILDER SERVICE    │
+        ├──────────────────────────────┤
+        │ • Analyze chunks             │
+        │ • Extract properties         │
+        │ • Generate product embedding │
+        │ • Create product record      │
+        └──────────────────────────────┘
+                       │
+                       ▼
+        ┌──────────────────────────────┐
+        │    PRODUCTS DATABASE         │
+        ├──────────────────────────────┤
+        │ • products                   │
+        │ • product_images             │
+        │ • product_embeddings         │
+        │ • product_chunk_relationships│
+        └──────────────────────────────┘
+                       │
+        ┌──────────────┴──────────────┐
+        ▼                             ▼
+   ┌─────────────┐          ┌──────────────────┐
+   │ SEARCH API  │          │ MATERIALS PAGE   │
+   │ (Unified)   │          │ (User-Facing)    │
+   └─────────────┘          └──────────────────┘
+</code></pre>
+<hr>
+<h2>📦 CORE SERVICES</h2>
+<h3>1. ProductBuilderService</h3>
+<p><strong>Purpose</strong>: Transform chunks into products</p>
+<pre><code class="language-typescript">class ProductBuilderService {
+  // Analyze chunks and extract product information
+  async buildProductFromChunks(
+    chunkIds: string[],
+    documentId: string
+  ): Promise&lt;Product&gt;
+  
+  // Generate product embedding
+  async generateProductEmbedding(product: Product): Promise&lt;void&gt;
+  
+  // Extract properties from content
+  async extractProductProperties(content: string): Promise&lt;Properties&gt;
+  
+  // Create product record
+  async createProduct(data: ProductInput): Promise&lt;Product&gt;
+  
+  // Update product
+  async updateProduct(id: string, data: Partial&lt;ProductInput&gt;): Promise&lt;Product&gt;
+  
+  // Publish product
+  async publishProduct(id: string): Promise&lt;void&gt;
+}
+</code></pre>
+<h3>2. ProductSearchService</h3>
+<p><strong>Purpose</strong>: Search products and chunks unified</p>
+<pre><code class="language-typescript">class ProductSearchService {
+  // Search both products and chunks
+  async unifiedSearch(
+    query: string,
+    options: SearchOptions
+  ): Promise&lt;UnifiedSearchResults&gt;
+  
+  // Search products only
+  async searchProducts(
+    query: string,
+    filters?: ProductFilters
+  ): Promise&lt;Product[]&gt;
+  
+  // Get related products
+  async getRelatedProducts(
+    productId: string,
+    limit?: number
+  ): Promise&lt;Product[]&gt;
+  
+  // Filter by properties
+  async filterByProperties(
+    properties: PropertyFilter[]
+  ): Promise&lt;Product[]&gt;
+}
+</code></pre>
+<h3>3. ProductEmbeddingService</h3>
+<p><strong>Purpose</strong>: Manage product embeddings</p>
+<pre><code class="language-typescript">class ProductEmbeddingService {
+  // Generate embeddings for product
+  async generateProductEmbeddings(
+    product: Product,
+    types: EmbeddingType[]
+  ): Promise&lt;ProductEmbedding[]&gt;
+  
+  // Store embeddings
+  async storeEmbeddings(
+    productId: string,
+    embeddings: ProductEmbedding[]
+  ): Promise&lt;void&gt;
+  
+  // Search by embedding
+  async searchByEmbedding(
+    embedding: number[],
+    limit?: number
+  ): Promise&lt;Product[]&gt;
+}
+</code></pre>
+<hr>
+<h2>🔌 API ENDPOINTS</h2>
+<h3>Products Management</h3>
+<pre><code>POST   /api/products                    # Create product
+GET    /api/products                    # List products
+GET    /api/products/:id                # Get product
+PATCH  /api/products/:id                # Update product
+DELETE /api/products/:id                # Delete product
+POST   /api/products/:id/publish        # Publish product
+POST   /api/products/:id/embeddings     # Generate embeddings
+</code></pre>
+<h3>Product Search</h3>
+<pre><code>POST   /api/search/unified              # Search products + chunks
+POST   /api/search/products             # Search products only
+GET    /api/products/:id/related        # Get related products
+POST   /api/products/filter             # Filter by properties
+</code></pre>
+<h3>Product Images</h3>
+<pre><code>POST   /api/products/:id/images         # Add image
+GET    /api/products/:id/images         # List images
+DELETE /api/products/:id/images/:imgId  # Delete image
+</code></pre>
+<hr>
+<h2>🗄️ DATABASE SCHEMA</h2>
+<h3>Products Table</h3>
+<pre><code class="language-sql">CREATE TABLE products (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  long_description TEXT,
+  category_id UUID REFERENCES material_categories(id),
+  source_document_id UUID REFERENCES documents(id),
+  source_chunks JSONB,
+  properties JSONB,
+  specifications JSONB,
+  metadata JSONB,
+  embedding VECTOR(1536),
+  embedding_model TEXT,
+  status TEXT,
+  created_from_type TEXT,
+  created_by UUID,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
+-- Indexes
+CREATE INDEX products_category_id_idx ON products(category_id);
+CREATE INDEX products_status_idx ON products(status);
+CREATE INDEX products_embedding_idx ON products USING ivfflat(embedding);
+</code></pre>
+<h3>Product Images Table</h3>
+<pre><code class="language-sql">CREATE TABLE product_images (
+  id UUID PRIMARY KEY,
+  product_id UUID NOT NULL REFERENCES products(id),
+  image_id UUID REFERENCES document_images(id),
+  image_url TEXT NOT NULL,
+  image_type TEXT,
+  display_order INTEGER,
+  metadata JSONB,
+  created_at TIMESTAMPTZ
+);
+
+CREATE INDEX product_images_product_id_idx ON product_images(product_id);
+</code></pre>
+<h3>Product Embeddings Table</h3>
+<pre><code class="language-sql">CREATE TABLE product_embeddings (
+  id UUID PRIMARY KEY,
+  product_id UUID NOT NULL REFERENCES products(id),
+  embedding_type TEXT,
+  embedding VECTOR(1536),
+  source_content TEXT,
+  model_name TEXT,
+  dimensions INTEGER,
+  created_at TIMESTAMPTZ
+);
+
+CREATE INDEX product_embeddings_product_id_idx ON product_embeddings(product_id);
+CREATE INDEX product_embeddings_type_idx ON product_embeddings(embedding_type);
+</code></pre>
+<h3>Product-Chunk Relationships</h3>
+<pre><code class="language-sql">CREATE TABLE product_chunk_relationships (
+  id UUID PRIMARY KEY,
+  product_id UUID NOT NULL REFERENCES products(id),
+  chunk_id UUID NOT NULL REFERENCES document_chunks(id),
+  relationship_type TEXT,
+  relevance_score NUMERIC,
+  created_at TIMESTAMPTZ
+);
+
+CREATE INDEX product_chunk_relationships_product_id_idx 
+  ON product_chunk_relationships(product_id);
+CREATE INDEX product_chunk_relationships_chunk_id_idx 
+  ON product_chunk_relationships(chunk_id);
+</code></pre>
+<hr>
+<h2>🔍 SEARCH IMPLEMENTATION</h2>
+<h3>Unified Search Flow</h3>
+<ol>
+<li><strong>Query Preprocessing</strong>: Clean and normalize query</li>
+<li><strong>Embedding Generation</strong>: Create query embedding</li>
+<li><strong>Parallel Search</strong>:<ul>
+<li>Vector search in <code>product_embeddings</code></li>
+<li>Vector search in <code>document_vectors</code> (chunks)</li>
+<li>Keyword search in products</li>
+</ul>
+</li>
+<li><strong>Result Merging</strong>: Combine and rank results</li>
+<li><strong>Deduplication</strong>: Remove duplicates</li>
+<li><strong>Ranking</strong>: Sort by relevance score</li>
+</ol>
+<h3>Search Result Structure</h3>
+<pre><code class="language-typescript">interface UnifiedSearchResult {
+  type: &#39;product&#39; | &#39;chunk&#39;;
+  id: string;
+  title: string;
+  content: string;
+  relevance_score: number;
+  source_document?: string;
+  metadata: Record&lt;string, any&gt;;
+  relatedItems?: UnifiedSearchResult[];
+}
+</code></pre>
+<hr>
+<h2>🎯 PRODUCT CREATION WORKFLOW</h2>
+<h3>From PDF Chunks</h3>
+<ol>
+<li>User selects chunks in Knowledge Base</li>
+<li>System analyzes chunks for product potential</li>
+<li>Extract: name, description, properties, images</li>
+<li>Generate product embedding</li>
+<li>Create product record</li>
+<li>Link to source chunks</li>
+<li>Display in Products tab</li>
+</ol>
+<h3>From XML/Scraping</h3>
+<ol>
+<li>Parse external data</li>
+<li>Map to product schema</li>
+<li>Generate embedding</li>
+<li>Create product record</li>
+<li>Mark source as &#39;xml_import&#39; or &#39;scraping&#39;</li>
+</ol>
+<h3>Manual Creation</h3>
+<ol>
+<li>User fills product form</li>
+<li>Upload images</li>
+<li>Set properties and metadata</li>
+<li>Generate embedding</li>
+<li>Publish</li>
+</ol>
+<hr>
+<h2>🔐 SECURITY &amp; PERMISSIONS</h2>
+<h3>Row-Level Security (RLS)</h3>
+<pre><code class="language-sql">-- Products visible to workspace members
+CREATE POLICY &quot;Users can view workspace products&quot;
+  ON products FOR SELECT
+  USING (created_by = auth.uid() OR workspace_id = current_workspace_id());
+
+-- Only creators can modify
+CREATE POLICY &quot;Users can modify own products&quot;
+  ON products FOR UPDATE
+  USING (created_by = auth.uid());
+</code></pre>
+<h3>API Authentication</h3>
+<ul>
+<li>All endpoints require JWT token</li>
+<li>Validate user workspace access</li>
+<li>Check product ownership for modifications</li>
+</ul>
+<hr>
+<h2>📊 PERFORMANCE CONSIDERATIONS</h2>
+<h3>Indexing Strategy</h3>
+<ul>
+<li>Vector indexes on embeddings (ivfflat)</li>
+<li>B-tree indexes on foreign keys</li>
+<li>Hash indexes on status/type fields</li>
+<li>Composite indexes for common filters</li>
+</ul>
+<h3>Query Optimization</h3>
+<ul>
+<li>Batch embedding generation</li>
+<li>Cache popular searches</li>
+<li>Pagination for large result sets</li>
+<li>Lazy load related items</li>
+</ul>
+<h3>Scaling</h3>
+<ul>
+<li>Partition products by category</li>
+<li>Archive old products</li>
+<li>Separate read replicas for search</li>
+<li>CDN for image delivery</li>
+</ul>
+<hr>
+<h2>🧪 TESTING STRATEGY</h2>
+<h3>Unit Tests</h3>
+<ul>
+<li>Service methods</li>
+<li>Embedding generation</li>
+<li>Property extraction</li>
+<li>Search ranking</li>
+</ul>
+<h3>Integration Tests</h3>
+<ul>
+<li>End-to-end product creation</li>
+<li>Search functionality</li>
+<li>Relationship integrity</li>
+<li>Permission checks</li>
+</ul>
+<h3>Performance Tests</h3>
+<ul>
+<li>Search latency (&lt;500ms)</li>
+<li>Embedding generation time</li>
+<li>Concurrent user load</li>
+<li>Database query performance</li>
+</ul>
+<hr>
+<h2>📝 MIGRATION STRATEGY</h2>
+<h3>Phase 1: Schema Creation</h3>
+<ul>
+<li>Create new tables</li>
+<li>Set up indexes</li>
+<li>Configure RLS policies</li>
+</ul>
+<h3>Phase 2: Data Migration</h3>
+<ul>
+<li>Migrate existing materials to products</li>
+<li>Generate embeddings for existing products</li>
+<li>Create chunk relationships</li>
+</ul>
+<h3>Phase 3: Service Deployment</h3>
+<ul>
+<li>Deploy ProductBuilderService</li>
+<li>Deploy ProductSearchService</li>
+<li>Deploy API endpoints</li>
+</ul>
+<h3>Phase 4: UI Rollout</h3>
+<ul>
+<li>Enable Products tab</li>
+<li>Deploy Materials page</li>
+<li>Update search interface</li>
+</ul>
+<hr>
+<h2>🔄 INTEGRATION POINTS</h2>
+<h3>With Existing Systems</h3>
+<ul>
+<li><strong>PDF Processing</strong>: Trigger product creation on chunk generation</li>
+<li><strong>Search</strong>: Integrate products into unified search</li>
+<li><strong>Agents</strong>: Use products for recommendations</li>
+<li><strong>Categories</strong>: Link products to material categories</li>
+<li><strong>Embeddings</strong>: Use existing embedding service</li>
+</ul>
+<h3>With External Systems</h3>
+<ul>
+<li><strong>XML Import</strong>: Map XML to products</li>
+<li><strong>Web Scraping</strong>: Create products from scraped data</li>
+<li><strong>3D Models</strong>: Link products to 3D assets</li>
+<li><strong>Moodboards</strong>: Add products to moodboards</li>
+</ul>
+
+</div></body></html>

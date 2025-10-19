@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Quick Reference Guide - Knowledge Base &amp; Products System</h1>
+<p><strong>Last Updated</strong>: 2025-10-19
+<strong>Status</strong>: Ready for Implementation</p>
+<hr>
+<h2>📚 DOCUMENT INDEX</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+<th>Audience</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>KNOWLEDGE-BASE-PRODUCTS-SUMMARY.md</strong></td>
+<td>Executive overview, vision, timeline</td>
+<td>Everyone</td>
+</tr>
+<tr>
+<td><strong>knowledge-base-products-system-plan.md</strong></td>
+<td>Detailed requirements, 12 issues, architecture</td>
+<td>Product Managers, Architects</td>
+</tr>
+<tr>
+<td><strong>products-system-technical-architecture.md</strong></td>
+<td>Technical design, APIs, database schema</td>
+<td>Developers, DevOps</td>
+</tr>
+<tr>
+<td><strong>implementation-roadmap.md</strong></td>
+<td>6-week sprint breakdown, tasks</td>
+<td>Project Managers, Developers</td>
+</tr>
+<tr>
+<td><strong>embeddings-search-strategy.md</strong></td>
+<td>How embeddings work, search flow</td>
+<td>Developers, Data Scientists</td>
+</tr>
+<tr>
+<td><strong>system-diagrams.md</strong></td>
+<td>Visual diagrams, data flows</td>
+<td>Everyone</td>
+</tr>
+<tr>
+<td><strong>QUICK-REFERENCE.md</strong></td>
+<td>This document - quick lookup</td>
+<td>Everyone</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🎯 THE 12 KNOWLEDGE BASE ISSUES</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Issue</th>
+<th>Impact</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Documents not listed properly</td>
+<td>Can&#39;t identify PDFs</td>
+<td>Show filename, date, size, page count</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Chunks missing context</td>
+<td>Can&#39;t trace origin</td>
+<td>Add source PDF, page, position</td>
+</tr>
+<tr>
+<td>3</td>
+<td>False &quot;no embedding&quot; messages</td>
+<td>Misleading status</td>
+<td>Verify and display embedding metadata</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Related chunks not visible</td>
+<td>Can&#39;t verify relationships</td>
+<td>Show related chunks with scores</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Images section empty</td>
+<td>Can&#39;t see extracted images</td>
+<td>Display images with metadata</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Image metadata incomplete</td>
+<td>Can&#39;t understand context</td>
+<td>Show type, source, OCR, analysis</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Accordions instead of modals</td>
+<td>Poor UX, cluttered</td>
+<td>Convert to modal interface</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Embeddings unclear</td>
+<td>Don&#39;t know what&#39;s embedded</td>
+<td>Show type, source, model, dimensions</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Duplicate close buttons</td>
+<td>Confusing, one doesn&#39;t work</td>
+<td>Keep single working button</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Metadata eye icon broken</td>
+<td>Can&#39;t view details</td>
+<td>Implement metadata detail modal</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Metadata missing relationships</td>
+<td>Can&#39;t see connections</td>
+<td>Show related chunks, images, embeddings</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Processing status not updating</td>
+<td>Stale information</td>
+<td>Implement real-time polling</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🏗️ NEW DATABASE TABLES</h2>
+<pre><code class="language-sql">-- Products (main product records)
+products (id, name, description, category_id, embedding, status, ...)
+
+-- Product images (one-to-many)
+product_images (id, product_id, image_url, image_type, ...)
+
+-- Product embeddings (multiple types)
+product_embeddings (id, product_id, embedding_type, embedding, ...)
+
+-- Product-chunk relationships
+product_chunk_relationships (id, product_id, chunk_id, relevance_score, ...)
+</code></pre>
+<hr>
+<h2>🔌 NEW API ENDPOINTS</h2>
+<h3>Products CRUD</h3>
+<pre><code>POST   /api/products                    # Create
+GET    /api/products                    # List
+GET    /api/products/:id                # Get
+PATCH  /api/products/:id                # Update
+DELETE /api/products/:id                # Delete
+</code></pre>
+<h3>Products Search</h3>
+<pre><code>POST   /api/search/unified              # Search products + chunks
+POST   /api/search/products             # Search products only
+GET    /api/products/:id/related        # Related products
+POST   /api/products/filter             # Filter by properties
+</code></pre>
+<h3>Product Management</h3>
+<pre><code>POST   /api/products/:id/publish        # Publish
+POST   /api/products/:id/embeddings     # Generate embeddings
+POST   /api/products/:id/images         # Add image
+</code></pre>
+<hr>
+<h2>🔄 CORE SERVICES</h2>
+<h3>ProductBuilderService</h3>
+<ul>
+<li><code>buildProductFromChunks()</code> - Create product from chunks</li>
+<li><code>extractProductProperties()</code> - Extract properties from content</li>
+<li><code>generateProductEmbedding()</code> - Create product embedding</li>
+<li><code>createProduct()</code> - Save product to database</li>
+</ul>
+<h3>ProductSearchService</h3>
+<ul>
+<li><code>unifiedSearch()</code> - Search products + chunks</li>
+<li><code>searchProducts()</code> - Search products only</li>
+<li><code>getRelatedProducts()</code> - Find similar products</li>
+<li><code>filterByProperties()</code> - Filter by properties</li>
+</ul>
+<h3>ProductEmbeddingService</h3>
+<ul>
+<li><code>generateProductEmbeddings()</code> - Create embeddings</li>
+<li><code>storeEmbeddings()</code> - Save to database</li>
+<li><code>searchByEmbedding()</code> - Find similar by embedding</li>
+</ul>
+<hr>
+<h2>📊 EMBEDDING TYPES</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Purpose</th>
+<th>Model</th>
+<th>Dimensions</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Text</td>
+<td>Semantic search</td>
+<td>text-embedding-3-small</td>
+<td>1536</td>
+</tr>
+<tr>
+<td>Image</td>
+<td>Visual similarity</td>
+<td>CLIP</td>
+<td>512-1536</td>
+</tr>
+<tr>
+<td>Hybrid</td>
+<td>Combined</td>
+<td>text + image</td>
+<td>3072</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Category matching</td>
+<td>Custom</td>
+<td>256-512</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔍 SEARCH FLOW (SIMPLIFIED)</h2>
+<pre><code>1. User searches: &quot;red waterproof tiles&quot;
+2. Generate query embedding
+3. Search product embeddings (semantic)
+4. Search chunk embeddings (semantic)
+5. Keyword search
+6. Merge and rank results
+7. Return products first, then chunks
+</code></pre>
+<hr>
+<h2>📈 IMPLEMENTATION TIMELINE</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Focus</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Week 1-2</td>
+<td>Knowledge Base UI</td>
+<td>Fixed UI, modals, real-time updates</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Week 2-3</td>
+<td>Database &amp; APIs</td>
+<td>Tables, CRUD endpoints, relationships</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Week 3-4</td>
+<td>Product Creation</td>
+<td>ProductBuilderService, embeddings, UI</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Week 4-5</td>
+<td>Search &amp; Materials</td>
+<td>Unified search, Materials page, agent</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Week 5</td>
+<td>Agent Integration</td>
+<td>Product recommendations</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Week 5-6</td>
+<td>Testing &amp; Deploy</td>
+<td>Tests, optimization, deployment</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>✅ SUCCESS CRITERIA</h2>
+<h3>Knowledge Base</h3>
+<ul>
+<li><input disabled="" type="checkbox"> All 12 issues resolved</li>
+<li><input disabled="" type="checkbox"> Modal UI fully functional</li>
+<li><input disabled="" type="checkbox"> Real-time updates working</li>
+<li><input disabled="" type="checkbox"> All relationships visible</li>
+</ul>
+<h3>Products System</h3>
+<ul>
+<li><input disabled="" type="checkbox"> 100+ products manageable</li>
+<li><input disabled="" type="checkbox"> Products in search results</li>
+<li><input disabled="" type="checkbox"> Embeddings for all products</li>
+<li><input disabled="" type="checkbox"> Materials page functional</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Search &lt;500ms</li>
+<li><input disabled="" type="checkbox"> Page load &lt;2s</li>
+<li><input disabled="" type="checkbox"> Embedding generation &lt;5s</li>
+<li><input disabled="" type="checkbox"> 99.9% uptime</li>
+</ul>
+<hr>
+<h2>🚀 GETTING STARTED</h2>
+<h3>Step 1: Review Documentation</h3>
+<ol>
+<li>Read KNOWLEDGE-BASE-PRODUCTS-SUMMARY.md (overview)</li>
+<li>Read knowledge-base-products-system-plan.md (details)</li>
+<li>Review system-diagrams.md (visual understanding)</li>
+</ol>
+<h3>Step 2: Technical Planning</h3>
+<ol>
+<li>Review products-system-technical-architecture.md</li>
+<li>Review embeddings-search-strategy.md</li>
+<li>Plan database migrations</li>
+</ol>
+<h3>Step 3: Implementation</h3>
+<ol>
+<li>Follow implementation-roadmap.md</li>
+<li>Create task tickets from sprints</li>
+<li>Begin Phase 1 (Knowledge Base fixes)</li>
+</ol>
+<h3>Step 4: Development</h3>
+<ol>
+<li>Implement services</li>
+<li>Create APIs</li>
+<li>Build UI components</li>
+<li>Test thoroughly</li>
+</ol>
+<hr>
+<h2>🔗 KEY RELATIONSHIPS</h2>
+<pre><code>PDF Document
+  ├─ Chunks (text segments)
+  │  ├─ Embeddings (vectors)
+  │  ├─ Images (visuals)
+  │  └─ Metadata (properties)
+  │
+  └─ Product (built from chunks)
+     ├─ Product Embedding (unified vector)
+     ├─ Product Images (from source images)
+     ├─ Product Metadata (consolidated)
+     └─ Product Embeddings (multi-type)
+</code></pre>
+<hr>
+<h2>💡 KEY CONCEPTS</h2>
+<h3>Embeddings</h3>
+<p>Numerical representations of meaning that enable:</p>
+<ul>
+<li>Semantic search (meaning-based, not keyword-based)</li>
+<li>Relationship discovery (similar items have similar embeddings)</li>
+<li>Intelligent recommendations (match embeddings to suggest products)</li>
+</ul>
+<h3>Products</h3>
+<p>Structured records built from processed materials:</p>
+<ul>
+<li>Created from PDF chunks</li>
+<li>Have embeddings for search</li>
+<li>Linked to source chunks</li>
+<li>Discoverable on Materials page</li>
+<li>Recommended by agents</li>
+</ul>
+<h3>Unified Search</h3>
+<p>Searches both products and chunks:</p>
+<ul>
+<li>Product embeddings (semantic)</li>
+<li>Chunk embeddings (semantic)</li>
+<li>Keywords (exact match)</li>
+<li>Results ranked by relevance</li>
+<li>Products shown first</li>
+</ul>
+<hr>
+<h2>📞 COMMON QUESTIONS</h2>
+<p><strong>Q: Why create products if we already have chunks?</strong>
+A: Products are actionable, discoverable, and recommendable. Chunks are raw data.</p>
+<p><strong>Q: How do embeddings help?</strong>
+A: They enable semantic search (meaning-based) and power recommendations.</p>
+<p><strong>Q: Can products come from sources other than PDFs?</strong>
+A: Yes - XML, scraping, manual entry, 3D models (future).</p>
+<p><strong>Q: How long will this take?</strong>
+A: 6 weeks for full implementation (2 weeks per phase).</p>
+<p><strong>Q: What&#39;s the cost?</strong>
+A: Mainly development time. Embedding API costs are minimal.</p>
+<p><strong>Q: Can we do this incrementally?</strong>
+A: Yes - each phase is independent and can be deployed separately.</p>
+<hr>
+<h2>🎯 NEXT IMMEDIATE ACTIONS</h2>
+<ol>
+<li><p><strong>This Week</strong></p>
+<ul>
+<li><input disabled="" type="checkbox"> Review all documentation</li>
+<li><input disabled="" type="checkbox"> Approve architecture</li>
+<li><input disabled="" type="checkbox"> Create task tickets</li>
+</ul>
+</li>
+<li><p><strong>Week 1</strong></p>
+<ul>
+<li><input disabled="" type="checkbox"> Set up development environment</li>
+<li><input disabled="" type="checkbox"> Begin Phase 1 (Knowledge Base fixes)</li>
+<li><input disabled="" type="checkbox"> Create modal components</li>
+</ul>
+</li>
+<li><p><strong>Week 2</strong></p>
+<ul>
+<li><input disabled="" type="checkbox"> Complete Knowledge Base fixes</li>
+<li><input disabled="" type="checkbox"> Begin Phase 2 (Database)</li>
+<li><input disabled="" type="checkbox"> Create product tables</li>
+</ul>
+</li>
+<li><p><strong>Week 3</strong></p>
+<ul>
+<li><input disabled="" type="checkbox"> Complete database setup</li>
+<li><input disabled="" type="checkbox"> Begin Phase 3 (Product creation)</li>
+<li><input disabled="" type="checkbox"> Implement ProductBuilderService</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>📊 METRICS TO TRACK</h2>
+<h3>Development</h3>
+<ul>
+<li>Sprint velocity (tasks completed per week)</li>
+<li>Bug count and severity</li>
+<li>Code coverage (tests)</li>
+<li>Performance benchmarks</li>
+</ul>
+<h3>User Experience</h3>
+<ul>
+<li>Search latency (target: &lt;500ms)</li>
+<li>Page load time (target: &lt;2s)</li>
+<li>Product creation time (target: &lt;2min)</li>
+<li>User satisfaction (surveys)</li>
+</ul>
+<h3>Business</h3>
+<ul>
+<li>Products created (target: 100+)</li>
+<li>Search volume (queries per day)</li>
+<li>Product discovery rate (% of users)</li>
+<li>Recommendation acceptance (% clicked)</li>
+</ul>
+<hr>
+<h2>🔐 SECURITY CONSIDERATIONS</h2>
+<ul>
+<li>All endpoints require JWT authentication</li>
+<li>Row-level security (RLS) for products</li>
+<li>Only creators can modify products</li>
+<li>Embeddings are workspace-scoped</li>
+<li>API rate limiting enabled</li>
+</ul>
+<hr>
+<h2>📚 ADDITIONAL RESOURCES</h2>
+<ul>
+<li>Supabase Documentation: <a href="https://supabase.com/docs">https://supabase.com/docs</a></li>
+<li>OpenAI Embeddings: <a href="https://platform.openai.com/docs/guides/embeddings">https://platform.openai.com/docs/guides/embeddings</a></li>
+<li>Vector Search: <a href="https://supabase.com/docs/guides/ai/vector-search">https://supabase.com/docs/guides/ai/vector-search</a></li>
+<li>React Components: Check src/components/ui/</li>
+</ul>
+<hr>
+<h2>🎉 VISION</h2>
+<p>In 6 weeks, the platform will have:</p>
+<ul>
+<li>✅ Clean, organized Knowledge Base</li>
+<li>✅ Structured Products system</li>
+<li>✅ Smart unified search</li>
+<li>✅ User-friendly Materials page</li>
+<li>✅ Intelligent recommendations</li>
+</ul>
+<p><strong>Users will be able to</strong>:</p>
+<ul>
+<li>Upload PDFs → System processes → Products created</li>
+<li>Search for materials → Find products + source chunks</li>
+<li>Discover products → Browse Materials page</li>
+<li>Get recommendations → AI suggests matching products</li>
+</ul>
+<p><strong>The platform becomes</strong>:</p>
+<ul>
+<li>More valuable (products vs raw data)</li>
+<li>More usable (organized interface)</li>
+<li>More intelligent (embeddings + recommendations)</li>
+<li>More complete (end-to-end workflow)</li>
+</ul>
+<hr>
+<h2>📞 SUPPORT</h2>
+<p>For questions or clarifications:</p>
+<ol>
+<li>Check the detailed documentation</li>
+<li>Review system diagrams</li>
+<li>Ask for specific clarification</li>
+<li>Schedule architecture review</li>
+</ol>
+<p><strong>Let&#39;s build! 🚀</strong></p>
+
+</div></body></html>
