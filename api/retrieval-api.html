@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>📖 Retrieval API Documentation</h1>
+<p><strong>Endpoint</strong>: <code>/retrieval-api</code><br><strong>Type</strong>: Generic retrieval service for all storage tables<br><strong>Authentication</strong>: Required (via Supabase)<br><strong>Rate Limit</strong>: 100 requests/minute</p>
+<hr>
+<h2>🎯 Overview</h2>
+<p>The Retrieval API provides unified access to all storage tables created in Phase 2. It handles:</p>
+<ul>
+<li>✅ Fetching single results</li>
+<li>✅ Listing results with pagination</li>
+<li>✅ Searching/filtering results</li>
+<li>✅ Deleting results</li>
+</ul>
+<hr>
+<h2>📋 Supported Tables</h2>
+<h3>Tier 1: Critical Analysis</h3>
+<ul>
+<li><code>generation_3d</code> - 3D generation results</li>
+<li><code>style_analysis_results</code> - Style analysis results</li>
+<li><code>property_analysis_results</code> - Material property analysis</li>
+<li><code>hybrid_analysis_results</code> - Hybrid material analysis</li>
+</ul>
+<h3>Tier 2: Processing Results</h3>
+<ul>
+<li><code>spaceformer_analysis_results</code> - Spaceformer analysis</li>
+<li><code>svbrdf_extraction_results</code> - SVBRDF extraction</li>
+<li><code>ocr_results</code> - OCR processing results</li>
+<li><code>recognition_results</code> - Material recognition</li>
+<li><code>voice_conversion_results</code> - Voice to material conversion</li>
+<li><code>material_visual_analysis</code> - Visual analysis</li>
+</ul>
+<h3>Tier 3: Batch &amp; Search</h3>
+<ul>
+<li><code>pdf_integration_health_results</code> - PDF health checks</li>
+<li><code>search_analytics</code> - Search analytics</li>
+<li><code>ml_training_jobs</code> - ML training jobs</li>
+<li><code>visual_search_batch_jobs</code> - Visual search batch jobs</li>
+<li><code>scraping_sessions</code> - Web scraping sessions</li>
+</ul>
+<hr>
+<h2>🔌 API Endpoints</h2>
+<h3>1. GET Single Result</h3>
+<p><strong>Request</strong>:</p>
+<pre><code>GET /retrieval-api/{table_name}/get/{id}?user_id={user_id}
+</code></pre>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>table_name</code> (required): Name of the storage table</li>
+<li><code>id</code> (required): Result ID</li>
+<li><code>user_id</code> (optional): Filter by user (recommended for security)</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-bash">curl -X GET &quot;https://your-domain.com/retrieval-api/style_analysis_results/get/550e8400-e29b-41d4-a716-446655440000?user_id=user123&quot;
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;user_id&quot;: &quot;user123&quot;,
+    &quot;input_data&quot;: { &quot;image_url&quot;: &quot;...&quot; },
+    &quot;result_data&quot;: { &quot;style&quot;: &quot;modern&quot;, &quot;confidence&quot;: 0.95 },
+    &quot;confidence_score&quot;: 0.95,
+    &quot;processing_time_ms&quot;: 1234,
+    &quot;created_at&quot;: &quot;2025-10-16T10:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2025-10-16T10:00:00Z&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;timestamp&quot;: &quot;2025-10-16T10:05:00Z&quot;,
+    &quot;processing_time_ms&quot;: 45
+  }
+}
+</code></pre>
+<hr>
+<h3>2. LIST Results (with Pagination)</h3>
+<p><strong>Request</strong>:</p>
+<pre><code>GET /retrieval-api/{table_name}/list?user_id={user_id}&amp;limit=20&amp;offset=0&amp;sort_by=created_at&amp;sort_order=desc
+</code></pre>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>table_name</code> (required): Name of the storage table</li>
+<li><code>user_id</code> (optional): Filter by user</li>
+<li><code>limit</code> (optional): Results per page (default: 20, max: 100)</li>
+<li><code>offset</code> (optional): Pagination offset (default: 0)</li>
+<li><code>sort_by</code> (optional): Field to sort by (default: created_at)</li>
+<li><code>sort_order</code> (optional): asc or desc (default: desc)</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-bash">curl -X GET &quot;https://your-domain.com/retrieval-api/ocr_results/list?user_id=user123&amp;limit=20&amp;offset=0&quot;
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+      &quot;user_id&quot;: &quot;user123&quot;,
+      &quot;result_data&quot;: { &quot;text&quot;: &quot;...&quot; },
+      &quot;confidence_score&quot;: 0.92,
+      &quot;created_at&quot;: &quot;2025-10-16T10:00:00Z&quot;
+    },
+    {
+      &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440001&quot;,
+      &quot;user_id&quot;: &quot;user123&quot;,
+      &quot;result_data&quot;: { &quot;text&quot;: &quot;...&quot; },
+      &quot;confidence_score&quot;: 0.88,
+      &quot;created_at&quot;: &quot;2025-10-16T09:00:00Z&quot;
+    }
+  ],
+  &quot;pagination&quot;: {
+    &quot;total&quot;: 150,
+    &quot;limit&quot;: 20,
+    &quot;offset&quot;: 0,
+    &quot;has_more&quot;: true
+  },
+  &quot;metadata&quot;: {
+    &quot;timestamp&quot;: &quot;2025-10-16T10:05:00Z&quot;,
+    &quot;processing_time_ms&quot;: 125
+  }
+}
+</code></pre>
+<hr>
+<h3>3. SEARCH Results</h3>
+<p><strong>Request</strong>:</p>
+<pre><code>POST /retrieval-api/{table_name}/search
+Content-Type: application/json
+
+{
+  &quot;user_id&quot;: &quot;user123&quot;,
+  &quot;filters&quot;: { &quot;status&quot;: &quot;completed&quot; },
+  &quot;search_text&quot;: &quot;fabric&quot;,
+  &quot;confidence_min&quot;: 0.8,
+  &quot;limit&quot;: 20
+}
+</code></pre>
+<p><strong>Body Parameters</strong>:</p>
+<ul>
+<li><code>user_id</code> (optional): Filter by user</li>
+<li><code>filters</code> (optional): Object with field:value pairs to match</li>
+<li><code>search_text</code> (optional): Text to search in result_data and input_data</li>
+<li><code>confidence_min</code> (optional): Minimum confidence score</li>
+<li><code>limit</code> (optional): Max results (default: 20, max: 100)</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-bash">curl -X POST &quot;https://your-domain.com/retrieval-api/recognition_results/search&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;user_id&quot;: &quot;user123&quot;,
+    &quot;confidence_min&quot;: 0.9,
+    &quot;limit&quot;: 10
+  }&#39;
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+      &quot;user_id&quot;: &quot;user123&quot;,
+      &quot;result_data&quot;: { &quot;material&quot;: &quot;cotton&quot;, &quot;confidence&quot;: 0.95 },
+      &quot;confidence_score&quot;: 0.95,
+      &quot;created_at&quot;: &quot;2025-10-16T10:00:00Z&quot;
+    }
+  ],
+  &quot;metadata&quot;: {
+    &quot;timestamp&quot;: &quot;2025-10-16T10:05:00Z&quot;,
+    &quot;processing_time_ms&quot;: 89
+  }
+}
+</code></pre>
+<hr>
+<h3>4. DELETE Result</h3>
+<p><strong>Request</strong>:</p>
+<pre><code>DELETE /retrieval-api/{table_name}/delete/{id}?user_id={user_id}
+</code></pre>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>table_name</code> (required): Name of the storage table</li>
+<li><code>id</code> (required): Result ID to delete</li>
+<li><code>user_id</code> (optional): Verify user ownership</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-bash">curl -X DELETE &quot;https://your-domain.com/retrieval-api/voice_conversion_results/delete/550e8400-e29b-41d4-a716-446655440000?user_id=user123&quot;
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;success&quot;: true,
+    &quot;message&quot;: &quot;Result deleted successfully&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;timestamp&quot;: &quot;2025-10-16T10:05:00Z&quot;,
+    &quot;processing_time_ms&quot;: 34
+  }
+}
+</code></pre>
+<hr>
+<h2>🔐 Security</h2>
+<h3>User Ownership Verification</h3>
+<p>Always include <code>user_id</code> parameter to ensure users can only access their own data:</p>
+<pre><code class="language-bash"># ✅ GOOD - Filters by user
+GET /retrieval-api/style_analysis_results/list?user_id=user123
+
+# ❌ BAD - No user filter (could see other users&#39; data)
+GET /retrieval-api/style_analysis_results/list
+</code></pre>
+<h3>Table Whitelist</h3>
+<p>Only these 15 tables are accessible. Attempting to access other tables returns 403 Forbidden.</p>
+<h3>Rate Limiting</h3>
+<ul>
+<li>100 requests per minute per user</li>
+<li>Exceeding limit returns 429 Too Many Requests</li>
+</ul>
+<hr>
+<h2>📊 Response Format</h2>
+<h3>Success Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: { /* result data */ },
+  &quot;pagination&quot;: { /* optional */ },
+  &quot;metadata&quot;: {
+    &quot;timestamp&quot;: &quot;ISO timestamp&quot;,
+    &quot;processing_time_ms&quot;: 45
+  }
+}
+</code></pre>
+<h3>Error Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: &quot;Error message&quot;,
+  &quot;error_code&quot;: &quot;ERROR_CODE&quot;,
+  &quot;metadata&quot;: {
+    &quot;timestamp&quot;: &quot;ISO timestamp&quot;,
+    &quot;processing_time_ms&quot;: 12
+  }
+}
+</code></pre>
+<h3>Error Codes</h3>
+<ul>
+<li><code>INVALID_TABLE</code> - Table not in whitelist</li>
+<li><code>INVALID_FORMAT</code> - Invalid request format</li>
+<li><code>MISSING_ID</code> - ID required but not provided</li>
+<li><code>INVALID_METHOD</code> - Wrong HTTP method</li>
+<li><code>INVALID_OPERATION</code> - Unknown operation</li>
+<li><code>CONFIG_ERROR</code> - Server configuration error</li>
+<li><code>INTERNAL_ERROR</code> - Unexpected server error</li>
+</ul>
+<hr>
+<h2>💡 Usage Examples</h2>
+<h3>Example 1: Get User&#39;s Recent Results</h3>
+<pre><code class="language-bash">curl -X GET &quot;https://your-domain.com/retrieval-api/ocr_results/list?user_id=user123&amp;limit=10&amp;sort_order=desc&quot;
+</code></pre>
+<h3>Example 2: Search High-Confidence Results</h3>
+<pre><code class="language-bash">curl -X POST &quot;https://your-domain.com/retrieval-api/recognition_results/search&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;user_id&quot;: &quot;user123&quot;,
+    &quot;confidence_min&quot;: 0.9
+  }&#39;
+</code></pre>
+<h3>Example 3: Delete Old Result</h3>
+<pre><code class="language-bash">curl -X DELETE &quot;https://your-domain.com/retrieval-api/voice_conversion_results/delete/550e8400-e29b-41d4-a716-446655440000?user_id=user123&quot;
+</code></pre>
+<h3>Example 4: Paginate Through Results</h3>
+<pre><code class="language-bash"># Page 1
+curl -X GET &quot;https://your-domain.com/retrieval-api/style_analysis_results/list?user_id=user123&amp;limit=20&amp;offset=0&quot;
+
+# Page 2
+curl -X GET &quot;https://your-domain.com/retrieval-api/style_analysis_results/list?user_id=user123&amp;limit=20&amp;offset=20&quot;
+
+# Page 3
+curl -X GET &quot;https://your-domain.com/retrieval-api/style_analysis_results/list?user_id=user123&amp;limit=20&amp;offset=40&quot;
+</code></pre>
+<hr>
+<h2>🚀 Integration with Frontend</h2>
+<h3>React Example</h3>
+<pre><code class="language-typescript">// Fetch user&#39;s results
+const fetchResults = async (tableName: string, userId: string) =&gt; {
+  const response = await fetch(
+    `/retrieval-api/${tableName}/list?user_id=${userId}&amp;limit=20`
+  );
+  const result = await response.json();
+  return result.data;
+};
+
+// Search results
+const searchResults = async (tableName: string, userId: string, confidence: number) =&gt; {
+  const response = await fetch(
+    `/retrieval-api/${tableName}/search`,
+    {
+      method: &#39;POST&#39;,
+      headers: { &#39;Content-Type&#39;: &#39;application/json&#39; },
+      body: JSON.stringify({
+        user_id: userId,
+        confidence_min: confidence
+      })
+    }
+  );
+  const result = await response.json();
+  return result.data;
+};
+
+// Delete result
+const deleteResult = async (tableName: string, id: string, userId: string) =&gt; {
+  const response = await fetch(
+    `/retrieval-api/${tableName}/delete/${id}?user_id=${userId}`,
+    { method: &#39;DELETE&#39; }
+  );
+  return response.json();
+};
+</code></pre>
+<hr>
+<h2>📈 Performance</h2>
+<ul>
+<li><strong>GET single</strong>: ~45ms</li>
+<li><strong>LIST (20 items)</strong>: ~125ms</li>
+<li><strong>SEARCH</strong>: ~89ms</li>
+<li><strong>DELETE</strong>: ~34ms</li>
+</ul>
+<hr>
+<p><strong>Status</strong>: Ready for use</p>
+
+</div></body></html>
