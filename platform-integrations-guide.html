@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Platform Integrations &amp; Architecture Guide</h1>
+<h2>📋 Overview</h2>
+<p>This document provides comprehensive details about the Material Kai Vision Platform&#39;s key integrations, including multimodal capabilities, LlamaIndex RAG, OCR services, search architecture, and automatic categorization systems.</p>
+<hr>
+<h2>🎯 Multimodal Capabilities</h2>
+<h3>Purpose &amp; Benefits</h3>
+<p><strong>What are multimodal capabilities good for?</strong></p>
+<p>Multimodal capabilities enable the platform to analyze materials from multiple perspectives simultaneously:</p>
+<ul>
+<li><strong>Visual Analysis</strong>: Color, texture, pattern, surface finish, structural details</li>
+<li><strong>Textual Context</strong>: Specifications, descriptions, usage instructions, technical data</li>
+<li><strong>Cross-Validation</strong>: Combine visual and textual information for higher accuracy (85%+ confidence)</li>
+<li><strong>Enhanced Search</strong>: Find materials using both text queries and image references</li>
+<li><strong>Comprehensive Understanding</strong>: Materials have both visual and textual characteristics that need to be understood together</li>
+</ul>
+<h3>Implementation</h3>
+<p><strong>Technology Stack:</strong></p>
+<ul>
+<li><strong>LLaMA Vision</strong>: Advanced visual understanding of material properties</li>
+<li><strong>CLIP</strong>: Visual embeddings for similarity analysis (512-dimensional vectors)</li>
+<li><strong>Parallel Processing</strong>: 40% reduction in processing time through concurrent model execution</li>
+<li><strong>Fallback Mechanisms</strong>: If one model fails, others continue processing</li>
+</ul>
+<p><strong>Key Components:</strong></p>
+<ul>
+<li><code>CrossModalLearning.ts</code>: Multi-modal fusion for material analysis</li>
+<li><code>multimodal-analysis.md</code>: Complete service documentation</li>
+<li>Attention-based feature weighting for optimal modality combination</li>
+</ul>
+<p><strong>Supported Modalities:</strong></p>
+<ol>
+<li>Visual (images)</li>
+<li>Spectral (wavelength data)</li>
+<li>Thermal (temperature data)</li>
+<li>Textual (descriptions)</li>
+</ol>
+<hr>
+<h2>🔍 LlamaIndex Integration</h2>
+<h3>Current Status</h3>
+<p><strong>Is LlamaIndex running as a process?</strong></p>
+<p>No. LlamaIndex is integrated as a <strong>library service</strong>, not a separate process:</p>
+<ul>
+<li>Initialized at application startup in <code>mivaa-pdf-extractor/app/main.py</code></li>
+<li>Runs within the FastAPI application context</li>
+<li>Provides RAG (Retrieval-Augmented Generation) capabilities</li>
+<li>Manages document indexing and semantic search</li>
+</ul>
+<h3>How It&#39;s Used</h3>
+<p><strong>Workflows:</strong></p>
+<ol>
+<li><strong>Document Indexing</strong>: PDFs are processed and indexed for semantic search</li>
+<li><strong>Query Processing</strong>: Natural language queries retrieve relevant document chunks</li>
+<li><strong>Multi-Modal Analysis</strong>: Combines text and image analysis for comprehensive understanding</li>
+<li><strong>Conversation Management</strong>: Maintains conversation context for multi-turn interactions</li>
+</ol>
+<p><strong>Key Services:</strong></p>
+<ul>
+<li><code>LlamaIndexService</code>: Core RAG service (<code>llamaindex_service.py</code>)</li>
+<li><code>AdvancedSearchService</code>: MMR (Maximal Marginal Relevance) search</li>
+<li><code>PDFProcessor</code>: Advanced PDF processing with image extraction</li>
+</ul>
+<p><strong>Configuration:</strong></p>
+<pre><code class="language-python"># From config.py
+llamaindex_embedding_model: &quot;text-embedding-3-small&quot;  # 768 dimensions
+llamaindex_llm_model: &quot;gpt-3.5-turbo&quot;
+llamaindex_chunk_size: 1024
+llamaindex_chunk_overlap: 200
+llamaindex_similarity_top_k: 5
+</code></pre>
+<hr>
+<h2>🔎 Search &amp; RAG Architecture</h2>
+<h3>How Search Works</h3>
+<p><strong>Current Implementation:</strong></p>
+<ol>
+<li><strong>Semantic Search</strong>: Vector-based similarity using embeddings</li>
+<li><strong>Hybrid Search</strong>: Combines semantic + keyword matching</li>
+<li><strong>MMR Search</strong>: Maximal Marginal Relevance for diverse results</li>
+<li><strong>Multi-Modal Search</strong>: Text + image queries with OCR support</li>
+</ol>
+<p><strong>Data Retrieval Flow:</strong></p>
+<pre><code>Query → Embedding Generation → Vector Search → 
+Chunk Retrieval → Response Synthesis → Results
+</code></pre>
+<p><strong>Recent Changes:</strong></p>
+<ul>
+<li>Unified embedding model: <code>text-embedding-3-small</code> (768 dimensions)</li>
+<li>Supabase pgvector integration for vector storage</li>
+<li>Caching layer for frequently accessed data</li>
+<li>Real-time search analytics</li>
+</ul>
+<p><strong>Key Endpoints:</strong></p>
+<ul>
+<li><code>/api/search/documents/{document_id}/query</code>: Query specific document</li>
+<li><code>/api/search/semantic</code>: Semantic search across all documents</li>
+<li><code>/api/search/multimodal</code>: Multi-modal search with images</li>
+<li><code>/api/search/mmr</code>: Maximal Marginal Relevance search</li>
+</ul>
+<hr>
+<h2>🎨 OCR Services</h2>
+<h3>What OCR Services Are Used?</h3>
+<p><strong>Primary Services:</strong></p>
+<ol>
+<li><strong>EasyOCR</strong>: Local text extraction with multi-language support</li>
+<li><strong>Pytesseract</strong>: Fallback OCR engine for text-as-images PDFs</li>
+<li><strong>Image Preprocessing</strong>: Enhancement for better accuracy</li>
+</ol>
+<p><strong>Configuration:</strong></p>
+<pre><code class="language-python"># From ocr_service.py
+languages: [&#39;en&#39;]  # Configurable
+confidence_threshold: 0.5
+preprocessing_enabled: True
+fallback_to_tesseract: True
+</code></pre>
+<h3>Current Status</h3>
+<p><strong>Integration Points:</strong></p>
+<ul>
+<li>PDF processing with OCR for scanned documents</li>
+<li>Image text extraction during multi-modal analysis</li>
+<li>Automatic text detection in material images</li>
+<li>Confidence scoring for extracted text</li>
+</ul>
+<p><strong>Processing Pipeline:</strong></p>
+<pre><code>Image → Preprocessing → EasyOCR → Tesseract (fallback) → 
+Confidence Filtering → Structured Output
+</code></pre>
+<hr>
+<h2>🏷️ Automatic Categorization &amp; Metadata</h2>
+<h3>How It Works</h3>
+<p><strong>Three-Method Extraction:</strong></p>
+<ol>
+<li><strong>AI-Powered</strong>: MIVAA service for intelligent extraction</li>
+<li><strong>Keyword-Based</strong>: Pattern matching against predefined keywords</li>
+<li><strong>Pattern-Based</strong>: Regex patterns for specific material/product types</li>
+</ol>
+<p><strong>Automatic Process:</strong></p>
+<pre><code>Document Upload → Content Extraction → Category Analysis →
+High-Confidence Categories Auto-Created → Document Metadata Updated
+</code></pre>
+<p><strong>Services:</strong></p>
+<ul>
+<li><code>CategoryExtractionService</code>: Multi-method extraction</li>
+<li><code>DynamicCategoryManagementService</code>: Category management</li>
+<li><code>ImageTextMapper</code>: Keyword and material reference extraction</li>
+</ul>
+<p><strong>Metadata Extraction:</strong></p>
+<ul>
+<li>Material categories (ceramic, wood, metal, etc.)</li>
+<li>Product categories</li>
+<li>Functional metadata (9 categories of properties)</li>
+<li>Semantic tags and entities</li>
+<li>Confidence scores</li>
+</ul>
+<hr>
+<h2>⚠️ Backward Compatibility &amp; Legacy Code</h2>
+<h3>Current Legacy Patterns</h3>
+<p><strong>Deprecated Endpoints (To Be Removed):</strong></p>
+<ul>
+<li><code>/api/mivaa/extract</code> → Redirects to <code>/api/mivaa/gateway</code></li>
+<li><code>/api/mivaa/process</code> → Redirects to <code>/api/mivaa/gateway</code></li>
+<li><code>/api/mivaa/status/:id</code> → Redirects to <code>/api/mivaa/gateway</code></li>
+</ul>
+<p><strong>Fallback Mechanisms:</strong></p>
+<ul>
+<li><code>fallbackDatabaseSearch()</code>: Basic text matching when semantic search fails</li>
+<li><code>fallbackToClient</code>: Client-side processing if server unavailable</li>
+<li>Dual embedding model support during migration (ada-002 → text-embedding-3-small)</li>
+</ul>
+<p><strong>Deprecated Patterns to Remove:</strong></p>
+<ul>
+<li>Pydantic v1 imports (use v2)</li>
+<li>Legacy MIVAA route redirects</li>
+<li>Fallback database search functions</li>
+<li>Dual embedding model support (complete migration)</li>
+</ul>
+<hr>
+<h2>📊 Integration Flow Diagram</h2>
+<pre><code>User Input
+    ↓
+[Frontend] → [Supabase Edge Functions] → [MIVAA Gateway]
+    ↓                                          ↓
+[Search Interface]                    [LlamaIndex Service]
+    ↓                                          ↓
+[Semantic Search] ← [Vector Store] ← [Embeddings]
+    ↓                                          ↓
+[Multi-Modal Analysis] ← [OCR Service] ← [Image Processing]
+    ↓
+[Category Extraction] → [Metadata Storage]
+    ↓
+[Results to User]
+</code></pre>
+<hr>
+<h2>🔧 Configuration &amp; Environment</h2>
+<p><strong>Key Environment Variables:</strong></p>
+<ul>
+<li><code>OPENAI_API_KEY</code>: OpenAI API access</li>
+<li><code>LLAMAINDEX_EMBEDDING_MODEL</code>: Embedding model selection</li>
+<li><code>ENABLE_MULTIMODAL</code>: Enable/disable multimodal features</li>
+<li><code>MULTIMODAL_LLM_MODEL</code>: Vision model (gpt-4-vision or claude)</li>
+</ul>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><code>multimodal-analysis.md</code>: Detailed multimodal service guide</li>
+<li><code>dynamic-category-system.md</code>: Category extraction details</li>
+<li><code>complete-multimodal-rag-system.md</code>: Complete RAG architecture</li>
+<li><code>mivaa-service.md</code>: MIVAA gateway documentation</li>
+<li><code>database-schema.md</code>: Database structure and vectors</li>
+</ul>
+
+</div></body></html>
