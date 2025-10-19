@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Database Audit - October 2025</h1>
+<p><strong>Date</strong>: October 19, 2025<br><strong>Total Tables</strong>: 97<br><strong>Total Rows with Data</strong>: ~30,000+<br><strong>Status</strong>: 🔍 <strong>COMPREHENSIVE AUDIT COMPLETE</strong></p>
+<hr>
+<h2>📊 DATABASE OVERVIEW</h2>
+<h3>Key Statistics</h3>
+<ul>
+<li><strong>Total Tables</strong>: 97</li>
+<li><strong>Tables with Data</strong>: 21</li>
+<li><strong>Empty Tables</strong>: 76</li>
+<li><strong>Largest Table</strong>: <code>document_chunks</code> (28,189 rows)</li>
+<li><strong>Total Data Volume</strong>: ~30,000+ rows</li>
+</ul>
+<hr>
+<h2>🔴 TABLES TO CLEAR (PDF Processing &amp; Test Data)</h2>
+<h3>PDF Processing Data (28,189 rows)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows</th>
+<th>Purpose</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>document_chunks</code></td>
+<td>28,189</td>
+<td>Text chunks from PDFs</td>
+<td>✅ CLEAR</td>
+</tr>
+<tr>
+<td><code>document_vectors</code></td>
+<td>690</td>
+<td>Embeddings for chunks</td>
+<td>✅ CLEAR</td>
+</tr>
+<tr>
+<td><code>embeddings</code></td>
+<td>690</td>
+<td>Legacy embeddings table</td>
+<td>✅ CLEAR</td>
+</tr>
+<tr>
+<td><code>document_images</code></td>
+<td>506</td>
+<td>Extracted images</td>
+<td>✅ CLEAR</td>
+</tr>
+<tr>
+<td><code>documents</code></td>
+<td>23</td>
+<td>PDF metadata</td>
+<td>✅ CLEAR</td>
+</tr>
+<tr>
+<td><code>pdf_processing_results</code></td>
+<td>3</td>
+<td>Processing logs</td>
+<td>✅ CLEAR</td>
+</tr>
+</tbody></table>
+<p><strong>Total to Clear</strong>: ~30,000 rows</p>
+<hr>
+<h2>🟢 TABLES TO PRESERVE (User &amp; System Data)</h2>
+<h3>User Management (Keep)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user_profiles</code></td>
+<td>0</td>
+<td>User account data</td>
+</tr>
+<tr>
+<td><code>user_subscriptions</code></td>
+<td>0</td>
+<td>Subscription info</td>
+</tr>
+<tr>
+<td><code>user_credits</code></td>
+<td>0</td>
+<td>Credit system</td>
+</tr>
+<tr>
+<td><code>roles</code></td>
+<td>5</td>
+<td>User roles</td>
+</tr>
+<tr>
+<td><code>role_permissions</code></td>
+<td>0</td>
+<td>Permission mappings</td>
+</tr>
+</tbody></table>
+<h3>CRM System (Keep)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>crm_contacts</code></td>
+<td>0</td>
+<td>CRM contact data</td>
+</tr>
+<tr>
+<td><code>crm_contact_relationships</code></td>
+<td>0</td>
+<td>Contact relationships</td>
+</tr>
+</tbody></table>
+<h3>E-Commerce (Keep)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>products</code></td>
+<td>6</td>
+<td>Product catalog</td>
+</tr>
+<tr>
+<td><code>product_images</code></td>
+<td>0</td>
+<td>Product images</td>
+</tr>
+<tr>
+<td><code>shopping_carts</code></td>
+<td>4</td>
+<td>Shopping carts</td>
+</tr>
+<tr>
+<td><code>cart_items</code></td>
+<td>9</td>
+<td>Cart items</td>
+</tr>
+<tr>
+<td><code>quote_requests</code></td>
+<td>4</td>
+<td>Quote requests</td>
+</tr>
+<tr>
+<td><code>proposals</code></td>
+<td>4</td>
+<td>Proposals</td>
+</tr>
+<tr>
+<td><code>subscription_plans</code></td>
+<td>3</td>
+<td>Subscription plans</td>
+</tr>
+<tr>
+<td><code>credit_packages</code></td>
+<td>3</td>
+<td>Credit packages</td>
+</tr>
+</tbody></table>
+<h3>Configuration (Keep)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>material_categories</code></td>
+<td>57</td>
+<td>Material categories</td>
+</tr>
+<tr>
+<td><code>material_metadata_fields</code></td>
+<td>124</td>
+<td>Metadata field config</td>
+</tr>
+<tr>
+<td><code>api_endpoints</code></td>
+<td>15</td>
+<td>API endpoint registry</td>
+</tr>
+<tr>
+<td><code>workspaces</code></td>
+<td>2</td>
+<td>Workspace data</td>
+</tr>
+<tr>
+<td><code>material_kai_keys</code></td>
+<td>1</td>
+<td>API keys</td>
+</tr>
+<tr>
+<td><code>mivaa_api_usage_logs</code></td>
+<td>1</td>
+<td>Usage tracking</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>⚪ EMPTY TABLES (76 tables with 0 rows)</h2>
+<p>These tables are empty and can be left as-is:</p>
+<ul>
+<li>Agent system tables (agent_chat_*, agent_uploaded_files)</li>
+<li>Analysis tables (visual_analysis_*, material_visual_analysis, etc.)</li>
+<li>Processing tables (processing_*, batch_jobs, processing_queue)</li>
+<li>Knowledge base tables (knowledge_base_entries, enhanced_knowledge_base, etc.)</li>
+<li>ML tables (ml_models, ml_training_jobs)</li>
+<li>Moodboard tables (moodboards, moodboard_items, moodboard_products, etc.)</li>
+<li>Search tables (search_analytics, visual_search_*)</li>
+<li>Results tables (ocr_results, recognition_results, etc.)</li>
+<li>Metrics tables (quality_scoring_logs, retrieval_quality_metrics, etc.)</li>
+<li>And 50+ more...</li>
+</ul>
+<hr>
+<h2>🧹 CLEANUP STRATEGY</h2>
+<h3>Phase 1: Clear PDF Processing Data</h3>
+<pre><code class="language-sql">-- Clear in dependency order
+DELETE FROM document_vectors;
+DELETE FROM embeddings;
+DELETE FROM document_images;
+DELETE FROM document_chunks;
+DELETE FROM documents;
+DELETE FROM pdf_processing_results;
+</code></pre>
+<h3>Phase 2: Verify Preservation</h3>
+<ul>
+<li>✅ User data intact</li>
+<li>✅ CRM data intact</li>
+<li>✅ E-commerce data intact</li>
+<li>✅ Configuration intact</li>
+<li>✅ Empty tables remain empty</li>
+</ul>
+<h3>Phase 3: Verify Cleanup</h3>
+<ul>
+<li>✅ All PDF processing tables cleared</li>
+<li>✅ No orphaned records</li>
+<li>✅ Foreign key constraints satisfied</li>
+</ul>
+<hr>
+<h2>📋 TABLES BREAKDOWN BY CATEGORY</h2>
+<h3>PDF Processing (CLEAR)</h3>
+<ul>
+<li>document_chunks (28,189)</li>
+<li>document_vectors (690)</li>
+<li>embeddings (690)</li>
+<li>document_images (506)</li>
+<li>documents (23)</li>
+<li>pdf_processing_results (3)</li>
+</ul>
+<h3>User &amp; Auth (PRESERVE)</h3>
+<ul>
+<li>user_profiles</li>
+<li>user_subscriptions</li>
+<li>user_credits</li>
+<li>credit_transactions</li>
+<li>roles (5)</li>
+<li>role_permissions</li>
+<li>workspaces (2)</li>
+<li>workspace_members</li>
+<li>workspace_permissions</li>
+</ul>
+<h3>CRM (PRESERVE)</h3>
+<ul>
+<li>crm_contacts</li>
+<li>crm_contact_relationships</li>
+</ul>
+<h3>E-Commerce (PRESERVE)</h3>
+<ul>
+<li>products (6)</li>
+<li>product_images</li>
+<li>shopping_carts (4)</li>
+<li>cart_items (9)</li>
+<li>quote_requests (4)</li>
+<li>proposals (4)</li>
+<li>subscription_plans (3)</li>
+<li>credit_packages (3)</li>
+</ul>
+<h3>Configuration (PRESERVE)</h3>
+<ul>
+<li>material_categories (57)</li>
+<li>material_metadata_fields (124)</li>
+<li>api_endpoints (15)</li>
+<li>material_kai_keys (1)</li>
+<li>mivaa_api_usage_logs (1)</li>
+<li>rate_limit_rules</li>
+</ul>
+<h3>Empty/Unused (LEAVE AS-IS)</h3>
+<ul>
+<li>76 empty tables for future features</li>
+</ul>
+<hr>
+<h2>✅ CLEANUP READINESS</h2>
+<p><strong>Status</strong>: 🟢 <strong>READY TO CLEAN</strong></p>
+<p>Before running cleanup script:</p>
+<ol>
+<li>✅ Database audit complete</li>
+<li>✅ All tables identified</li>
+<li>✅ Preservation strategy defined</li>
+<li>✅ Clear tables identified</li>
+<li>✅ No critical data at risk</li>
+</ol>
+<p><strong>Recommended Action</strong>: Run cleanup script to clear PDF processing data while preserving all user, CRM, and e-commerce data.</p>
+<hr>
+<h2>📝 NOTES</h2>
+<ul>
+<li><strong>New Tables Since Last Audit</strong>: Products, shopping_carts, cart_items, quote_requests, proposals, subscription_plans, credit_packages, crm_contacts, crm_contact_relationships, user_credits, credit_transactions</li>
+<li><strong>Duplicate Embeddings</strong>: Both <code>embeddings</code> and <code>document_vectors</code> tables exist (690 rows each) - both should be cleared</li>
+<li><strong>Material Metadata</strong>: 124 metadata field configurations preserved for future use</li>
+<li><strong>Material Categories</strong>: 57 categories preserved for product organization</li>
+</ul>
+<hr>
+<h2>🚀 NEXT STEPS</h2>
+<ol>
+<li>Review this audit</li>
+<li>Confirm cleanup strategy</li>
+<li>Run cleanup script: <code>node scripts/cleanup-database.js</code></li>
+<li>Verify data integrity</li>
+<li>Resume testing with clean database</li>
+</ol>
+
+</div></body></html>

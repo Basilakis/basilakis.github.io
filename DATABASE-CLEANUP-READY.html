@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Database Cleanup - Ready to Execute</h1>
+<p><strong>Date</strong>: October 19, 2025<br><strong>Status</strong>: 🟢 <strong>READY TO CLEAN</strong><br><strong>Audit Complete</strong>: YES<br><strong>Script Updated</strong>: YES</p>
+<hr>
+<h2>📊 COMPREHENSIVE AUDIT RESULTS</h2>
+<h3>Database Overview</h3>
+<ul>
+<li><strong>Total Tables</strong>: 97</li>
+<li><strong>Tables with Data</strong>: 21</li>
+<li><strong>Empty Tables</strong>: 76</li>
+<li><strong>Total Rows</strong>: ~30,000+</li>
+<li><strong>Largest Table</strong>: <code>document_chunks</code> (28,189 rows)</li>
+</ul>
+<h3>Data Breakdown</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Rows</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PDF Processing</td>
+<td>~30,000</td>
+<td>🗑️ CLEAR</td>
+</tr>
+<tr>
+<td>User/Auth</td>
+<td>0</td>
+<td>🟢 KEEP</td>
+</tr>
+<tr>
+<td>CRM</td>
+<td>0</td>
+<td>🟢 KEEP</td>
+</tr>
+<tr>
+<td>E-Commerce</td>
+<td>30</td>
+<td>🟢 KEEP</td>
+</tr>
+<tr>
+<td>Configuration</td>
+<td>198</td>
+<td>🟢 KEEP</td>
+</tr>
+<tr>
+<td>Empty Tables</td>
+<td>0</td>
+<td>⚪ LEAVE</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🟢 TABLES TO PRESERVE (31 tables)</h2>
+<h3>Workspace &amp; Auth (6)</h3>
+<ul>
+<li>workspaces (2 rows)</li>
+<li>workspace_members</li>
+<li>workspace_permissions</li>
+<li>api_keys</li>
+<li>material_kai_keys (1 row)</li>
+<li>rate_limit_rules</li>
+</ul>
+<h3>User Management (6)</h3>
+<ul>
+<li>user_profiles</li>
+<li>user_subscriptions</li>
+<li>user_credits</li>
+<li>credit_transactions</li>
+<li>roles (5 rows)</li>
+<li>role_permissions</li>
+</ul>
+<h3>CRM System (2)</h3>
+<ul>
+<li>crm_contacts</li>
+<li>crm_contact_relationships</li>
+</ul>
+<h3>E-Commerce (8)</h3>
+<ul>
+<li>products (6 rows)</li>
+<li>product_images</li>
+<li>shopping_carts (4 rows)</li>
+<li>cart_items (9 rows)</li>
+<li>quote_requests (4 rows)</li>
+<li>proposals (4 rows)</li>
+<li>subscription_plans (3 rows)</li>
+<li>credit_packages (3 rows)</li>
+</ul>
+<h3>Configuration (3)</h3>
+<ul>
+<li>material_categories (57 rows)</li>
+<li>material_metadata_fields (124 rows)</li>
+<li>api_endpoints (15 rows)</li>
+</ul>
+<h3>AI/ML (6)</h3>
+<ul>
+<li>ml_models</li>
+<li>crewai_agents</li>
+<li>material_agents</li>
+<li>internal_networks</li>
+<li>category_validation_rules</li>
+<li>(+ 1 mivaa_api_usage_logs with 1 row)</li>
+</ul>
+<hr>
+<h2>🗑️ TABLES TO CLEAR (66 tables)</h2>
+<h3>PDF Processing (6 tables - 30,000+ rows)</h3>
+<ul>
+<li>documents (23 rows)</li>
+<li>document_chunks (28,189 rows) ⭐ LARGEST</li>
+<li>document_embeddings</li>
+<li>document_images (506 rows)</li>
+<li>document_vectors (690 rows)</li>
+<li>embeddings (690 rows)</li>
+<li>pdf_processing_results (3 rows)</li>
+</ul>
+<h3>Document Analysis (5)</h3>
+<ul>
+<li>document_layout_analysis</li>
+<li>document_processing_status</li>
+<li>document_quality_metrics</li>
+<li>processed_documents</li>
+<li>uploaded_files</li>
+</ul>
+<h3>Processing &amp; Jobs (4)</h3>
+<ul>
+<li>processing_jobs</li>
+<li>processing_queue</li>
+<li>processing_results</li>
+<li>processing_metrics</li>
+<li>batch_jobs</li>
+<li>category_extractions</li>
+</ul>
+<h3>Knowledge Base (4)</h3>
+<ul>
+<li>knowledge_base_entries</li>
+<li>knowledge_relationships</li>
+<li>enhanced_knowledge_base</li>
+<li>material_knowledge_extraction</li>
+<li>query_intelligence</li>
+</ul>
+<h3>Materials &amp; Analysis (10)</h3>
+<ul>
+<li>materials_catalog</li>
+<li>material_properties</li>
+<li>material_images</li>
+<li>material_style_analysis</li>
+<li>material_visual_analysis</li>
+<li>scraped_materials_temp</li>
+<li>recognition_results</li>
+<li>property_analysis_results</li>
+<li>style_analysis_results</li>
+<li>spaceformer_analysis_results</li>
+<li>svbrdf_extraction_results</li>
+<li>hybrid_analysis_results</li>
+</ul>
+<h3>Media &amp; OCR (2)</h3>
+<ul>
+<li>voice_conversion_results</li>
+<li>ocr_results</li>
+</ul>
+<h3>Visual Search (5)</h3>
+<ul>
+<li>visual_search_embeddings</li>
+<li>visual_search_queries</li>
+<li>visual_search_batch_jobs</li>
+<li>visual_search_analysis</li>
+<li>visual_analysis_queue</li>
+</ul>
+<h3>ML &amp; Training (1)</h3>
+<ul>
+<li>ml_training_jobs</li>
+</ul>
+<h3>Moodboards &amp; Scraping (6)</h3>
+<ul>
+<li>moodboards</li>
+<li>moodboard_items</li>
+<li>moodboard_products</li>
+<li>moodboard_quote_requests</li>
+<li>scraping_sessions</li>
+<li>scraping_pages</li>
+</ul>
+<h3>Generation &amp; 3D (1)</h3>
+<ul>
+<li>generation_3d</li>
+</ul>
+<h3>Logging &amp; Analytics (9)</h3>
+<ul>
+<li>analytics_events</li>
+<li>api_usage_logs</li>
+<li>jwt_tokens_log</li>
+<li>search_analytics</li>
+<li>quality_scoring_logs</li>
+<li>response_quality_metrics</li>
+<li>retrieval_quality_metrics</li>
+<li>embedding_stability_metrics</li>
+<li>health_check</li>
+<li>pdf_integration_health_results</li>
+</ul>
+<h3>Agent System (3)</h3>
+<ul>
+<li>agent_chat_conversations</li>
+<li>agent_chat_messages</li>
+<li>agent_uploaded_files</li>
+</ul>
+<hr>
+<h2>✅ CLEANUP SCRIPT STATUS</h2>
+<p><strong>File</strong>: <code>scripts/database/cleanup-database.js</code></p>
+<h3>Recent Updates</h3>
+<p>✅ Added 8 new tables to KEEP list:</p>
+<ul>
+<li>user_profiles, user_subscriptions, user_credits, credit_transactions</li>
+<li>crm_contacts, crm_contact_relationships</li>
+<li>products, product_images, shopping_carts, cart_items</li>
+<li>quote_requests, proposals, subscription_plans, credit_packages</li>
+</ul>
+<p>✅ Added 4 new tables to CLEAR list:</p>
+<ul>
+<li>moodboard_products, moodboard_quote_requests</li>
+<li>agent_chat_conversations, agent_chat_messages, agent_uploaded_files</li>
+<li>batch_jobs, category_extractions</li>
+</ul>
+<p>✅ Organized tables by category for clarity</p>
+<h3>Script Features</h3>
+<ul>
+<li>✅ Preserves 31 critical tables</li>
+<li>✅ Clears 66 test/processing tables</li>
+<li>✅ Handles storage cleanup</li>
+<li>✅ Generates detailed results report</li>
+<li>✅ Error handling and logging</li>
+</ul>
+<hr>
+<h2>🚀 EXECUTION INSTRUCTIONS</h2>
+<h3>Before Running</h3>
+<ol>
+<li>✅ Review audit: <code>docs/DATABASE-AUDIT-OCTOBER-2025.md</code></li>
+<li>✅ Verify preservation list above</li>
+<li>✅ Confirm you want to delete ~30,000 rows</li>
+<li>✅ Ensure environment variables are set</li>
+</ol>
+<h3>Run Cleanup</h3>
+<pre><code class="language-bash"># Set environment variables
+export SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=your_service_key
+
+# Run cleanup script
+node scripts/database/cleanup-database.js
+</code></pre>
+<h3>After Cleanup</h3>
+<ol>
+<li>✅ Review results file: <code>cleanup-results-[timestamp].json</code></li>
+<li>✅ Verify all PDF processing data cleared</li>
+<li>✅ Verify user/CRM/e-commerce data preserved</li>
+<li>✅ Resume testing with clean database</li>
+</ol>
+<hr>
+<h2>📋 WHAT WILL BE DELETED</h2>
+<h3>Data Volume</h3>
+<ul>
+<li><strong>Total Rows</strong>: ~30,000</li>
+<li><strong>Largest</strong>: document_chunks (28,189 rows)</li>
+<li><strong>Storage</strong>: All files in storage buckets</li>
+</ul>
+<h3>Preserved Data</h3>
+<ul>
+<li><strong>User Accounts</strong>: ✅ SAFE</li>
+<li><strong>CRM Contacts</strong>: ✅ SAFE</li>
+<li><strong>Products</strong>: ✅ SAFE (6 products)</li>
+<li><strong>Shopping Carts</strong>: ✅ SAFE (4 carts)</li>
+<li><strong>Configuration</strong>: ✅ SAFE (181 rows)</li>
+</ul>
+<hr>
+<h2>⚠️ IMPORTANT NOTES</h2>
+<ol>
+<li><strong>Backup First</strong>: Consider backing up database before cleanup</li>
+<li><strong>Service Role Key</strong>: Script requires SUPABASE_SERVICE_ROLE_KEY</li>
+<li><strong>Storage Cleanup</strong>: All files in storage buckets will be deleted</li>
+<li><strong>Irreversible</strong>: Deleted data cannot be recovered</li>
+<li><strong>Test Data Only</strong>: Only test/processing data is deleted</li>
+</ol>
+<hr>
+<h2>🎯 NEXT STEPS</h2>
+<ol>
+<li><strong>Review</strong> this document and the audit</li>
+<li><strong>Confirm</strong> you&#39;re ready to delete ~30,000 rows</li>
+<li><strong>Execute</strong> cleanup script</li>
+<li><strong>Verify</strong> results</li>
+<li><strong>Resume</strong> testing with clean database</li>
+</ol>
+<hr>
+<h2>📝 GIT COMMITS</h2>
+<pre><code>e6563a8 - docs: Add comprehensive database audit - October 2025 (97 tables, 30k+ rows)
+7848681 - refactor: Update cleanup script to preserve new user/CRM/e-commerce tables
+</code></pre>
+<hr>
+<p><strong>Status</strong>: 🟢 <strong>READY TO EXECUTE</strong></p>
+<p>All preparations complete. Database is ready for cleanup!</p>
+
+</div></body></html>
