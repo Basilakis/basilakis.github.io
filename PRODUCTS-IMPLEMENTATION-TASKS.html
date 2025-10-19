@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Products System Implementation Tasks</h1>
+<p><strong>Detailed Task Breakdown</strong><br><strong>Total Tasks</strong>: 45<br><strong>Estimated Duration</strong>: 5 weeks<br><strong>Status</strong>: Ready to Execute</p>
+<hr>
+<h2>📋 PHASE 1: PRODUCT TESTING FRAMEWORK (Week 1)</h2>
+<h3>Task 1.1: Create Product Test File</h3>
+<ul>
+<li><strong>File</strong>: <code>scripts/test-products-complete-flow.js</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Setup test file with logging utilities</li>
+<li><input disabled="" type="checkbox"> Create product with all metadata fields</li>
+<li><input disabled="" type="checkbox"> Test product search by description</li>
+<li><input disabled="" type="checkbox"> Test product search by image relevancy</li>
+<li><input disabled="" type="checkbox"> Test product search by metadata (category, material)</li>
+<li><input disabled="" type="checkbox"> Verify embeddings are stored correctly</li>
+<li><input disabled="" type="checkbox"> Verify MIVAA API integration</li>
+<li><input disabled="" type="checkbox"> Test pagination and filtering</li>
+<li><input disabled="" type="checkbox"> Test error handling</li>
+<li><input disabled="" type="checkbox"> Generate detailed output report</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All product operations work correctly</li>
+<li>Search returns accurate results</li>
+<li>Embeddings properly stored</li>
+<li>MIVAA API called successfully</li>
+<li>Output shows exact counts and details</li>
+</ul>
+<hr>
+<h2>🗄️ PHASE 2: DATABASE TABLES (Week 2)</h2>
+<h3>Task 2.1: Create Shopping Cart Tables (Supabase MCP)</h3>
+<ul>
+<li><strong>Tables</strong>: <code>shopping_carts</code>, <code>cart_items</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create <code>shopping_carts</code> table with all fields</li>
+<li><input disabled="" type="checkbox"> Create <code>cart_items</code> table with relationships</li>
+<li><input disabled="" type="checkbox"> Add RLS policies for user isolation</li>
+<li><input disabled="" type="checkbox"> Add indexes for performance</li>
+<li><input disabled="" type="checkbox"> Verify tables created successfully</li>
+<li><input disabled="" type="checkbox"> Test insert/select operations</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Tables exist in Supabase</li>
+<li>RLS policies working</li>
+<li>Relationships correct</li>
+<li>Data can be inserted and queried</li>
+</ul>
+<h3>Task 2.2: Create Quote Request Tables (Supabase MCP)</h3>
+<ul>
+<li><strong>Tables</strong>: <code>quote_requests</code>, <code>proposals</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create <code>quote_requests</code> table</li>
+<li><input disabled="" type="checkbox"> Create <code>proposals</code> table</li>
+<li><input disabled="" type="checkbox"> Add RLS policies</li>
+<li><input disabled="" type="checkbox"> Add indexes</li>
+<li><input disabled="" type="checkbox"> Verify relationships</li>
+<li><input disabled="" type="checkbox"> Test operations</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Tables exist and are queryable</li>
+<li>RLS policies working</li>
+<li>Relationships correct</li>
+</ul>
+<h3>Task 2.3: Create Moodboard Integration Tables (Supabase MCP)</h3>
+<ul>
+<li><strong>Tables</strong>: <code>moodboard_products</code>, <code>moodboard_quote_requests</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create <code>moodboard_products</code> table</li>
+<li><input disabled="" type="checkbox"> Create <code>moodboard_quote_requests</code> table</li>
+<li><input disabled="" type="checkbox"> Add RLS policies</li>
+<li><input disabled="" type="checkbox"> Add indexes</li>
+<li><input disabled="" type="checkbox"> Verify relationships</li>
+<li><input disabled="" type="checkbox"> Test operations</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Tables exist and are queryable</li>
+<li>RLS policies working</li>
+<li>Commission tracking fields present</li>
+</ul>
+<hr>
+<h2>⚡ PHASE 3: EDGE FUNCTIONS (Week 2-3)</h2>
+<h3>Task 3.1: Create Shopping Cart API</h3>
+<ul>
+<li><strong>Function</strong>: <code>shopping-cart-api</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create function directory</li>
+<li><input disabled="" type="checkbox"> Implement POST /api/cart (create)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/cart/:id (get)</li>
+<li><input disabled="" type="checkbox"> Implement POST /api/cart/:id/items (add item)</li>
+<li><input disabled="" type="checkbox"> Implement DELETE /api/cart/:id/items/:itemId (remove)</li>
+<li><input disabled="" type="checkbox"> Implement PATCH /api/cart/:id (update)</li>
+<li><input disabled="" type="checkbox"> Add authentication</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Test all endpoints</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All endpoints working</li>
+<li>Authentication required</li>
+<li>Error handling proper</li>
+<li>Tests passing</li>
+</ul>
+<h3>Task 3.2: Create Quote Request API</h3>
+<ul>
+<li><strong>Function</strong>: <code>quote-request-api</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create function directory</li>
+<li><input disabled="" type="checkbox"> Implement POST /api/quote-requests (submit)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/quote-requests (list)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/quote-requests/:id (get)</li>
+<li><input disabled="" type="checkbox"> Implement PATCH /api/quote-requests/:id (update status)</li>
+<li><input disabled="" type="checkbox"> Add authentication</li>
+<li><input disabled="" type="checkbox"> Add admin authorization</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Test all endpoints</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All endpoints working</li>
+<li>Admin authorization working</li>
+<li>Status updates correct</li>
+<li>Tests passing</li>
+</ul>
+<h3>Task 3.3: Create Proposals API</h3>
+<ul>
+<li><strong>Function</strong>: <code>proposals-api</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create function directory</li>
+<li><input disabled="" type="checkbox"> Implement POST /api/proposals (create)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/proposals (list)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/proposals/:id (get)</li>
+<li><input disabled="" type="checkbox"> Implement PATCH /api/proposals/:id (update pricing)</li>
+<li><input disabled="" type="checkbox"> Implement PATCH /api/proposals/:id/send (send to user)</li>
+<li><input disabled="" type="checkbox"> Implement PATCH /api/proposals/:id/accept (user accepts)</li>
+<li><input disabled="" type="checkbox"> Add authentication</li>
+<li><input disabled="" type="checkbox"> Add admin authorization</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Test all endpoints</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All endpoints working</li>
+<li>Pricing updates correct</li>
+<li>Status transitions correct</li>
+<li>Tests passing</li>
+</ul>
+<h3>Task 3.4: Create Moodboard Products API</h3>
+<ul>
+<li><strong>Function</strong>: <code>moodboard-products-api</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create function directory</li>
+<li><input disabled="" type="checkbox"> Implement POST /api/moodboards/:id/products (add)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/moodboards/:id/products (list)</li>
+<li><input disabled="" type="checkbox"> Implement DELETE /api/moodboards/:id/products/:productId (remove)</li>
+<li><input disabled="" type="checkbox"> Add authentication</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Test all endpoints</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All endpoints working</li>
+<li>Products properly linked</li>
+<li>Tests passing</li>
+</ul>
+<h3>Task 3.5: Create Moodboard Quote API</h3>
+<ul>
+<li><strong>Function</strong>: <code>moodboard-quote-api</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create function directory</li>
+<li><input disabled="" type="checkbox"> Implement POST /api/moodboards/:id/request-quote (request)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/moodboards/:id/quote-requests (list)</li>
+<li><input disabled="" type="checkbox"> Implement GET /api/user/commissions (view commissions)</li>
+<li><input disabled="" type="checkbox"> Add commission calculation</li>
+<li><input disabled="" type="checkbox"> Add authentication</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Test all endpoints</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All endpoints working</li>
+<li>Commission calculation correct</li>
+<li>Tests passing</li>
+</ul>
+<hr>
+<h2>🎨 PHASE 4: FRONTEND SERVICES (Week 3)</h2>
+<h3>Task 4.1: Create Shopping Cart Service</h3>
+<ul>
+<li><strong>File</strong>: <code>src/services/shopping/ShoppingCartService.ts</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create service class</li>
+<li><input disabled="" type="checkbox"> Implement createCart()</li>
+<li><input disabled="" type="checkbox"> Implement getCart()</li>
+<li><input disabled="" type="checkbox"> Implement addItem()</li>
+<li><input disabled="" type="checkbox"> Implement removeItem()</li>
+<li><input disabled="" type="checkbox"> Implement updateCart()</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add logging</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Service methods working</li>
+<li>Proper error handling</li>
+<li>Logging in place</li>
+</ul>
+<h3>Task 4.2: Create Quote Request Service</h3>
+<ul>
+<li><strong>File</strong>: <code>src/services/quote/QuoteRequestService.ts</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create service class</li>
+<li><input disabled="" type="checkbox"> Implement submitRequest()</li>
+<li><input disabled="" type="checkbox"> Implement getRequests()</li>
+<li><input disabled="" type="checkbox"> Implement getRequest()</li>
+<li><input disabled="" type="checkbox"> Implement updateStatus()</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add logging</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Service methods working</li>
+<li>Proper error handling</li>
+<li>Logging in place</li>
+</ul>
+<h3>Task 4.3: Create Proposals Service</h3>
+<ul>
+<li><strong>File</strong>: <code>src/services/quote/ProposalsService.ts</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create service class</li>
+<li><input disabled="" type="checkbox"> Implement createProposal()</li>
+<li><input disabled="" type="checkbox"> Implement getProposals()</li>
+<li><input disabled="" type="checkbox"> Implement getProposal()</li>
+<li><input disabled="" type="checkbox"> Implement updatePricing()</li>
+<li><input disabled="" type="checkbox"> Implement sendProposal()</li>
+<li><input disabled="" type="checkbox"> Implement acceptProposal()</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add logging</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Service methods working</li>
+<li>Proper error handling</li>
+<li>Logging in place</li>
+</ul>
+<h3>Task 4.4: Create Moodboard Products Service</h3>
+<ul>
+<li><strong>File</strong>: <code>src/services/moodboard/MoodboardProductsService.ts</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create service class</li>
+<li><input disabled="" type="checkbox"> Implement addProduct()</li>
+<li><input disabled="" type="checkbox"> Implement getProducts()</li>
+<li><input disabled="" type="checkbox"> Implement removeProduct()</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add logging</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Service methods working</li>
+<li>Proper error handling</li>
+<li>Logging in place</li>
+</ul>
+<h3>Task 4.5: Create Commission Service</h3>
+<ul>
+<li><strong>File</strong>: <code>src/services/moodboard/CommissionService.ts</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create service class</li>
+<li><input disabled="" type="checkbox"> Implement getCommissions()</li>
+<li><input disabled="" type="checkbox"> Implement calculateCommission()</li>
+<li><input disabled="" type="checkbox"> Implement trackCommission()</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add logging</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Service methods working</li>
+<li>Commission calculation correct</li>
+<li>Logging in place</li>
+</ul>
+<hr>
+<h2>🖼️ PHASE 5: FRONTEND COMPONENTS (Week 3-4)</h2>
+<h3>Task 5.1: Create Shopping Cart UI</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/Shopping/ShoppingCart.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create component structure</li>
+<li><input disabled="" type="checkbox"> Display cart items</li>
+<li><input disabled="" type="checkbox"> Add quantity controls</li>
+<li><input disabled="" type="checkbox"> Add remove item button</li>
+<li><input disabled="" type="checkbox"> Show total price</li>
+<li><input disabled="" type="checkbox"> Add &quot;Request Quote&quot; button</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add loading states</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Component displays correctly</li>
+<li>All interactions work</li>
+<li>Error handling in place</li>
+</ul>
+<h3>Task 5.2: Create Quote Request Form</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/Quote/QuoteRequestForm.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create form component</li>
+<li><input disabled="" type="checkbox"> Display cart items</li>
+<li><input disabled="" type="checkbox"> Add notes field</li>
+<li><input disabled="" type="checkbox"> Add submit button</li>
+<li><input disabled="" type="checkbox"> Add validation</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add loading states</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Form displays correctly</li>
+<li>Validation working</li>
+<li>Submission working</li>
+</ul>
+<h3>Task 5.3: Create Quote Status Tracker</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/Quote/QuoteStatusTracker.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create component</li>
+<li><input disabled="" type="checkbox"> Display quote requests</li>
+<li><input disabled="" type="checkbox"> Show status (Pending/Updated)</li>
+<li><input disabled="" type="checkbox"> Display proposals</li>
+<li><input disabled="" type="checkbox"> Add accept/reject buttons</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+<li><input disabled="" type="checkbox"> Add real-time updates</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Component displays correctly</li>
+<li>Status updates working</li>
+<li>Real-time updates working</li>
+</ul>
+<h3>Task 5.4: Create Admin Quote Dashboard</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/Admin/QuoteRequestsPanel.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create dashboard component</li>
+<li><input disabled="" type="checkbox"> List all quote requests</li>
+<li><input disabled="" type="checkbox"> Show customer details</li>
+<li><input disabled="" type="checkbox"> Show cart items</li>
+<li><input disabled="" type="checkbox"> Add &quot;Create Proposal&quot; button</li>
+<li><input disabled="" type="checkbox"> Add filtering/sorting</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Dashboard displays correctly</li>
+<li>All data showing</li>
+<li>Interactions working</li>
+</ul>
+<h3>Task 5.5: Create Proposal Editor</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/Admin/ProposalEditor.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create editor component</li>
+<li><input disabled="" type="checkbox"> Display proposal items</li>
+<li><input disabled="" type="checkbox"> Add price editing</li>
+<li><input disabled="" type="checkbox"> Add notes field</li>
+<li><input disabled="" type="checkbox"> Add send button</li>
+<li><input disabled="" type="checkbox"> Add validation</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Editor displays correctly</li>
+<li>Price editing working</li>
+<li>Sending working</li>
+</ul>
+<h3>Task 5.6: Create Commission Tracker</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/Admin/CommissionTracker.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create tracker component</li>
+<li><input disabled="" type="checkbox"> List all commissions</li>
+<li><input disabled="" type="checkbox"> Show status</li>
+<li><input disabled="" type="checkbox"> Show amounts</li>
+<li><input disabled="" type="checkbox"> Add filtering</li>
+<li><input disabled="" type="checkbox"> Add export button</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Tracker displays correctly</li>
+<li>All data showing</li>
+<li>Export working</li>
+</ul>
+<h3>Task 5.7: Update Moodboard Component</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/MoodBoard/MoodBoardPage.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Add products section</li>
+<li><input disabled="" type="checkbox"> Add &quot;Add Product&quot; button</li>
+<li><input disabled="" type="checkbox"> Display products</li>
+<li><input disabled="" type="checkbox"> Add &quot;Request Quote&quot; button</li>
+<li><input disabled="" type="checkbox"> Add commission info</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Products displaying</li>
+<li>Quote request working</li>
+<li>Commission info showing</li>
+</ul>
+<h3>Task 5.8: Create Moodboard Product Selector</h3>
+<ul>
+<li><strong>File</strong>: <code>src/components/MoodBoard/MoodboardProductSelector.tsx</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create selector component</li>
+<li><input disabled="" type="checkbox"> Search products</li>
+<li><input disabled="" type="checkbox"> Display results</li>
+<li><input disabled="" type="checkbox"> Add to moodboard</li>
+<li><input disabled="" type="checkbox"> Show confirmation</li>
+<li><input disabled="" type="checkbox"> Add error handling</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Selector working</li>
+<li>Products adding correctly</li>
+<li>Confirmation showing</li>
+</ul>
+<hr>
+<h2>📚 PHASE 6: DOCUMENTATION (Week 4)</h2>
+<h3>Task 6.1: Create API Documentation</h3>
+<ul>
+<li><strong>File</strong>: <code>docs/api/products-quote-proposal-api.md</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Document all endpoints</li>
+<li><input disabled="" type="checkbox"> Add request/response examples</li>
+<li><input disabled="" type="checkbox"> Add error codes</li>
+<li><input disabled="" type="checkbox"> Add authentication info</li>
+<li><input disabled="" type="checkbox"> Add rate limiting info</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All endpoints documented</li>
+<li>Examples clear</li>
+<li>Error codes listed</li>
+</ul>
+<h3>Task 6.2: Create Moodboard Integration Guide</h3>
+<ul>
+<li><strong>File</strong>: <code>docs/moodboard-products-integration.md</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Explain product addition</li>
+<li><input disabled="" type="checkbox"> Explain commission system</li>
+<li><input disabled="" type="checkbox"> Show user flows</li>
+<li><input disabled="" type="checkbox"> Add examples</li>
+<li><input disabled="" type="checkbox"> Add troubleshooting</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Guide complete</li>
+<li>Flows clear</li>
+<li>Examples helpful</li>
+</ul>
+<h3>Task 6.3: Create Shopping Cart Guide</h3>
+<ul>
+<li><strong>File</strong>: <code>docs/shopping-cart-system.md</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Explain cart management</li>
+<li><input disabled="" type="checkbox"> Explain quote process</li>
+<li><input disabled="" type="checkbox"> Explain proposal workflow</li>
+<li><input disabled="" type="checkbox"> Show user flows</li>
+<li><input disabled="" type="checkbox"> Add examples</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Guide complete</li>
+<li>Flows clear</li>
+<li>Examples helpful</li>
+</ul>
+<h3>Task 6.4: Update API Documentation</h3>
+<ul>
+<li><strong>File</strong>: <code>docs/api-documentation.md</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Add new endpoints</li>
+<li><input disabled="" type="checkbox"> Update table of contents</li>
+<li><input disabled="" type="checkbox"> Add links to new docs</li>
+<li><input disabled="" type="checkbox"> Update examples</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All new endpoints listed</li>
+<li>Links working</li>
+<li>Examples updated</li>
+</ul>
+<h3>Task 6.5: Update Platform Functionality</h3>
+<ul>
+<li><strong>File</strong>: <code>docs/platform-functionality.md</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Add quote/proposal section</li>
+<li><input disabled="" type="checkbox"> Add moodboard products section</li>
+<li><input disabled="" type="checkbox"> Add commission section</li>
+<li><input disabled="" type="checkbox"> Add screenshots/diagrams</li>
+<li><input disabled="" type="checkbox"> Update table of contents</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All features documented</li>
+<li>Diagrams clear</li>
+<li>Links working</li>
+</ul>
+<h3>Task 6.6: Update Admin Panel Guide</h3>
+<ul>
+<li><strong>File</strong>: <code>docs/admin-panel-guide.md</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Add quote requests section</li>
+<li><input disabled="" type="checkbox"> Add proposals section</li>
+<li><input disabled="" type="checkbox"> Add commission section</li>
+<li><input disabled="" type="checkbox"> Add screenshots</li>
+<li><input disabled="" type="checkbox"> Add step-by-step guides</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All admin features documented</li>
+<li>Screenshots clear</li>
+<li>Guides helpful</li>
+</ul>
+<hr>
+<h2>🧪 PHASE 7: TESTING (Week 4-5)</h2>
+<h3>Task 7.1: Create Quote/Proposal Test File</h3>
+<ul>
+<li><strong>File</strong>: <code>scripts/test-products-quote-proposal.js</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create test file</li>
+<li><input disabled="" type="checkbox"> Test cart creation</li>
+<li><input disabled="" type="checkbox"> Test product addition</li>
+<li><input disabled="" type="checkbox"> Test quote request</li>
+<li><input disabled="" type="checkbox"> Test proposal creation</li>
+<li><input disabled="" type="checkbox"> Test pricing update</li>
+<li><input disabled="" type="checkbox"> Test proposal sending</li>
+<li><input disabled="" type="checkbox"> Test proposal acceptance</li>
+<li><input disabled="" type="checkbox"> Test commission tracking</li>
+<li><input disabled="" type="checkbox"> Generate detailed output</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All tests passing</li>
+<li>Output detailed</li>
+<li>All scenarios covered</li>
+</ul>
+<h3>Task 7.2: Create Moodboard Products Test File</h3>
+<ul>
+<li><strong>File</strong>: <code>scripts/test-moodboard-products.js</code></li>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Create test file</li>
+<li><input disabled="" type="checkbox"> Test moodboard creation</li>
+<li><input disabled="" type="checkbox"> Test product addition</li>
+<li><input disabled="" type="checkbox"> Test public moodboard</li>
+<li><input disabled="" type="checkbox"> Test quote request</li>
+<li><input disabled="" type="checkbox"> Test commission tracking</li>
+<li><input disabled="" type="checkbox"> Test proposal acceptance</li>
+<li><input disabled="" type="checkbox"> Generate detailed output</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All tests passing</li>
+<li>Output detailed</li>
+<li>All scenarios covered</li>
+</ul>
+<h3>Task 7.3: Run Comprehensive Tests</h3>
+<ul>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Run product tests</li>
+<li><input disabled="" type="checkbox"> Run quote/proposal tests</li>
+<li><input disabled="" type="checkbox"> Run moodboard tests</li>
+<li><input disabled="" type="checkbox"> Verify all passing</li>
+<li><input disabled="" type="checkbox"> Document results</li>
+<li><input disabled="" type="checkbox"> Fix any failures</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All tests passing</li>
+<li>No errors</li>
+<li>Results documented</li>
+</ul>
+<hr>
+<h2>🚀 PHASE 8: DEPLOYMENT (Week 5)</h2>
+<h3>Task 8.1: Deploy Edge Functions</h3>
+<ul>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Push to GitHub</li>
+<li><input disabled="" type="checkbox"> Verify GitHub Actions</li>
+<li><input disabled="" type="checkbox"> Confirm deployment</li>
+<li><input disabled="" type="checkbox"> Test in production</li>
+<li><input disabled="" type="checkbox"> Monitor logs</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Functions deployed</li>
+<li>Tests passing</li>
+<li>No errors in logs</li>
+</ul>
+<h3>Task 8.2: Deploy Frontend</h3>
+<ul>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Push to GitHub</li>
+<li><input disabled="" type="checkbox"> Verify GitHub Actions</li>
+<li><input disabled="" type="checkbox"> Confirm deployment</li>
+<li><input disabled="" type="checkbox"> Test in production</li>
+<li><input disabled="" type="checkbox"> Monitor logs</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>Frontend deployed</li>
+<li>All features working</li>
+<li>No errors in logs</li>
+</ul>
+<h3>Task 8.3: Final Verification</h3>
+<ul>
+<li><strong>Subtasks</strong>:<ul>
+<li><input disabled="" type="checkbox"> Test all workflows</li>
+<li><input disabled="" type="checkbox"> Verify database</li>
+<li><input disabled="" type="checkbox"> Verify APIs</li>
+<li><input disabled="" type="checkbox"> Verify UI</li>
+<li><input disabled="" type="checkbox"> Document any issues</li>
+</ul>
+</li>
+</ul>
+<p><strong>Acceptance Criteria</strong>:</p>
+<ul>
+<li>All workflows working</li>
+<li>No critical issues</li>
+<li>Ready for users</li>
+</ul>
+<hr>
+<h2>📊 SUMMARY</h2>
+<p><strong>Total Tasks</strong>: 45<br><strong>Estimated Hours</strong>: 200-250<br><strong>Timeline</strong>: 5 weeks<br><strong>Team Size</strong>: 1-2 developers  </p>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>✅ 2 Test files</li>
+<li>✅ 5 Edge Functions</li>
+<li>✅ 5 Frontend services</li>
+<li>✅ 8 React components</li>
+<li>✅ 3 Database tables</li>
+<li>✅ 6 Documentation files</li>
+<li>✅ Comprehensive testing</li>
+</ul>
+<hr>
+<p><strong>Ready to start! 🚀</strong></p>
+
+</div></body></html>

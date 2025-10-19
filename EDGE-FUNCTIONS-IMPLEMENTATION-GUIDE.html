@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Edge Functions Implementation Guide</h1>
+<p><strong>Quick Reference for Building Supabase Edge Functions</strong></p>
+<hr>
+<h2>🎯 WHICH EDGE FUNCTIONS TO BUILD</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Sprint</th>
+<th>Function</th>
+<th>Purpose</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td>2.2</td>
+<td><code>products-api</code></td>
+<td>CRUD operations</td>
+<td>crm-users-api</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2.3</td>
+<td><code>product-relationships-api</code></td>
+<td>Link chunks</td>
+<td>crm-contacts-api</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3.1</td>
+<td><code>product-builder</code></td>
+<td>Extract properties</td>
+<td>extract-material-knowledge</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3.2</td>
+<td><code>product-embeddings</code></td>
+<td>Generate embeddings</td>
+<td>document-vector-search</td>
+</tr>
+<tr>
+<td>4</td>
+<td>4.1</td>
+<td><code>products-search</code></td>
+<td>Search products</td>
+<td>unified-material-search</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5.1</td>
+<td><code>material-agent-orchestrator</code></td>
+<td><strong>UPDATE</strong> existing</td>
+<td>existing</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>📁 TEMPLATE: BASIC EDGE FUNCTION</h2>
+<pre><code class="language-typescript">// supabase/functions/products-api/index.ts
+import { createClient } from &#39;https://esm.sh/@supabase/supabase-js@2.38.4&#39;;
+import { corsHeaders } from &#39;../_shared/cors.ts&#39;;
+
+const supabaseUrl = Deno.env.get(&#39;SUPABASE_URL&#39;) || &#39;&#39;;
+const supabaseServiceKey = Deno.env.get(&#39;SUPABASE_SERVICE_ROLE_KEY&#39;) || &#39;&#39;;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+Deno.serve(async (req) =&gt; {
+  // 1. CORS
+  if (req.method === &#39;OPTIONS&#39;) {
+    return new Response(&#39;ok&#39;, { headers: corsHeaders });
+  }
+
+  try {
+    // 2. PARSE REQUEST
+    const url = new URL(req.url);
+    const method = req.method;
+    const path = url.pathname.split(&#39;/&#39;).slice(4);
+
+    // 3. AUTHENTICATE
+    const authHeader = req.headers.get(&#39;Authorization&#39;);
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: &#39;Missing authorization&#39; }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const token = authHeader.replace(&#39;Bearer &#39;, &#39;&#39;);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: &#39;Unauthorized&#39; }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // 4. ROUTE
+    switch (method) {
+      case &#39;POST&#39;:
+        return await handleCreate(req, supabase, user);
+      case &#39;GET&#39;:
+        return await handleGet(url, supabase, user, path);
+      case &#39;PATCH&#39;:
+        return await handleUpdate(req, supabase, user, path);
+      case &#39;DELETE&#39;:
+        return await handleDelete(supabase, user, path);
+      default:
+        return new Response(
+          JSON.stringify({ error: &#39;Method not allowed&#39; }),
+          { status: 405, headers: corsHeaders }
+        );
+    }
+  } catch (error) {
+    console.error(&#39;Error:&#39;, error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+});
+
+// HANDLERS
+async function handleCreate(req: Request, supabase: any, user: any) {
+  const body = await req.json();
+  const { name, description } = body;
+
+  if (!name) {
+    return new Response(
+      JSON.stringify({ error: &#39;Name is required&#39; }),
+      { status: 400, headers: corsHeaders }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from(&#39;products&#39;)
+    .insert({ name, description, created_by: user.id })
+    .select();
+
+  if (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: corsHeaders }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ data: data?.[0] }),
+    { status: 201, headers: corsHeaders }
+  );
+}
+
+async function handleGet(url: URL, supabase: any, user: any, path: string[]) {
+  if (path.length === 0) {
+    // List all
+    const limit = parseInt(url.searchParams.get(&#39;limit&#39;) || &#39;50&#39;);
+    const offset = parseInt(url.searchParams.get(&#39;offset&#39;) || &#39;0&#39;);
+
+    const { data, error, count } = await supabase
+      .from(&#39;products&#39;)
+      .select(&#39;*&#39;, { count: &#39;exact&#39; })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ data, count }),
+      { status: 200, headers: corsHeaders }
+    );
+  } else {
+    // Get one
+    const { data, error } = await supabase
+      .from(&#39;products&#39;)
+      .select(&#39;*&#39;)
+      .eq(&#39;id&#39;, path[0])
+      .single();
+
+    if (error) {
+      return new Response(
+        JSON.stringify({ error: &#39;Not found&#39; }),
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ data }),
+      { status: 200, headers: corsHeaders }
+    );
+  }
+}
+
+async function handleUpdate(req: Request, supabase: any, user: any, path: string[]) {
+  const body = await req.json();
+  const { data, error } = await supabase
+    .from(&#39;products&#39;)
+    .update({ ...body, updated_at: new Date().toISOString() })
+    .eq(&#39;id&#39;, path[0])
+    .select();
+
+  if (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: corsHeaders }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ data: data?.[0] }),
+    { status: 200, headers: corsHeaders }
+  );
+}
+
+async function handleDelete(supabase: any, user: any, path: string[]) {
+  const { error } = await supabase
+    .from(&#39;products&#39;)
+    .delete()
+    .eq(&#39;id&#39;, path[0]);
+
+  if (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: corsHeaders }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ success: true }),
+    { status: 200, headers: corsHeaders }
+  );
+}
+</code></pre>
+<hr>
+<h2>🔑 KEY PATTERNS</h2>
+<h3>Authentication</h3>
+<pre><code class="language-typescript">const token = authHeader.replace(&#39;Bearer &#39;, &#39;&#39;);
+const { data: { user } } = await supabase.auth.getUser(token);
+</code></pre>
+<h3>Authorization (Role Check)</h3>
+<pre><code class="language-typescript">const { data: userProfile } = await supabase
+  .from(&#39;user_profiles&#39;)
+  .select(&#39;role_id&#39;)
+  .eq(&#39;user_id&#39;, user.id)
+  .single();
+
+const { data: allowedRoles } = await supabase
+  .from(&#39;roles&#39;)
+  .select(&#39;id&#39;)
+  .in(&#39;name&#39;, [&#39;admin&#39;, &#39;manager&#39;]);
+
+if (!allowedRoles?.map(r =&gt; r.id).includes(userProfile.role_id)) {
+  return new Response(
+    JSON.stringify({ error: &#39;Access denied&#39; }),
+    { status: 403, headers: corsHeaders }
+  );
+}
+</code></pre>
+<h3>Database Insert</h3>
+<pre><code class="language-typescript">const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .insert({ name, description, created_by: user.id })
+  .select();
+</code></pre>
+<h3>Database Query</h3>
+<pre><code class="language-typescript">const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .select(&#39;*&#39;)
+  .eq(&#39;id&#39;, productId)
+  .single();
+</code></pre>
+<h3>Database Update</h3>
+<pre><code class="language-typescript">const { data, error } = await supabase
+  .from(&#39;products&#39;)
+  .update({ name, description })
+  .eq(&#39;id&#39;, productId)
+  .select();
+</code></pre>
+<h3>Database Delete</h3>
+<pre><code class="language-typescript">const { error } = await supabase
+  .from(&#39;products&#39;)
+  .delete()
+  .eq(&#39;id&#39;, productId);
+</code></pre>
+<h3>Pagination</h3>
+<pre><code class="language-typescript">const limit = parseInt(url.searchParams.get(&#39;limit&#39;) || &#39;50&#39;);
+const offset = parseInt(url.searchParams.get(&#39;offset&#39;) || &#39;0&#39;);
+
+const { data, count } = await supabase
+  .from(&#39;products&#39;)
+  .select(&#39;*&#39;, { count: &#39;exact&#39; })
+  .range(offset, offset + limit - 1);
+</code></pre>
+<hr>
+<h2>📋 CHECKLIST FOR EACH FUNCTION</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Create directory: <code>supabase/functions/function-name/</code></li>
+<li><input disabled="" type="checkbox"> Create <code>index.ts</code> file</li>
+<li><input disabled="" type="checkbox"> Import Supabase client and CORS headers</li>
+<li><input disabled="" type="checkbox"> Implement <code>Deno.serve()</code> handler</li>
+<li><input disabled="" type="checkbox"> Handle CORS preflight (OPTIONS)</li>
+<li><input disabled="" type="checkbox"> Parse request (URL, method, body)</li>
+<li><input disabled="" type="checkbox"> Authenticate user (JWT token)</li>
+<li><input disabled="" type="checkbox"> Authorize user (role check if needed)</li>
+<li><input disabled="" type="checkbox"> Route to handlers (POST/GET/PATCH/DELETE)</li>
+<li><input disabled="" type="checkbox"> Implement each handler</li>
+<li><input disabled="" type="checkbox"> Return standardized responses</li>
+<li><input disabled="" type="checkbox"> Handle errors gracefully</li>
+<li><input disabled="" type="checkbox"> Test with curl/Postman</li>
+<li><input disabled="" type="checkbox"> Deploy via GitHub Actions</li>
+<li><input disabled="" type="checkbox"> Update API documentation</li>
+</ul>
+<hr>
+<h2>🧪 TESTING LOCALLY</h2>
+<pre><code class="language-bash"># Start Supabase locally
+supabase start
+
+# Test function
+curl -X POST http://localhost:54321/functions/v1/products-api \
+  -H &quot;Authorization: Bearer YOUR_TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;name&quot;: &quot;Test Product&quot;, &quot;description&quot;: &quot;Test&quot;}&#39;
+</code></pre>
+<hr>
+<h2>🚀 DEPLOYMENT</h2>
+<p>Functions deploy automatically via GitHub Actions when you push to <code>supabase/functions/</code>.</p>
+<hr>
+<h2>📚 REFERENCE FUNCTIONS</h2>
+<p>Study these existing functions as templates:</p>
+<ol>
+<li><strong>CRUD Operations</strong>: <code>supabase/functions/crm-users-api/index.ts</code></li>
+<li><strong>Relationships</strong>: <code>supabase/functions/crm-contacts-api/index.ts</code></li>
+<li><strong>Data Extraction</strong>: <code>supabase/functions/extract-material-knowledge/index.ts</code></li>
+<li><strong>Vector Search</strong>: <code>supabase/functions/unified-material-search/index.ts</code></li>
+<li><strong>Shared Utilities</strong>: <code>supabase/functions/_shared/</code></li>
+</ol>
+<hr>
+<h2>🎯 IMPLEMENTATION ORDER</h2>
+<ol>
+<li><strong>Phase 2.2</strong>: <code>products-api</code> (simplest, CRUD only)</li>
+<li><strong>Phase 2.3</strong>: <code>product-relationships-api</code> (similar to products-api)</li>
+<li><strong>Phase 3.1</strong>: <code>product-builder</code> (more complex, data extraction)</li>
+<li><strong>Phase 3.2</strong>: <code>product-embeddings</code> (vector operations)</li>
+<li><strong>Phase 4.1</strong>: <code>products-search</code> (most complex, vector search)</li>
+<li><strong>Phase 5.1</strong>: Update <code>material-agent-orchestrator</code> (integration)</li>
+</ol>
+<hr>
+<h2>💡 TIPS</h2>
+<p>✅ Start simple - CRUD functions first<br>✅ Copy existing patterns - Don&#39;t reinvent<br>✅ Test locally - Use Supabase CLI<br>✅ Use TypeScript - Better type safety<br>✅ Handle errors - Return meaningful messages<br>✅ Log everything - For debugging<br>✅ Document APIs - Update <code>/docs/api-documentation.md</code>  </p>
+<hr>
+<p><strong>Ready to build! 🚀</strong></p>
+
+</div></body></html>
