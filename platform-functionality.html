@@ -24,8 +24,10 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>Platform Functionality Documentation</h1>
+<p><strong>Last Updated</strong>: 2025-10-16</p>
 <h2>🏗️ Material Kai Vision Platform Overview</h2>
 <p>The Material Kai Vision Platform is a comprehensive AI-powered material intelligence system that combines document processing, material recognition, 3D generation, and knowledge management into a unified platform.</p>
+<p><strong>Quality &amp; Validation Features</strong>: Quality scoring, embedding stability analysis, chunk relationships, retrieval quality measurement, and response quality validation.</p>
 <h2>🎯 Core Platform Features</h2>
 <h3>1. 🏠 Dashboard &amp; Navigation</h3>
 <h4>Main Dashboard (<code>/</code>)</h4>
@@ -231,6 +233,33 @@
 <li><strong>Classification</strong>: Material category and type identification</li>
 <li><strong>Confidence Scoring</strong>: AI prediction confidence levels</li>
 </ul>
+<h4>Color &amp; Style Analysis System</h4>
+<p>The platform includes advanced color and style analysis capabilities:</p>
+<p><strong>Color Analysis Engine</strong></p>
+<ul>
+<li><strong>Dominant Color Extraction</strong>: K-means clustering to identify 8 primary colors</li>
+<li><strong>Multi-Color Space Support</strong>: RGB, HSV, LAB, LCH color space analysis</li>
+<li><strong>Industry Standards</strong>: Pantone and RAL color code mapping</li>
+<li><strong>Color Harmony Analysis</strong>: Balance, contrast, and vibrancy metrics</li>
+<li><strong>Psychological Profiling</strong>: Emotion, mood, warmth, and trustworthiness analysis</li>
+<li><strong>Palette Recommendations</strong>: Complementary, analogous, and triadic palettes</li>
+</ul>
+<p><strong>Style Classification</strong></p>
+<ul>
+<li><strong>Design Style Detection</strong>: Minimalist, Traditional, Industrial, Rustic, Contemporary, Transitional</li>
+<li><strong>Aesthetic Properties</strong>: Warmth, saturation, brightness, edge sharpness, pattern complexity</li>
+<li><strong>Material Finish Detection</strong>: Metallic, glossy, matte, natural properties</li>
+<li><strong>Room Suitability Analysis</strong>: Compatibility with different room types</li>
+<li><strong>Trend Scoring</strong>: Design trend relevance and contemporary appeal</li>
+</ul>
+<p><strong>Vector Embeddings for Recognition</strong></p>
+<ul>
+<li><strong>CLIP Embeddings</strong>: Image-text understanding (512-1024D vectors)</li>
+<li><strong>Custom Material Embeddings</strong>: Material-specific feature vectors</li>
+<li><strong>Text Embeddings</strong>: Semantic understanding of descriptions (1536D vectors)</li>
+<li><strong>Unified Vector Search</strong>: Find similar materials by color, style, or semantic similarity</li>
+</ul>
+<p>📖 <strong>See <a href="./color-style-analysis-vector-recognition.md">Color &amp; Style Analysis Documentation</a> for detailed technical information.</strong></p>
 <h4>AI-Powered Features</h4>
 <ul>
 <li><strong>Visual Analysis</strong>: Computer vision for material identification</li>
@@ -575,6 +604,70 @@
 <li><strong>Lazy Loading</strong>: Component and data lazy loading</li>
 <li><strong>Bundle Splitting</strong>: Optimized JavaScript bundles</li>
 </ul>
+<h3>📊 Quality Scoring System</h3>
+<h4>Quality Scoring Algorithm</h4>
+<ul>
+<li><strong>5-Dimensional Scoring</strong>:<ul>
+<li>Semantic Completeness (28% weight): How well chunk captures document meaning</li>
+<li>Boundary Quality (30% weight): How well chunk boundaries are defined</li>
+<li>Context Preservation (15% weight): How well surrounding context is maintained</li>
+<li>Structural Integrity (20% weight): How well document structure is preserved</li>
+<li>Metadata Richness (7% weight): How complete metadata is</li>
+</ul>
+</li>
+<li><strong>Automatic Scoring</strong>: Applied to every chunk during PDF processing</li>
+<li><strong>Quality Metrics</strong>: Stored in database for analysis and monitoring</li>
+<li><strong>Admin Dashboard</strong>: Real-time visualization at <code>/admin/quality-stability-metrics</code></li>
+</ul>
+<h3>🔄 Embedding Stability Analysis</h3>
+<h4>Stability Metrics</h4>
+<ul>
+<li><strong>Stability Score</strong>: Consistency of embeddings across chunks</li>
+<li><strong>Variance Score</strong>: Embedding variance analysis</li>
+<li><strong>Consistency Score</strong>: Cross-chunk consistency measurement</li>
+<li><strong>Anomaly Detection</strong>: Identifies outlier embeddings for review</li>
+<li><strong>Automatic Analysis</strong>: Applied after quality scoring in PDF workflow</li>
+<li><strong>Admin Dashboard</strong>: Displayed in quality metrics dashboard</li>
+</ul>
+<h3>🔗 Chunk Relationship Graph</h3>
+<h4>Relationship Types</h4>
+<ul>
+<li><strong>Sequential</strong>: Chunk order relationships (confidence: 0.95)</li>
+<li><strong>Semantic</strong>: Content similarity relationships (Jaccard similarity &gt; 0.6)</li>
+<li><strong>Hierarchical</strong>: Section structure relationships (level-based)</li>
+<li><strong>Automatic Building</strong>: Built during PDF processing after quality scoring</li>
+<li><strong>Database Storage</strong>: Stored in <code>knowledge_relationships</code> table</li>
+<li><strong>Admin Dashboard</strong>: Displayed at <code>/admin/phase3-metrics</code></li>
+</ul>
+<h3>📈 Retrieval Quality Measurement</h3>
+<h4>Metrics Tracked</h4>
+<ul>
+<li><strong>Precision</strong>: Relevant chunks / retrieved chunks</li>
+<li><strong>Recall</strong>: Relevant chunks retrieved / total relevant chunks</li>
+<li><strong>Mean Reciprocal Rank (MRR)</strong>: Ranking quality measurement</li>
+<li><strong>Latency</strong>: Search response time tracking</li>
+<li><strong>Success Criteria</strong>: Precision &gt; 0.85, Recall &gt; 0.85, MRR &gt; 0.5, Latency &lt; 500ms</li>
+<li><strong>Status</strong>: ⏳ Integration in progress</li>
+<li><strong>Admin Dashboard</strong>: Will display in metrics panel</li>
+</ul>
+<h3>✅ Response Quality Validation</h3>
+<h4>Quality Metrics</h4>
+<ul>
+<li><strong>Coherence Score</strong> (25% weight): Response structure and flow quality</li>
+<li><strong>Hallucination Detection</strong> (35% weight): Factual accuracy vs source material</li>
+<li><strong>Source Attribution</strong> (20% weight): Citation completeness and accuracy</li>
+<li><strong>Factual Consistency</strong> (20% weight): Internal consistency checking</li>
+<li><strong>Quality Assessment Levels</strong>:<ul>
+<li>Excellent: &gt; 0.90</li>
+<li>Very Good: 0.80-0.90</li>
+<li>Good: 0.70-0.80</li>
+<li>Fair: 0.60-0.70</li>
+<li>Poor: &lt; 0.60</li>
+</ul>
+</li>
+<li><strong>Status</strong>: ⏳ Integration in progress</li>
+<li><strong>Admin Dashboard</strong>: Will display in metrics panel</li>
+</ul>
 <h3>Monitoring &amp; Analytics</h3>
 <ul>
 <li><strong>Health Checks</strong>: Service availability monitoring</li>
@@ -582,6 +675,128 @@
 <li><strong>Error Tracking</strong>: Comprehensive error logging</li>
 <li><strong>Usage Analytics</strong>: Feature adoption tracking</li>
 <li><strong>Resource Monitoring</strong>: System resource utilization</li>
+<li><strong>Quality Metrics</strong>: Phase 2-3 quality and validation metrics</li>
+<li><strong>Relationship Analytics</strong>: Chunk relationship statistics and trends</li>
+</ul>
+<h3>11. 🛍️ Products &amp; E-Commerce System</h3>
+<h4>Product Creation &amp; Management</h4>
+<ul>
+<li><strong>Product Extraction</strong>: Extract products from PDF chunks in knowledge base</li>
+<li><strong>Product Properties</strong>: Store material type, color, finish, durability, and custom properties</li>
+<li><strong>Product Metadata</strong>: Supplier, origin, price range, availability, certifications</li>
+<li><strong>Product Status</strong>: Draft, published, archived states</li>
+<li><strong>Product Embeddings</strong>: Vector embeddings for semantic search</li>
+<li><strong>Source Tracking</strong>: Link products to source PDF chunks and documents</li>
+<li><strong>Product Images</strong>: Store and manage product images with metadata</li>
+</ul>
+<h4>Product Creation Workflow</h4>
+<pre><code>1. User uploads PDF to Knowledge Base
+   ↓
+2. PDF is processed by MIVAA service
+   ↓
+3. Chunks are extracted and stored in document_chunks table
+   ↓
+4. Products are created FROM chunks (not mocked)
+   ↓
+5. Products linked to source chunks and documents
+   ↓
+6. Products appear in Products tab with real data
+   ↓
+7. Products available for shopping cart and moodboards
+</code></pre>
+<h4>Shopping Cart Management</h4>
+<ul>
+<li><strong>Cart Creation</strong>: Users can create shopping carts for product collections</li>
+<li><strong>Item Management</strong>: Add, remove, and update items in cart</li>
+<li><strong>Cart Status Tracking</strong>: Active, submitted, quoted, ordered states</li>
+<li><strong>Automatic Totals</strong>: Real-time calculation of cart totals and item counts</li>
+<li><strong>Cart Persistence</strong>: Carts saved to database with user association</li>
+<li><strong>Product Linking</strong>: Cart items linked to actual products with real data</li>
+</ul>
+<h4>Quote Request System</h4>
+<ul>
+<li><strong>Quote Submission</strong>: Users submit carts as quote requests</li>
+<li><strong>Admin Review</strong>: Admins review and manage pending quote requests</li>
+<li><strong>Status Tracking</strong>: Pending → Updated → Approved/Rejected workflow</li>
+<li><strong>Item Tracking</strong>: Automatic count and total estimation</li>
+<li><strong>Notes &amp; Comments</strong>: Support for special requests and notes</li>
+<li><strong>Product Details</strong>: Quote requests include full product information</li>
+</ul>
+<h4>Proposal Management</h4>
+<ul>
+<li><strong>Proposal Creation</strong>: Admins create proposals from quote requests</li>
+<li><strong>Pricing Control</strong>: Admins set subtotal, tax, and discount</li>
+<li><strong>Automatic Calculations</strong>: Total calculated automatically</li>
+<li><strong>Proposal Status</strong>: Draft → Sent → Accepted/Rejected workflow</li>
+<li><strong>User Acceptance</strong>: Users can accept proposals to proceed to order</li>
+<li><strong>Product Pricing</strong>: Final pricing for each product in proposal</li>
+</ul>
+<h4>Moodboard Integration</h4>
+<ul>
+<li><strong>Product Collections</strong>: Add products to moodboards</li>
+<li><strong>Position Tracking</strong>: Store product positions within moodboard</li>
+<li><strong>Quote from Moodboard</strong>: Users can request quotes for entire moodboards</li>
+<li><strong>Product Management</strong>: Add/remove products from moodboards</li>
+<li><strong>Moodboard Creator</strong>: Track who created each moodboard</li>
+</ul>
+<h4>Commission System</h4>
+<ul>
+<li><strong>Moodboard Creator Commissions</strong>: Track commissions for moodboard creators</li>
+<li><strong>Commission Percentage</strong>: Configurable commission rates (default 10%)</li>
+<li><strong>Commission Tracking</strong>: Pending → Approved → Paid workflow</li>
+<li><strong>Commission Dashboard</strong>: View and manage all commissions</li>
+<li><strong>Commission Calculations</strong>: Automatic calculation based on proposal totals</li>
+<li><strong>Creator Earnings</strong>: Track total earnings per moodboard creator</li>
+</ul>
+<h4>Edge Functions</h4>
+<ul>
+<li><strong>shopping-cart-api</strong>: Cart CRUD operations</li>
+<li><strong>quote-request-api</strong>: Quote request management</li>
+<li><strong>proposals-api</strong>: Proposal creation and management</li>
+<li><strong>moodboard-products-api</strong>: Moodboard product operations</li>
+<li><strong>moodboard-quote-api</strong>: Moodboard quote requests and commissions</li>
+</ul>
+<h4>Frontend Services</h4>
+<ul>
+<li><strong>ShoppingCartService</strong>: Cart operations and calculations</li>
+<li><strong>QuoteRequestService</strong>: Quote request management</li>
+<li><strong>ProposalsService</strong>: Proposal operations</li>
+<li><strong>MoodboardProductsService</strong>: Moodboard product management</li>
+<li><strong>CommissionService</strong>: Commission tracking and calculations</li>
+</ul>
+<h4>React Components</h4>
+<ul>
+<li><strong>ShoppingCart</strong>: Display and manage cart items</li>
+<li><strong>QuoteRequestForm</strong>: Submit quote requests</li>
+<li><strong>QuoteStatusTracker</strong>: Track quote and proposal status</li>
+<li><strong>QuoteRequestsPanel</strong>: Admin panel for managing requests</li>
+<li><strong>ProposalEditor</strong>: Create and edit proposals</li>
+<li><strong>CommissionTracker</strong>: View and manage commissions</li>
+<li><strong>MoodboardProductSelector</strong>: Add/remove products from moodboards</li>
+</ul>
+<h4>Database Tables</h4>
+<ul>
+<li><strong>products</strong>: Product records with properties, metadata, embeddings</li>
+<li><strong>product_images</strong>: Product images with metadata and relationships</li>
+<li><strong>shopping_carts</strong>: User shopping carts</li>
+<li><strong>cart_items</strong>: Items in shopping carts with product references</li>
+<li><strong>quote_requests</strong>: Quote requests from users</li>
+<li><strong>proposals</strong>: Proposals created by admins</li>
+<li><strong>moodboard_products</strong>: Products linked to moodboards</li>
+<li><strong>moodboard_quote_requests</strong>: Commission tracking for moodboard quotes</li>
+</ul>
+<h4>Testing &amp; Validation</h4>
+<ul>
+<li><strong>test-products-complete-flow.js</strong>: Product creation and search tests</li>
+<li><strong>test-products-system-complete.js</strong>: End-to-end cart → quote → proposal → commission tests</li>
+<li><strong>test-products-from-knowledge-base.js</strong>: Extract products from real PDF chunks<ul>
+<li>Fetches actual chunks from document_chunks table</li>
+<li>Extracts product information from chunk content</li>
+<li>Creates products with real data (not mocked)</li>
+<li>Uses <code>created_from_type: &#39;pdf_processing&#39;</code> for real source tracking</li>
+<li>Displays all product details with source information</li>
+</ul>
+</li>
 </ul>
 <h2>🔗 Related Documentation</h2>
 <ul>

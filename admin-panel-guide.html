@@ -527,6 +527,110 @@ FOR ALL USING (
 <li>Package is automatically installed from requirements.txt during deployment</li>
 <li>Headless version prevents GUI dependency issues on servers</li>
 </ul>
+<h2>📊 Quality &amp; Validation Metrics Dashboard</h2>
+<p><strong>Access</strong>: <code>/admin/quality-stability-metrics</code> and <code>/admin/phase3-metrics</code></p>
+<p><strong>Purpose</strong>: Monitor document quality, embedding stability, chunk relationships, retrieval effectiveness, and response quality</p>
+<h3>Quality Scoring Dashboard</h3>
+<p><strong>Displays</strong>:</p>
+<ul>
+<li>Average quality score across all documents</li>
+<li>Quality breakdown by dimension:<ul>
+<li>Semantic Completeness</li>
+<li>Boundary Quality</li>
+<li>Context Preservation</li>
+<li>Structural Integrity</li>
+<li>Metadata Richness</li>
+</ul>
+</li>
+<li>Quality distribution histogram</li>
+<li>Trend analysis over time</li>
+</ul>
+<p><strong>Metrics Explained</strong>:</p>
+<ul>
+<li><strong>Semantic Completeness (28%)</strong>: How well each chunk captures the document&#39;s meaning</li>
+<li><strong>Boundary Quality (30%)</strong>: How well chunk boundaries are defined</li>
+<li><strong>Context Preservation (15%)</strong>: How well surrounding context is maintained</li>
+<li><strong>Structural Integrity (20%)</strong>: How well document structure is preserved</li>
+<li><strong>Metadata Richness (7%)</strong>: How complete metadata is</li>
+</ul>
+<h3>Embedding Stability Dashboard</h3>
+<p><strong>Displays</strong>:</p>
+<ul>
+<li>Stability score (0-1 scale)</li>
+<li>Variance score analysis</li>
+<li>Consistency score measurement</li>
+<li>Anomalies detected and flagged</li>
+<li>Anomaly details with severity scores</li>
+</ul>
+<p><strong>Metrics Explained</strong>:</p>
+<ul>
+<li><strong>Stability Score</strong>: Consistency of embeddings across chunks</li>
+<li><strong>Variance Score</strong>: Variance in embedding values</li>
+<li><strong>Consistency Score</strong>: Cross-chunk consistency</li>
+<li><strong>Anomaly Detection</strong>: Identifies outlier embeddings</li>
+</ul>
+<h3>Chunk Relationships Dashboard</h3>
+<p><strong>Displays</strong>:</p>
+<ul>
+<li>Total relationships built</li>
+<li>Breakdown by relationship type:<ul>
+<li>Sequential relationships (chunk order)</li>
+<li>Semantic relationships (content similarity)</li>
+<li>Hierarchical relationships (section structure)</li>
+</ul>
+</li>
+<li>Average confidence score</li>
+<li>Relationship statistics and trends</li>
+</ul>
+<p><strong>Metrics Explained</strong>:</p>
+<ul>
+<li><strong>Sequential</strong>: Chunk order relationships (confidence: 0.95)</li>
+<li><strong>Semantic</strong>: Content similarity (Jaccard similarity &gt; 0.6)</li>
+<li><strong>Hierarchical</strong>: Section structure (level-based)</li>
+</ul>
+<h3>Retrieval Quality Dashboard</h3>
+<p><strong>Displays</strong>:</p>
+<ul>
+<li>Precision: Relevant chunks / retrieved chunks</li>
+<li>Recall: Relevant chunks retrieved / total relevant</li>
+<li>Mean Reciprocal Rank (MRR): Ranking quality</li>
+<li>Latency: Search response time</li>
+</ul>
+<p><strong>Success Criteria</strong>:</p>
+<ul>
+<li>Precision &gt; 0.85 ✅</li>
+<li>Recall &gt; 0.85 ✅</li>
+<li>MRR &gt; 0.5 ✅</li>
+<li>Latency &lt; 500ms ✅</li>
+</ul>
+<h3>Response Quality Dashboard</h3>
+<p><strong>Displays</strong>:</p>
+<ul>
+<li>Coherence Score: Response structure and flow</li>
+<li>Hallucination Score: Factual accuracy vs sources</li>
+<li>Source Attribution: Citation completeness</li>
+<li>Factual Consistency: Internal consistency</li>
+</ul>
+<p><strong>Quality Levels</strong>:</p>
+<ul>
+<li>Excellent: &gt; 0.90</li>
+<li>Very Good: 0.80-0.90</li>
+<li>Good: 0.70-0.80</li>
+<li>Fair: 0.60-0.70</li>
+<li>Poor: &lt; 0.60</li>
+</ul>
+<h3>Overall Platform Health Score</h3>
+<p><strong>Calculation</strong>:</p>
+<pre><code>Health = (Quality × 0.25) + (Stability × 0.15) + (Relationships × 0.2) + (Retrieval × 0.2) + (Response × 0.2)
+</code></pre>
+<p><strong>Interpretation</strong>:</p>
+<ul>
+<li>90-100: Excellent</li>
+<li>80-89: Very Good</li>
+<li>70-79: Good</li>
+<li>60-69: Fair</li>
+<li>&lt; 60: Needs Attention</li>
+</ul>
 <h2>📋 Admin Best Practices</h2>
 <h3>Security Best Practices</h3>
 <ol>
@@ -544,11 +648,20 @@ FOR ALL USING (
 <li><strong>Resource Management</strong>: Efficiently manage resources</li>
 <li><strong>Quality Assurance</strong>: Maintain high quality standards</li>
 </ol>
+<h3>Quality Metrics Best Practices</h3>
+<ol>
+<li><strong>Monitor Chunk Relationships</strong>: Ensure relationships are building correctly</li>
+<li><strong>Track Retrieval Quality</strong>: Monitor search effectiveness</li>
+<li><strong>Validate Response Quality</strong>: Ensure LLM outputs are accurate</li>
+<li><strong>Review Health Score</strong>: Check overall platform health regularly</li>
+<li><strong>Investigate Anomalies</strong>: Address any quality drops immediately</li>
+</ol>
 <h2>🔗 Related Documentation</h2>
 <ul>
 <li><a href="./platform-functionality.md">Platform Functionality</a></li>
 <li><a href="./security-authentication.md">Security &amp; Authentication</a></li>
 <li><a href="./api-documentation.md">API Documentation</a></li>
+<li><a href="./platform-flows.md">Platform Flows</a></li>
 <li><a href="./troubleshooting.md">Troubleshooting Guide</a></li>
 </ul>
 
