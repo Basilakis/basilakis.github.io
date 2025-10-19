@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Agent System Documentation</h1>
+<p><strong>Last Updated</strong>: 2025-01-04
+<strong>Version</strong>: 1.0.0
+<strong>Status</strong>: ✅ Production Ready</p>
+<h2>📋 Overview</h2>
+<p>The Material Kai Vision Platform includes a comprehensive agent system powered by PraisonAI with role-based access control (RBAC). The system provides specialized agents for different user roles with support for file uploads, chat history, and multi-modal processing.</p>
+<h2>🎯 Core Features</h2>
+<h3>1. <strong>Role-Based Access Control (RBAC)</strong></h3>
+<ul>
+<li>Three-tier role hierarchy: Owner &gt; Admin &gt; Member</li>
+<li>Agent-level access policies</li>
+<li>Tool-level access policies</li>
+<li>Rate limiting and execution logging</li>
+</ul>
+<h3>2. <strong>Two Specialized Agents</strong></h3>
+<h4>Research Agent (Admin Only)</h4>
+<ul>
+<li><strong>Access</strong>: Admins and Owners only</li>
+<li><strong>Capabilities</strong>:<ul>
+<li>Web search and information retrieval</li>
+<li>Code analysis and review</li>
+<li>Data extraction and processing</li>
+<li>Deep research with source tracking</li>
+<li>Confidence scoring for results</li>
+</ul>
+</li>
+<li><strong>Tools</strong>: web-search, code-analysis, data-extraction</li>
+</ul>
+<h4>MIVAA Search Agent (All Users)</h4>
+<ul>
+<li><strong>Access</strong>: All authenticated users (admin, member, owner)</li>
+<li><strong>Capabilities</strong>:<ul>
+<li>Semantic search on material database</li>
+<li>Vector search using embeddings</li>
+<li>Hybrid search combining multiple methods</li>
+<li>Material retrieval with relevance scoring</li>
+<li>Property analysis and recommendations</li>
+</ul>
+</li>
+<li><strong>Tools</strong>: mivaa-search, material-retrieval, vector-search</li>
+</ul>
+<h3>3. <strong>File Upload &amp; Attachment Support</strong></h3>
+<ul>
+<li>Upload files for agent processing</li>
+<li>Support for PDFs, images, documents</li>
+<li>Secure storage with user isolation</li>
+<li>File metadata tracking</li>
+<li>Attachment integration with conversations</li>
+</ul>
+<h3>4. <strong>Chat History &amp; Conversations</strong></h3>
+<ul>
+<li>User-specific conversation storage</li>
+<li>Message history with timestamps</li>
+<li>Conversation archiving and deletion</li>
+<li>Attachment tracking in messages</li>
+<li>Privacy controls via Row Level Security</li>
+</ul>
+<h2>🔐 Security &amp; Privacy</h2>
+<h3>Authentication</h3>
+<ul>
+<li>JWT-based authentication via Supabase</li>
+<li>User session management</li>
+<li>Automatic token refresh</li>
+</ul>
+<h3>Authorization</h3>
+<ul>
+<li>Role-based access control</li>
+<li>User-specific data isolation</li>
+<li>Row Level Security (RLS) policies</li>
+<li>Tool-level permission enforcement</li>
+</ul>
+<h3>Data Privacy</h3>
+<ul>
+<li>Users can only access their own conversations</li>
+<li>Users can only view their own uploaded files</li>
+<li>Conversations are not visible to other users</li>
+<li>Automatic cleanup on user deletion</li>
+</ul>
+<h2>📡 API Endpoints</h2>
+<h3>Agent Management</h3>
+<pre><code>GET    /api/agents                    - List accessible agents
+GET    /api/agents/{agentId}          - Get agent details
+POST   /api/agents/{agentId}/execute  - Execute agent
+GET    /api/agents/tools/available    - List accessible tools
+GET    /api/agents/execution-history  - View history (admin only)
+</code></pre>
+<h3>File Upload</h3>
+<pre><code>POST   /api/agents/files/upload       - Upload a file
+GET    /api/agents/{agentId}/files    - Get uploaded files
+DELETE /api/agents/files/{fileId}     - Delete a file
+</code></pre>
+<h3>Chat History</h3>
+<pre><code>POST   /api/agents/chat/conversations           - Create conversation
+GET    /api/agents/chat/conversations           - Get user&#39;s conversations
+GET    /api/agents/chat/conversations/{id}      - Get conversation details
+POST   /api/agents/chat/messages                - Save message
+PUT    /api/agents/chat/conversations/{id}      - Update conversation
+DELETE /api/agents/chat/conversations/{id}      - Delete conversation
+</code></pre>
+<h2>💻 Usage Examples</h2>
+<h3>Execute MIVAA Search Agent</h3>
+<pre><code class="language-typescript">import { agentManager } from &#39;@/services/agents&#39;;
+
+const response = await agentManager.executeAgent({
+  agentId: &#39;mivaa-search-agent&#39;,
+  userId: &#39;user123&#39;,
+  userRole: &#39;member&#39;,
+  parameters: {
+    query: &#39;high thermal conductivity materials&#39;,
+    searchType: &#39;semantic&#39;,
+    limit: 10
+  },
+  attachments: [
+    {
+      id: &#39;file-123&#39;,
+      name: &#39;material-spec.pdf&#39;,
+      url: &#39;https://...&#39;,
+      type: &#39;application/pdf&#39;,
+      size: 1024000
+    }
+  ]
+});
+</code></pre>
+<h3>Create Chat Conversation</h3>
+<pre><code class="language-typescript">import { agentChatHistoryService } from &#39;@/services/agents&#39;;
+
+const conversation = await agentChatHistoryService.createConversation({
+  userId: &#39;user123&#39;,
+  agentId: &#39;mivaa-search-agent&#39;,
+  title: &#39;Material Analysis Session&#39;,
+  description: &#39;Analyzing ceramic materials&#39;
+});
+</code></pre>
+<h3>Upload File</h3>
+<pre><code class="language-typescript">import { agentFileUploadService } from &#39;@/services/agents&#39;;
+
+const result = await agentFileUploadService.uploadFile(file, {
+  userId: &#39;user123&#39;,
+  agentId: &#39;mivaa-search-agent&#39;
+});
+</code></pre>
+<h3>Save Chat Message</h3>
+<pre><code class="language-typescript">const message = await agentChatHistoryService.saveMessage({
+  conversationId: &#39;conv-123&#39;,
+  role: &#39;user&#39;,
+  content: &#39;Find materials with high strength&#39;,
+  attachmentIds: [&#39;file-123&#39;],
+  metadata: { source: &#39;web-ui&#39; }
+});
+</code></pre>
+<h2>🏗️ Architecture</h2>
+<pre><code>┌─────────────────────────────────────┐
+│      Frontend Components             │
+│  (Agent UI, Chat Interface)          │
+└────────────────┬────────────────────┘
+                 │
+┌────────────────▼────────────────────┐
+│      REST API Endpoints              │
+│  (src/api/agents.ts)                │
+└────────────────┬────────────────────┘
+                 │
+┌────────────────▼────────────────────┐
+│      Agent Services                  │
+│  (Manager, File Upload, Chat)        │
+└────────────────┬────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+┌───────▼────────┐  ┌────▼──────────┐
+│ Research Agent │  │ MIVAA Search  │
+│  (Admin Only)  │  │  Agent (All)  │
+└────────────────┘  └───────────────┘
+        │                 │
+└───────┬─────────────────┘
+        │
+┌───────▼──────────────────────────────┐
+│  Access Control &amp; Tool Management    │
+│  (RBAC + Tool Access + Rate Limit)   │
+└──────────────────────────────────────┘
+        │
+┌───────▼──────────────────────────────┐
+│      Supabase Backend                │
+│  (Database, Storage, Auth)           │
+└──────────────────────────────────────┘
+</code></pre>
+<h2>📊 Database Schema</h2>
+<h3>agent_chat_conversations</h3>
+<ul>
+<li><code>id</code> - Unique conversation ID</li>
+<li><code>user_id</code> - Owner of conversation</li>
+<li><code>agent_id</code> - Associated agent</li>
+<li><code>title</code> - Conversation title</li>
+<li><code>message_count</code> - Number of messages</li>
+<li><code>is_archived</code> - Archive status</li>
+<li><code>created_at</code>, <code>updated_at</code> - Timestamps</li>
+</ul>
+<h3>agent_chat_messages</h3>
+<ul>
+<li><code>id</code> - Unique message ID</li>
+<li><code>conversation_id</code> - Parent conversation</li>
+<li><code>role</code> - Message role (user/assistant/system)</li>
+<li><code>content</code> - Message content</li>
+<li><code>attachment_ids</code> - Attached files</li>
+<li><code>metadata</code> - Additional data</li>
+<li><code>created_at</code> - Timestamp</li>
+</ul>
+<h3>agent_uploaded_files</h3>
+<ul>
+<li><code>id</code> - Unique file ID</li>
+<li><code>user_id</code> - File owner</li>
+<li><code>agent_id</code> - Associated agent</li>
+<li><code>file_name</code> - Original filename</li>
+<li><code>file_type</code> - MIME type</li>
+<li><code>storage_path</code> - Storage location</li>
+<li><code>public_url</code> - Public access URL</li>
+<li><code>created_at</code> - Upload timestamp</li>
+</ul>
+<h2>🔧 Configuration</h2>
+<h3>Adding New Agents</h3>
+<pre><code class="language-typescript">agentAccessControl.registerAgentPolicy({
+  agentId: &#39;custom-agent&#39;,
+  agentName: &#39;Custom Agent&#39;,
+  description: &#39;My custom agent&#39;,
+  allowedRoles: [&#39;admin&#39;],
+  toolAccess: [...]
+});
+</code></pre>
+<h3>Adding New Tools</h3>
+<pre><code class="language-typescript">toolAccessControl.registerTool({
+  id: &#39;custom-tool&#39;,
+  name: &#39;Custom Tool&#39;,
+  description: &#39;A custom tool&#39;,
+  category: &#39;utility&#39;,
+  allowedRoles: [&#39;admin&#39;, &#39;member&#39;],
+  riskLevel: &#39;low&#39;,
+  rateLimitPerMinute: 30
+});
+</code></pre>
+<h2>🧪 Testing</h2>
+<pre><code class="language-bash"># Run agent system tests
+npm test -- agentSystem.test.ts
+
+# Run specific test
+npm test -- agentSystem.test.ts -t &quot;should allow admin to access research agent&quot;
+</code></pre>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><strong><a href="./services/agents/INTEGRATION_GUIDE.md">Integration Guide</a></strong> - Complete integration guide</li>
+<li><strong><a href="./QUICK_START_AGENTS.md">Quick Start</a></strong> - 5-minute setup guide</li>
+<li><strong><a href="./api-documentation.md">API Documentation</a></strong> - Full API reference</li>
+<li><strong><a href="./security-authentication.md">Security &amp; Authentication</a></strong> - Security details</li>
+</ul>
+<h2>🚀 Deployment</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Supabase project with PostgreSQL</li>
+<li>Node.js 18+</li>
+<li>PraisonAI package installed</li>
+</ul>
+<h3>Setup Steps</h3>
+<ol>
+<li>Run database migrations</li>
+<li>Configure environment variables</li>
+<li>Mount API routes in Express app</li>
+<li>Initialize agent manager on startup</li>
+<li>Deploy to production</li>
+</ol>
+<h2>📞 Support &amp; Troubleshooting</h2>
+<h3>Common Issues</h3>
+<p><strong>Access Denied Error</strong></p>
+<ul>
+<li>Check user role matches agent requirements</li>
+<li>Verify role-based access control policies</li>
+</ul>
+<p><strong>File Upload Failed</strong></p>
+<ul>
+<li>Check file size (max 50MB)</li>
+<li>Verify file type is allowed</li>
+<li>Ensure storage bucket exists</li>
+</ul>
+<p><strong>Conversation Not Found</strong></p>
+<ul>
+<li>Verify conversation belongs to user</li>
+<li>Check conversation ID is correct</li>
+<li>Ensure user is authenticated</li>
+</ul>
+<h2>🔄 Version History</h2>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Changes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.0.0</td>
+<td>2025-01-04</td>
+<td>Initial release with file upload and chat history</td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>Status</strong>: ✅ Production Ready
+<strong>Last Updated</strong>: 2025-01-04
+<strong>Maintained By</strong>: Development Team</p>
+
+</div></body></html>
