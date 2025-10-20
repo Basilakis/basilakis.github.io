@@ -24,15 +24,173 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>API Documentation</h1>
+<p><strong>Last Updated</strong>: 2025-10-16
+<strong>Phase Status</strong>: Phase 2 ✅ Complete, Phase 3 ⏳ Partial (Chunk Relationships Integrated)</p>
 <h2>🌐 API Architecture Overview</h2>
 <p>The Material Kai Vision Platform uses a multi-layered API architecture:</p>
 <ol>
 <li><strong>Frontend API Layer</strong> - React application API calls</li>
 <li><strong>Backend API Gateway</strong> - Node.js/TypeScript API routing</li>
 <li><strong>MIVAA Microservice</strong> - Python FastAPI service</li>
-<li><strong>Supabase Edge Functions</strong> - Serverless functions</li>
+<li><strong>Supabase Edge Functions</strong> - Serverless functions (including Phase 2-3 quality &amp; validation)</li>
 <li><strong>External API Integrations</strong> - Third-party services</li>
 </ol>
+<h2>📊 Quality &amp; Validation APIs</h2>
+<h3>Quality Scoring Endpoint</h3>
+<h4>Apply Quality Scoring</h4>
+<pre><code class="language-http">POST /functions/v1/apply-quality-scoring
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;document_id&quot;: &quot;doc-123&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;document_id&quot;: &quot;doc-123&quot;,
+  &quot;total_chunks&quot;: 45,
+  &quot;chunks_scored&quot;: 45,
+  &quot;average_quality_score&quot;: 38.7,
+  &quot;quality_breakdown&quot;: {
+    &quot;semantic_completeness&quot;: 42.3,
+    &quot;boundary_quality&quot;: 35.8,
+    &quot;context_preservation&quot;: 38.1,
+    &quot;structural_integrity&quot;: 40.2,
+    &quot;metadata_richness&quot;: 28.5
+  },
+  &quot;timestamp&quot;: &quot;2025-10-16T10:30:00Z&quot;
+}
+</code></pre>
+<p><strong>Purpose</strong>: Scores all chunks in a document using 5-dimensional quality algorithm</p>
+<h3>Embedding Stability Endpoint</h3>
+<h4>Analyze Embedding Stability</h4>
+<pre><code class="language-http">POST /functions/v1/analyze-embedding-stability
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;document_id&quot;: &quot;doc-123&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;document_id&quot;: &quot;doc-123&quot;,
+  &quot;stability_score&quot;: 0.87,
+  &quot;variance_score&quot;: 0.12,
+  &quot;consistency_score&quot;: 0.91,
+  &quot;anomalies_detected&quot;: 2,
+  &quot;anomaly_details&quot;: [
+    {
+      &quot;chunk_id&quot;: &quot;chunk-5&quot;,
+      &quot;anomaly_score&quot;: 0.78,
+      &quot;reason&quot;: &quot;High variance in embedding&quot;
+    }
+  ],
+  &quot;timestamp&quot;: &quot;2025-10-16T10:30:00Z&quot;
+}
+</code></pre>
+<p><strong>Purpose</strong>: Analyzes embedding stability and detects anomalies</p>
+<h3>Chunk Relationships Endpoint</h3>
+<h4>Build Chunk Relationships</h4>
+<pre><code class="language-http">POST /functions/v1/build-chunk-relationships
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;document_id&quot;: &quot;doc-123&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;document_id&quot;: &quot;doc-123&quot;,
+  &quot;total_relationships&quot;: 156,
+  &quot;sequential_relationships&quot;: 44,
+  &quot;semantic_relationships&quot;: 89,
+  &quot;hierarchical_relationships&quot;: 23,
+  &quot;average_confidence&quot;: 0.82,
+  &quot;timestamp&quot;: &quot;2025-10-16T10:30:00Z&quot;
+}
+</code></pre>
+<p><strong>Purpose</strong>: Builds semantic, sequential, and hierarchical relationships between chunks</p>
+<h3>Retrieval Quality Metrics Endpoint</h3>
+<h4>Measure Retrieval Quality</h4>
+<pre><code class="language-http">POST /functions/v1/rag-knowledge-search
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;fire resistant materials&quot;,
+  &quot;include_context&quot;: true,
+  &quot;measure_quality&quot;: true
+}
+</code></pre>
+<p><strong>Response</strong> (includes quality metrics):</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;results&quot;: [
+    {
+      &quot;id&quot;: &quot;chunk-123&quot;,
+      &quot;content&quot;: &quot;...&quot;,
+      &quot;similarity_score&quot;: 0.92
+    }
+  ],
+  &quot;quality_metrics&quot;: {
+    &quot;precision&quot;: 0.88,
+    &quot;recall&quot;: 0.85,
+    &quot;mrr&quot;: 0.95,
+    &quot;latency_ms&quot;: 245
+  },
+  &quot;context&quot;: &quot;...&quot;,
+  &quot;response_quality&quot;: {
+    &quot;coherence_score&quot;: 0.92,
+    &quot;hallucination_score&quot;: 0.05,
+    &quot;source_attribution_score&quot;: 0.88,
+    &quot;factual_consistency_score&quot;: 0.90,
+    &quot;overall_quality_score&quot;: 0.88,
+    &quot;quality_assessment&quot;: &quot;Excellent&quot;
+  }
+}
+</code></pre>
+<p><strong>Purpose</strong>: Measures retrieval quality (precision, recall, MRR) and response quality (coherence, hallucination detection, attribution)</p>
+<p><strong>Quality Metrics Stored In</strong>:</p>
+<ul>
+<li><code>retrieval_quality_metrics</code> table - Stores precision, recall, MRR, latency</li>
+<li><code>response_quality_metrics</code> table - Stores coherence, hallucination, attribution, consistency scores</li>
+</ul>
+<h3>Response Quality Metrics Endpoint</h3>
+<h4>Measure Response Quality</h4>
+<pre><code class="language-http">POST /functions/v1/rag-knowledge-search
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;material properties&quot;,
+  &quot;include_context&quot;: true
+}
+</code></pre>
+<p><strong>Response Quality Metrics</strong>:</p>
+<pre><code class="language-json">{
+  &quot;response_quality&quot;: {
+    &quot;response_id&quot;: &quot;resp-123&quot;,
+    &quot;query&quot;: &quot;material properties&quot;,
+    &quot;coherence_score&quot;: 0.92,
+    &quot;hallucination_score&quot;: 0.05,
+    &quot;source_attribution_score&quot;: 0.88,
+    &quot;factual_consistency_score&quot;: 0.90,
+    &quot;overall_quality_score&quot;: 0.88,
+    &quot;quality_assessment&quot;: &quot;Excellent&quot;,
+    &quot;issues_detected&quot;: []
+  }
+}
+</code></pre>
+<p><strong>Quality Assessment Levels</strong>:</p>
+<ul>
+<li><strong>Excellent</strong>: overall_quality_score &gt;= 0.85</li>
+<li><strong>Good</strong>: overall_quality_score &gt;= 0.70</li>
+<li><strong>Poor</strong>: overall_quality_score &lt; 0.70</li>
+</ul>
+<p><strong>Purpose</strong>: Validates LLM response quality and detects hallucinations</p>
 <h2>🔗 Internal API Endpoints</h2>
 <h3>Health Check Endpoints</h3>
 <h4>Frontend Health Check</h4>
@@ -96,6 +254,182 @@ options: {
   &quot;extractImages&quot;: true
 }
 </code></pre>
+<h4>Additional Document Processing Endpoints</h4>
+<p><strong>Process Document from URL</strong>:</p>
+<pre><code class="language-http">POST /api/documents/process-url
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Analyze Document</strong>:</p>
+<pre><code class="language-http">POST /api/documents/analyze
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Batch Process Documents</strong>:</p>
+<pre><code class="language-http">POST /api/documents/batch-process-fixed
+Content-Type: application/json
+</code></pre>
+<p><strong>List Documents</strong>:</p>
+<pre><code class="language-http">GET /api/documents/documents
+</code></pre>
+<p><strong>Document Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/documents/health
+</code></pre>
+<h3>PDF Processing Endpoints</h3>
+<p><strong>Extract Markdown from PDF</strong>:</p>
+<pre><code class="language-http">POST /api/pdf/extract/markdown
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Extract Tables from PDF</strong>:</p>
+<pre><code class="language-http">POST /api/pdf/extract/tables
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Extract Images from PDF</strong>:</p>
+<pre><code class="language-http">POST /api/pdf/extract/images
+Content-Type: multipart/form-data
+</code></pre>
+<h3>Image Analysis Endpoints</h3>
+<p><strong>Analyze Image</strong>:</p>
+<pre><code class="language-http">POST /api/images/analyze
+Content-Type: application/json
+</code></pre>
+<p><strong>Batch Analyze Images</strong>:</p>
+<pre><code class="language-http">POST /api/images/analyze/batch
+Content-Type: application/json
+</code></pre>
+<p><strong>Search Images</strong>:</p>
+<pre><code class="language-http">POST /api/images/search
+Content-Type: application/json
+</code></pre>
+<p><strong>Upload and Analyze Image</strong>:</p>
+<pre><code class="language-http">POST /api/images/upload-and-analyze
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Image Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/images/health
+</code></pre>
+<h3>Material Analysis Endpoints</h3>
+<p><strong>Analyze Material Image</strong>:</p>
+<pre><code class="language-http">POST /api/analyze/materials/image
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Visual Material Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/materials/visual
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Generate Material Embeddings</strong>:</p>
+<pre><code class="language-http">POST /api/embeddings/materials/generate
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Material Search Health</strong>:</p>
+<pre><code class="language-http">GET /api/search/materials/health
+Authorization: Bearer {token}
+</code></pre>
+<h3>Search Endpoints</h3>
+<p><strong>Semantic Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/semantic
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Similarity Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/similarity
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Multimodal Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/multimodal
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Image Search</strong>:</p>
+<pre><code class="language-http">POST /api/search/images
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Search Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/search/health
+Authorization: Bearer {token}
+</code></pre>
+<h3>RAG System Endpoints</h3>
+<p><strong>RAG Query</strong>:</p>
+<pre><code class="language-http">POST /api/rag/query
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>RAG Search</strong>:</p>
+<pre><code class="language-http">POST /api/rag/search
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>RAG Chat</strong>:</p>
+<pre><code class="language-http">POST /api/rag/chat
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Upload RAG Document</strong>:</p>
+<pre><code class="language-http">POST /api/rag/documents/upload
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>List RAG Documents</strong>:</p>
+<pre><code class="language-http">GET /api/rag/documents
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>RAG Service Health</strong>:</p>
+<pre><code class="language-http">GET /api/rag/health
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>RAG Statistics</strong>:</p>
+<pre><code class="language-http">GET /api/rag/stats
+Authorization: Bearer {token}
+</code></pre>
+<h3>AI Analysis Endpoints</h3>
+<p><strong>Semantic Analysis</strong>:</p>
+<pre><code class="language-http">POST /api/semantic-analysis
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Multimodal Analysis</strong>:</p>
+<pre><code class="language-http">POST /api/analyze/multimodal
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Multimodal Query</strong>:</p>
+<pre><code class="language-http">POST /api/query/multimodal
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<h3>Data Management Endpoints</h3>
+<p><strong>Export Data</strong>:</p>
+<pre><code class="language-http">GET /api/data/export
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Backup Data</strong>:</p>
+<pre><code class="language-http">POST /api/data/backup
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Cleanup Data</strong>:</p>
+<pre><code class="language-http">DELETE /api/data/cleanup
+Authorization: Bearer {token}
+</code></pre>
+<h3>System Endpoints</h3>
+<p><strong>List Models</strong>:</p>
+<pre><code class="language-http">GET /api/models
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Package Status</strong>:</p>
+<pre><code class="language-http">GET /api/packages/status
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>System Health</strong>:</p>
+<pre><code class="language-http">GET /api/system/health
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>System Metrics</strong>:</p>
+<pre><code class="language-http">GET /api/system/metrics
+Authorization: Bearer {token}
+</code></pre>
 <h2>🤖 MIVAA Service API</h2>
 <h3>What is MIVAA?</h3>
 <p><strong>MIVAA (Material Intelligence Vision and Analysis Agent)</strong> is the core microservice that powers the Material Kai Vision Platform&#39;s document processing, AI analysis, and knowledge extraction capabilities.</p>
@@ -125,6 +459,58 @@ options: {
 <h3>Authentication</h3>
 <p>All MIVAA endpoints require JWT authentication:</p>
 <pre><code class="language-http">Authorization: Bearer your-jwt-token
+</code></pre>
+<h3>📊 <strong>MIVAA API Overview</strong></h3>
+<p><strong>Total Endpoints</strong>: 37+ endpoints across 8 categories
+<strong>API Version</strong>: v1.0.0
+<strong>Embedding Model</strong>: text-embedding-ada-002 (1536 dimensions)
+<strong>Recent Enhancements</strong>: Phase 3 - Unified Vector Search System (January 2025)
+<strong>Performance</strong>: 80% faster search, 90% error reduction</p>
+<h3>🏥 <strong>Health &amp; Monitoring</strong></h3>
+<h4>Service Health Check</h4>
+<pre><code class="language-http">GET /health
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;service&quot;: &quot;MIVAA PDF Extractor&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;status&quot;: &quot;running&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-13T10:00:00Z&quot;,
+  &quot;endpoints&quot;: {
+    &quot;health&quot;: &quot;/health&quot;,
+    &quot;metrics&quot;: &quot;/metrics&quot;,
+    &quot;performance&quot;: &quot;/performance/summary&quot;,
+    &quot;docs&quot;: &quot;/docs&quot;,
+    &quot;pdf_markdown&quot;: &quot;/api/v1/extract/markdown&quot;,
+    &quot;rag_upload&quot;: &quot;/api/v1/rag/documents/upload&quot;
+  },
+  &quot;api_info&quot;: {
+    &quot;total_endpoints&quot;: 37,
+    &quot;authentication&quot;: &quot;JWT Bearer Token Required&quot;,
+    &quot;embedding_model&quot;: &quot;text-embedding-ada-002 (1536 dimensions)&quot;
+  }
+}
+</code></pre>
+<h4>Performance Metrics</h4>
+<pre><code class="language-http">GET /metrics
+</code></pre>
+<h4>Performance Summary</h4>
+<pre><code class="language-http">GET /performance/summary
+</code></pre>
+<h4>PDF Service Health</h4>
+<pre><code class="language-http">GET /api/v1/extract/health
+</code></pre>
+<h4>RAG Service Health</h4>
+<pre><code class="language-http">GET /api/v1/rag/health
+</code></pre>
+<h4>Search Service Health</h4>
+<pre><code class="language-http">GET /api/search/health
+</code></pre>
+<h4>Image Service Health</h4>
+<pre><code class="language-http">GET /api/images/health
+</code></pre>
+<h4>TogetherAI Service Health</h4>
+<pre><code class="language-http">GET /api/health
 </code></pre>
 <h2>📄 <strong>PDF Processing API</strong> (<code>/api/v1/extract/</code>)</h2>
 <h3>Extract Markdown</h3>
@@ -342,10 +728,359 @@ Content-Type: multipart/form-data
   }
 }
 </code></pre>
+<h2>📋 <strong>Document Management API</strong> (<code>/api/documents/</code>)</h2>
+<h3>Process Document</h3>
+<pre><code class="language-http">POST /api/documents/process
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>file</code> (required): PDF file to process</li>
+<li><code>extract_text</code> (optional): Extract text content (default: true)</li>
+<li><code>extract_images</code> (optional): Extract images (default: true)</li>
+<li><code>extract_tables</code> (optional): Extract tables (default: true)</li>
+<li><code>generate_embeddings</code> (optional): Generate embeddings (default: true)</li>
+<li><code>chunk_size</code> (optional): Text chunk size (default: 1000)</li>
+<li><code>chunk_overlap</code> (optional): Chunk overlap (default: 200)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;document_id&quot;: &quot;doc_abc123&quot;,
+  &quot;job_id&quot;: &quot;job_xyz789&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;estimated_completion&quot;: &quot;2025-01-13T10:05:00Z&quot;,
+  &quot;processing_options&quot;: {
+    &quot;extract_text&quot;: true,
+    &quot;extract_images&quot;: true,
+    &quot;extract_tables&quot;: true,
+    &quot;generate_embeddings&quot;: true
+  }
+}
+</code></pre>
+<h3>Process Document from URL</h3>
+<pre><code class="language-http">POST /api/documents/process-url
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://example.com/document.pdf&quot;,
+  &quot;extract_text&quot;: true,
+  &quot;extract_images&quot;: true,
+  &quot;extract_tables&quot;: true,
+  &quot;generate_embeddings&quot;: true
+}
+</code></pre>
+<h3>Analyze Document Structure</h3>
+<pre><code class="language-http">POST /api/documents/analyze
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>file</code> (required): PDF file to analyze</li>
+<li><code>analysis_depth</code> (optional): Analysis depth level (basic, detailed, comprehensive)</li>
+</ul>
+<h3>Get Job Status</h3>
+<pre><code class="language-http">GET /api/documents/job/{job_id}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;job_xyz789&quot;,
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;progress&quot;: 100,
+  &quot;created_at&quot;: &quot;2025-01-13T10:00:00Z&quot;,
+  &quot;completed_at&quot;: &quot;2025-01-13T10:04:30Z&quot;,
+  &quot;result&quot;: {
+    &quot;document_id&quot;: &quot;doc_abc123&quot;,
+    &quot;pages_processed&quot;: 25,
+    &quot;chunks_created&quot;: 150,
+    &quot;images_extracted&quot;: 12,
+    &quot;tables_extracted&quot;: 8
+  }
+}
+</code></pre>
+<h3>List Documents</h3>
+<pre><code class="language-http">GET /api/documents/documents
+</code></pre>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>page</code>: Page number (default: 1)</li>
+<li><code>page_size</code>: Items per page (default: 20, max: 100)</li>
+<li><code>search</code>: Search query for document content</li>
+<li><code>tags</code>: Filter by tags (comma-separated)</li>
+<li><code>status</code>: Filter by status (processed, processing, failed)</li>
+</ul>
+<h3>Get Document Metadata</h3>
+<pre><code class="language-http">GET /api/documents/documents/{document_id}
+</code></pre>
+<h3>Get Document Content</h3>
+<pre><code class="language-http">GET /api/documents/documents/{document_id}/content
+</code></pre>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>include_raw</code>: Include raw extracted content (default: false)</li>
+<li><code>include_markdown</code>: Include markdown formatted content (default: true)</li>
+<li><code>include_chunks</code>: Include content chunks (default: false)</li>
+<li><code>include_images</code>: Include extracted images (default: false)</li>
+</ul>
+<h3>Delete Document</h3>
+<pre><code class="language-http">DELETE /api/documents/documents/{document_id}
+</code></pre>
+<h2>🖼️ <strong>Image Analysis API</strong> (<code>/api/images/</code>)</h2>
+<h3>Analyze Image</h3>
+<pre><code class="language-http">POST /api/images/analyze
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;image_url&quot;: &quot;https://example.com/image.jpg&quot;,
+  &quot;analysis_types&quot;: [&quot;description&quot;, &quot;ocr&quot;, &quot;material_recognition&quot;],
+  &quot;confidence_threshold&quot;: 0.5,
+  &quot;include_metadata&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;analysis_id&quot;: &quot;analysis_123&quot;,
+  &quot;results&quot;: {
+    &quot;description&quot;: &quot;A ceramic tile with blue and white pattern&quot;,
+    &quot;ocr_text&quot;: &quot;Product Code: CT-001&quot;,
+    &quot;material_recognition&quot;: {
+      &quot;material_type&quot;: &quot;ceramic&quot;,
+      &quot;confidence&quot;: 0.92,
+      &quot;properties&quot;: [&quot;waterproof&quot;, &quot;durable&quot;]
+    }
+  },
+  &quot;metadata&quot;: {
+    &quot;processing_time&quot;: 2.1,
+    &quot;model_used&quot;: &quot;material-kai-vision-v1&quot;
+  }
+}
+</code></pre>
+<h3>Batch Image Analysis</h3>
+<pre><code class="language-http">POST /api/images/analyze/batch
+Content-Type: application/json
+</code></pre>
+<h3>Search Similar Images</h3>
+<pre><code class="language-http">POST /api/images/search
+Content-Type: application/json
+</code></pre>
+<h3>Upload and Analyze Image</h3>
+<pre><code class="language-http">POST /api/images/upload-and-analyze
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>file</code> (required): Image file to analyze</li>
+<li><code>analysis_types</code> (optional): Analysis types (default: &quot;description,ocr&quot;)</li>
+<li><code>confidence_threshold</code> (optional): Confidence threshold (default: 0.5)</li>
+</ul>
 <h2>🔍 <strong>Search API</strong> (<code>/api/search/</code>)</h2>
+<h3>Document Query</h3>
+<pre><code class="language-http">POST /api/search/documents/{document_id}/query
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;What are the thermal properties?&quot;,
+  &quot;max_results&quot;: 5,
+  &quot;include_context&quot;: true,
+  &quot;similarity_threshold&quot;: 0.7
+}
+</code></pre>
 <h3>Semantic Search</h3>
 <pre><code class="language-http">POST /api/search/semantic
 Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;high strength materials&quot;,
+  &quot;max_results&quot;: 10,
+  &quot;document_ids&quot;: [&quot;doc_1&quot;, &quot;doc_2&quot;],
+  &quot;similarity_threshold&quot;: 0.6,
+  &quot;include_metadata&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;query&quot;: &quot;high strength materials&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;document_id&quot;: &quot;doc_abc123&quot;,
+      &quot;chunk_id&quot;: &quot;chunk_456&quot;,
+      &quot;content&quot;: &quot;High strength materials include...&quot;,
+      &quot;similarity_score&quot;: 0.89,
+      &quot;metadata&quot;: {
+        &quot;page&quot;: 15,
+        &quot;section&quot;: &quot;Material Properties&quot;
+      }
+    }
+  ],
+  &quot;total_results&quot;: 25,
+  &quot;processing_time&quot;: 1.2
+}
+</code></pre>
+<h3>Vector Similarity Search</h3>
+<pre><code class="language-http">POST /api/search/similarity
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;text&quot;: &quot;corrosion resistant coating&quot;,
+  &quot;top_k&quot;: 10,
+  &quot;similarity_threshold&quot;: 0.7,
+  &quot;include_scores&quot;: true
+}
+</code></pre>
+<h3>Multi-Modal Search</h3>
+<pre><code class="language-http">POST /api/search/multimodal
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;blue ceramic tiles&quot;,
+  &quot;image_url&quot;: &quot;https://example.com/tile.jpg&quot;,
+  &quot;search_types&quot;: [&quot;text&quot;, &quot;image&quot;, &quot;combined&quot;],
+  &quot;max_results&quot;: 15,
+  &quot;boost_factors&quot;: {
+    &quot;text_weight&quot;: 0.6,
+    &quot;image_weight&quot;: 0.4
+  }
+}
+</code></pre>
+<h3>Image Search</h3>
+<pre><code class="language-http">POST /api/search/images
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;marble texture patterns&quot;,
+  &quot;image_filters&quot;: {
+    &quot;material_type&quot;: &quot;stone&quot;,
+    &quot;color_range&quot;: [&quot;white&quot;, &quot;gray&quot;, &quot;black&quot;]
+  },
+  &quot;analysis_depth&quot;: &quot;detailed&quot;
+}
+</code></pre>
+<h3>Material Visual Search</h3>
+<pre><code class="language-http">POST /api/search/materials/visual
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;image_url&quot;: &quot;https://example.com/material.jpg&quot;,
+  &quot;material_filters&quot;: {
+    &quot;category&quot;: &quot;tiles&quot;,
+    &quot;properties&quot;: [&quot;waterproof&quot;, &quot;slip_resistant&quot;]
+  },
+  &quot;similarity_threshold&quot;: 0.8
+}
+</code></pre>
+<h3>Find Related Documents</h3>
+<pre><code class="language-http">GET /api/search/documents/{document_id}/related
+</code></pre>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>max_results</code>: Maximum number of related documents (default: 10)</li>
+<li><code>similarity_threshold</code>: Minimum similarity score (default: 0.6)</li>
+<li><code>include_metadata</code>: Include document metadata (default: true)</li>
+</ul>
+<h3>Document Summarization</h3>
+<pre><code class="language-http">POST /api/search/documents/{document_id}/summarize
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;summary_type&quot;: &quot;extractive&quot;,
+  &quot;max_length&quot;: 500,
+  &quot;focus_areas&quot;: [&quot;properties&quot;, &quot;applications&quot;, &quot;specifications&quot;]
+}
+</code></pre>
+<h3>Entity Extraction</h3>
+<pre><code class="language-http">POST /api/search/documents/{document_id}/extract-entities
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;entity_types&quot;: [&quot;materials&quot;, &quot;properties&quot;, &quot;measurements&quot;, &quot;organizations&quot;],
+  &quot;confidence_threshold&quot;: 0.7
+}
+</code></pre>
+<h3>Document Comparison</h3>
+<pre><code class="language-http">POST /api/search/documents/compare
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;document_ids&quot;: [&quot;doc_1&quot;, &quot;doc_2&quot;, &quot;doc_3&quot;],
+  &quot;comparison_aspects&quot;: [&quot;content&quot;, &quot;structure&quot;, &quot;materials&quot;],
+  &quot;include_differences&quot;: true,
+  &quot;include_similarities&quot;: true
+}
+</code></pre>
+<h3>Multi-Modal Analysis</h3>
+<pre><code class="language-http">POST /api/search/analyze/multimodal
+Content-Type: application/json
+</code></pre>
+<h3>Material Image Analysis</h3>
+<pre><code class="language-http">POST /api/search/analyze/materials/image
+Content-Type: application/json
+</code></pre>
+<h3>Generate Material Embeddings</h3>
+<pre><code class="language-http">POST /api/search/embeddings/materials/generate
+Content-Type: application/json
+</code></pre>
+<h3>Find Similar Materials</h3>
+<pre><code class="language-http">GET /api/search/materials/{material_id}/similar
+</code></pre>
+<h2>🔗 <strong>Embedding API</strong> (<code>/api/embeddings/</code>)</h2>
+<h3>Generate Embeddings</h3>
+<pre><code class="language-http">POST /api/embeddings/generate
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;text&quot;: &quot;High performance ceramic material with excellent thermal properties&quot;,
+  &quot;model&quot;: &quot;text-embedding-ada-002&quot;,
+  &quot;normalize&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;embedding&quot;: [0.1234, -0.5678, 0.9012, ...],
+  &quot;dimensions&quot;: 1536,
+  &quot;model&quot;: &quot;text-embedding-ada-002&quot;,
+  &quot;processing_time&quot;: 0.3
+}
+</code></pre>
+<h3>Batch Embeddings</h3>
+<pre><code class="language-http">POST /api/embeddings/batch
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;texts&quot;: [
+    &quot;Ceramic tile with high durability&quot;,
+    &quot;Marble surface with natural patterns&quot;,
+    &quot;Glass panel with UV resistance&quot;
+  ],
+  &quot;model&quot;: &quot;text-embedding-ada-002&quot;,
+  &quot;normalize&quot;: true
+}
+</code></pre>
+<h3>CLIP Embeddings</h3>
+<pre><code class="language-http">POST /api/embeddings/clip-generate
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;image_url&quot;: &quot;https://example.com/material.jpg&quot;,
+  &quot;text&quot;: &quot;blue ceramic tile&quot;,
+  &quot;mode&quot;: &quot;multimodal&quot;
+}
 </code></pre>
 <h3>Vector Search</h3>
 <pre><code class="language-http">POST /api/search/vector
@@ -406,6 +1141,139 @@ Content-Type: application/json
 <pre><code class="language-http">POST /api/embeddings/clip-generate
 Content-Type: multipart/form-data
 </code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>image</code> (required): Image file for CLIP embedding generation</li>
+<li><code>text</code> (optional): Text to combine with image for multimodal embedding</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;embedding&quot;: [0.1234, -0.5678, 0.9012, ...],
+  &quot;dimensions&quot;: 512,
+  &quot;model&quot;: &quot;clip-vit-base-patch32&quot;,
+  &quot;processing_time&quot;: 0.8
+}
+</code></pre>
+<h2>💬 <strong>Chat API</strong> (<code>/api/chat/</code>)</h2>
+<h3>Chat Completions</h3>
+<pre><code class="language-http">POST /api/chat/completions
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;messages&quot;: [
+    {
+      &quot;role&quot;: &quot;user&quot;,
+      &quot;content&quot;: &quot;What are the best materials for outdoor applications?&quot;
+    }
+  ],
+  &quot;model&quot;: &quot;gpt-4&quot;,
+  &quot;max_tokens&quot;: 500,
+  &quot;temperature&quot;: 0.7,
+  &quot;include_sources&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;response&quot;: &quot;For outdoor applications, the best materials include...&quot;,
+  &quot;model&quot;: &quot;gpt-4&quot;,
+  &quot;usage&quot;: {
+    &quot;prompt_tokens&quot;: 45,
+    &quot;completion_tokens&quot;: 120,
+    &quot;total_tokens&quot;: 165
+  },
+  &quot;sources&quot;: [
+    {
+      &quot;document_id&quot;: &quot;doc_123&quot;,
+      &quot;relevance_score&quot;: 0.89
+    }
+  ]
+}
+</code></pre>
+<h3>Contextual Response</h3>
+<pre><code class="language-http">POST /api/chat/contextual
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;message&quot;: &quot;Compare these two materials&quot;,
+  &quot;context&quot;: {
+    &quot;document_ids&quot;: [&quot;doc_1&quot;, &quot;doc_2&quot;],
+    &quot;material_ids&quot;: [&quot;mat_1&quot;, &quot;mat_2&quot;]
+  },
+  &quot;response_format&quot;: &quot;detailed_comparison&quot;
+}
+</code></pre>
+<h2>🔧 <strong>Admin API</strong> (<code>/api/admin/</code>)</h2>
+<h3>Job Management</h3>
+<h4>List Jobs</h4>
+<pre><code class="language-http">GET /api/admin/jobs
+</code></pre>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>status</code>: Filter by job status (pending, processing, completed, failed)</li>
+<li><code>job_type</code>: Filter by job type (pdf_processing, image_analysis, batch_processing)</li>
+<li><code>page</code>: Page number (default: 1)</li>
+<li><code>page_size</code>: Items per page (default: 20)</li>
+</ul>
+<h4>Get Job Status</h4>
+<pre><code class="language-http">GET /api/admin/jobs/{job_id}
+</code></pre>
+<h4>Get Job Statistics</h4>
+<pre><code class="language-http">GET /api/admin/jobs/statistics
+</code></pre>
+<h4>Cancel Job</h4>
+<pre><code class="language-http">DELETE /api/admin/jobs/{job_id}
+</code></pre>
+<h4>Get Job Progress</h4>
+<pre><code class="language-http">GET /api/admin/jobs/{job_id}/progress
+</code></pre>
+<h4>Stream Job Progress</h4>
+<pre><code class="language-http">GET /api/admin/jobs/{job_id}/progress/stream
+</code></pre>
+<p><strong>Response</strong>: Server-Sent Events (SSE) stream</p>
+<h3>Bulk Operations</h3>
+<h4>Bulk Process Documents</h4>
+<pre><code class="language-http">POST /api/admin/bulk/process
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;documents&quot;: [
+    {
+      &quot;url&quot;: &quot;https://example.com/doc1.pdf&quot;,
+      &quot;title&quot;: &quot;Material Guide 1&quot;
+    }
+  ],
+  &quot;processing_options&quot;: {
+    &quot;extract_text&quot;: true,
+    &quot;extract_images&quot;: true,
+    &quot;generate_embeddings&quot;: true
+  }
+}
+</code></pre>
+<h3>System Management</h3>
+<h4>System Health</h4>
+<pre><code class="language-http">GET /api/admin/system/health
+</code></pre>
+<h4>System Metrics</h4>
+<pre><code class="language-http">GET /api/admin/system/metrics
+</code></pre>
+<h4>Package Status</h4>
+<pre><code class="language-http">GET /api/admin/packages/status
+</code></pre>
+<h3>Data Management</h3>
+<h4>Data Cleanup</h4>
+<pre><code class="language-http">DELETE /api/admin/data/cleanup
+</code></pre>
+<h4>Create Data Backup</h4>
+<pre><code class="language-http">POST /api/admin/data/backup
+</code></pre>
+<h4>Export System Data</h4>
+<pre><code class="language-http">GET /api/admin/data/export
+</code></pre>
 <h2>🏥 <strong>Health &amp; Monitoring API</strong></h2>
 <h3>Service Health Check</h3>
 <pre><code class="language-http">GET /health
@@ -443,6 +1311,147 @@ Content-Type: multipart/form-data
 <h3>Performance Summary</h3>
 <pre><code class="language-http">GET /performance/summary
 </code></pre>
+<h2>🤖 <strong>TogetherAI API</strong> (<code>/api/</code>)</h2>
+<h3>Semantic Analysis</h3>
+<pre><code class="language-http">POST /api/semantic-analysis
+Content-Type: multipart/form-data
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>image</code> (required): Image file for analysis</li>
+<li><code>prompt</code> (optional): Custom analysis prompt</li>
+<li><code>model</code> (optional): Model to use (default: meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;analysis&quot;: &quot;This image shows a ceramic tile with a blue and white geometric pattern...&quot;,
+  &quot;confidence&quot;: 0.95,
+  &quot;model_used&quot;: &quot;meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo&quot;,
+  &quot;processing_time_ms&quot;: 1500,
+  &quot;metadata&quot;: {
+    &quot;cache_hit&quot;: false,
+    &quot;request_id&quot;: &quot;req_abc123&quot;
+  }
+}
+</code></pre>
+<h3>TogetherAI Health Check</h3>
+<pre><code class="language-http">GET /api/health
+</code></pre>
+<h3>Available Models</h3>
+<pre><code class="language-http">GET /api/models
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;models&quot;: [
+    {
+      &quot;id&quot;: &quot;meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo&quot;,
+      &quot;type&quot;: &quot;vision&quot;,
+      &quot;capabilities&quot;: [&quot;image_analysis&quot;, &quot;text_generation&quot;],
+      &quot;status&quot;: &quot;available&quot;
+    }
+  ]
+}
+</code></pre>
+<h2>📊 <strong>Complete MIVAA Endpoint Summary</strong></h2>
+<h3><strong>PDF Processing</strong> (4 endpoints)</h3>
+<ul>
+<li><code>POST /api/v1/extract/markdown</code> - Extract markdown from PDF</li>
+<li><code>POST /api/v1/extract/tables</code> - Extract tables from PDF</li>
+<li><code>POST /api/v1/extract/images</code> - Extract images from PDF</li>
+<li><code>GET /api/v1/extract/health</code> - PDF service health check</li>
+</ul>
+<h3><strong>RAG System</strong> (10 endpoints)</h3>
+<ul>
+<li><code>POST /api/v1/rag/documents/upload</code> - Upload documents</li>
+<li><code>POST /api/v1/rag/query</code> - Query documents</li>
+<li><code>POST /api/v1/rag/chat</code> - Chat with documents</li>
+<li><code>POST /api/v1/rag/search</code> - Search documents</li>
+<li><code>GET /api/v1/rag/documents</code> - List documents</li>
+<li><code>DELETE /api/v1/rag/documents/{id}</code> - Delete document</li>
+<li><code>GET /api/v1/rag/health</code> - RAG service health</li>
+<li><code>GET /api/v1/rag/stats</code> - RAG statistics</li>
+<li><code>POST /api/v1/rag/search/mmr</code> - MMR search</li>
+<li><code>POST /api/v1/rag/search/advanced</code> - Advanced query search</li>
+</ul>
+<h3><strong>Document Management</strong> (13 endpoints)</h3>
+<ul>
+<li><code>POST /api/documents/process</code> - Process document</li>
+<li><code>POST /api/documents/process-url</code> - Process from URL</li>
+<li><code>POST /api/documents/analyze</code> - Analyze document structure</li>
+<li><code>GET /api/documents/job/{id}</code> - Get job status</li>
+<li><code>GET /api/documents/documents</code> - List documents</li>
+<li><code>GET /api/documents/documents/{id}</code> - Get document metadata</li>
+<li><code>GET /api/documents/documents/{id}/content</code> - Get document content</li>
+<li><code>DELETE /api/documents/documents/{id}</code> - Delete document</li>
+<li><code>GET /api/documents/health</code> - Document service health</li>
+<li><code>POST /api/documents/test-batch</code> - Test batch endpoint</li>
+<li><code>POST /api/documents/new-batch-process</code> - New batch process</li>
+<li><code>POST /api/documents/batch-process-fixed</code> - Fixed batch process</li>
+<li><code>POST /api/documents/batch-process-test</code> - Test batch process</li>
+</ul>
+<h3><strong>Search API</strong> (17 endpoints)</h3>
+<ul>
+<li><code>POST /api/search/documents/{id}/query</code> - Query specific document</li>
+<li><code>POST /api/search/semantic</code> - Semantic search</li>
+<li><code>POST /api/search/similarity</code> - Vector similarity search</li>
+<li><code>GET /api/search/documents/{id}/related</code> - Find related documents</li>
+<li><code>POST /api/search/documents/{id}/summarize</code> - Generate summary</li>
+<li><code>POST /api/search/documents/{id}/extract-entities</code> - Extract entities</li>
+<li><code>POST /api/search/documents/compare</code> - Compare documents</li>
+<li><code>GET /api/search/health</code> - Search service health</li>
+<li><code>POST /api/search/multimodal</code> - Multi-modal search</li>
+<li><code>POST /api/search/query/multimodal</code> - Multi-modal RAG query</li>
+<li><code>POST /api/search/images</code> - Image-specific search</li>
+<li><code>POST /api/search/analyze/multimodal</code> - Multi-modal analysis</li>
+<li><code>POST /api/search/materials/visual</code> - Material visual search</li>
+<li><code>POST /api/search/analyze/materials/image</code> - Analyze material image</li>
+<li><code>POST /api/search/embeddings/materials/generate</code> - Generate material embeddings</li>
+<li><code>GET /api/search/materials/{id}/similar</code> - Find similar materials</li>
+<li><code>GET /api/search/materials/health</code> - Material search health</li>
+</ul>
+<h3><strong>Image Analysis</strong> (5 endpoints)</h3>
+<ul>
+<li><code>POST /api/images/analyze</code> - Analyze image</li>
+<li><code>POST /api/images/analyze/batch</code> - Batch image analysis</li>
+<li><code>POST /api/images/search</code> - Search similar images</li>
+<li><code>POST /api/images/upload-and-analyze</code> - Upload and analyze image</li>
+<li><code>GET /api/images/health</code> - Image service health</li>
+</ul>
+<h3><strong>Admin API</strong> (16 endpoints)</h3>
+<ul>
+<li><code>GET /api/admin/jobs</code> - List jobs</li>
+<li><code>GET /api/admin/jobs/statistics</code> - Job statistics</li>
+<li><code>GET /api/admin/jobs/{id}</code> - Get job status</li>
+<li><code>GET /api/admin/jobs/{id}/status</code> - Alternative job status</li>
+<li><code>DELETE /api/admin/jobs/{id}</code> - Cancel job</li>
+<li><code>POST /api/admin/bulk/process</code> - Bulk process documents</li>
+<li><code>GET /api/admin/system/health</code> - System health</li>
+<li><code>GET /api/admin/system/metrics</code> - System metrics</li>
+<li><code>DELETE /api/admin/data/cleanup</code> - Data cleanup</li>
+<li><code>POST /api/admin/data/backup</code> - Create backup</li>
+<li><code>GET /api/admin/data/export</code> - Export data</li>
+<li><code>GET /api/admin/packages/status</code> - Package status</li>
+<li><code>GET /api/admin/jobs/{id}/progress</code> - Job progress</li>
+<li><code>GET /api/admin/jobs/progress/active</code> - Active job progress</li>
+<li><code>GET /api/admin/jobs/{id}/progress/pages</code> - Page progress</li>
+<li><code>GET /api/admin/jobs/{id}/progress/stream</code> - Stream progress</li>
+</ul>
+<h3><strong>TogetherAI API</strong> (3 endpoints)</h3>
+<ul>
+<li><code>POST /api/semantic-analysis</code> - Semantic analysis</li>
+<li><code>GET /api/health</code> - TogetherAI health check</li>
+<li><code>GET /api/models</code> - Available models</li>
+</ul>
+<h3><strong>Health &amp; Monitoring</strong> (4 endpoints)</h3>
+<ul>
+<li><code>GET /health</code> - Service health check</li>
+<li><code>GET /metrics</code> - Performance metrics</li>
+<li><code>GET /performance/summary</code> - Performance summary</li>
+<li><code>GET /api/v1/health</code> - API health check</li>
+</ul>
+<p><strong>Total MIVAA Endpoints</strong>: 72 endpoints across 8 categories</p>
 <h2>🔌 <strong>MIVAA Gateway Integration</strong></h2>
 <p>The Material Kai Vision Platform uses a unified gateway to communicate with MIVAA services:</p>
 <h3>Gateway Endpoint</h3>
@@ -587,39 +1596,117 @@ Content-Type: application/json
 <th>Action</th>
 <th>Description</th>
 <th>MIVAA Endpoint</th>
+<th>Status</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>generate_embedding</code></td>
-<td>Generate text embeddings</td>
-<td><code>/api/embeddings/generate</code></td>
+<td><code>health_check</code></td>
+<td>Check MIVAA service health</td>
+<td><code>/health</code></td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>pdf_process_document</code></td>
+<td>Process PDF documents</td>
+<td><code>/api/documents/process-url</code></td>
+<td>✅ Working</td>
 </tr>
 <tr>
 <td><code>semantic_search</code></td>
 <td>Perform semantic search</td>
 <td><code>/api/search/semantic</code></td>
+<td>✅ Working</td>
 </tr>
 <tr>
-<td><code>extract_text</code></td>
-<td>Extract text from PDF</td>
-<td><code>/api/documents/extract</code></td>
+<td><code>multimodal_analysis</code></td>
+<td>Multi-modal AI analysis</td>
+<td><code>/api/analyze/multimodal</code></td>
+<td>✅ Working</td>
 </tr>
 <tr>
-<td><code>process_document</code></td>
-<td>Full document processing</td>
-<td><code>/api/documents/process</code></td>
+<td><code>generate_embedding</code></td>
+<td>Generate text embeddings</td>
+<td><code>/api/embeddings/generate</code></td>
+<td>❌ Endpoint Missing</td>
 </tr>
 <tr>
-<td><code>rag_query</code></td>
-<td>Query RAG system</td>
-<td><code>/api/rag/query</code></td>
+<td><code>material_recognition</code></td>
+<td>Material recognition from images</td>
+<td><code>/api/vision/analyze</code></td>
+<td>❌ Endpoint Missing</td>
+</tr>
+<tr>
+<td><code>llama_vision_analysis</code></td>
+<td>LLaMA Vision analysis</td>
+<td><code>/api/vision/llama-analyze</code></td>
+<td>⚠️ Requires Image Data</td>
 </tr>
 <tr>
 <td><code>chat_completion</code></td>
 <td>Chat with AI</td>
 <td><code>/api/chat/completions</code></td>
+<td>❌ Endpoint Missing</td>
+</tr>
+<tr>
+<td><code>vector_search</code></td>
+<td>Perform vector search</td>
+<td><code>/api/search/vector</code></td>
+<td>❌ Endpoint Missing</td>
+</tr>
+<tr>
+<td><code>clip_embedding_generation</code></td>
+<td>Generate CLIP embeddings</td>
+<td><code>/api/embeddings/clip-generate</code></td>
+<td>❌ Endpoint Missing</td>
+</tr>
+<tr>
+<td><code>extract_text</code></td>
+<td>Extract text from PDF</td>
+<td><code>/api/documents/extract</code></td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>rag_query</code></td>
+<td>Query RAG system</td>
+<td><code>/api/rag/query</code></td>
+<td>✅ Working</td>
 </tr>
 </tbody></table>
+<h3>Gateway Action Examples</h3>
+<h4>Health Check</h4>
+<pre><code class="language-http">POST /api/mivaa/gateway
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;health_check&quot;,
+  &quot;payload&quot;: {}
+}
+</code></pre>
+<h4>PDF Document Processing</h4>
+<pre><code class="language-http">POST /api/mivaa/gateway
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;pdf_process_document&quot;,
+  &quot;payload&quot;: {
+    &quot;url&quot;: &quot;https://example.com/document.pdf&quot;,
+    &quot;extract_images&quot;: true,
+    &quot;extract_tables&quot;: true
+  }
+}
+</code></pre>
+<h4>LLaMA Vision Analysis</h4>
+<pre><code class="language-http">POST /api/mivaa/gateway
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;llama_vision_analysis&quot;,
+  &quot;payload&quot;: {
+    &quot;image_data&quot;: &quot;base64_encoded_image_data&quot;,
+    &quot;prompt&quot;: &quot;Analyze this material image&quot;
+  }
+}
+</code></pre>
 <h2>🌩️ Supabase Edge Functions</h2>
 <h3>Base URL</h3>
 <p><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/</code></p>
@@ -904,25 +1991,351 @@ const replicateConfig = {
 <li><strong>Performance Metrics</strong>: Response times and throughput</li>
 <li><strong>Error Tracking</strong>: Error rates and types</li>
 </ol>
+<h3>Job Management Endpoints</h3>
+<h4>List All Jobs</h4>
+<pre><code class="language-http">GET /api/jobs
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Query Parameters</strong>:</p>
+<ul>
+<li><code>status</code> (optional): Filter by job status (queued, running, completed, failed)</li>
+<li><code>job_type</code> (optional): Filter by job type (document_processing, bulk_processing, etc.)</li>
+<li><code>page</code> (optional): Page number for pagination (default: 1)</li>
+<li><code>page_size</code> (optional): Items per page (default: 20, max: 100)</li>
+</ul>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Jobs retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;jobs&quot;: [
+    {
+      &quot;job_id&quot;: &quot;bulk_20251011_175237&quot;,
+      &quot;job_type&quot;: &quot;bulk_processing&quot;,
+      &quot;status&quot;: &quot;completed&quot;,
+      &quot;priority&quot;: &quot;normal&quot;,
+      &quot;created_at&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+      &quot;completed_at&quot;: &quot;2025-01-01T00:02:00Z&quot;,
+      &quot;progress_percentage&quot;: 100,
+      &quot;description&quot;: &quot;Process research paper&quot;,
+      &quot;success&quot;: true
+    }
+  ],
+  &quot;total_count&quot;: 1,
+  &quot;page&quot;: 1,
+  &quot;page_size&quot;: 20
+}
+</code></pre>
+<h4>Get Job Status</h4>
+<pre><code class="language-http">GET /api/jobs/{job_id}
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Note</strong>: This endpoint currently has validation issues. Use the jobs list endpoint as a workaround.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job status retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;job_id&quot;: &quot;job_123&quot;,
+    &quot;job_type&quot;: &quot;document_processing&quot;,
+    &quot;status&quot;: &quot;running&quot;,
+    &quot;priority&quot;: &quot;normal&quot;,
+    &quot;created_at&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+    &quot;progress&quot;: {
+      &quot;current_step&quot;: &quot;Processing page 5&quot;,
+      &quot;completed_steps&quot;: 5,
+      &quot;total_steps&quot;: 10,
+      &quot;progress_percentage&quot;: 50
+    }
+  }
+}
+</code></pre>
+<h4>Cancel Job</h4>
+<pre><code class="language-http">DELETE /api/jobs/{job_id}
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job cancelled successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;
+}
+</code></pre>
+<h4>Get Job Statistics</h4>
+<pre><code class="language-http">GET /api/jobs/statistics
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job statistics retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;total_jobs&quot;: 150,
+    &quot;status_counts&quot;: {
+      &quot;queued&quot;: 5,
+      &quot;running&quot;: 3,
+      &quot;completed&quot;: 140,
+      &quot;failed&quot;: 2
+    },
+    &quot;average_processing_time&quot;: 45.2,
+    &quot;success_rate&quot;: 0.987
+  }
+}
+</code></pre>
+<h4>Bulk Processing (Async)</h4>
+<pre><code class="language-http">POST /api/bulk/process
+Authorization: Bearer {token}
+Content-Type: application/json
+</code></pre>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;urls&quot;: [
+    &quot;https://example.com/document1.pdf&quot;,
+    &quot;https://example.com/document2.pdf&quot;
+  ],
+  &quot;batch_size&quot;: 5,
+  &quot;processing_options&quot;: {
+    &quot;extract_text&quot;: true,
+    &quot;extract_images&quot;: true,
+    &quot;extract_tables&quot;: true
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Bulk processing started successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;job_id&quot;: &quot;bulk_20251011_175237&quot;,
+    &quot;total_documents&quot;: 2,
+    &quot;estimated_completion_time&quot;: &quot;2025-01-01T00:05:00Z&quot;
+  }
+}
+</code></pre>
+<h3>Async Processing Workflow</h3>
+<p>The Material Kai Vision Platform supports asynchronous processing for large PDFs and bulk operations to avoid timeout issues.</p>
+<h4>When to Use Async Processing</h4>
+<ul>
+<li><strong>Large PDFs</strong> (&gt;20MB): Files that may take longer than 2-3 minutes to process</li>
+<li><strong>Bulk Operations</strong>: Processing multiple documents simultaneously</li>
+<li><strong>Complex Processing</strong>: Full extraction with images, tables, and text analysis</li>
+<li><strong>Timeout Avoidance</strong>: When synchronous processing hits Supabase Edge Function limits</li>
+</ul>
+<h4>Async Workflow Steps</h4>
+<ol>
+<li><strong>Submit Job</strong>: Use <code>/api/bulk/process</code> endpoint to submit documents for async processing</li>
+<li><strong>Get Job ID</strong>: Response contains a unique job ID for tracking</li>
+<li><strong>Poll Status</strong>: Use <code>/api/jobs</code> to check job status (recommended: 5-second intervals)</li>
+<li><strong>Retrieve Results</strong>: When status = &quot;completed&quot;, results are available in the job data</li>
+</ol>
+<h4>Example Async Implementation</h4>
+<pre><code class="language-javascript">// Step 1: Submit async job
+const response = await fetch(&#39;/api/bulk/process&#39;, {
+  method: &#39;POST&#39;,
+  headers: {
+    &#39;Authorization&#39;: &#39;Bearer &#39; + token,
+    &#39;Content-Type&#39;: &#39;application/json&#39;
+  },
+  body: JSON.stringify({
+    urls: [pdfUrl],
+    batch_size: 1
+  })
+});
+
+const { data } = await response.json();
+const jobId = data.job_id;
+
+// Step 2: Poll for completion
+const pollJob = async () =&gt; {
+  const jobsResponse = await fetch(&#39;/api/jobs&#39;, {
+    headers: { &#39;Authorization&#39;: &#39;Bearer &#39; + token }
+  });
+
+  const { jobs } = await jobsResponse.json();
+  const job = jobs.find(j =&gt; j.job_id === jobId);
+
+  if (job.status === &#39;completed&#39;) {
+    return job; // Processing complete
+  } else if (job.status === &#39;failed&#39;) {
+    throw new Error(&#39;Job failed&#39;);
+  } else {
+    // Still processing, wait and retry
+    await new Promise(resolve =&gt; setTimeout(resolve, 5000));
+    return pollJob();
+  }
+};
+
+const completedJob = await pollJob();
+</code></pre>
 <h3>Metrics Endpoints</h3>
 <pre><code class="language-http">GET /metrics
 GET /api/v1/health
 GET /performance/summary
 </code></pre>
+<h2>🔧 Job Management API</h2>
+<h3>List All Jobs</h3>
+<pre><code class="language-http">GET /api/jobs
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Jobs retrieved successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-13T10:00:00Z&quot;,
+  &quot;jobs&quot;: [
+    {
+      &quot;job_id&quot;: &quot;bulk_20250113_100000&quot;,
+      &quot;job_type&quot;: &quot;bulk_processing&quot;,
+      &quot;status&quot;: &quot;completed&quot;,
+      &quot;priority&quot;: &quot;normal&quot;,
+      &quot;created_at&quot;: &quot;2025-01-13T10:00:00Z&quot;,
+      &quot;completed_at&quot;: &quot;2025-01-13T10:05:00Z&quot;,
+      &quot;progress&quot;: 100,
+      &quot;total_documents&quot;: 5,
+      &quot;processed_documents&quot;: 5
+    }
+  ],
+  &quot;total_jobs&quot;: 1,
+  &quot;active_jobs&quot;: 0
+}
+</code></pre>
+<h3>Get Job Status</h3>
+<pre><code class="language-http">GET /api/jobs/{job_id}/status
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;bulk_20250113_100000&quot;,
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;progress&quot;: 100,
+  &quot;total_documents&quot;: 5,
+  &quot;processed_documents&quot;: 5,
+  &quot;failed_documents&quot;: 0,
+  &quot;estimated_completion&quot;: &quot;2025-01-13T10:05:00Z&quot;,
+  &quot;created_at&quot;: &quot;2025-01-13T10:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2025-01-13T10:05:00Z&quot;
+}
+</code></pre>
+<h3>Cancel Job</h3>
+<pre><code class="language-http">POST /api/jobs/{job_id}/cancel
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job cancelled successfully&quot;,
+  &quot;job_id&quot;: &quot;bulk_20250113_100000&quot;,
+  &quot;status&quot;: &quot;cancelled&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-13T10:02:00Z&quot;
+}
+</code></pre>
+<h3>Start Bulk Processing</h3>
+<pre><code class="language-http">POST /api/bulk/process
+Content-Type: application/json
+</code></pre>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;documents&quot;: [
+    {
+      &quot;url&quot;: &quot;https://example.com/doc1.pdf&quot;,
+      &quot;name&quot;: &quot;Document 1&quot;
+    },
+    {
+      &quot;url&quot;: &quot;https://example.com/doc2.pdf&quot;,
+      &quot;name&quot;: &quot;Document 2&quot;
+    }
+  ],
+  &quot;options&quot;: {
+    &quot;extract_images&quot;: true,
+    &quot;extract_tables&quot;: true,
+    &quot;priority&quot;: &quot;normal&quot;
+  }
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Bulk processing started successfully&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-13T10:00:00Z&quot;,
+  &quot;data&quot;: {
+    &quot;job_id&quot;: &quot;bulk_20250113_100000&quot;,
+    &quot;total_documents&quot;: 2,
+    &quot;estimated_completion_time&quot;: &quot;2025-01-13T10:10:00Z&quot;,
+    &quot;status&quot;: &quot;processing&quot;
+  }
+}
+</code></pre>
+<h3>Get Job Statistics</h3>
+<pre><code class="language-http">GET /api/jobs/statistics
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Job statistics retrieved successfully&quot;,
+  &quot;data&quot;: {
+    &quot;total_jobs&quot;: 25,
+    &quot;active_jobs&quot;: 3,
+    &quot;completed_jobs&quot;: 20,
+    &quot;failed_jobs&quot;: 2,
+    &quot;cancelled_jobs&quot;: 0,
+    &quot;status_distribution&quot;: {
+      &quot;completed&quot;: 20,
+      &quot;processing&quot;: 3,
+      &quot;failed&quot;: 2
+    },
+    &quot;type_distribution&quot;: {
+      &quot;bulk_processing&quot;: 15,
+      &quot;single_document&quot;: 10
+    },
+    &quot;average_processing_time_minutes&quot;: 5.2,
+    &quot;success_rate_percent&quot;: 88.0
+  }
+}
+</code></pre>
 <h2>🚨 Known API Issues</h2>
-<h3>1. ESLint Configuration</h3>
+<h3>1. MIVAA Gateway Endpoint Mismatches</h3>
 <ul>
-<li><strong>Issue</strong>: Lint command fails with invalid options</li>
-<li><strong>Impact</strong>: Code quality checks not running</li>
-<li><strong>Fix</strong>: Update ESLint configuration for new format</li>
+<li><strong>Issue</strong>: Several gateway actions fail due to incorrect endpoint mappings</li>
+<li><strong>Impact</strong>: Material recognition, embeddings, and chat features not working</li>
+<li><strong>Fix</strong>: Update MIVAA gateway endpoint mappings to match actual API</li>
+<li><strong>Affected Actions</strong>: <code>material_recognition</code>, <code>generate_embedding</code>, <code>chat_completion</code>, <code>vector_search</code>, <code>clip_embedding_generation</code></li>
 </ul>
-<h3>2. Missing Error Handling</h3>
+<h3>2. Missing Job Management Endpoints</h3>
+<ul>
+<li><strong>Issue</strong>: Job-related endpoints exist in OpenAPI spec but not documented</li>
+<li><strong>Impact</strong>: Batch processing and job monitoring not properly documented</li>
+<li><strong>Missing Endpoints</strong>:<ul>
+<li><code>GET /api/jobs</code> - List all jobs</li>
+<li><code>GET /api/jobs/{job_id}/status</code> - Get job status</li>
+<li><code>POST /api/jobs/{job_id}/cancel</code> - Cancel job</li>
+<li><code>POST /api/bulk/process</code> - Start bulk processing</li>
+<li><code>GET /api/jobs/statistics</code> - Get job statistics</li>
+</ul>
+</li>
+</ul>
+<h3>3. Multipart File Upload Endpoints</h3>
+<ul>
+<li><strong>Issue</strong>: Several endpoints require multipart/form-data but only documented as JSON</li>
+<li><strong>Impact</strong>: File upload functionality not properly documented</li>
+<li><strong>Affected Endpoints</strong>:<ul>
+<li><code>POST /api/pdf/extract/markdown</code></li>
+<li><code>POST /api/pdf/extract/tables</code></li>
+<li><code>POST /api/pdf/extract/images</code></li>
+<li><code>POST /api/documents/analyze</code></li>
+<li><code>POST /api/documents/process</code></li>
+<li><code>POST /api/rag/documents/upload</code></li>
+<li><code>POST /api/images/upload-and-analyze</code></li>
+</ul>
+</li>
+</ul>
+<h3>4. Missing Error Handling Documentation</h3>
 <ul>
 <li><strong>Issue</strong>: Inconsistent error responses across services</li>
 <li><strong>Impact</strong>: Poor debugging experience</li>
 <li><strong>Fix</strong>: Standardize error response format</li>
 </ul>
-<h3>3. No API Versioning</h3>
+<h3>5. No API Versioning Strategy</h3>
 <ul>
 <li><strong>Issue</strong>: No version strategy for API endpoints</li>
 <li><strong>Impact</strong>: Breaking changes affect all clients</li>
@@ -1017,12 +2430,491 @@ Host: mivaa-pdf-extractor:8000
   }
 }
 </code></pre>
+<h2>🛍️ Products &amp; E-Commerce APIs</h2>
+<h3>Shopping Cart API</h3>
+<h4>Create Shopping Cart</h4>
+<pre><code class="language-http">POST /functions/v1/shopping-cart-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;workspace_id&quot;: &quot;workspace-123&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;cart-123&quot;,
+    &quot;user_id&quot;: &quot;user-456&quot;,
+    &quot;workspace_id&quot;: &quot;workspace-123&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;total_items&quot;: 0,
+    &quot;created_at&quot;: &quot;2025-10-19T10:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2025-10-19T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>Get Cart with Items</h4>
+<pre><code class="language-http">GET /functions/v1/shopping-cart-api?cart_id=cart-123
+Authorization: Bearer {token}
+</code></pre>
+<h4>Add Item to Cart</h4>
+<pre><code class="language-http">POST /functions/v1/shopping-cart-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;cart_id&quot;: &quot;cart-123&quot;,
+  &quot;product_id&quot;: &quot;prod-001&quot;,
+  &quot;quantity&quot;: 2,
+  &quot;unit_price&quot;: 99.99,
+  &quot;notes&quot;: &quot;Optional notes&quot;
+}
+</code></pre>
+<h4>Remove Item from Cart</h4>
+<pre><code class="language-http">DELETE /functions/v1/shopping-cart-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;cart_id&quot;: &quot;cart-123&quot;,
+  &quot;item_id&quot;: &quot;item-456&quot;
+}
+</code></pre>
+<h4>Update Cart Status</h4>
+<pre><code class="language-http">PATCH /functions/v1/shopping-cart-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;cart_id&quot;: &quot;cart-123&quot;,
+  &quot;status&quot;: &quot;submitted&quot;
+}
+</code></pre>
+<h3>Quote Request API</h3>
+<h4>Submit Quote Request</h4>
+<pre><code class="language-http">POST /functions/v1/quote-request-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;cart_id&quot;: &quot;cart-123&quot;,
+  &quot;workspace_id&quot;: &quot;workspace-123&quot;,
+  &quot;notes&quot;: &quot;Special requests&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;quote-123&quot;,
+    &quot;user_id&quot;: &quot;user-456&quot;,
+    &quot;cart_id&quot;: &quot;cart-123&quot;,
+    &quot;status&quot;: &quot;pending&quot;,
+    &quot;items_count&quot;: 3,
+    &quot;total_estimated&quot;: 349.97,
+    &quot;notes&quot;: &quot;Special requests&quot;,
+    &quot;created_at&quot;: &quot;2025-10-19T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>Get Quote Requests</h4>
+<pre><code class="language-http">GET /functions/v1/quote-request-api?limit=50&amp;offset=0&amp;admin=false
+Authorization: Bearer {token}
+</code></pre>
+<h4>Get Quote Request Details</h4>
+<pre><code class="language-http">GET /functions/v1/quote-request-api?request_id=quote-123
+Authorization: Bearer {token}
+</code></pre>
+<h4>Update Quote Request Status</h4>
+<pre><code class="language-http">PATCH /functions/v1/quote-request-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;request_id&quot;: &quot;quote-123&quot;,
+  &quot;status&quot;: &quot;updated&quot;
+}
+</code></pre>
+<h3>Proposals API</h3>
+<h4>Create Proposal (Admin Only)</h4>
+<pre><code class="language-http">POST /functions/v1/proposals-api
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  &quot;quote_request_id&quot;: &quot;quote-123&quot;,
+  &quot;items&quot;: [
+    {
+      &quot;product_id&quot;: &quot;prod-001&quot;,
+      &quot;quantity&quot;: 2,
+      &quot;unit_price&quot;: 99.99,
+      &quot;total&quot;: 199.98
+    }
+  ],
+  &quot;subtotal&quot;: 349.97,
+  &quot;tax&quot;: 34.99,
+  &quot;discount&quot;: 0,
+  &quot;notes&quot;: &quot;Proposal notes&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;proposal-123&quot;,
+    &quot;quote_request_id&quot;: &quot;quote-123&quot;,
+    &quot;user_id&quot;: &quot;user-456&quot;,
+    &quot;status&quot;: &quot;draft&quot;,
+    &quot;items&quot;: [...],
+    &quot;subtotal&quot;: 349.97,
+    &quot;tax&quot;: 34.99,
+    &quot;discount&quot;: 0,
+    &quot;total&quot;: 384.96,
+    &quot;created_at&quot;: &quot;2025-10-19T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>Get Proposals</h4>
+<pre><code class="language-http">GET /functions/v1/proposals-api?limit=50&amp;offset=0
+Authorization: Bearer {token}
+</code></pre>
+<h4>Get Proposal Details</h4>
+<pre><code class="language-http">GET /functions/v1/proposals-api?proposal_id=proposal-123
+Authorization: Bearer {token}
+</code></pre>
+<h4>Update Proposal Pricing</h4>
+<pre><code class="language-http">PATCH /functions/v1/proposals-api
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  &quot;proposal_id&quot;: &quot;proposal-123&quot;,
+  &quot;subtotal&quot;: 349.97,
+  &quot;tax&quot;: 34.99,
+  &quot;discount&quot;: 10.00,
+  &quot;notes&quot;: &quot;Updated notes&quot;
+}
+</code></pre>
+<h4>Send Proposal to User</h4>
+<pre><code class="language-http">PATCH /functions/v1/proposals-api
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  &quot;proposal_id&quot;: &quot;proposal-123&quot;,
+  &quot;action&quot;: &quot;send&quot;
+}
+</code></pre>
+<h4>Accept Proposal (User)</h4>
+<pre><code class="language-http">PATCH /functions/v1/proposals-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;proposal_id&quot;: &quot;proposal-123&quot;,
+  &quot;action&quot;: &quot;accept&quot;
+}
+</code></pre>
+<h3>Moodboard Products API</h3>
+<h4>Add Product to Moodboard</h4>
+<pre><code class="language-http">POST /functions/v1/moodboard-products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;moodboard_id&quot;: &quot;moodboard-123&quot;,
+  &quot;product_id&quot;: &quot;prod-001&quot;,
+  &quot;position_x&quot;: 100,
+  &quot;position_y&quot;: 200,
+  &quot;notes&quot;: &quot;Optional notes&quot;
+}
+</code></pre>
+<h4>Get Moodboard Products</h4>
+<pre><code class="language-http">GET /functions/v1/moodboard-products-api?moodboard_id=moodboard-123&amp;limit=50&amp;offset=0
+Authorization: Bearer {token}
+</code></pre>
+<h4>Remove Product from Moodboard</h4>
+<pre><code class="language-http">DELETE /functions/v1/moodboard-products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;moodboard_id&quot;: &quot;moodboard-123&quot;,
+  &quot;product_id&quot;: &quot;prod-001&quot;
+}
+</code></pre>
+<h3>Moodboard Quote API</h3>
+<h4>Request Quote for Moodboard</h4>
+<pre><code class="language-http">POST /functions/v1/moodboard-quote-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;moodboard_id&quot;: &quot;moodboard-123&quot;,
+  &quot;workspace_id&quot;: &quot;workspace-123&quot;,
+  &quot;notes&quot;: &quot;Quote request notes&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;moodboard-quote-123&quot;,
+    &quot;moodboard_id&quot;: &quot;moodboard-123&quot;,
+    &quot;moodboard_creator_id&quot;: &quot;user-789&quot;,
+    &quot;requester_id&quot;: &quot;user-456&quot;,
+    &quot;quote_request_id&quot;: &quot;quote-123&quot;,
+    &quot;commission_percentage&quot;: 10.0,
+    &quot;status&quot;: &quot;pending&quot;,
+    &quot;created_at&quot;: &quot;2025-10-19T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>Get Moodboard Quote Requests</h4>
+<pre><code class="language-http">GET /functions/v1/moodboard-quote-api?moodboard_id=moodboard-123&amp;limit=50&amp;offset=0
+Authorization: Bearer {token}
+</code></pre>
+<h4>Get User Commissions</h4>
+<pre><code class="language-http">GET /functions/v1/moodboard-quote-api?endpoint=commissions&amp;limit=50&amp;offset=0
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [...],
+  &quot;count&quot;: 5,
+  &quot;totals&quot;: {
+    &quot;total_commission&quot;: 1500.00,
+    &quot;pending_commission&quot;: 500.00
+  }
+}
+</code></pre>
+<h2>📦 Products API</h2>
+<h3>Product Creation from Knowledge Base</h3>
+<h4>Extract and Create Products from PDF Chunks</h4>
+<pre><code class="language-http">POST /functions/v1/products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;create_from_chunks&quot;,
+  &quot;chunk_ids&quot;: [&quot;chunk-123&quot;, &quot;chunk-124&quot;],
+  &quot;document_id&quot;: &quot;doc-456&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;prod-789&quot;,
+    &quot;name&quot;: &quot;Product from Chunk&quot;,
+    &quot;description&quot;: &quot;Extracted from PDF chunk&quot;,
+    &quot;long_description&quot;: &quot;Full content from chunk&quot;,
+    &quot;properties&quot;: {
+      &quot;source_chunk_id&quot;: &quot;chunk-123&quot;,
+      &quot;document_id&quot;: &quot;doc-456&quot;,
+      &quot;page_number&quot;: 1,
+      &quot;chunk_index&quot;: 0
+    },
+    &quot;metadata&quot;: {
+      &quot;extracted_from&quot;: &quot;knowledge_base_chunk&quot;,
+      &quot;chunk_metadata&quot;: {}
+    },
+    &quot;status&quot;: &quot;draft&quot;,
+    &quot;created_from_type&quot;: &quot;pdf_processing&quot;,
+    &quot;created_at&quot;: &quot;2025-10-19T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<p><strong>Purpose</strong>: Creates products from actual PDF chunks in knowledge base (not mocked data)</p>
+<h3>Product Search &amp; Retrieval</h3>
+<h4>Search Products by Description</h4>
+<pre><code class="language-http">GET /functions/v1/products-api?action=search&amp;query=marble&amp;limit=20&amp;offset=0
+Authorization: Bearer {token}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;prod-001&quot;,
+      &quot;name&quot;: &quot;Premium Italian Marble&quot;,
+      &quot;description&quot;: &quot;White marble with elegant veining&quot;,
+      &quot;properties&quot;: {
+        &quot;material_type&quot;: &quot;natural_stone&quot;,
+        &quot;color&quot;: &quot;white&quot;,
+        &quot;finish&quot;: &quot;polished&quot;
+      },
+      &quot;metadata&quot;: {
+        &quot;supplier&quot;: &quot;Italian Quarries Inc&quot;,
+        &quot;origin&quot;: &quot;Italy&quot;,
+        &quot;price_range&quot;: &quot;$100-200 per sq ft&quot;
+      },
+      &quot;status&quot;: &quot;published&quot;,
+      &quot;created_from_type&quot;: &quot;pdf_processing&quot;
+    }
+  ],
+  &quot;count&quot;: 1,
+  &quot;total&quot;: 1
+}
+</code></pre>
+<h4>Get Product by ID</h4>
+<pre><code class="language-http">GET /functions/v1/products-api?action=get&amp;product_id=prod-001
+Authorization: Bearer {token}
+</code></pre>
+<h4>List All Products</h4>
+<pre><code class="language-http">GET /functions/v1/products-api?action=list&amp;limit=50&amp;offset=0&amp;status=published
+Authorization: Bearer {token}
+</code></pre>
+<h3>Product Management</h3>
+<h4>Update Product</h4>
+<pre><code class="language-http">PUT /functions/v1/products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;product_id&quot;: &quot;prod-001&quot;,
+  &quot;name&quot;: &quot;Updated Product Name&quot;,
+  &quot;description&quot;: &quot;Updated description&quot;,
+  &quot;properties&quot;: {
+    &quot;material_type&quot;: &quot;natural_stone&quot;,
+    &quot;color&quot;: &quot;white&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;supplier&quot;: &quot;Updated Supplier&quot;,
+    &quot;price_range&quot;: &quot;$150-250 per sq ft&quot;
+  },
+  &quot;status&quot;: &quot;published&quot;
+}
+</code></pre>
+<h4>Delete Product</h4>
+<pre><code class="language-http">DELETE /functions/v1/products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;product_id&quot;: &quot;prod-001&quot;
+}
+</code></pre>
+<h3>Product Images</h3>
+<h4>Add Product Image</h4>
+<pre><code class="language-http">POST /functions/v1/products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;add_image&quot;,
+  &quot;product_id&quot;: &quot;prod-001&quot;,
+  &quot;image_url&quot;: &quot;https://storage.example.com/image.jpg&quot;,
+  &quot;image_type&quot;: &quot;primary&quot;,
+  &quot;display_order&quot;: 1
+}
+</code></pre>
+<h4>Get Product Images</h4>
+<pre><code class="language-http">GET /functions/v1/products-api?action=get_images&amp;product_id=prod-001
+Authorization: Bearer {token}
+</code></pre>
+<h3>Product Embeddings</h3>
+<h4>Generate Product Embedding</h4>
+<pre><code class="language-http">POST /functions/v1/products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;generate_embedding&quot;,
+  &quot;product_id&quot;: &quot;prod-001&quot;,
+  &quot;embedding_model&quot;: &quot;text-embedding-3-small&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;product_id&quot;: &quot;prod-001&quot;,
+    &quot;embedding_model&quot;: &quot;text-embedding-3-small&quot;,
+    &quot;embedding_dimensions&quot;: 1536,
+    &quot;generated_at&quot;: &quot;2025-10-19T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>Search Products by Embedding Similarity</h4>
+<pre><code class="language-http">POST /functions/v1/products-api
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;search_by_embedding&quot;,
+  &quot;query&quot;: &quot;white marble flooring&quot;,
+  &quot;limit&quot;: 10,
+  &quot;similarity_threshold&quot;: 0.7
+}
+</code></pre>
+<h3>Product Data Structure</h3>
+<h4>Product Schema</h4>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;UUID&quot;,
+  &quot;name&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;string (short)&quot;,
+  &quot;long_description&quot;: &quot;string (full content)&quot;,
+  &quot;category_id&quot;: &quot;UUID (optional)&quot;,
+  &quot;source_document_id&quot;: &quot;UUID (optional)&quot;,
+  &quot;source_chunks&quot;: &quot;JSONB array of chunk IDs&quot;,
+  &quot;properties&quot;: &quot;JSONB object (material_type, color, finish, durability, etc.)&quot;,
+  &quot;specifications&quot;: &quot;JSONB object (technical specs)&quot;,
+  &quot;metadata&quot;: &quot;JSONB object (supplier, origin, price_range, availability, certifications)&quot;,
+  &quot;embedding&quot;: &quot;VECTOR(1536) (text embedding)&quot;,
+  &quot;embedding_model&quot;: &quot;string (default: text-embedding-3-small)&quot;,
+  &quot;status&quot;: &quot;enum (draft, published, archived)&quot;,
+  &quot;created_from_type&quot;: &quot;enum (pdf_processing, xml_import, manual, scraping, sample_data)&quot;,
+  &quot;created_by&quot;: &quot;UUID (user ID)&quot;,
+  &quot;created_at&quot;: &quot;TIMESTAMPTZ&quot;,
+  &quot;updated_at&quot;: &quot;TIMESTAMPTZ&quot;
+}
+</code></pre>
+<h4>Product Image Schema</h4>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;UUID&quot;,
+  &quot;product_id&quot;: &quot;UUID&quot;,
+  &quot;image_id&quot;: &quot;UUID (optional, reference to document_images)&quot;,
+  &quot;image_url&quot;: &quot;string&quot;,
+  &quot;image_type&quot;: &quot;enum (primary, texture, sample, installation, etc.)&quot;,
+  &quot;display_order&quot;: &quot;integer&quot;,
+  &quot;metadata&quot;: &quot;JSONB object&quot;,
+  &quot;created_at&quot;: &quot;TIMESTAMPTZ&quot;
+}
+</code></pre>
+<h3>Testing Products API</h3>
+<h4>Test Script: Extract from Knowledge Base</h4>
+<pre><code class="language-bash"># Set your Supabase service role key
+export SUPABASE_SERVICE_ROLE_KEY=your_key_here
+
+# Run the test
+node scripts/test-products-from-knowledge-base.js
+</code></pre>
+<p><strong>What it does</strong>:</p>
+<ol>
+<li>Fetches real chunks from <code>document_chunks</code> table</li>
+<li>Displays chunk information (ID, content preview, page number)</li>
+<li>Extracts products from those chunks</li>
+<li>Creates product records with real data</li>
+<li>Shows all created products with full details</li>
+</ol>
+<p><strong>Expected Output</strong>:</p>
+<ul>
+<li>Chunks found count</li>
+<li>Products extracted count</li>
+<li>Products created count</li>
+<li>Full product details with properties and metadata</li>
+<li>Success rate and error count</li>
+</ul>
+<h4>Test Script: Complete E2E Workflow</h4>
+<pre><code class="language-bash"># Test cart → quote → proposal → commission workflow
+node scripts/test-products-system-complete.js
+</code></pre>
 <h2>🔗 Related Documentation</h2>
 <ul>
 <li><a href="./security-authentication.md">Security &amp; Authentication</a> - API security</li>
 <li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - API configuration</li>
 <li><a href="./ai-ml-services.md">AI &amp; ML Services</a> - AI API integrations</li>
 <li><a href="./admin-panel-guide.md">Admin Panel Guide</a> - Admin interface documentation</li>
+<li><a href="./PRODUCTS-MOCK-VS-REAL-DATA-CLARIFICATION.md">Products Mock vs Real Data</a> - Product creation workflow</li>
 </ul>
 
 </div></body></html>

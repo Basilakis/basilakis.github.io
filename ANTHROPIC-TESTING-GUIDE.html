@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Anthropic Integration Testing Guide</h1>
+<h2>Quick Start</h2>
+<h3>1. Verify Environment Variables</h3>
+<pre><code class="language-bash"># Check that ANTHROPIC_API_KEY is set in:
+# - Vercel Environment Variables
+# - Supabase Edge Function Secrets
+# - MIVAA Backend .env
+
+echo $ANTHROPIC_API_KEY  # Should show sk-ant-...
+</code></pre>
+<h3>2. Test Image Validation Endpoint</h3>
+<pre><code class="language-bash"># Direct MIVAA endpoint test
+curl -X POST https://v1api.materialshub.gr/api/v1/anthropic/images/validate \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_MIVAA_API_KEY&quot; \
+  -d &#39;{
+    &quot;image_id&quot;: &quot;test_img_123&quot;,
+    &quot;image_url&quot;: &quot;https://example.com/image.jpg&quot;,
+    &quot;product_groups&quot;: [&quot;electronics&quot;, &quot;furniture&quot;],
+    &quot;workspace_id&quot;: &quot;test_workspace&quot;
+  }&#39;
+</code></pre>
+<h3>3. Test Product Enrichment Endpoint</h3>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/v1/anthropic/products/enrich \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_MIVAA_API_KEY&quot; \
+  -d &#39;{
+    &quot;chunk_id&quot;: &quot;chunk_123&quot;,
+    &quot;chunk_content&quot;: &quot;High-quality stainless steel kitchen knife with ergonomic handle. Features sharp blade, comfortable grip, and dishwasher safe.&quot;,
+    &quot;workspace_id&quot;: &quot;test_workspace&quot;
+  }&#39;
+</code></pre>
+<h3>4. End-to-End PDF Processing Test</h3>
+<ol>
+<li><strong>Upload a PDF</strong> via the admin panel</li>
+<li><strong>Monitor the workflow</strong> in real-time:<ul>
+<li>Watch Step 9: Anthropic Image Validation</li>
+<li>Watch Step 10: Anthropic Product Enrichment</li>
+</ul>
+</li>
+<li><strong>Check the results</strong>:<ul>
+<li>Go to Admin → Knowledge Base → Images tab</li>
+<li>Verify images have validation_status and quality_score</li>
+<li>Go to Admin → Knowledge Base → Products tab</li>
+<li>Verify products have enrichment_status and confidence_score</li>
+</ul>
+</li>
+</ol>
+<h3>5. Database Verification</h3>
+<pre><code class="language-sql">-- Check image validations
+SELECT id, image_id, validation_status, quality_score, created_at
+FROM image_validations
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Check product enrichments
+SELECT id, chunk_id, enrichment_status, product_name, confidence_score, created_at
+FROM product_enrichments
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Check workflow jobs
+SELECT id, name, status, created_at
+FROM workflow_jobs
+WHERE name LIKE &#39;%MIVAA%&#39;
+ORDER BY created_at DESC
+LIMIT 5;
+</code></pre>
+<h2>Expected Results</h2>
+<h3>Image Validation</h3>
+<ul>
+<li>✅ quality_score between 0 and 1</li>
+<li>✅ validation_status: &quot;valid&quot;, &quot;needs_review&quot;, or &quot;invalid&quot;</li>
+<li>✅ product_associations array with confidence scores</li>
+<li>✅ issues and recommendations arrays</li>
+<li>✅ processing_time_ms recorded</li>
+</ul>
+<h3>Product Enrichment</h3>
+<ul>
+<li>✅ product_name extracted</li>
+<li>✅ product_category identified</li>
+<li>✅ product_description generated</li>
+<li>✅ specifications extracted as JSON</li>
+<li>✅ related_products array populated</li>
+<li>✅ confidence_score between 0 and 1</li>
+<li>✅ enrichment_status: &quot;enriched&quot;, &quot;partial&quot;, or &quot;failed&quot;</li>
+</ul>
+<h2>Troubleshooting</h2>
+<h3>Issue: &quot;ANTHROPIC_API_KEY not configured&quot;</h3>
+<p><strong>Solution</strong>: </p>
+<ul>
+<li>Verify key is set in Vercel Environment Variables</li>
+<li>Verify key is set in Supabase Edge Function Secrets</li>
+<li>Verify key is set in MIVAA backend .env</li>
+<li>Restart services after setting</li>
+</ul>
+<h3>Issue: &quot;Image validation failed: 401&quot;</h3>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li>Check MIVAA_API_KEY is correct</li>
+<li>Verify MIVAA service is running</li>
+<li>Check network connectivity to MIVAA</li>
+</ul>
+<h3>Issue: &quot;Claude API error: 429&quot;</h3>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li>Rate limit exceeded</li>
+<li>Wait a few minutes before retrying</li>
+<li>Check Anthropic API usage dashboard</li>
+</ul>
+<h3>Issue: &quot;Processing timeout&quot;</h3>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li>PDF is too large</li>
+<li>Try with smaller PDF</li>
+<li>Disable image extraction in options</li>
+<li>Increase timeout in consolidatedPDFWorkflowService</li>
+</ul>
+<h3>Issue: &quot;Fallback to basic validation&quot;</h3>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li>Anthropic API is unavailable</li>
+<li>Check API key and network</li>
+<li>Check MIVAA service logs</li>
+<li>System will continue with basic validation</li>
+</ul>
+<h2>Performance Monitoring</h2>
+<h3>Check Processing Times</h3>
+<pre><code class="language-typescript">// In browser console after PDF upload
+const job = window.workflowJobs.get(&#39;job-id&#39;);
+job.steps.forEach(step =&gt; {
+  console.log(`${step.name}: ${step.duration}ms`);
+});
+</code></pre>
+<h3>Expected Timings</h3>
+<ul>
+<li>Image Validation: 2-3 seconds per image</li>
+<li>Product Enrichment: 3-4 seconds per chunk</li>
+<li>Total for 10 images + 50 chunks: ~3-5 minutes</li>
+</ul>
+<h2>Logging</h2>
+<h3>Check MIVAA Logs</h3>
+<pre><code class="language-bash"># View MIVAA service logs
+docker logs mivaa-service
+
+# Search for Anthropic calls
+docker logs mivaa-service | grep -i anthropic
+</code></pre>
+<h3>Check Supabase Edge Function Logs</h3>
+<pre><code class="language-bash"># View in Supabase dashboard
+# Functions → validate-images → Logs
+# Functions → enrich-products → Logs
+</code></pre>
+<h3>Check Frontend Logs</h3>
+<pre><code class="language-typescript">// In browser console
+console.log(&#39;Workflow jobs:&#39;, window.workflowJobs);
+console.log(&#39;Current job:&#39;, window.workflowJobs.get(&#39;job-id&#39;));
+</code></pre>
+<h2>Success Criteria</h2>
+<p>✅ All tests pass when:</p>
+<ol>
+<li>Images are validated with Claude Vision</li>
+<li>Products are enriched with Claude Sonnet</li>
+<li>Results are stored in database</li>
+<li>Workflow steps complete successfully</li>
+<li>No errors in logs</li>
+<li>Processing times are reasonable</li>
+<li>Fallback works when API unavailable</li>
+</ol>
+<h2>Next Steps After Testing</h2>
+<ol>
+<li><strong>Monitor API Usage</strong>: Check Anthropic dashboard for costs</li>
+<li><strong>Optimize Prompts</strong>: Fine-tune based on results</li>
+<li><strong>Scale Testing</strong>: Test with larger PDFs and batches</li>
+<li><strong>User Documentation</strong>: Update guides with new features</li>
+<li><strong>Performance Tuning</strong>: Optimize timeouts and batch sizes</li>
+</ol>
+
+</div></body></html>
