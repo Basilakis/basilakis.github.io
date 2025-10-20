@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>ChunkAnalysisService Guide</h1>
+<p><strong>Service</strong>: <code>src/services/ChunkAnalysisService.ts</code><br><strong>Types</strong>: <code>src/types/chunk-analysis.ts</code><br><strong>Database Tables</strong>: chunk_classifications, chunk_boundaries, chunk_validation_scores</p>
+<hr>
+<h2>Overview</h2>
+<p>ChunkAnalysisService manages database operations for chunk analysis data:</p>
+<ul>
+<li><strong>Classifications</strong>: Content type classification results (product, specification, etc.)</li>
+<li><strong>Boundaries</strong>: Semantic boundary detection results (sentence, paragraph, semantic, etc.)</li>
+<li><strong>Validation Scores</strong>: Quality metrics and validation status</li>
+</ul>
+<hr>
+<h2>Import</h2>
+<pre><code class="language-typescript">import { chunkAnalysisService } from &#39;@/services/ChunkAnalysisService&#39;;
+import {
+  ChunkClassification,
+  ChunkBoundary,
+  ChunkValidationScore,
+  ContentType,
+  BoundaryType,
+  ValidationStatus
+} from &#39;@/types/chunk-analysis&#39;;
+</code></pre>
+<hr>
+<h2>Classification Operations</h2>
+<h3>Insert Single Classification</h3>
+<pre><code class="language-typescript">const classification = await chunkAnalysisService.insertClassification({
+  chunk_id: &#39;chunk-123&#39;,
+  workspace_id: &#39;workspace-123&#39;,
+  content_type: &#39;product&#39;,
+  confidence: 0.95,
+  reasoning: &#39;Contains product description&#39;,
+  sub_categories: [&#39;fabric&#39;, &#39;textile&#39;],
+  model_name: &#39;claude-4-5-haiku-20250514&#39;,
+  processing_time_ms: 250
+});
+</code></pre>
+<h3>Batch Insert Classifications</h3>
+<pre><code class="language-typescript">const classifications = await chunkAnalysisService.insertClassifications([
+  {
+    chunk_id: &#39;chunk-123&#39;,
+    content_type: &#39;product&#39;,
+    confidence: 0.95
+  },
+  {
+    chunk_id: &#39;chunk-124&#39;,
+    content_type: &#39;specification&#39;,
+    confidence: 0.88
+  }
+]);
+</code></pre>
+<h3>Get Classifications for Chunk</h3>
+<pre><code class="language-typescript">const classifications = await chunkAnalysisService.getClassifications(&#39;chunk-123&#39;);
+// Returns: ChunkClassification[]
+</code></pre>
+<h3>Get Classification Statistics</h3>
+<pre><code class="language-typescript">const stats = await chunkAnalysisService.getClassificationStats(&#39;workspace-123&#39;);
+// Returns: { content_type: string, count: number, avg_confidence: number }[]
+</code></pre>
+<hr>
+<h2>Boundary Operations</h2>
+<h3>Insert Single Boundary</h3>
+<pre><code class="language-typescript">const boundary = await chunkAnalysisService.insertBoundary({
+  chunk_id: &#39;chunk-123&#39;,
+  next_chunk_id: &#39;chunk-124&#39;,
+  workspace_id: &#39;workspace-123&#39;,
+  boundary_score: 0.85,
+  boundary_type: &#39;sentence&#39;,
+  semantic_similarity: 0.45,
+  is_product_boundary: true,
+  reasoning: &#39;Strong sentence boundary detected&#39;
+});
+</code></pre>
+<h3>Batch Insert Boundaries</h3>
+<pre><code class="language-typescript">const boundaries = await chunkAnalysisService.insertBoundaries([
+  {
+    chunk_id: &#39;chunk-123&#39;,
+    next_chunk_id: &#39;chunk-124&#39;,
+    boundary_score: 0.85,
+    boundary_type: &#39;sentence&#39;
+  },
+  {
+    chunk_id: &#39;chunk-124&#39;,
+    next_chunk_id: &#39;chunk-125&#39;,
+    boundary_score: 0.72,
+    boundary_type: &#39;paragraph&#39;
+  }
+]);
+</code></pre>
+<h3>Get Boundaries for Chunk</h3>
+<pre><code class="language-typescript">const boundaries = await chunkAnalysisService.getBoundaries(&#39;chunk-123&#39;);
+// Returns: ChunkBoundary[]
+</code></pre>
+<h3>Get Product Boundaries</h3>
+<pre><code class="language-typescript">const productBoundaries = await chunkAnalysisService.getProductBoundaries(&#39;workspace-123&#39;);
+// Returns: ChunkBoundary[] (filtered by is_product_boundary = true)
+</code></pre>
+<h3>Get Boundary Statistics</h3>
+<pre><code class="language-typescript">const stats = await chunkAnalysisService.getBoundaryStats(&#39;workspace-123&#39;);
+// Returns: { boundary_type: string, count: number, avg_score: number }[]
+</code></pre>
+<hr>
+<h2>Validation Operations</h2>
+<h3>Insert Validation Score</h3>
+<pre><code class="language-typescript">const validation = await chunkAnalysisService.insertValidationScore({
+  chunk_id: &#39;chunk-123&#39;,
+  workspace_id: &#39;workspace-123&#39;,
+  content_quality_score: 0.9,
+  boundary_quality_score: 0.85,
+  semantic_coherence_score: 0.88,
+  completeness_score: 0.92,
+  overall_validation_score: 0.89,
+  validation_status: &#39;validated&#39;,
+  validation_notes: &#39;Good quality chunk&#39;,
+  issues: [
+    {
+      type: &#39;boundary_quality&#39;,
+      severity: &#39;low&#39;,
+      description: &#39;Minor boundary issue&#39;
+    }
+  ],
+  recommendations: [
+    {
+      type: &#39;merge_with_next&#39;,
+      description: &#39;Consider merging with next chunk&#39;,
+      priority: &#39;low&#39;
+    }
+  ]
+});
+</code></pre>
+<h3>Batch Insert Validation Scores</h3>
+<pre><code class="language-typescript">const validations = await chunkAnalysisService.insertValidationScores([
+  {
+    chunk_id: &#39;chunk-123&#39;,
+    overall_validation_score: 0.89,
+    validation_status: &#39;validated&#39;
+  },
+  {
+    chunk_id: &#39;chunk-124&#39;,
+    overall_validation_score: 0.65,
+    validation_status: &#39;needs_review&#39;
+  }
+]);
+</code></pre>
+<h3>Get Validation Scores for Chunk</h3>
+<pre><code class="language-typescript">const scores = await chunkAnalysisService.getValidationScores(&#39;chunk-123&#39;);
+// Returns: ChunkValidationScore[]
+</code></pre>
+<h3>Get Chunks Needing Review</h3>
+<pre><code class="language-typescript">const needsReview = await chunkAnalysisService.getChunksNeedingReview(&#39;workspace-123&#39;);
+// Returns: ChunkValidationScore[] (filtered by validation_status = &#39;needs_review&#39;)
+</code></pre>
+<h3>Get Validation Statistics</h3>
+<pre><code class="language-typescript">const stats = await chunkAnalysisService.getValidationStats(&#39;workspace-123&#39;);
+// Returns: { validation_status: string, count: number, avg_score: number }[]
+</code></pre>
+<hr>
+<h2>Comprehensive Analysis</h2>
+<h3>Get Complete Chunk Analysis</h3>
+<pre><code class="language-typescript">const analysis = await chunkAnalysisService.getChunkAnalysis(&#39;chunk-123&#39;);
+// Returns:
+// {
+//   chunk_id: string,
+//   classifications: ChunkClassification[],
+//   boundaries: ChunkBoundary[],
+//   validation_scores: ChunkValidationScore[]
+// }
+</code></pre>
+<hr>
+<h2>Types Reference</h2>
+<h3>ContentType</h3>
+<pre><code class="language-typescript">type ContentType = 
+  | &#39;product&#39;
+  | &#39;specification&#39;
+  | &#39;introduction&#39;
+  | &#39;legal_disclaimer&#39;
+  | &#39;technical_detail&#39;
+  | &#39;marketing&#39;
+  | &#39;other&#39;;
+</code></pre>
+<h3>BoundaryType</h3>
+<pre><code class="language-typescript">type BoundaryType = 
+  | &#39;sentence&#39;
+  | &#39;paragraph&#39;
+  | &#39;section&#39;
+  | &#39;semantic&#39;
+  | &#39;weak&#39;;
+</code></pre>
+<h3>ValidationStatus</h3>
+<pre><code class="language-typescript">type ValidationStatus = 
+  | &#39;pending&#39;
+  | &#39;validated&#39;
+  | &#39;needs_review&#39;
+  | &#39;rejected&#39;;
+</code></pre>
+<hr>
+<h2>Error Handling</h2>
+<pre><code class="language-typescript">try {
+  const classification = await chunkAnalysisService.insertClassification({
+    chunk_id: &#39;chunk-123&#39;,
+    content_type: &#39;product&#39;,
+    confidence: 0.95
+  });
+} catch (error) {
+  console.error(&#39;Failed to insert classification:&#39;, error);
+  // Handle error appropriately
+}
+</code></pre>
+<hr>
+<h2>Best Practices</h2>
+<ol>
+<li><strong>Always provide workspace_id</strong> for proper isolation</li>
+<li><strong>Use batch operations</strong> for multiple inserts (better performance)</li>
+<li><strong>Check validation_status</strong> before using chunks in production</li>
+<li><strong>Monitor quality scores</strong> to identify problematic chunks</li>
+<li><strong>Use getChunkAnalysis()</strong> for comprehensive chunk review</li>
+</ol>
+<hr>
+<p><strong>Status</strong>: ✅ PRODUCTION READY</p>
+
+</div></body></html>
