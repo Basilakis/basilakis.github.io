@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Environment Variables Guide</h1>
+<h2>🚀 Overview</h2>
+<p>The Material Kai Vision Platform uses <strong>NO .env files</strong>. All environment variables are managed through:</p>
+<ul>
+<li><strong>Vercel Environment Variables</strong> (Frontend deployment)</li>
+<li><strong>GitHub Secrets</strong> (CI/CD workflows)</li>
+<li><strong>Supabase Edge Functions Secrets</strong> (Backend functions)</li>
+</ul>
+<h2>📋 Required Environment Variables</h2>
+<h3>Frontend (Vercel)</h3>
+<p>These variables are needed for the React frontend to run on Vercel:</p>
+<h4>Core Supabase</h4>
+<pre><code>SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=&lt;your-supabase-anon-key&gt;
+</code></pre>
+<h4>Stripe (CRM - Credit System &amp; Subscriptions)</h4>
+<pre><code>STRIPE_PUBLISHABLE_KEY=pk_live_&lt;your-stripe-publishable-key&gt;
+</code></pre>
+<h4>MIVAA Service</h4>
+<pre><code>MIVAA_GATEWAY_URL=https://v1api.materialshub.gr
+MIVAA_API_KEY=&lt;your-mivaa-jwt-token&gt;
+</code></pre>
+<h4>External APIs (Optional)</h4>
+<pre><code>VITE_OPENAI_API_KEY=&lt;optional-openai-key&gt;
+VITE_HUGGINGFACE_API_KEY=&lt;optional-huggingface-key&gt;
+VITE_REPLICATE_API_TOKEN=&lt;optional-replicate-token&gt;
+</code></pre>
+<h4>Monitoring (Optional)</h4>
+<pre><code>VITE_SENTRY_DSN=&lt;optional-sentry-dsn&gt;
+VITE_LOGROCKET_APP_ID=&lt;optional-logrocket-id&gt;
+</code></pre>
+<h3>GitHub Secrets (CI/CD)</h3>
+<p>These are used in GitHub Actions workflows:</p>
+<h4>Supabase</h4>
+<pre><code>SUPABASE_PROJECT_ID=bgbavxtjlbvgplozizxu
+SUPABASE_ACCESS_TOKEN=&lt;your-supabase-cli-token&gt;
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=&lt;your-supabase-anon-key&gt;
+SUPABASE_SERVICE_ROLE_KEY=&lt;your-service-role-key&gt;
+</code></pre>
+<h4>Stripe (CRM - Credit System &amp; Subscriptions)</h4>
+<pre><code>STRIPE_SECRET_KEY=sk_live_&lt;your-stripe-secret-key&gt;
+STRIPE_WEBHOOK_SECRET=whsec_&lt;your-stripe-webhook-secret&gt;
+STRIPE_PUBLISHABLE_KEY=pk_live_&lt;your-stripe-publishable-key&gt;
+</code></pre>
+<h4>Vercel</h4>
+<pre><code>VERCEL_TOKEN=&lt;your-vercel-token&gt;
+VERCEL_ORG_ID=&lt;your-vercel-org-id&gt;
+VERCEL_PROJECT_ID=&lt;your-vercel-project-id&gt;
+</code></pre>
+<h4>Deployment</h4>
+<pre><code>DEPLOY_HOST=&lt;server-ip-or-hostname&gt;
+DEPLOY_USER=&lt;ssh-username&gt;
+DEPLOY_SSH_KEY=&lt;ssh-private-key&gt;
+</code></pre>
+<h4>API Keys</h4>
+<pre><code>OPENAI_API_KEY=&lt;openai-key&gt;
+ANTHROPIC_API_KEY=&lt;anthropic-key&gt;
+HUGGINGFACE_API_KEY=&lt;huggingface-key&gt;
+REPLICATE_API_TOKEN=&lt;replicate-token&gt;
+TOGETHER_API_KEY=&lt;together-ai-key&gt;
+</code></pre>
+<h4>Security</h4>
+<pre><code>JWT_SECRET_KEY=&lt;jwt-signing-secret&gt;
+ENCRYPTION_KEY=&lt;data-encryption-key&gt;
+</code></pre>
+<h3>Supabase Edge Functions Secrets</h3>
+<p>These are used by Supabase Edge Functions (backend):</p>
+<pre><code>SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=&lt;your-service-role-key&gt;
+OPENAI_API_KEY=&lt;openai-key&gt;
+MIVAA_API_KEY=&lt;mivaa-jwt-token&gt;
+STRIPE_SECRET_KEY=sk_live_&lt;your-stripe-secret-key&gt;
+STRIPE_WEBHOOK_SECRET=whsec_&lt;your-stripe-webhook-secret&gt;
+</code></pre>
+<h2>🔧 Local Development (Optional)</h2>
+<p>For local development, you can create a <code>.env.local</code> file (NOT committed to git):</p>
+<pre><code class="language-bash"># Frontend
+VITE_SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+VITE_SUPABASE_ANON_KEY=&lt;your-anon-key&gt;
+VITE_MIVAA_GATEWAY_URL=https://v1api.materialshub.gr
+VITE_MIVAA_API_KEY=&lt;your-mivaa-key&gt;
+
+# Optional APIs
+VITE_OPENAI_API_KEY=&lt;optional&gt;
+VITE_HUGGINGFACE_API_KEY=&lt;optional&gt;
+</code></pre>
+<p><strong>⚠️ IMPORTANT</strong>: Never commit <code>.env.local</code> to git. Add it to <code>.gitignore</code>.</p>
+<h2>📝 How Variables Are Used</h2>
+<h3>In Frontend Code</h3>
+<p>Variables are accessed via <code>process.env</code> (defined in vite.config.ts):</p>
+<pre><code class="language-typescript">// vite.config.ts defines these
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const MIVAA_GATEWAY_URL = process.env.MIVAA_GATEWAY_URL;
+const MIVAA_API_KEY = process.env.MIVAA_API_KEY;
+</code></pre>
+<h3>In Supabase Client</h3>
+<pre><code class="language-typescript">// src/integrations/supabase/client.ts
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_ANON_KEY;
+</code></pre>
+<h3>In Edge Functions</h3>
+<pre><code class="language-typescript">// supabase/functions/*/index.ts
+const supabase = createClient(
+  Deno.env.get(&quot;SUPABASE_URL&quot;) || &quot;&quot;,
+  Deno.env.get(&quot;SUPABASE_SERVICE_ROLE_KEY&quot;) || &quot;&quot;
+);
+</code></pre>
+<h2>💳 CRM System Secrets (Stripe Integration)</h2>
+<p>The CRM system requires Stripe integration for subscriptions and credit purchases. Here&#39;s what you need:</p>
+<h3>Stripe Setup</h3>
+<ol>
+<li>Create Stripe account at <a href="https://stripe.com">https://stripe.com</a></li>
+<li>Create products:<ul>
+<li><strong>Subscription Plans</strong>: Free ($0), Pro ($99/month), Enterprise ($299/month)</li>
+<li><strong>Credit Packages</strong>: Starter ($9.99), Standard ($44.99), Premium ($84.99)</li>
+</ul>
+</li>
+<li>Get API keys from Stripe Dashboard:<ul>
+<li>Publishable Key (starts with <code>pk_live_</code>)</li>
+<li>Secret Key (starts with <code>sk_live_</code>)</li>
+<li>Webhook Signing Secret (starts with <code>whsec_</code>)</li>
+</ul>
+</li>
+</ol>
+<h3>Where to Add Stripe Secrets</h3>
+<p><strong>GitHub Secrets</strong> (for CI/CD):</p>
+<pre><code>STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+</code></pre>
+<p><strong>Supabase Edge Functions Secrets</strong> (for backend):</p>
+<pre><code class="language-bash">supabase secrets set STRIPE_SECRET_KEY=sk_live_...
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+</code></pre>
+<p><strong>Vercel Environment Variables</strong> (for frontend):</p>
+<pre><code>STRIPE_PUBLISHABLE_KEY=pk_live_...
+</code></pre>
+<h3>Authentication Methods (Already Configured ✅)</h3>
+<ul>
+<li><strong>Google OAuth</strong>: ✅ Configured in Supabase</li>
+<li><strong>Email/Password Signup</strong>: ✅ Enabled in Supabase</li>
+<li>No additional secrets needed for authentication</li>
+</ul>
+<hr>
+<h2>🔐 Security Best Practices</h2>
+<ol>
+<li><p><strong>Never commit secrets to git</strong></p>
+<ul>
+<li>Use <code>.gitignore</code> for <code>.env.local</code></li>
+<li>Only commit <code>.env.example</code> with placeholder values</li>
+</ul>
+</li>
+<li><p><strong>Use appropriate key types</strong></p>
+<ul>
+<li>Frontend: Use <code>SUPABASE_ANON_KEY</code> (public, limited permissions)</li>
+<li>Backend: Use <code>SUPABASE_SERVICE_ROLE_KEY</code> (private, full permissions)</li>
+</ul>
+</li>
+<li><p><strong>Rotate secrets regularly</strong></p>
+<ul>
+<li>Update API keys quarterly</li>
+<li>Regenerate JWT secrets after security incidents</li>
+</ul>
+</li>
+<li><p><strong>Limit secret scope</strong></p>
+<ul>
+<li>Only expose necessary secrets to each environment</li>
+<li>Use Supabase RLS policies to limit data access</li>
+</ul>
+</li>
+</ol>
+<h2>📊 Variable Reference Table</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Required</th>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>String</td>
+<td>✅</td>
+<td>Vercel, GitHub, Supabase</td>
+<td>Database connection</td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>Vercel, GitHub</td>
+<td>Frontend auth</td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub, Supabase</td>
+<td>Backend operations</td>
+</tr>
+<tr>
+<td><code>STRIPE_SECRET_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub, Supabase</td>
+<td>Stripe backend API calls</td>
+</tr>
+<tr>
+<td><code>STRIPE_WEBHOOK_SECRET</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub, Supabase</td>
+<td>Stripe webhook verification</td>
+</tr>
+<tr>
+<td><code>STRIPE_PUBLISHABLE_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>Vercel, GitHub</td>
+<td>Stripe frontend checkout</td>
+</tr>
+<tr>
+<td><code>MIVAA_GATEWAY_URL</code></td>
+<td>String</td>
+<td>✅</td>
+<td>Vercel, GitHub</td>
+<td>PDF processing service</td>
+</tr>
+<tr>
+<td><code>MIVAA_API_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>Vercel, GitHub, Supabase</td>
+<td>MIVAA authentication</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>String</td>
+<td>❌</td>
+<td>GitHub, Supabase</td>
+<td>LLM operations</td>
+</tr>
+<tr>
+<td><code>HUGGINGFACE_API_KEY</code></td>
+<td>String</td>
+<td>❌</td>
+<td>GitHub</td>
+<td>ML models</td>
+</tr>
+<tr>
+<td><code>JWT_SECRET_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub</td>
+<td>Token signing</td>
+</tr>
+<tr>
+<td><code>ENCRYPTION_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub</td>
+<td>Data encryption</td>
+</tr>
+<tr>
+<td><code>VERCEL_TOKEN</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub</td>
+<td>Deployment automation</td>
+</tr>
+<tr>
+<td><code>DEPLOY_SSH_KEY</code></td>
+<td>String</td>
+<td>✅</td>
+<td>GitHub</td>
+<td>Server deployment</td>
+</tr>
+</tbody></table>
+<h2>🚀 Setting Up Variables</h2>
+<h3>1. Vercel Environment Variables</h3>
+<pre><code class="language-bash"># Go to Vercel Dashboard
+# Project → Settings → Environment Variables
+
+# Add these variables:
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_ANON_KEY=&lt;your-key&gt;
+MIVAA_GATEWAY_URL=https://v1api.materialshub.gr
+MIVAA_API_KEY=&lt;your-key&gt;
+</code></pre>
+<h3>2. GitHub Secrets</h3>
+<pre><code class="language-bash"># Go to GitHub Repository
+# Settings → Secrets and variables → Actions
+
+# Add all required secrets from the GitHub Secrets section above
+</code></pre>
+<h3>3. Supabase Edge Functions Secrets</h3>
+<pre><code class="language-bash"># Using Supabase CLI
+supabase secrets set SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=&lt;your-key&gt;
+supabase secrets set OPENAI_API_KEY=&lt;your-key&gt;
+supabase secrets set MIVAA_API_KEY=&lt;your-key&gt;
+</code></pre>
+<h2>✅ Verification</h2>
+<p>To verify variables are set correctly:</p>
+<ol>
+<li><strong>Frontend</strong>: Check Vercel deployment logs</li>
+<li><strong>GitHub</strong>: Check workflow run logs</li>
+<li><strong>Supabase</strong>: Run <code>supabase secrets list</code></li>
+</ol>
+<h2>🆘 Troubleshooting</h2>
+<h3>&quot;Missing SUPABASE_URL environment variable&quot;</h3>
+<ul>
+<li>Check Vercel environment variables are set</li>
+<li>Verify variable names match exactly (case-sensitive)</li>
+<li>Redeploy after adding variables</li>
+</ul>
+<h3>&quot;MIVAA_API_KEY is undefined&quot;</h3>
+<ul>
+<li>Verify key is set in Vercel</li>
+<li>Check key hasn&#39;t expired</li>
+<li>Regenerate key if needed</li>
+</ul>
+<h3>&quot;Edge Function failed to authenticate&quot;</h3>
+<ul>
+<li>Verify <code>SUPABASE_SERVICE_ROLE_KEY</code> is set in Supabase secrets</li>
+<li>Check key has correct permissions</li>
+<li>Verify key hasn&#39;t been rotated</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: 2025-10-16
+<strong>Status</strong>: ✅ All systems configured</p>
+
+</div></body></html>
