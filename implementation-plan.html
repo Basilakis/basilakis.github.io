@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Implementation Plan: Multi-Model PDF Processing System</h1>
+<p><strong>Date</strong>: 2025-10-19<br><strong>Status</strong>: Ready for Implementation<br><strong>Duration</strong>: 4-5 weeks<br><strong>Cost</strong>: $220/month (100 PDFs)</p>
+<hr>
+<h2>Pre-Implementation: Model Upgrades</h2>
+<h3>Upgrade OpenAI Models</h3>
+<p><strong>Objective</strong>: Upgrade from gpt-3.5-turbo to gpt-4o
+<strong>Impact</strong>: Search relevancy 45% → 95%, cost +$50/month</p>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Update <code>mivaa-pdf-extractor/app/config.py</code><ul>
+<li><code>openai_model</code>: &quot;gpt-3.5-turbo&quot; → &quot;gpt-4o&quot;</li>
+<li><code>multimodal_llm_model</code>: &quot;gpt-4-vision-preview&quot; → &quot;gpt-4o&quot;</li>
+<li><code>image_analysis_model</code>: &quot;gpt-4-vision-preview&quot; → &quot;gpt-4o&quot;</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> Update <code>mivaa-pdf-extractor/app/services/llamaindex_service.py</code><ul>
+<li><code>self.llm_model</code>: &quot;gpt-3.5-turbo&quot; → &quot;gpt-4o&quot;</li>
+<li><code>self.multimodal_llm_model</code>: &quot;gpt-4-vision-preview&quot; → &quot;gpt-4o&quot;</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> Update <code>src/components/AI/MaterialAgentSearchInterface.tsx</code></li>
+<li><input disabled="" type="checkbox"> Test RAG synthesis quality</li>
+<li><input disabled="" type="checkbox"> Verify cost tracking</li>
+</ul>
+<hr>
+<h2>Phase 1: Foundation (Week 1-2)</h2>
+<h3>1.1 Content Classification Service</h3>
+<p><strong>Objective</strong>: Classify PDF chunks by content type
+<strong>Models</strong>: Claude 3.5 Haiku (primary), Llama fallback
+<strong>Deliverables</strong>:</p>
+<ul>
+<li>ContentClassificationService (TypeScript)</li>
+<li>Classification prompts &amp; templates</li>
+<li>Confidence scoring logic</li>
+<li>Error handling &amp; retries</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create ContentClassificationService</li>
+<li><input disabled="" type="checkbox"> Implement Claude 3.5 Haiku integration</li>
+<li><input disabled="" type="checkbox"> Add Llama fallback logic</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+<li><input disabled="" type="checkbox"> Add integration tests</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>src/services/ContentClassificationService.ts</code> (new)</li>
+<li><code>supabase/functions/classify-content/index.ts</code> (new)</li>
+<li>Tests in <code>src/services/__tests__/</code></li>
+</ul>
+<hr>
+<h3>1.2 Boundary Detection Enhancement</h3>
+<p><strong>Objective</strong>: Improve product boundary detection<br><strong>Models</strong>: OpenAI embeddings (primary), Llama fallback<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Enhanced BoundaryDetectionService</li>
+<li>Semantic clustering logic</li>
+<li>Boundary validation</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Review existing BoundaryDetectionService</li>
+<li><input disabled="" type="checkbox"> Enhance clustering algorithm</li>
+<li><input disabled="" type="checkbox"> Add Llama fallback</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+</ul>
+<p><strong>Files to Modify</strong>:</p>
+<ul>
+<li><code>src/services/BoundaryDetectionService.ts</code></li>
+<li>Tests in <code>src/services/__tests__/</code></li>
+</ul>
+<hr>
+<h3>1.3 Database Schema Updates</h3>
+<p><strong>Objective</strong>: Support new classification &amp; validation data<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>New tables/columns for classifications</li>
+<li>Validation scores storage</li>
+<li>Metadata extensions</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Design schema changes</li>
+<li><input disabled="" type="checkbox"> Create Supabase migrations</li>
+<li><input disabled="" type="checkbox"> Update TypeScript types</li>
+<li><input disabled="" type="checkbox"> Add RLS policies</li>
+</ul>
+<p><strong>Files to Modify</strong>:</p>
+<ul>
+<li><code>supabase/migrations/</code> (new)</li>
+<li><code>src/types/database.ts</code></li>
+</ul>
+<hr>
+<h3>1.4 Text &amp; Image Search Integration</h3>
+<p><strong>Objective</strong>: Ensure search works with new data<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Updated search queries</li>
+<li>Embedding generation for new fields</li>
+<li>Search result ranking</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Update MaterialVisualSearchService</li>
+<li><input disabled="" type="checkbox"> Add embedding generation for new fields</li>
+<li><input disabled="" type="checkbox"> Test search functionality</li>
+<li><input disabled="" type="checkbox"> Optimize query performance</li>
+</ul>
+<p><strong>Files to Modify</strong>:</p>
+<ul>
+<li><code>mivaa-pdf-extractor/app/services/material_visual_search_service.py</code></li>
+<li><code>src/services/ragKnowledgeService.ts</code></li>
+</ul>
+<hr>
+<h2>Phase 2: Quality &amp; Enrichment (Week 2-3)</h2>
+<h3>2.1 Image Validation Service</h3>
+<p><strong>Objective</strong>: Validate image-product associations<br><strong>Models</strong>: Claude Sonnet (primary), CLIP+Llama fallback<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>ImageValidationService</li>
+<li>Vision-based validation logic</li>
+<li>Confidence scoring</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create ImageValidationService</li>
+<li><input disabled="" type="checkbox"> Implement Claude Vision integration</li>
+<li><input disabled="" type="checkbox"> Add CLIP+Llama fallback</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>src/services/ImageValidationService.ts</code> (new)</li>
+<li><code>supabase/functions/validate-images/index.ts</code> (new)</li>
+<li>Tests in <code>src/services/__tests__/</code></li>
+</ul>
+<hr>
+<h3>2.2 Product Enrichment Service</h3>
+<p><strong>Objective</strong>: Generate complete product records<br><strong>Models</strong>: Claude Sonnet<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>ProductEnrichmentService</li>
+<li>Image caption generation</li>
+<li>Visual property extraction</li>
+<li>Product summary generation</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create ProductEnrichmentService</li>
+<li><input disabled="" type="checkbox"> Implement Claude Sonnet integration</li>
+<li><input disabled="" type="checkbox"> Add caption generation</li>
+<li><input disabled="" type="checkbox"> Add property extraction</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>src/services/ProductEnrichmentService.ts</code> (new)</li>
+<li><code>supabase/functions/enrich-products/index.ts</code> (new)</li>
+<li>Tests in <code>src/services/__tests__/</code></li>
+</ul>
+<hr>
+<h3>2.3 Metadata &amp; Validation Rules</h3>
+<p><strong>Objective</strong>: Ensure data quality<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Validation rule engine</li>
+<li>Metadata consistency checks</li>
+<li>Quality scoring</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Design validation rules</li>
+<li><input disabled="" type="checkbox"> Implement rule engine</li>
+<li><input disabled="" type="checkbox"> Add quality scoring</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>src/services/ValidationRuleEngine.ts</code> (new)</li>
+<li>Tests in <code>src/services/__tests__/</code></li>
+</ul>
+<hr>
+<h2>Phase 3: Search Enhancement (Week 3-4)</h2>
+<h3>3.1 Search Re-ranking Service</h3>
+<p><strong>Objective</strong>: Optional premium search re-ranking<br><strong>Models</strong>: Claude Sonnet<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>SearchReRankingService</li>
+<li>Relevance analysis</li>
+<li>Explanation generation</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create SearchReRankingService</li>
+<li><input disabled="" type="checkbox"> Implement Claude Sonnet integration</li>
+<li><input disabled="" type="checkbox"> Add relevance analysis</li>
+<li><input disabled="" type="checkbox"> Add explanation generation</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>src/services/SearchReRankingService.ts</code> (new)</li>
+<li><code>supabase/functions/rerank-search/index.ts</code> (new)</li>
+<li>Tests in <code>src/services/__tests__/</code></li>
+</ul>
+<hr>
+<h3>3.2 Mixed Query Support</h3>
+<p><strong>Objective</strong>: Support text + image queries<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Mixed query handler</li>
+<li>Result fusion logic</li>
+<li>Ranking optimization</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Enhance MaterialVisualSearchService</li>
+<li><input disabled="" type="checkbox"> Add mixed query support</li>
+<li><input disabled="" type="checkbox"> Optimize result fusion</li>
+<li><input disabled="" type="checkbox"> Add unit tests</li>
+</ul>
+<p><strong>Files to Modify</strong>:</p>
+<ul>
+<li><code>mivaa-pdf-extractor/app/services/material_visual_search_service.py</code></li>
+<li><code>src/services/ragKnowledgeService.ts</code></li>
+</ul>
+<hr>
+<h2>Phase 4: Testing &amp; Optimization (Week 4-5)</h2>
+<h3>4.1 End-to-End Testing</h3>
+<p><strong>Objective</strong>: Validate complete workflow<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>E2E test suite</li>
+<li>Performance benchmarks</li>
+<li>Quality metrics</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create E2E test suite</li>
+<li><input disabled="" type="checkbox"> Test all stages</li>
+<li><input disabled="" type="checkbox"> Measure performance</li>
+<li><input disabled="" type="checkbox"> Validate quality metrics</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>tests/e2e/pdf-processing.test.ts</code> (new)</li>
+<li><code>tests/e2e/search.test.ts</code> (new)</li>
+</ul>
+<hr>
+<h3>4.2 Model Testing &amp; Validation</h3>
+<p><strong>Objective</strong>: Ensure models work correctly<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Model validation tests</li>
+<li>Output quality checks</li>
+<li>Fallback testing</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create model validation tests</li>
+<li><input disabled="" type="checkbox"> Test Claude Haiku classification</li>
+<li><input disabled="" type="checkbox"> Test Claude Sonnet validation</li>
+<li><input disabled="" type="checkbox"> Test Claude Sonnet enrichment</li>
+<li><input disabled="" type="checkbox"> Test fallback mechanisms</li>
+<li><input disabled="" type="checkbox"> Validate output quality</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>tests/models/classification.test.ts</code> (new)</li>
+<li><code>tests/models/validation.test.ts</code> (new)</li>
+<li><code>tests/models/enrichment.test.ts</code> (new)</li>
+</ul>
+<hr>
+<h3>4.3 Performance Optimization</h3>
+<p><strong>Objective</strong>: Optimize for scale<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Caching strategy</li>
+<li>Batch processing</li>
+<li>Query optimization</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Implement caching</li>
+<li><input disabled="" type="checkbox"> Add batch processing</li>
+<li><input disabled="" type="checkbox"> Optimize queries</li>
+<li><input disabled="" type="checkbox"> Benchmark performance</li>
+</ul>
+<p><strong>Files to Modify</strong>:</p>
+<ul>
+<li>Various service files</li>
+</ul>
+<hr>
+<h3>4.4 Quality Dashboard</h3>
+<p><strong>Objective</strong>: Monitor system quality<br><strong>Deliverables</strong>:</p>
+<ul>
+<li>Quality metrics dashboard</li>
+<li>Performance monitoring</li>
+<li>Error tracking</li>
+</ul>
+<p><strong>Tasks</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Create quality dashboard</li>
+<li><input disabled="" type="checkbox"> Add metrics collection</li>
+<li><input disabled="" type="checkbox"> Add performance monitoring</li>
+<li><input disabled="" type="checkbox"> Add error tracking</li>
+</ul>
+<p><strong>Files to Create/Modify</strong>:</p>
+<ul>
+<li><code>src/pages/admin/quality-dashboard.tsx</code> (new)</li>
+<li><code>src/services/MetricsService.ts</code> (new)</li>
+</ul>
+<hr>
+<h2>Implementation Checklist</h2>
+<h3>Pre-Implementation</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Review model-allocation-and-architecture.md</li>
+<li><input disabled="" type="checkbox"> Approve implementation plan</li>
+<li><input disabled="" type="checkbox"> Set up development environment</li>
+<li><input disabled="" type="checkbox"> Configure API keys (Claude, OpenAI, TogetherAI)</li>
+</ul>
+<h3>Phase 1</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Content Classification Service</li>
+<li><input disabled="" type="checkbox"> Boundary Detection Enhancement</li>
+<li><input disabled="" type="checkbox"> Database Schema Updates</li>
+<li><input disabled="" type="checkbox"> Text &amp; Image Search Integration</li>
+<li><input disabled="" type="checkbox"> Phase 1 Testing</li>
+</ul>
+<h3>Phase 2</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Image Validation Service</li>
+<li><input disabled="" type="checkbox"> Product Enrichment Service</li>
+<li><input disabled="" type="checkbox"> Metadata &amp; Validation Rules</li>
+<li><input disabled="" type="checkbox"> Phase 2 Testing</li>
+</ul>
+<h3>Phase 3</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Search Re-ranking Service</li>
+<li><input disabled="" type="checkbox"> Mixed Query Support</li>
+<li><input disabled="" type="checkbox"> Phase 3 Testing</li>
+</ul>
+<h3>Phase 4</h3>
+<ul>
+<li><input disabled="" type="checkbox"> End-to-End Testing</li>
+<li><input disabled="" type="checkbox"> Model Testing &amp; Validation</li>
+<li><input disabled="" type="checkbox"> Performance Optimization</li>
+<li><input disabled="" type="checkbox"> Quality Dashboard</li>
+<li><input disabled="" type="checkbox"> Final Testing &amp; Deployment</li>
+</ul>
+<hr>
+<h2>Success Criteria</h2>
+<ul>
+<li>✅ All services implemented and tested</li>
+<li>✅ Search relevancy: 45% → 95%</li>
+<li>✅ Product quality: 100% complete records</li>
+<li>✅ Processing cost: $1.70/PDF</li>
+<li>✅ Processing speed: &lt;5 seconds/PDF</li>
+<li>✅ Error rate: &lt;1%</li>
+<li>✅ All tests passing</li>
+<li>✅ Documentation complete</li>
+</ul>
+<hr>
+<p><strong>Next</strong>: Start Phase 1 Implementation</p>
+
+</div></body></html>
