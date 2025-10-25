@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Automatic Categorization &amp; Metadata Extraction</h1>
+<h2>📋 Overview</h2>
+<p>The Material Kai Vision Platform automatically extracts and categorizes document content using AI-powered analysis, keyword matching, and pattern recognition. This guide explains how automatic categorization and metadata extraction work.</p>
+<hr>
+<h2>🎯 Automatic Categorization System</h2>
+<h3>How It Works</h3>
+<p><strong>Three-Method Extraction Pipeline:</strong></p>
+<ol>
+<li><p><strong>AI-Powered Extraction</strong> (Primary)</p>
+<ul>
+<li>Uses MIVAA service for intelligent semantic analysis</li>
+<li>Understands context and material properties</li>
+<li>Highest accuracy for complex materials</li>
+</ul>
+</li>
+<li><p><strong>Keyword-Based Extraction</strong> (Secondary)</p>
+<ul>
+<li>Pattern matching against predefined keyword lists</li>
+<li>Fast and reliable for known materials</li>
+<li>Complements AI extraction</li>
+</ul>
+</li>
+<li><p><strong>Pattern-Based Extraction</strong> (Tertiary)</p>
+<ul>
+<li>Regex patterns for specific material/product types</li>
+<li>Captures structured data (dimensions, specifications)</li>
+<li>Handles standardized formats</li>
+</ul>
+</li>
+</ol>
+<h3>Automatic Process Flow</h3>
+<pre><code>Document Upload
+    ↓
+Content Extraction (Text + Images)
+    ↓
+Category Analysis (AI + Keywords + Patterns)
+    ↓
+Confidence Scoring (0.0 - 1.0)
+    ↓
+High-Confidence Categories (&gt;0.8)
+    ↓
+Auto-Create Missing Categories
+    ↓
+Update Document Metadata
+    ↓
+Index for Search &amp; Filtering
+</code></pre>
+<hr>
+<h2>🔧 Services &amp; Implementation</h2>
+<h3>CategoryExtractionService</h3>
+<p><strong>Location:</strong> <code>src/services/categoryExtractionService.ts</code></p>
+<p><strong>Key Methods:</strong></p>
+<pre><code class="language-typescript">// Extract categories from document content
+extractCategories(
+  content: string,
+  documentId: string,
+  options: CategoryExtractionOptions
+): Promise&lt;ExtractedCategoryData&gt;
+
+// AI-powered extraction
+extractCategoriesWithAI(content: string, documentId: string)
+
+// Keyword-based extraction
+extractCategoriesWithKeywords(content: string, options)
+
+// Pattern-based extraction
+extractCategoriesWithPatterns(content: string)
+</code></pre>
+<p><strong>Configuration:</strong></p>
+<pre><code class="language-typescript">interface CategoryExtractionOptions {
+  includeProductCategories?: boolean;      // Default: true
+  includeMaterialCategories?: boolean;     // Default: true
+  confidenceThreshold?: number;            // Default: 0.6
+  maxCategories?: number;                  // Default: 10
+  extractionMethods?: (&#39;ai&#39; | &#39;keyword&#39; | &#39;pattern&#39;)[];
+}
+</code></pre>
+<h3>DynamicCategoryManagementService</h3>
+<p><strong>Location:</strong> <code>src/services/dynamicCategoryManagementService.ts</code></p>
+<p><strong>Key Methods:</strong></p>
+<pre><code class="language-typescript">// Auto-update categories from document processing
+autoUpdateCategoriesFromDocument(
+  documentId: string,
+  extractedData: any
+): Promise&lt;void&gt;
+
+// Ensure category exists (create if needed)
+ensureCategoryExists(extraction: CategoryExtractionResult): Promise&lt;void&gt;
+
+// Update document with extracted categories
+updateDocumentCategories(
+  documentId: string,
+  extractedCategories: CategoryExtractionResult[]
+): Promise&lt;void&gt;
+</code></pre>
+<hr>
+<h2>📊 Metadata Extraction</h2>
+<h3>What Metadata Is Extracted?</h3>
+<p><strong>Document-Level Metadata:</strong></p>
+<ul>
+<li>Title and description</li>
+<li>Source and file type</li>
+<li>Processing timestamp</li>
+<li>Extraction confidence scores</li>
+<li>Semantic tags and entities</li>
+</ul>
+<p><strong>Material-Specific Metadata:</strong></p>
+<ul>
+<li>Material type (ceramic, wood, metal, etc.)</li>
+<li>Product category</li>
+<li>Functional properties (9 categories):<ol>
+<li>Surface properties (texture, finish, color)</li>
+<li>Dimensional properties (size, weight)</li>
+<li>Mechanical properties (strength, hardness)</li>
+<li>Thermal properties (conductivity, expansion)</li>
+<li>Chemical properties (composition, reactivity)</li>
+<li>Electrical properties (conductivity, resistance)</li>
+<li>Optical properties (transparency, reflectance)</li>
+<li>Environmental properties (sustainability, recyclability)</li>
+<li>Safety properties (toxicity, flammability)</li>
+</ol>
+</li>
+</ul>
+<h3>Metadata Storage</h3>
+<p><strong>Database Location:</strong> <code>documents</code> table</p>
+<p><strong>Metadata Structure:</strong></p>
+<pre><code class="language-json">{
+  &quot;extracted_categories&quot;: [
+    {
+      &quot;categoryKey&quot;: &quot;ceramic&quot;,
+      &quot;confidence&quot;: 0.95,
+      &quot;extractedFrom&quot;: &quot;ai&quot;,
+      &quot;context&quot;: &quot;High-quality ceramic material&quot;
+    }
+  ],
+  &quot;category_extraction_metadata&quot;: {
+    &quot;extractionMethod&quot;: &quot;ai&quot;,
+    &quot;processingTime&quot;: 1234,
+    &quot;documentId&quot;: &quot;doc-123&quot;,
+    &quot;timestamp&quot;: &quot;2025-01-15T10:30:00Z&quot;
+  },
+  &quot;semantic_tags&quot;: [&quot;ceramic&quot;, &quot;porcelain&quot;, &quot;material&quot;],
+  &quot;extracted_entities&quot;: [
+    {
+      &quot;type&quot;: &quot;MATERIAL&quot;,
+      &quot;text&quot;: &quot;ceramic&quot;,
+      &quot;confidence&quot;: 0.92
+    }
+  ],
+  &quot;last_category_update&quot;: &quot;2025-01-15T10:30:00Z&quot;
+}
+</code></pre>
+<hr>
+<h2>🏷️ Material Keywords &amp; Categories</h2>
+<h3>Predefined Material Keywords</h3>
+<p><strong>Ceramics:</strong></p>
+<ul>
+<li>ceramic, porcelain, stoneware, earthenware, tile, brick</li>
+</ul>
+<p><strong>Metals:</strong></p>
+<ul>
+<li>steel, aluminum, copper, iron, brass, bronze, titanium</li>
+</ul>
+<p><strong>Natural Materials:</strong></p>
+<ul>
+<li>wood, stone, marble, granite, slate, limestone</li>
+</ul>
+<p><strong>Composites:</strong></p>
+<ul>
+<li>concrete, composite, fiberglass, carbon fiber</li>
+</ul>
+<p><strong>Textiles:</strong></p>
+<ul>
+<li>fabric, cotton, wool, silk, polyester, linen</li>
+</ul>
+<p><strong>Glass &amp; Transparent:</strong></p>
+<ul>
+<li>glass, acrylic, polycarbonate, plexiglass</li>
+</ul>
+<h3>Category Hierarchy</h3>
+<pre><code>Material Categories
+├── Ceramics
+│   ├── Porcelain
+│   ├── Stoneware
+│   └── Earthenware
+├── Metals
+│   ├── Ferrous
+│   ├── Non-Ferrous
+│   └── Alloys
+├── Natural Materials
+│   ├── Stone
+│   ├── Wood
+│   └── Organic
+└── Composites
+    ├── Fiber-Reinforced
+    ├── Concrete
+    └── Hybrid
+</code></pre>
+<hr>
+<h2>🔄 Integration Points</h2>
+<h3>During PDF Processing</h3>
+<pre><code class="language-python"># From consolidatedPDFWorkflowService.ts
+const extractedCategories = await categoryExtractionService.extractCategories(
+  docData.content,
+  documentId,
+  {
+    includeProductCategories: true,
+    includeMaterialCategories: true,
+    confidenceThreshold: 0.6,
+    maxCategories: 8
+  }
+);
+
+// Update document with extracted categories
+await updateDocumentCategories(documentId, extractedCategories);
+
+// Auto-update global categories if high confidence
+await dynamicCategoryManagementService.autoUpdateCategoriesFromDocument(
+  documentId,
+  { content: docData.content }
+);
+</code></pre>
+<h3>In Knowledge Base Management</h3>
+<pre><code class="language-typescript">// From KnowledgeBaseManagement.tsx
+const response = await extractEntities(documentId);
+
+if (response.data?.entities) {
+  const materialEntities = response.data.entities
+    .filter(e =&gt; e.type === &#39;MATERIAL&#39;);
+  
+  // Auto-populate metadata fields
+  await supabase
+    .from(&#39;enhanced_knowledge_base&#39;)
+    .update({
+      semantic_tags: materialEntities.map(e =&gt; e.text),
+      metadata: { extracted_entities: response.data.entities }
+    })
+    .eq(&#39;id&#39;, documentId);
+}
+</code></pre>
+<hr>
+<h2>📈 Confidence Scoring</h2>
+<p><strong>Confidence Levels:</strong></p>
+<ul>
+<li><strong>0.9 - 1.0</strong>: Very High (Auto-create categories)</li>
+<li><strong>0.7 - 0.9</strong>: High (Suggest to user)</li>
+<li><strong>0.5 - 0.7</strong>: Medium (Include in results)</li>
+<li><strong>&lt; 0.5</strong>: Low (Filter out)</li>
+</ul>
+<p><strong>Calculation:</strong></p>
+<pre><code>AI Extraction: 0.6 - 1.0 (based on model confidence)
+Keyword Match: 0.5 + (matches.length * 0.1), max 0.9
+Pattern Match: 0.4 - 0.8 (based on pattern specificity)
+</code></pre>
+<hr>
+<h2>🔍 Search &amp; Filtering</h2>
+<h3>Using Extracted Categories</h3>
+<p><strong>Search by Category:</strong></p>
+<pre><code class="language-typescript">const results = await supabase
+  .from(&#39;documents&#39;)
+  .select(&#39;*&#39;)
+  .contains(&#39;metadata-&gt;extracted_categories&#39;, [
+    { categoryKey: &#39;ceramic&#39; }
+  ]);
+</code></pre>
+<p><strong>Filter by Confidence:</strong></p>
+<pre><code class="language-typescript">const highConfidence = extractedCategories.filter(
+  cat =&gt; cat.confidence &gt; 0.8
+);
+</code></pre>
+<hr>
+<h2>⚙️ Configuration</h2>
+<p><strong>Environment Variables:</strong></p>
+<pre><code>ENABLE_CATEGORY_EXTRACTION=true
+CATEGORY_CONFIDENCE_THRESHOLD=0.6
+AUTO_CREATE_CATEGORIES=true
+MAX_CATEGORIES_PER_DOCUMENT=10
+</code></pre>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><code>dynamic-category-system.md</code>: Detailed category management</li>
+<li><code>platform-integrations-guide.md</code>: Integration overview</li>
+<li><code>complete-multimodal-rag-system.md</code>: RAG architecture</li>
+<li><code>mivaa-service.md</code>: MIVAA service details</li>
+</ul>
+
+</div></body></html>
