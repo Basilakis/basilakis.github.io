@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Admin Knowledge Base - User Guide</h1>
+<h2>Overview</h2>
+<p>The Admin Knowledge Base is a comprehensive dashboard for monitoring and analyzing the quality, metadata, embeddings, and insights of your material recognition platform&#39;s knowledge base.</p>
+<p><strong>Access:</strong> Navigate to <code>/admin/knowledge-base</code> from the admin panel.</p>
+<hr>
+<h2>Features</h2>
+<h3>1. <strong>Overview Tab</strong></h3>
+<ul>
+<li><strong>Purpose:</strong> High-level statistics and quick access to all knowledge base entities</li>
+<li><strong>Displays:</strong><ul>
+<li>Total documents, chunks, images, embeddings, products</li>
+<li>Average chunk size and confidence scores</li>
+<li>Quick navigation to detailed views</li>
+</ul>
+</li>
+</ul>
+<h3>2. <strong>Chunks Tab</strong></h3>
+<ul>
+<li><strong>Purpose:</strong> View and search all document chunks</li>
+<li><strong>Features:</strong><ul>
+<li>Search by content, chunk index, or document name</li>
+<li>Pagination (20 items per page)</li>
+<li>Quality scores display</li>
+<li>Related embeddings count</li>
+<li>Document source information</li>
+</ul>
+</li>
+</ul>
+<h3>3. <strong>Images Tab</strong></h3>
+<ul>
+<li><strong>Purpose:</strong> Browse extracted images from documents</li>
+<li><strong>Features:</strong><ul>
+<li>Grid view with thumbnails</li>
+<li>Image metadata (caption, context, heading)</li>
+<li>Related chunks display</li>
+<li>Quality validation scores</li>
+<li>Delete functionality</li>
+</ul>
+</li>
+</ul>
+<h3>4. <strong>Embeddings Tab</strong></h3>
+<ul>
+<li><strong>Purpose:</strong> Explore vector embeddings for semantic search</li>
+<li><strong>Features:</strong><ul>
+<li>Embedding type (text, image, hybrid)</li>
+<li>Model information</li>
+<li>Dimensions and metadata</li>
+<li>Associated chunk/image references</li>
+</ul>
+</li>
+</ul>
+<h3>5. <strong>Products Tab</strong></h3>
+<ul>
+<li><strong>Purpose:</strong> View products extracted from materials</li>
+<li><strong>Features:</strong><ul>
+<li>Product name, description, metadata</li>
+<li>Quality and confidence scores</li>
+<li>Associated images and chunks</li>
+<li>Completeness assessment</li>
+</ul>
+</li>
+</ul>
+<h3>6. <strong>Metadata Tab</strong> ⭐ NEW</h3>
+<ul>
+<li><strong>Purpose:</strong> Centralized metadata management across all entities</li>
+<li><strong>Features:</strong><ul>
+<li><strong>Summary Stats:</strong> Total entities, entities with metadata, unique fields</li>
+<li><strong>Metadata Fields:</strong> All unique metadata fields with badges</li>
+<li><strong>Chunks Metadata:</strong> 20 chunks with quality scores and metadata</li>
+<li><strong>Images Metadata:</strong> 10 images with metadata in grid view</li>
+<li><strong>Products Metadata:</strong> 20 products with quality badges</li>
+<li><strong>Navigation:</strong> Click &quot;View&quot; buttons to jump to entity details</li>
+</ul>
+</li>
+</ul>
+<h3>7. <strong>Quality Scores Tab</strong> ⭐ NEW</h3>
+<ul>
+<li><strong>Purpose:</strong> Comprehensive quality metrics and distributions</li>
+<li><strong>Features:</strong><ul>
+<li><strong>Chunks Quality KPIs:</strong><ul>
+<li>Total validated chunks</li>
+<li>Average scores (overall, content, boundary, semantic, completeness)</li>
+<li>Valid/invalid/needs review counts</li>
+</ul>
+</li>
+<li><strong>Quality Dimensions:</strong> Content, Boundary, Semantic, Completeness</li>
+<li><strong>Distribution Charts:</strong> Excellent/Good/Fair/Poor breakdown</li>
+<li><strong>Images Quality:</strong> Quality, relevance, OCR confidence scores</li>
+<li><strong>Products Quality:</strong> Quality, confidence, completeness metrics</li>
+<li><strong>Documents Quality:</strong> Aggregate document-level metrics</li>
+</ul>
+</li>
+</ul>
+<h3>8. <strong>Embeddings Stats Tab</strong> ⭐ NEW</h3>
+<ul>
+<li><strong>Purpose:</strong> Vector embedding coverage and quality metrics</li>
+<li><strong>Features:</strong><ul>
+<li><strong>Total Embeddings:</strong> Count across all types</li>
+<li><strong>By Type:</strong> Text, image, hybrid embeddings</li>
+<li><strong>By Model:</strong> OpenAI, Cohere, custom models</li>
+<li><strong>Coverage Metrics:</strong><ul>
+<li>Chunks: Total vs. with embeddings (percentage)</li>
+<li>Images: Total vs. with embeddings (percentage)</li>
+<li>Products: Total vs. with embeddings (percentage)</li>
+</ul>
+</li>
+<li><strong>Visual Indicators:</strong> Progress bars for coverage percentages</li>
+</ul>
+</li>
+</ul>
+<h3>9. <strong>Detections Tab</strong> ⭐ NEW</h3>
+<ul>
+<li><strong>Purpose:</strong> Detection event tracking and confidence monitoring</li>
+<li><strong>Features:</strong><ul>
+<li><strong>Timeline:</strong> Recent detection events (last 50)</li>
+<li><strong>Event Details:</strong> Type, entity ID, confidence, timestamp</li>
+<li><strong>Confidence Stats:</strong> Average, min, max confidence scores</li>
+<li><strong>Event Summary:</strong> Total events by type (product, image, chunk)</li>
+<li><strong>Filters:</strong> By detection type, date range</li>
+</ul>
+</li>
+</ul>
+<h3>10. <strong>Quality Dashboard Tab</strong> ⭐ NEW</h3>
+<ul>
+<li><strong>Purpose:</strong> Daily quality KPIs, trends, and alerts</li>
+<li><strong>Features:</strong><ul>
+<li><strong>Current KPIs:</strong><ul>
+<li>Total chunks, images, products, embeddings</li>
+<li>Average quality scores</li>
+<li>Coverage percentages</li>
+</ul>
+</li>
+<li><strong>Trends (30 days):</strong><ul>
+<li>Daily chunk creation</li>
+<li>Daily image extraction</li>
+<li>Daily product detection</li>
+<li>Daily embedding generation</li>
+</ul>
+</li>
+<li><strong>Alerts:</strong><ul>
+<li>Low quality scores</li>
+<li>Missing embeddings</li>
+<li>Incomplete products</li>
+<li>Processing errors</li>
+</ul>
+</li>
+<li><strong>Daily Metrics:</strong> Historical data for performance tracking</li>
+</ul>
+</li>
+</ul>
+<h3>11. <strong>Insights Tab</strong> ⭐ NEW</h3>
+<ul>
+<li><strong>Purpose:</strong> AI-driven patterns, anomalies, and recommendations</li>
+<li><strong>Features:</strong><ul>
+<li><strong>Patterns:</strong> Detected patterns with severity levels</li>
+<li><strong>Anomalies:</strong> Unusual behaviors or data inconsistencies</li>
+<li><strong>Recommendations:</strong> Actionable suggestions for improvement</li>
+<li><strong>Severity Indicators:</strong> Critical, high, medium, low</li>
+<li><strong>Impact Assessment:</strong> Affected entities and potential fixes</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>Real-Time Features</h2>
+<h3>Auto-Refresh</h3>
+<ul>
+<li><strong>Toggle:</strong> Click &quot;Auto-Refresh ON/OFF&quot; button in header</li>
+<li><strong>Interval:</strong> 30 seconds (default)</li>
+<li><strong>Scope:</strong> Refreshes all 6 new admin tabs simultaneously</li>
+<li><strong>Indicator:</strong> Spinning icon when auto-refresh is enabled</li>
+<li><strong>Notifications:</strong> Toast notification on each refresh</li>
+</ul>
+<h3>Manual Refresh</h3>
+<ul>
+<li><strong>Refresh All:</strong> Refreshes all 6 admin tabs on demand</li>
+<li><strong>Reload Data:</strong> Reloads base knowledge base data (chunks, images, products)</li>
+<li><strong>Last Updated:</strong> Timestamp displayed in header</li>
+</ul>
+<hr>
+<h2>Search &amp; Filtering</h2>
+<h3>Search Functionality</h3>
+<ul>
+<li><strong>Debounced Search:</strong> 300ms delay for optimal performance</li>
+<li><strong>Search Scope:</strong><ul>
+<li>Chunks: Content, chunk index, document name</li>
+<li>Images: Caption, contextual name, nearest heading</li>
+<li>Products: Name, description</li>
+</ul>
+</li>
+<li><strong>Real-Time:</strong> Results update as you type (with debounce)</li>
+</ul>
+<h3>Pagination</h3>
+<ul>
+<li><strong>Chunks Tab:</strong> 20 items per page</li>
+<li><strong>Navigation:</strong> Previous/Next buttons</li>
+<li><strong>Total Pages:</strong> Displayed in pagination controls</li>
+</ul>
+<hr>
+<h2>Cross-Tab Navigation</h2>
+<h3>Quick Navigation</h3>
+<ul>
+<li><strong>From Metadata Tab:</strong> Click &quot;View&quot; buttons to jump to entity details</li>
+<li><strong>From Quality Scores Tab:</strong> Click &quot;View Insights&quot; to see AI analysis</li>
+<li><strong>From Dashboard Tab:</strong> Click &quot;View All Patterns &amp; Insights&quot; for detailed recommendations</li>
+<li><strong>Smooth Scrolling:</strong> Automatic scroll to target entity</li>
+<li><strong>Highlighting:</strong> Visual feedback on navigation</li>
+</ul>
+<hr>
+<h2>Performance Optimizations</h2>
+<h3>Built-In Optimizations</h3>
+<ul>
+<li><strong>Memoization:</strong> Filtered data cached to prevent re-computation</li>
+<li><strong>Debounced Search:</strong> Reduces filtering operations during typing</li>
+<li><strong>Lazy Loading:</strong> Data loaded on-demand for faster initial load</li>
+<li><strong>Pagination:</strong> Large datasets split into manageable pages</li>
+<li><strong>useCallback:</strong> Event handlers optimized to prevent re-renders</li>
+</ul>
+<hr>
+<h2>Data Sources</h2>
+<p>All data is <strong>live</strong> from the database - <strong>no mocks or fallbacks</strong>:</p>
+<h3>Database Tables</h3>
+<ul>
+<li><code>document_chunks</code> - Chunk data</li>
+<li><code>document_images</code> - Image data</li>
+<li><code>products</code> - Product data</li>
+<li><code>embeddings</code> - Vector embeddings</li>
+<li><code>chunk_validation_scores</code> - Chunk quality scores</li>
+<li><code>image_validations</code> - Image quality validations</li>
+<li><code>quality_scoring_logs</code> - Detection events</li>
+<li><code>quality_metrics_daily</code> - Daily aggregated metrics</li>
+<li><code>document_quality_metrics</code> - Document-level quality</li>
+</ul>
+<h3>API Endpoints</h3>
+<ul>
+<li><code>/admin-kb-metadata</code> - Metadata management</li>
+<li><code>/admin-kb-quality-scores</code> - Quality scores aggregation</li>
+<li><code>/admin-kb-embeddings-stats</code> - Embeddings statistics</li>
+<li><code>/admin-kb-detections</code> - Detection event tracking</li>
+<li><code>/admin-kb-quality-dashboard</code> - Daily quality dashboard</li>
+<li><code>/admin-kb-patterns</code> - Pattern detection &amp; insights</li>
+</ul>
+<hr>
+<h2>Best Practices</h2>
+<h3>Monitoring Quality</h3>
+<ol>
+<li><strong>Check Quality Scores Tab</strong> regularly for quality trends</li>
+<li><strong>Review Alerts</strong> in Quality Dashboard for issues</li>
+<li><strong>Investigate Low Scores</strong> using cross-tab navigation</li>
+<li><strong>Track Trends</strong> over 30-day periods</li>
+</ol>
+<h3>Optimizing Performance</h3>
+<ol>
+<li><strong>Use Search</strong> to narrow down large datasets</li>
+<li><strong>Enable Auto-Refresh</strong> for live monitoring</li>
+<li><strong>Review Insights Tab</strong> for optimization recommendations</li>
+<li><strong>Monitor Coverage</strong> in Embeddings Stats tab</li>
+</ol>
+<h3>Data Management</h3>
+<ol>
+<li><strong>Review Metadata Tab</strong> for completeness</li>
+<li><strong>Check Detections Tab</strong> for confidence scores</li>
+<li><strong>Use Cross-Tab Navigation</strong> to explore relationships</li>
+<li><strong>Export Data</strong> using Download buttons (where available)</li>
+</ol>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>No Data Displayed</h3>
+<ul>
+<li><strong>Check Workspace:</strong> Ensure you&#39;re in the correct workspace</li>
+<li><strong>Reload Data:</strong> Click &quot;Reload Data&quot; button</li>
+<li><strong>Check Permissions:</strong> Verify admin access</li>
+</ul>
+<h3>Slow Performance</h3>
+<ul>
+<li><strong>Use Search:</strong> Filter data instead of viewing all</li>
+<li><strong>Disable Auto-Refresh:</strong> Turn off if not needed</li>
+<li><strong>Check Network:</strong> Verify stable internet connection</li>
+</ul>
+<h3>Missing Embeddings</h3>
+<ul>
+<li><strong>Check Embeddings Stats Tab:</strong> Review coverage percentages</li>
+<li><strong>Review Alerts:</strong> Look for embedding generation errors</li>
+<li><strong>Reprocess Documents:</strong> Trigger re-embedding if needed</li>
+</ul>
+<hr>
+<h2>Keyboard Shortcuts</h2>
+<ul>
+<li><strong>Search:</strong> Click search box or use Tab to navigate</li>
+<li><strong>Pagination:</strong> Use arrow keys when pagination is focused</li>
+<li><strong>Refresh:</strong> Click refresh buttons or use browser refresh (F5)</li>
+</ul>
+<hr>
+<h2>Support</h2>
+<p>For issues or questions:</p>
+<ol>
+<li>Check this user guide</li>
+<li>Review the Insights Tab for recommendations</li>
+<li>Contact platform administrator</li>
+<li>Check system logs for errors</li>
+</ol>
+<hr>
+<p><strong>Last Updated:</strong> 2025-10-25
+<strong>Version:</strong> 1.0.0</p>
+
+</div></body></html>
