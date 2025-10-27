@@ -24,16 +24,22 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>🤖 MIVAA Service - Complete Documentation</h1>
+<p><strong>Status</strong>: Active
+<strong>Last Updated</strong>: 2025-10-27
+<strong>Category</strong>: Core Platform | Backend Service
+<strong>Service URL</strong>: <a href="https://v1api.materialshub.gr">https://v1api.materialshub.gr</a></p>
+<hr>
 <h2>🎯 Overview</h2>
 <p><strong>MIVAA (Material Intelligence Vision and Analysis Agent)</strong> is the core microservice that powers the Material Kai Vision Platform&#39;s document processing, AI analysis, and knowledge extraction capabilities.</p>
 <h3>🏗️ Architecture</h3>
 <ul>
 <li><strong>Framework</strong>: FastAPI + Python 3.9+</li>
-<li><strong>Purpose</strong>: PDF processing, RAG system, AI coordination</li>
-<li><strong>Features</strong>: Document extraction, vector embeddings, semantic search</li>
-<li><strong>AI Integration</strong>: OpenAI, HuggingFace, Replicate APIs</li>
-<li><strong>Database</strong>: Supabase PostgreSQL with vector extensions</li>
-<li><strong>Deployment</strong>: Docker containers with systemd service management</li>
+<li><strong>Purpose</strong>: PDF processing, RAG system, AI coordination, multi-modal analysis</li>
+<li><strong>Features</strong>: Document extraction, vector embeddings, semantic search, product classification</li>
+<li><strong>AI Integration</strong>: OpenAI, Anthropic Claude, Together AI (Llama 4 Scout Vision), HuggingFace</li>
+<li><strong>Database</strong>: Supabase PostgreSQL with pgvector extensions</li>
+<li><strong>Deployment</strong>: UV-based package management with systemd service</li>
+<li><strong>Port</strong>: 8000 (internal), 443/80 (external via nginx)</li>
 </ul>
 <h3>🌐 Service Endpoints</h3>
 <p><strong>Production Base URL</strong>: <code>https://v1api.materialshub.gr</code></p>
@@ -44,13 +50,225 @@
 <li><strong>ReDoc Documentation</strong>: <code>https://v1api.materialshub.gr/redoc</code></li>
 <li><strong>OpenAPI Schema</strong>: <code>https://v1api.materialshub.gr/openapi.json</code></li>
 </ul>
-<h4><strong>Functional Endpoints</strong></h4>
+<h4><strong>Functional Endpoint Categories</strong></h4>
 <ul>
-<li><strong>PDF Processing</strong>: <code>https://v1api.materialshub.gr/api/v1/pdf/*</code></li>
-<li><strong>AI Analysis</strong>: <code>https://v1api.materialshub.gr/api/v1/ai/*</code></li>
-<li><strong>Vector Search</strong>: <code>https://v1api.materialshub.gr/api/v1/search/*</code></li>
-<li><strong>RAG System</strong>: <code>https://v1api.materialshub.gr/api/v1/rag/*</code></li>
-<li><strong>Document Management</strong>: <code>https://v1api.materialshub.gr/api/v1/documents/*</code></li>
+<li><strong>PDF Processing</strong>: <code>/api/v1/extract/*</code> - Markdown, tables, images extraction</li>
+<li><strong>RAG System</strong>: <code>/api/v1/rag/*</code> - Document upload, query, chat, search</li>
+<li><strong>AI Analysis</strong>: <code>/api/semantic-analysis</code> - LLaMA Vision material analysis</li>
+<li><strong>Search APIs</strong>: <code>/api/search/*</code> - Semantic, vector, hybrid search</li>
+<li><strong>Embedding APIs</strong>: <code>/api/embeddings/*</code> - Generate embeddings, batch processing</li>
+<li><strong>Chat APIs</strong>: <code>/api/chat/*</code> - Chat completions, contextual responses</li>
+<li><strong>Document Management</strong>: <code>/api/documents/*</code> - Process, analyze, manage documents</li>
+<li><strong>Products API</strong>: <code>/api/products/*</code> - Product creation, enrichment, management</li>
+<li><strong>Admin APIs</strong>: <code>/api/admin/*</code> - Chunk quality, monitoring, management</li>
+<li><strong>Health &amp; Monitoring</strong>: <code>/health</code>, <code>/metrics</code>, <code>/performance/summary</code></li>
+</ul>
+<hr>
+<h2>📡 API Endpoints Reference</h2>
+<h3>1. Vector Similarity Search</h3>
+<p><strong>Path</strong>: <code>/api/search/semantic</code>
+<strong>Method</strong>: POST
+<strong>Purpose</strong>: Semantic search using vector embeddings
+<strong>Authentication</strong>: Required (JWT Bearer token)</p>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;query_text&quot;: &quot;waterproof ceramic tiles&quot;,
+  &quot;similarity_threshold&quot;: 0.7,
+  &quot;limit&quot;: 10,
+  &quot;search_type&quot;: &quot;semantic&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;results&quot;: [
+    {
+      &quot;id&quot;: &quot;product-uuid&quot;,
+      &quot;name&quot;: &quot;Ceramic Tile&quot;,
+      &quot;similarity_score&quot;: 0.92,
+      &quot;metadata&quot;: {...}
+    }
+  ],
+  &quot;total&quot;: 10,
+  &quot;processing_time_ms&quot;: 450
+}
+</code></pre>
+<p><strong>Performance</strong>: 200-800ms response time</p>
+<hr>
+<h3>2. Multi-Modal Analysis</h3>
+<p><strong>Path</strong>: <code>/api/semantic-analysis</code>
+<strong>Method</strong>: POST
+<strong>Purpose</strong>: Combined text and image analysis using Llama 4 Scout Vision
+<strong>Authentication</strong>: Required</p>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;text_content&quot;: &quot;Material description&quot;,
+  &quot;image_url&quot;: &quot;https://example.com/image.jpg&quot;,
+  &quot;include_entities&quot;: true,
+  &quot;include_materials&quot;: true
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;entities&quot;: [...],
+  &quot;materials&quot;: [...],
+  &quot;confidence_scores&quot;: {...},
+  &quot;analysis_summary&quot;: &quot;...&quot;
+}
+</code></pre>
+<p><strong>Performance</strong>: 1-4 seconds response time</p>
+<hr>
+<h3>3. Two-Stage Product Classification ⭐</h3>
+<p><strong>Path</strong>: <code>/api/products/create-from-chunks</code>
+<strong>Method</strong>: POST
+<strong>Purpose</strong>: Advanced AI-powered product classification with 60% performance improvement
+<strong>Authentication</strong>: Required</p>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;document_id&quot;: &quot;doc-123&quot;,
+  &quot;workspace_id&quot;: &quot;workspace-uuid&quot;,
+  &quot;max_products&quot;: 50,
+  &quot;min_chunk_length&quot;: 100
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;products_created&quot;: 15,
+  &quot;processing_time_seconds&quot;: 35,
+  &quot;stage_1_time&quot;: 12,
+  &quot;stage_2_time&quot;: 18,
+  &quot;enrichment_time&quot;: 5,
+  &quot;performance_metrics&quot;: {...}
+}
+</code></pre>
+<p><strong>Performance</strong>: 25-55 seconds for 200 chunks → 15 products
+<strong>Features</strong>:</p>
+<ul>
+<li>Stage 1: Claude Haiku 4.5 for fast initial classification</li>
+<li>Stage 2: Claude Sonnet 4.5 for deep product enrichment</li>
+<li>60% faster than single-stage approach</li>
+<li>40% cost reduction through intelligent model selection</li>
+</ul>
+<hr>
+<h3>4. RAG Document Upload</h3>
+<p><strong>Path</strong>: <code>/api/v1/rag/documents/upload</code>
+<strong>Method</strong>: POST
+<strong>Purpose</strong>: Upload and process PDF documents with full AI pipeline
+<strong>Authentication</strong>: Required</p>
+<p><strong>Request</strong>: Multipart form data with PDF file</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;job-uuid&quot;,
+  &quot;document_id&quot;: &quot;doc-uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;estimated_time_seconds&quot;: 120
+}
+</code></pre>
+<p><strong>Processing Pipeline</strong>:</p>
+<ol>
+<li>PDF extraction (PyMuPDF4LLM)</li>
+<li>Image extraction</li>
+<li>Semantic chunking</li>
+<li>Quality scoring and validation</li>
+<li>Deduplication (hash-based + semantic)</li>
+<li>Embedding generation (6 types)</li>
+<li>Image analysis (Claude + Llama Vision)</li>
+<li>Product detection (two-stage classification)</li>
+<li>Product enrichment</li>
+</ol>
+<hr>
+<h3>5. Enhanced Job Monitoring</h3>
+<p><strong>Path</strong>: <code>/api/v1/rag/jobs/{job_id}</code>
+<strong>Method</strong>: GET
+<strong>Purpose</strong>: Real-time job progress and stage monitoring
+<strong>Authentication</strong>: Required</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;job-uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;progress_percentage&quot;: 65,
+  &quot;current_stage&quot;: &quot;Product Detection&quot;,
+  &quot;stages_completed&quot;: [&quot;PDF Extraction&quot;, &quot;Chunking&quot;, &quot;Embedding Generation&quot;],
+  &quot;eta_seconds&quot;: 45,
+  &quot;metadata&quot;: {
+    &quot;chunks_created&quot;: 227,
+    &quot;images_extracted&quot;: 169,
+    &quot;products_created&quot;: 15,
+    &quot;embeddings_generated&quot;: 227
+  }
+}
+</code></pre>
+<p><strong>Performance</strong>: 100-300ms response time
+<strong>Update Frequency</strong>: Polled every 5 seconds during active processing</p>
+<hr>
+<h3>6. Chunk Quality Dashboard</h3>
+<p><strong>Path</strong>: <code>/api/admin/chunk-quality/stats</code>
+<strong>Method</strong>: GET
+<strong>Purpose</strong>: Comprehensive chunk quality statistics and monitoring
+<strong>Authentication</strong>: Required (Admin only)</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;total_chunks&quot;: 1500,
+  &quot;quality_distribution&quot;: {
+    &quot;high&quot;: 1200,
+    &quot;medium&quot;: 250,
+    &quot;low&quot;: 50
+  },
+  &quot;flagged_chunks&quot;: 35,
+  &quot;duplicate_chunks&quot;: 12,
+  &quot;semantic_duplicates&quot;: 8,
+  &quot;average_quality_score&quot;: 0.82
+}
+</code></pre>
+<hr>
+<h3>7. Embedding Generation</h3>
+<p><strong>Path</strong>: <code>/api/embeddings/generate</code>
+<strong>Method</strong>: POST
+<strong>Purpose</strong>: Generate embeddings for text or images
+<strong>Authentication</strong>: Required</p>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;text&quot;: &quot;Modern bathroom tiles&quot;,
+  &quot;embedding_types&quot;: [&quot;text&quot;, &quot;visual&quot;, &quot;color&quot;],
+  &quot;normalize&quot;: true
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;text_embedding_1536&quot;: [0.123, ...],
+  &quot;visual_clip_embedding_512&quot;: [0.456, ...],
+  &quot;color_embedding_256&quot;: [0.789, ...],
+  &quot;metadata&quot;: {
+    &quot;generation_time_ms&quot;: 850,
+    &quot;model_versions&quot;: {...}
+  }
+}
+</code></pre>
+<hr>
+<h2>🔄 Usage Patterns</h2>
+<h3>Automatic Triggers</h3>
+<ol>
+<li><strong>PDF Upload</strong>: Triggers full AI processing pipeline</li>
+<li><strong>Search Queries</strong>: Similarity search activated for semantic queries</li>
+<li><strong>Job Monitoring</strong>: Real-time progress updates during processing</li>
+<li><strong>Dashboard Load</strong>: Metrics refresh for performance monitoring</li>
+<li><strong>Product Classification</strong>: Two-stage classification during PDF processing</li>
+</ol>
+<h3>Manual Invocations</h3>
+<ol>
+<li><strong>AI Testing Panel</strong>: Manual testing of all MIVAA capabilities</li>
+<li><strong>Metadata Auto-Population</strong>: Admin-triggered bulk metadata extraction</li>
+<li><strong>System Performance</strong>: Manual refresh of analytics and trends</li>
+<li><strong>Product Classification</strong>: Manual product creation from document chunks</li>
+<li><strong>Chunk Quality Review</strong>: Admin review of flagged low-quality chunks</li>
+</ol>
+<h3>Integration Points</h3>
+<ul>
+<li><strong>mivaa-gateway</strong>: Primary integration via Supabase Edge Function</li>
+<li><strong>Search Hub</strong>: Vector similarity search integration</li>
+<li><strong>PDF Processor</strong>: Multi-modal analysis during document processing</li>
+<li><strong>Admin Panel</strong>: System monitoring and testing interfaces</li>
+<li><strong>Products API</strong>: Two-stage product classification integration</li>
+<li><strong>Knowledge Base</strong>: Chunk and embedding management</li>
 </ul>
 <h2>🚀 Deployment Options</h2>
 <h3>🔄 Default Deployment (Recommended)</h3>
@@ -251,20 +469,53 @@ cd /path/to/mivaa-pdf-extractor
 git pull origin main
 sudo systemctl restart mivaa-pdf-extractor
 </code></pre>
+<h2>📊 Performance Metrics</h2>
+<h3>Expected Response Times</h3>
+<ul>
+<li><strong>Similarity Search</strong>: 200-800ms</li>
+<li><strong>Multi-Modal Analysis</strong>: 1-4 seconds</li>
+<li><strong>Job Details</strong>: 100-300ms</li>
+<li><strong>Metrics Analysis</strong>: 1-2 seconds</li>
+<li><strong>Auto-Population</strong>: 2-5 seconds per document</li>
+<li><strong>Two-Stage Classification</strong>: 25-55 seconds for 200 chunks → 15 products</li>
+<li><strong>Embedding Generation</strong>: 1.5-3 seconds per entity</li>
+<li><strong>Chunk Quality Analysis</strong>: 500ms - 1 second</li>
+</ul>
+<h3>Throughput Capabilities</h3>
+<ul>
+<li><strong>Concurrent Requests</strong>: Up to 10 simultaneous</li>
+<li><strong>Batch Processing</strong>: 100 documents per batch</li>
+<li><strong>Daily Volume</strong>: 1000+ document analyses</li>
+<li><strong>Embedding Generation</strong>: 5-10 entities per minute (batch mode)</li>
+</ul>
+<h3>Quality Metrics</h3>
+<ul>
+<li><strong>Similarity Accuracy</strong>: 85%+ relevance</li>
+<li><strong>Entity Extraction</strong>: 90%+ precision</li>
+<li><strong>Material Recognition</strong>: 80%+ accuracy</li>
+<li><strong>Processing Success Rate</strong>: 95%+</li>
+<li><strong>Product Classification Accuracy</strong>: 85%+ with two-stage system</li>
+<li><strong>Chunk Quality Score</strong>: Average 0.82 (scale 0-1)</li>
+</ul>
+<hr>
 <h2>📈 Performance Optimization</h2>
 <h3>🚀 Configuration Tuning</h3>
 <ul>
-<li><strong>Database Pool Size</strong>: Adjust <code>DATABASE_POOL_SIZE</code> based on load</li>
-<li><strong>Cache TTL</strong>: Optimize <code>CACHE_TTL</code> for your use case</li>
+<li><strong>Database Pool Size</strong>: Adjust <code>DATABASE_POOL_SIZE</code> based on load (default: 20)</li>
+<li><strong>Cache TTL</strong>: Optimize <code>CACHE_TTL</code> for your use case (default: 3600s)</li>
 <li><strong>Worker Processes</strong>: Configure Uvicorn workers for concurrent requests</li>
 <li><strong>Memory Management</strong>: Monitor and adjust Python memory settings</li>
+<li><strong>Batch Size</strong>: Configure embedding batch size (default: 5)</li>
+<li><strong>Rate Limiting</strong>: 1-second delays between batches to prevent overload</li>
 </ul>
 <h3>📊 Monitoring Metrics</h3>
 <ul>
 <li><strong>Response Times</strong>: Track API endpoint response times</li>
-<li><strong>Error Rates</strong>: Monitor 4xx/5xx error rates</li>
+<li><strong>Error Rates</strong>: Monitor 4xx/5xx error rates (target: &lt;1%)</li>
 <li><strong>Resource Usage</strong>: CPU, memory, and disk utilization</li>
 <li><strong>Database Performance</strong>: Query times and connection pool usage</li>
+<li><strong>AI Model Performance</strong>: Track model response times and accuracy</li>
+<li><strong>Embedding Coverage</strong>: Monitor percentage of entities with embeddings</li>
 </ul>
 <h2>🔗 Integration Points</h2>
 <h3>🌐 Frontend Integration</h3>
@@ -285,13 +536,75 @@ sudo systemctl restart mivaa-pdf-extractor
 <li><strong>HuggingFace</strong>: Embedding models and transformers</li>
 <li><strong>Vector Search</strong>: Semantic similarity search with optimized embeddings</li>
 </ul>
-<h2>📚 Additional Resources</h2>
+<h2>🧪 Testing &amp; Validation</h2>
+<h3>Test Scenarios</h3>
+<ol>
+<li><strong>Vector Similarity</strong>: Test semantic search accuracy</li>
+<li><strong>Multi-Modal Analysis</strong>: Validate text+image processing</li>
+<li><strong>Job Monitoring</strong>: Verify real-time progress tracking</li>
+<li><strong>Metadata Extraction</strong>: Test auto-population accuracy</li>
+<li><strong>Product Classification</strong>: Validate two-stage classification performance</li>
+<li><strong>Chunk Quality</strong>: Test quality scoring and flagging</li>
+</ol>
+<h3>Validation Methods</h3>
+<ul>
+<li><strong>AI Testing Panel</strong>: Comprehensive testing interface in admin panel</li>
+<li><strong>Confidence Scoring</strong>: Quality validation via confidence thresholds</li>
+<li><strong>Performance Monitoring</strong>: Response time and success rate tracking</li>
+<li><strong>Error Handling</strong>: Graceful failure and recovery testing</li>
+<li><strong>End-to-End Tests</strong>: Complete pipeline validation scripts</li>
+</ul>
+<h3>Quality Assurance</h3>
+<ul>
+<li><strong>Automated Testing</strong>: Continuous integration testing</li>
+<li><strong>Manual Validation</strong>: Regular accuracy assessments</li>
+<li><strong>Performance Benchmarks</strong>: Response time monitoring</li>
+<li><strong>Error Rate Tracking</strong>: Failure analysis and improvement</li>
+<li><strong>User Acceptance Testing</strong>: Production validation with real data</li>
+</ul>
+<hr>
+<h2>🚨 Error Handling</h2>
+<h3>Common Errors</h3>
+<ol>
+<li><strong>503 Service Unavailable</strong>: MIVAA service down or restarting</li>
+<li><strong>401 Unauthorized</strong>: Invalid authentication token</li>
+<li><strong>429 Rate Limited</strong>: Too many concurrent requests</li>
+<li><strong>500 Internal Error</strong>: Processing failure or AI model error</li>
+<li><strong>502 Bad Gateway</strong>: Nginx proxy error or service not responding</li>
+</ol>
+<h3>Error Recovery</h3>
+<ul>
+<li><strong>Automatic Retry</strong>: 3 attempts with exponential backoff</li>
+<li><strong>Graceful Degradation</strong>: Fallback to basic processing when AI models fail</li>
+<li><strong>User Notification</strong>: Clear error messages with actionable guidance</li>
+<li><strong>Logging</strong>: Comprehensive error tracking with Sentry integration</li>
+<li><strong>Auto-Recovery</strong>: Automatic service restart on health check failures</li>
+</ul>
+<hr>
+<h2>📚 Related Documentation</h2>
+<h3>Live Services</h3>
 <ul>
 <li><strong>API Documentation</strong>: <a href="https://v1api.materialshub.gr/docs">https://v1api.materialshub.gr/docs</a></li>
 <li><strong>ReDoc Documentation</strong>: <a href="https://v1api.materialshub.gr/redoc">https://v1api.materialshub.gr/redoc</a></li>
-<li><strong>GitHub Repository</strong>: <a href="https://github.com/creativeghq/material-kai-vision-platform">Material Kai Vision Platform</a></li>
-<li><strong>Deployment Guide</strong>: See <code>docs/deployment-guide.md</code> for comprehensive deployment information</li>
-<li><strong>API Reference</strong>: See <code>docs/api-documentation.md</code> for complete API documentation</li>
+<li><strong>OpenAPI Schema</strong>: <a href="https://v1api.materialshub.gr/openapi.json">https://v1api.materialshub.gr/openapi.json</a></li>
 </ul>
+<h3>Documentation</h3>
+<ul>
+<li><a href="./api-documentation.md">Complete API Reference</a> - All 37+ endpoints documented</li>
+<li><a href="./deployment-guide.md">Deployment Guide</a> - Comprehensive deployment information</li>
+<li><a href="./pdf-processing-complete-flow.md">PDF Processing Flow</a> - Complete PDF processing pipeline</li>
+<li><a href="./product-detection-and-chunk-quality-improvements.md">Product Detection</a> - Two-stage classification details</li>
+<li><a href="./multi-vector-storage-system.md">Multi-Vector Storage</a> - Embedding architecture</li>
+<li><a href="./platform-flows.md">Platform Flows</a> - Integration workflows</li>
+<li><a href="./troubleshooting.md">Troubleshooting Guide</a> - Common issues and solutions</li>
+</ul>
+<h3>GitHub</h3>
+<ul>
+<li><strong>Repository</strong>: <a href="https://github.com/creativeghq/material-kai-vision-platform">Material Kai Vision Platform</a></li>
+<li><strong>Issues</strong>: Report bugs and request features</li>
+<li><strong>Deployment Workflows</strong>: <code>.github/workflows/deploy.yml</code></li>
+</ul>
+<hr>
+<p><strong>Note</strong>: This document consolidates information from the previous <code>mivaa-integration.md</code> file, which has been merged into this comprehensive guide.</p>
 
 </div></body></html>
