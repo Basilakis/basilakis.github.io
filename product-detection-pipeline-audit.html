@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Product Detection Pipeline - Comprehensive Audit</h1>
+<p><strong>Date</strong>: October 27, 2025<br><strong>Status</strong>: 🔍 IN PROGRESS<br><strong>Issue</strong>: Detecting non-products (factory details, designer bios, inspiration text) as products</p>
+<hr>
+<h2>🎯 Executive Summary</h2>
+<h3>Current Problem</h3>
+<ul>
+<li><strong>Expected</strong>: 15 products from Harmony PDF</li>
+<li><strong>Actual</strong>: 76 products created (5x over-generation)</li>
+<li><strong>Root Cause</strong>: Non-product content being classified as products</li>
+</ul>
+<h3>Non-Product Content Detected as Products</h3>
+<ol>
+<li>✅ <strong>Factory details</strong> - PARTIALLY FILTERED (needs enhancement)</li>
+<li>❌ <strong>Designer biographies</strong> - NOT FILTERED (critical gap)</li>
+<li>✅ <strong>Sustainability content</strong> - FILTERED in Stage 1 prompt</li>
+<li>✅ <strong>Inspiration/moodboard text</strong> - FILTERED in <code>_is_valid_product_chunk()</code></li>
+<li>❌ <strong>Technical specifications without products</strong> - NOT FILTERED (critical gap)</li>
+</ol>
+<hr>
+<h2>🏗️ Current Architecture</h2>
+<h3>Three-Layer Product Detection System</h3>
+<pre><code>Layer 1: Pre-filtering (_is_valid_product_chunk)
+         ↓
+Layer 2: Stage 1 - Fast Classification (Claude Haiku 4.5)
+         ↓
+Layer 3: Stage 2 - Deep Enrichment (Claude Sonnet 4.5)
+</code></pre>
+<hr>
+<h2>📊 Layer 1: Pre-filtering Analysis</h2>
+<h3>Location</h3>
+<p><code>mivaa-pdf-extractor/app/services/product_creation_service.py</code> - <code>_is_valid_product_chunk()</code> method (lines 307-406)</p>
+<h3>✅ What&#39;s Working</h3>
+<h4>1. <strong>Index/TOC Filtering</strong> (Lines 318-324)</h4>
+<pre><code class="language-python">if any(keyword in content for keyword in [
+    &#39;table of contents&#39;, &#39;index&#39;, &#39;contents&#39;, &#39;page numbers&#39;,
+    &#39;signature book&#39;, &#39;signature index&#39;, &#39;collections index&#39;
+]):
+    return False
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING</p>
+<h4>2. <strong>Sustainability Filtering</strong> (Lines 326-336)</h4>
+<pre><code class="language-python">if any(keyword in content.lower() for keyword in [
+    &#39;sustainability&#39;, &#39;environmental&#39;, &#39;eco-friendly&#39;, &#39;carbon footprint&#39;,
+    &#39;recycled&#39;, &#39;leed&#39;, &#39;green building&#39;, &#39;certifications&#39;,
+    &#39;iso 14001&#39;, &#39;environmental product declaration&#39;
+]):
+    return False
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING</p>
+<h4>3. <strong>Certification Filtering</strong> (Lines 338-348)</h4>
+<pre><code class="language-python">if any(keyword in content.lower() for keyword in [
+    &#39;certification&#39;, &#39;certified&#39;, &#39;iso &#39;, &#39;ansi&#39;, &#39;astm&#39;,
+    &#39;en 14411&#39;, &#39;technical standards&#39;, &#39;compliance&#39;
+]):
+    return False
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING</p>
+<h4>4. <strong>Moodboard Filtering</strong> (Lines 356-364)</h4>
+<pre><code class="language-python">if any(keyword in content.lower() for keyword in [
+    &#39;moodboard&#39;, &#39;mood board&#39;, &#39;inspiration&#39;, &#39;fresh inspiration&#39;, &#39;signature moodboard&#39;
+]) and not any(product_keyword in content for product_keyword in [
+    &#39;dimensions&#39;, &#39;designer&#39;, &#39;×&#39;, &#39;cm&#39;, &#39;mm&#39;
+]):
+    return False
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING (with product indicator override)</p>
+<h4>5. <strong>Cleaning Products Filtering</strong> (Lines 366-378)</h4>
+<pre><code class="language-python">cleaning_keywords = [
+    &#39;cleaning&#39;, &#39;cleaner&#39;, &#39;maintenance&#39;, &#39;fila&#39;, &#39;faber&#39;, &#39;remover&#39;,
+    &#39;degreaser&#39;, &#39;floor cleaner&#39;, &#39;tile cleaner&#39;, &#39;epoxy pro&#39;,
+    &#39;post-construction&#39;, &#39;application guide&#39;, &#39;cleaning system&#39;
+]
+if any(keyword in content.lower() for keyword in cleaning_keywords):
+    if not any(pattern in content for pattern in [&#39;×&#39;, &#39;cm&#39;, &#39;mm&#39;]) or \
+       &#39;not applicable&#39; in content.lower() or \
+       &#39;guidance documentation&#39; in content.lower():
+        return False
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING</p>
+<h4>6. <strong>Generic Content Filtering</strong> (Lines 380-388)</h4>
+<pre><code class="language-python">generic_keywords = [
+    &#39;artisan clay&#39;, &#39;mediterranean sand&#39;, &#39;deep contrast&#39;,
+    &#39;not specified&#39;, &#39;not applicable&#39;
+]
+if any(keyword in content.lower() for keyword in generic_keywords) and \
+   len(content) &lt; 200:
+    return False
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING</p>
+<h4>7. <strong>Product Indicator Validation</strong> (Lines 390-406)</h4>
+<pre><code class="language-python">has_uppercase_name = any(word.isupper() and len(word) &gt; 2 for word in content.split())
+has_dimensions = any(pattern in content for pattern in [&#39;×&#39;, &#39;x &#39;, &#39;cm&#39;, &#39;mm&#39;])
+has_product_context = any(keyword in content.lower() for keyword in [
+    &#39;designer&#39;, &#39;collection&#39;, &#39;material&#39;, &#39;ceramic&#39;, &#39;porcelain&#39;, &#39;tile&#39;,
+    &#39;estudi{h}ac&#39;, &#39;dsignio&#39;, &#39;alt design&#39;, &#39;mut&#39;, &#39;yonoh&#39;, &#39;stacy garcia&#39;
+])
+
+product_score = sum([has_uppercase_name, has_dimensions, has_product_context])
+
+if product_score &gt;= 3:  # ✅ REQUIRES ALL 3 INDICATORS
+    return True
+</code></pre>
+<p><strong>Status</strong>: ✅ WORKING (recently enhanced from 2/3 to 3/3)</p>
+<h3>❌ What&#39;s Missing</h3>
+<h4>1. <strong>Designer Biography Filtering</strong> - CRITICAL GAP</h4>
+<p><strong>Problem</strong>: Content like &quot;John Doe is a renowned designer from Barcelona...&quot; gets classified as product.</p>
+<p><strong>Missing Keywords</strong>:</p>
+<pre><code class="language-python">designer_bio_keywords = [
+    &#39;biography&#39;, &#39;born in&#39;, &#39;graduated from&#39;, &#39;studied at&#39;,
+    &#39;career began&#39;, &#39;founded in&#39;, &#39;established in&#39;,
+    &#39;renowned designer&#39;, &#39;award-winning&#39;, &#39;based in&#39;,
+    &#39;studio was founded&#39;, &#39;design philosophy&#39;, &#39;creative director&#39;,
+    &#39;years of experience&#39;, &#39;portfolio includes&#39;
+]
+</code></pre>
+<p><strong>Recommendation</strong>: Add explicit filtering for designer biographies.</p>
+<h4>2. <strong>Factory/Manufacturing Details Filtering</strong> - PARTIAL GAP</h4>
+<p><strong>Problem</strong>: Content like &quot;Factory location: Spain, Production capacity: 10,000 m²/day&quot; might pass.</p>
+<p><strong>Missing Keywords</strong>:</p>
+<pre><code class="language-python">factory_keywords = [
+    &#39;factory location&#39;, &#39;manufacturing facility&#39;, &#39;production capacity&#39;,
+    &#39;plant location&#39;, &#39;headquarters&#39;, &#39;production site&#39;,
+    &#39;manufacturing process&#39;, &#39;quality control&#39;, &#39;production line&#39;,
+    &#39;factory address&#39;, &#39;production facility&#39;, &#39;manufacturing plant&#39;
+]
+</code></pre>
+<p><strong>Recommendation</strong>: Add explicit filtering for factory/manufacturing content.</p>
+<h4>3. <strong>Technical Specifications Without Products</strong> - CRITICAL GAP</h4>
+<p><strong>Problem</strong>: Standalone technical tables (water absorption, breaking strength) without product context.</p>
+<p><strong>Missing Logic</strong>:</p>
+<pre><code class="language-python"># If content has technical specs but NO product name, reject it
+has_technical_specs = any(keyword in content.lower() for keyword in [
+    &#39;water absorption&#39;, &#39;breaking strength&#39;, &#39;slip resistance&#39;,
+    &#39;frost resistance&#39;, &#39;chemical resistance&#39;, &#39;thermal shock&#39;
+])
+
+if has_technical_specs and not has_uppercase_name:
+    return False  # Technical specs without product = not a product
+</code></pre>
+<p><strong>Recommendation</strong>: Add logic to reject technical specs without product names.</p>
+<hr>
+<h2>📊 Layer 2: Stage 1 Classification Analysis</h2>
+<h3>Location</h3>
+<p><code>mivaa-pdf-extractor/app/services/product_creation_service.py</code> - <code>_build_stage1_batch_prompt()</code> method (lines 1183-1214)</p>
+<h3>Current Prompt</h3>
+<pre><code>You are a fast product classifier. Analyze these text chunks and identify which ones contain actual product information.
+
+For each chunk, determine if it contains:
+- Product names (usually UPPERCASE like VALENOVA, PIQUÉ, ONA)
+- Product dimensions (like 15×38, 20×40)
+- Designer/brand information
+- Material specifications
+
+Focus on speed and accuracy. Skip index pages, sustainability content, and technical tables.
+</code></pre>
+<h3>✅ What&#39;s Working</h3>
+<ol>
+<li>✅ Clear product indicators (names, dimensions, designer, materials)</li>
+<li>✅ Mentions skipping index pages</li>
+<li>✅ Mentions skipping sustainability content</li>
+<li>✅ Mentions skipping technical tables</li>
+</ol>
+<h3>❌ What&#39;s Missing</h3>
+<ol>
+<li>❌ <strong>No explicit instruction to skip designer biographies</strong></li>
+<li>❌ <strong>No explicit instruction to skip factory details</strong></li>
+<li>❌ <strong>No explicit instruction to skip standalone technical specs</strong></li>
+<li>❌ <strong>No examples of non-product content to avoid</strong></li>
+</ol>
+<h3>🔧 Recommended Enhancement</h3>
+<pre><code>You are a fast product classifier. Analyze these text chunks and identify which ones contain actual product information.
+
+For each chunk, determine if it contains:
+- Product names (usually UPPERCASE like VALENOVA, PIQUÉ, ONA)
+- Product dimensions (like 15×38, 20×40)
+- Designer/brand information
+- Material specifications
+
+SKIP THE FOLLOWING (NOT PRODUCTS):
+- Index pages, table of contents
+- Sustainability content, environmental certifications
+- Technical tables without product names
+- Designer biographies (e.g., &quot;John Doe was born in...&quot;)
+- Factory details (e.g., &quot;Factory location: Spain...&quot;)
+- Standalone technical specifications
+- Moodboards, inspiration boards
+- Cleaning/maintenance guides
+
+EXAMPLES OF NON-PRODUCTS:
+- &quot;ESTUDI{H}AC was founded in 2003 by designers...&quot; → SKIP (biography)
+- &quot;Factory location: Castellón, Spain. Production capacity...&quot; → SKIP (factory details)
+- &quot;Water absorption: &lt;0.5%, Breaking strength: &gt;1300N&quot; → SKIP (specs without product)
+
+Focus on speed and accuracy. Only classify as product if it has a product name AND dimensions/specifications.
+</code></pre>
+<hr>
+<h2>📊 Layer 3: Stage 2 Enrichment Analysis</h2>
+<h3>Location</h3>
+<p><code>mivaa-pdf-extractor/app/services/product_creation_service.py</code> - <code>_build_stage2_enrichment_prompt()</code> method (lines 1216-1267)</p>
+<h3>Current Prompt</h3>
+<pre><code>You are an expert product analyst. Perform deep analysis and enrichment of this product content.
+
+PERFORM COMPREHENSIVE ANALYSIS:
+
+1. PRODUCT IDENTIFICATION:
+   - Extract exact product name
+   - Identify product category/type
+   - Determine collection/series
+
+2. SPECIFICATIONS:
+   - Dimensions (extract all size variants)
+   - Materials and composition
+   - Colors and finishes available
+   - Technical properties
+
+3. DESIGN INFORMATION:
+   - Designer/studio name
+   - Design inspiration/story
+   - Style characteristics
+
+4. METADATA:
+   - Product codes/SKUs
+   - Availability information
+   - Related products
+   - Applications/use cases
+
+Be thorough and accurate. Extract all available information.
+</code></pre>
+<h3>✅ What&#39;s Working</h3>
+<ol>
+<li>✅ Comprehensive extraction of product details</li>
+<li>✅ Structured JSON output</li>
+<li>✅ Quality assessment field</li>
+</ol>
+<h3>❌ What&#39;s Missing</h3>
+<ol>
+<li>❌ <strong>No validation step to confirm this is actually a product</strong></li>
+<li>❌ <strong>No instruction to reject non-product content</strong></li>
+<li>❌ <strong>No confidence threshold guidance</strong></li>
+</ol>
+<h3>🔧 Recommended Enhancement</h3>
+<pre><code>You are an expert product analyst. Perform deep analysis and enrichment of this product content.
+
+FIRST, VALIDATE THIS IS A PRODUCT:
+- Does it have a specific product name (not just a designer/factory name)?
+- Does it have dimensions or specifications?
+- Is this product content or designer biography/factory details?
+
+IF NOT A PRODUCT, RESPOND:
+{
+  &quot;is_valid_product&quot;: false,
+  &quot;rejection_reason&quot;: &quot;Designer biography / Factory details / Technical specs only / etc.&quot;,
+  &quot;confidence_score&quot;: 0.0
+}
+
+IF IT IS A PRODUCT, PERFORM COMPREHENSIVE ANALYSIS:
+[... rest of prompt ...]
+</code></pre>
+<hr>
+<h2>📊 Validation Quality Check</h2>
+<h3>Location</h3>
+<p><code>mivaa-pdf-extractor/app/services/product_creation_service.py</code> - <code>_validate_enrichment_quality()</code> method (lines 1432-1455)</p>
+<h3>Current Validation</h3>
+<pre><code class="language-python">def _validate_enrichment_quality(self, enrichment_data: Dict[str, Any]) -&gt; bool:
+    # Check minimum confidence threshold
+    confidence = enrichment_data.get(&#39;confidence_score&#39;, 0)
+    if confidence &lt; 0.4:
+        return False
+
+    # Check for required fields
+    product_name = enrichment_data.get(&#39;product_name&#39;, &#39;&#39;)
+    if not product_name or product_name == &#39;Unknown Product&#39;:
+        return False
+
+    # Check quality assessment
+    quality = enrichment_data.get(&#39;quality_assessment&#39;, &#39;low&#39;)
+    if quality == &#39;low&#39;:
+        return False
+
+    # Check for meaningful content
+    description = enrichment_data.get(&#39;description&#39;, &#39;&#39;)
+    if len(description) &lt; 20:
+        return False
+
+    return True
+</code></pre>
+<h3>✅ What&#39;s Working</h3>
+<ol>
+<li>✅ Confidence threshold (0.4)</li>
+<li>✅ Product name validation</li>
+<li>✅ Quality assessment check</li>
+<li>✅ Description length check</li>
+</ol>
+<h3>❌ What&#39;s Missing</h3>
+<ol>
+<li>❌ <strong>No check for designer biography patterns in product_name</strong></li>
+<li>❌ <strong>No check for factory details in description</strong></li>
+<li>❌ <strong>No validation that product_name is actually a product (not a person/place)</strong></li>
+</ol>
+<h3>🔧 Recommended Enhancement</h3>
+<pre><code class="language-python">def _validate_enrichment_quality(self, enrichment_data: Dict[str, Any]) -&gt; bool:
+    # Existing checks...
+    
+    # ✅ NEW: Check product name is not a designer/studio name
+    product_name = enrichment_data.get(&#39;product_name&#39;, &#39;&#39;)
+    designer_indicators = [&#39;studio&#39;, &#39;design&#39;, &#39;architects&#39;, &#39;founded&#39;, &#39;established&#39;]
+    if any(indicator in product_name.lower() for indicator in designer_indicators):
+        self.logger.warning(f&quot;Rejected: Product name looks like designer/studio: {product_name}&quot;)
+        return False
+    
+    # ✅ NEW: Check description is not a biography
+    description = enrichment_data.get(&#39;description&#39;, &#39;&#39;)
+    bio_indicators = [&#39;born in&#39;, &#39;graduated&#39;, &#39;founded in&#39;, &#39;career began&#39;, &#39;based in&#39;]
+    if any(indicator in description.lower() for indicator in bio_indicators):
+        self.logger.warning(f&quot;Rejected: Description looks like biography&quot;)
+        return False
+    
+    # ✅ NEW: Check for factory details
+    factory_indicators = [&#39;factory location&#39;, &#39;production capacity&#39;, &#39;manufacturing facility&#39;]
+    if any(indicator in description.lower() for indicator in factory_indicators):
+        self.logger.warning(f&quot;Rejected: Description contains factory details&quot;)
+        return False
+    
+    return True
+</code></pre>
+<hr>
+<h2>🎯 Summary of Findings</h2>
+<h3>✅ Strengths</h3>
+<ol>
+<li>✅ Three-layer validation system (pre-filter → Stage 1 → Stage 2)</li>
+<li>✅ Comprehensive filtering for: index pages, sustainability, certifications, moodboards, cleaning products</li>
+<li>✅ Strict product indicator requirements (3/3 instead of 2/3)</li>
+<li>✅ Quality validation with confidence thresholds</li>
+</ol>
+<h3>❌ Critical Gaps</h3>
+<ol>
+<li>❌ <strong>Designer biographies</strong> - No filtering at any layer</li>
+<li>❌ <strong>Factory/manufacturing details</strong> - Partial filtering, needs enhancement</li>
+<li>❌ <strong>Technical specs without products</strong> - No filtering</li>
+<li>❌ <strong>Stage 1 prompt</strong> - Missing explicit non-product examples</li>
+<li>❌ <strong>Stage 2 prompt</strong> - No validation step before enrichment</li>
+<li>❌ <strong>Enrichment validation</strong> - No checks for biography/factory patterns</li>
+</ol>
+<hr>
+<h2>🚀 Recommended Fixes (Priority Order)</h2>
+<h3>Priority 1: HIGH - Add Missing Filters to Layer 1</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code><br><strong>Method</strong>: <code>_is_valid_product_chunk()</code><br><strong>Lines</strong>: 307-406</p>
+<p><strong>Add</strong>:</p>
+<ol>
+<li>Designer biography filtering</li>
+<li>Factory details filtering</li>
+<li>Technical specs without product name filtering</li>
+</ol>
+<h3>Priority 2: HIGH - Enhance Stage 1 Prompt</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code><br><strong>Method</strong>: <code>_build_stage1_batch_prompt()</code><br><strong>Lines</strong>: 1183-1214</p>
+<p><strong>Add</strong>:</p>
+<ol>
+<li>Explicit list of non-product content to skip</li>
+<li>Examples of non-products</li>
+<li>Stricter validation instructions</li>
+</ol>
+<h3>Priority 3: MEDIUM - Enhance Stage 2 Prompt</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code><br><strong>Method</strong>: <code>_build_stage2_enrichment_prompt()</code><br><strong>Lines</strong>: 1216-1267</p>
+<p><strong>Add</strong>:</p>
+<ol>
+<li>Validation step before enrichment</li>
+<li>Rejection mechanism for non-products</li>
+</ol>
+<h3>Priority 4: MEDIUM - Enhance Enrichment Validation</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code><br><strong>Method</strong>: <code>_validate_enrichment_quality()</code><br><strong>Lines</strong>: 1432-1455</p>
+<p><strong>Add</strong>:</p>
+<ol>
+<li>Designer/studio name detection in product_name</li>
+<li>Biography pattern detection in description</li>
+<li>Factory details detection in description</li>
+</ol>
+<hr>
+<h2>📝 Implementation Status</h2>
+<ol>
+<li>✅ <strong>Audit Complete</strong> - Document created</li>
+<li>✅ <strong>Priority 1 IMPLEMENTED</strong> - Added missing filters (designer bios, factory details, tech specs)</li>
+<li>✅ <strong>Priority 2 IMPLEMENTED</strong> - Enhanced Stage 1 prompt with explicit examples</li>
+<li>✅ <strong>Priority 3 IMPLEMENTED</strong> - Enhanced Stage 2 prompt with validation step</li>
+<li>✅ <strong>Priority 4 IMPLEMENTED</strong> - Enhanced validation with pattern detection</li>
+<li>⏳ <strong>Test with Harmony PDF</strong> - Validate 15 products (not 76)</li>
+<li>⏳ <strong>Document Results</strong> - Update this document with test results</li>
+</ol>
+<hr>
+<h2>✅ Implementation Summary</h2>
+<h3>Commit: <code>72d66e8</code></h3>
+<p><strong>Message</strong>: &quot;Fix product over-detection: Add comprehensive filtering for non-products&quot;</p>
+<h3>Changes Made:</h3>
+<h4><strong>Priority 1: Layer 1 Filters</strong> (Lines 380-431)</h4>
+<ul>
+<li>✅ Added 18 designer biography keywords</li>
+<li>✅ Added 15 factory/manufacturing keywords</li>
+<li>✅ Added technical specs without product name logic</li>
+<li>✅ All filters log debug messages for tracking</li>
+</ul>
+<h4><strong>Priority 2: Stage 1 Prompt</strong> (Lines 1225-1272)</h4>
+<ul>
+<li>✅ Added explicit &quot;SKIP THE FOLLOWING&quot; section with 9 categories</li>
+<li>✅ Added 5 concrete examples of non-products</li>
+<li>✅ Added stricter instruction: &quot;product name AND dimensions required&quot;</li>
+<li>✅ Added &quot;Be strict - when in doubt, mark as NOT a product&quot;</li>
+</ul>
+<h4><strong>Priority 3: Stage 2 Prompt</strong> (Lines 1274-1346)</h4>
+<ul>
+<li>✅ Added &quot;FIRST, VALIDATE THIS IS ACTUALLY A PRODUCT&quot; section</li>
+<li>✅ Added red flags for biographies, factory details, sustainability</li>
+<li>✅ Added rejection response format with <code>is_valid_product: false</code></li>
+<li>✅ Added validation questions before enrichment</li>
+</ul>
+<h4><strong>Priority 4: Enrichment Validation</strong> (Lines 1511-1582)</h4>
+<ul>
+<li>✅ Check <code>is_valid_product</code> field from Stage 2</li>
+<li>✅ Check product_name for designer/studio indicators (6 keywords)</li>
+<li>✅ Check description for biography patterns (9 keywords)</li>
+<li>✅ Check description for factory details (7 keywords)</li>
+<li>✅ Check description for sustainability content (6 keywords)</li>
+<li>✅ All checks log warning messages with rejection reasons</li>
+</ul>
+<h4><strong>Supporting Changes</strong></h4>
+<ul>
+<li>✅ Updated <code>_parse_stage2_results()</code> to handle <code>is_valid_product</code> and <code>rejection_reason</code> fields</li>
+<li>✅ Enhanced error handling with descriptive log messages</li>
+</ul>
+<h3>Total Changes:</h3>
+<ul>
+<li><strong>137 insertions, 7 deletions</strong></li>
+<li><strong>4 methods enhanced</strong></li>
+<li><strong>71 new filtering keywords added</strong></li>
+<li><strong>3-layer validation system strengthened</strong></li>
+</ul>
+<hr>
+<p><strong>Status</strong>: ✅ IMPLEMENTATION COMPLETE - Ready for testing</p>
+
+</div></body></html>

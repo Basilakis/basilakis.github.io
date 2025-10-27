@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material Images API - Llama 4 Scout Vision Integration</h1>
+<p><strong>Date:</strong> 2025-10-26<br><strong>Status:</strong> ✅ Production Ready<br><strong>Model:</strong> Llama 4 Scout 17B Vision (69.4% MMMU, #1 OCR)</p>
+<hr>
+<h2>📋 Overview</h2>
+<p>The <code>material-images-api</code> Supabase Edge Function now includes <strong>automatic image analysis</strong> using Llama 4 Scout Vision. When images are uploaded, they are automatically analyzed to extract:</p>
+<ul>
+<li><strong>Materials</strong> (ceramic, wood, metal, stone, etc.)</li>
+<li><strong>Colors</strong> (primary and secondary colors)</li>
+<li><strong>Textures</strong> (smooth, rough, embossed, etc.)</li>
+<li><strong>Patterns</strong> (solid, striped, geometric, etc.)</li>
+<li><strong>Finish</strong> (matte, glossy, satin, polished, etc.)</li>
+<li><strong>Description</strong> (detailed AI-generated description)</li>
+<li><strong>Tags</strong> (searchable keywords)</li>
+<li><strong>Properties</strong> (surface type, style, application, composition)</li>
+</ul>
+<hr>
+<h2>🚀 API Usage</h2>
+<h3>Upload Image with Auto-Analysis (Default)</h3>
+<pre><code class="language-typescript">POST /material-images-api
+Content-Type: application/json
+Authorization: Bearer &lt;supabase-anon-key&gt;
+
+{
+  &quot;material_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+  &quot;image_data&quot;: &quot;data:image/jpeg;base64,/9j/4AAQSkZJRg...&quot;,
+  &quot;image_type&quot;: &quot;primary&quot;,
+  &quot;title&quot;: &quot;White Ceramic Tile&quot;,
+  &quot;auto_analyze&quot;: true  // Optional, defaults to true
+}
+</code></pre>
+<h3>Response with Analysis Data</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;660e8400-e29b-41d4-a716-446655440001&quot;,
+    &quot;material_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;image_url&quot;: &quot;https://...supabase.co/storage/v1/object/public/material-images/...&quot;,
+    &quot;image_type&quot;: &quot;primary&quot;,
+    &quot;title&quot;: &quot;White Ceramic Tile&quot;,
+    &quot;description&quot;: &quot;White glossy ceramic tile with smooth surface finish, suitable for wall and floor applications&quot;,
+    &quot;analysis_data&quot;: {
+      &quot;materials&quot;: [&quot;ceramic&quot;, &quot;porcelain&quot;],
+      &quot;colors&quot;: [&quot;white&quot;, &quot;off-white&quot;],
+      &quot;textures&quot;: [&quot;smooth&quot;, &quot;glossy&quot;],
+      &quot;patterns&quot;: [&quot;solid&quot;],
+      &quot;finish&quot;: &quot;glossy&quot;,
+      &quot;description&quot;: &quot;White glossy ceramic tile with smooth surface finish...&quot;,
+      &quot;tags&quot;: [&quot;ceramic&quot;, &quot;tile&quot;, &quot;glossy&quot;, &quot;white&quot;, &quot;wall&quot;, &quot;floor&quot;],
+      &quot;properties&quot;: {
+        &quot;surface_type&quot;: &quot;smooth&quot;,
+        &quot;style&quot;: &quot;modern&quot;,
+        &quot;application&quot;: &quot;wall/floor&quot;,
+        &quot;composition&quot;: &quot;ceramic/porcelain&quot;
+      },
+      &quot;confidence&quot;: 0.92
+    },
+    &quot;tags&quot;: [&quot;ceramic&quot;, &quot;tile&quot;, &quot;glossy&quot;, &quot;white&quot;, &quot;wall&quot;, &quot;floor&quot;],
+    &quot;color_palette&quot;: {
+      &quot;colors&quot;: [&quot;white&quot;, &quot;off-white&quot;],
+      &quot;primary_color&quot;: &quot;white&quot;
+    },
+    &quot;metadata&quot;: {
+      &quot;auto_analyzed&quot;: true,
+      &quot;analysis_timestamp&quot;: &quot;2025-10-26T04:30:00.000Z&quot;,
+      &quot;analysis_model&quot;: &quot;llama-4-scout-17b-vision&quot;
+    },
+    &quot;created_at&quot;: &quot;2025-10-26T04:30:00.000Z&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;processing_time_ms&quot;: 2847
+  }
+}
+</code></pre>
+<h3>Upload Without Auto-Analysis</h3>
+<pre><code class="language-typescript">POST /material-images-api
+{
+  &quot;material_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+  &quot;image_data&quot;: &quot;data:image/jpeg;base64,/9j/4AAQSkZJRg...&quot;,
+  &quot;auto_analyze&quot;: false  // Disable auto-analysis
+}
+</code></pre>
+<h3>Upload from URL (No Auto-Analysis)</h3>
+<pre><code class="language-typescript">POST /material-images-api
+{
+  &quot;material_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+  &quot;image_url&quot;: &quot;https://example.com/image.jpg&quot;,
+  &quot;image_type&quot;: &quot;primary&quot;
+}
+</code></pre>
+<p><strong>Note:</strong> Auto-analysis only works with <code>image_data</code> (base64 uploads), not with <code>image_url</code>.</p>
+<hr>
+<h2>🔧 Technical Implementation</h2>
+<h3>Architecture</h3>
+<pre><code>Upload Request
+    ↓
+material-images-api Edge Function
+    ↓
+[1] Decode base64 image
+    ↓
+[2] Upload to Supabase Storage
+    ↓
+[3] Call Llama 4 Scout Vision API ← NEW!
+    ↓
+[4] Parse JSON analysis response
+    ↓
+[5] Insert to material_images table with analysis_data
+    ↓
+Response with complete data
+</code></pre>
+<h3>Llama 4 Scout Vision Analysis</h3>
+<p><strong>Model:</strong> <code>meta-llama/Llama-4-Scout-17B-16E-Instruct</code><br><strong>Provider:</strong> Together.ai (serverless)<br><strong>Timeout:</strong> 60 seconds<br><strong>Max Tokens:</strong> 1024<br><strong>Temperature:</strong> 0.1 (deterministic)</p>
+<p><strong>Prompt Structure:</strong></p>
+<pre><code>Analyze this material/product image and extract comprehensive information in JSON format:
+{
+  &quot;materials&quot;: [&quot;&lt;material1&gt;&quot;, &quot;&lt;material2&gt;&quot;],
+  &quot;colors&quot;: [&quot;&lt;color1&gt;&quot;, &quot;&lt;color2&gt;&quot;],
+  &quot;textures&quot;: [&quot;&lt;texture1&gt;&quot;, &quot;&lt;texture2&gt;&quot;],
+  &quot;patterns&quot;: [&quot;&lt;pattern1&gt;&quot;, &quot;&lt;pattern2&gt;&quot;],
+  &quot;finish&quot;: &quot;&lt;matte/glossy/satin/textured/polished/etc&gt;&quot;,
+  &quot;description&quot;: &quot;&lt;detailed description&gt;&quot;,
+  &quot;tags&quot;: [&quot;&lt;tag1&gt;&quot;, &quot;&lt;tag2&gt;&quot;],
+  &quot;properties&quot;: {
+    &quot;surface_type&quot;: &quot;&lt;smooth/rough/embossed/etc&gt;&quot;,
+    &quot;style&quot;: &quot;&lt;modern/classic/industrial/etc&gt;&quot;,
+    &quot;application&quot;: &quot;&lt;flooring/wall/furniture/etc&gt;&quot;,
+    &quot;composition&quot;: &quot;&lt;estimated material composition&gt;&quot;
+  },
+  &quot;confidence&quot;: &lt;0.0-1.0&gt;
+}
+</code></pre>
+<h3>Error Handling</h3>
+<p><strong>Graceful Fallback:</strong> If Llama analysis fails, the image upload continues without analysis data.</p>
+<pre><code class="language-typescript">try {
+  const analysis = await analyzeImageWithLlama(imageData);
+  // Use analysis if successful
+} catch (error) {
+  console.warn(&#39;Auto-analysis failed, continuing without analysis&#39;);
+  // Upload continues with empty analysis_data
+}
+</code></pre>
+<p><strong>Common Failure Scenarios:</strong></p>
+<ul>
+<li>❌ <code>TOGETHER_API_KEY</code> not set → Skip analysis</li>
+<li>❌ Llama API timeout → Skip analysis</li>
+<li>❌ Invalid JSON response → Skip analysis</li>
+<li>❌ Network error → Skip analysis</li>
+</ul>
+<p><strong>Result:</strong> Image is always uploaded successfully, analysis is best-effort.</p>
+<hr>
+<h2>📊 Database Schema</h2>
+<h3>material_images Table</h3>
+<pre><code class="language-sql">CREATE TABLE material_images (
+  id UUID PRIMARY KEY,
+  material_id UUID REFERENCES materials_catalog(id),
+  image_url TEXT NOT NULL,
+  image_type TEXT,
+  title TEXT,
+  description TEXT,  -- Auto-populated from analysis
+  alt_text TEXT,
+  file_name TEXT,
+  file_size INTEGER,
+  mime_type TEXT,
+  width INTEGER,
+  height INTEGER,
+  storage_path TEXT,
+  storage_bucket TEXT,
+  display_order INTEGER,
+  is_featured BOOLEAN,
+  metadata JSONB,  -- Includes auto_analyzed, analysis_timestamp, analysis_model
+  variants JSONB,
+  analysis_data JSONB,  -- ← Llama 4 Scout analysis results
+  tags TEXT[],  -- ← Auto-generated from analysis
+  color_palette JSONB,  -- ← Auto-generated from analysis
+  source_url TEXT,
+  verified_by UUID,
+  verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  created_by UUID
+);
+</code></pre>
+<h3>analysis_data Structure</h3>
+<pre><code class="language-typescript">interface AnalysisData {
+  materials: string[];        // [&quot;ceramic&quot;, &quot;porcelain&quot;]
+  colors: string[];           // [&quot;white&quot;, &quot;beige&quot;]
+  textures: string[];         // [&quot;smooth&quot;, &quot;glossy&quot;]
+  patterns: string[];         // [&quot;solid&quot;]
+  finish: string;             // &quot;glossy&quot;
+  description: string;        // &quot;White glossy ceramic tile...&quot;
+  tags: string[];             // [&quot;ceramic&quot;, &quot;tile&quot;, &quot;glossy&quot;]
+  properties: {
+    surface_type: string;     // &quot;smooth&quot;
+    style: string;            // &quot;modern&quot;
+    application: string;      // &quot;wall/floor&quot;
+    composition: string;      // &quot;ceramic/porcelain&quot;
+  };
+  confidence: number;         // 0.92
+}
+</code></pre>
+<hr>
+<h2>🎯 Use Cases</h2>
+<h3>1. Knowledge Base Image Upload</h3>
+<pre><code class="language-typescript">// Admin uploads material image to knowledge base
+const response = await fetch(&#39;/material-images-api&#39;, {
+  method: &#39;POST&#39;,
+  headers: {
+    &#39;Authorization&#39;: `Bearer ${supabaseAnonKey}`,
+    &#39;Content-Type&#39;: &#39;application/json&#39;
+  },
+  body: JSON.stringify({
+    material_id: materialId,
+    image_data: base64Image,
+    image_type: &#39;primary&#39;,
+    auto_analyze: true  // Get automatic tags and description
+  })
+});
+
+const { data } = await response.json();
+console.log(&#39;Auto-generated tags:&#39;, data.tags);
+console.log(&#39;AI description:&#39;, data.description);
+</code></pre>
+<h3>2. Bulk Image Import</h3>
+<pre><code class="language-typescript">// Import multiple images with auto-analysis
+for (const image of images) {
+  await fetch(&#39;/material-images-api&#39;, {
+    method: &#39;POST&#39;,
+    body: JSON.stringify({
+      material_id: image.materialId,
+      image_data: image.base64,
+      auto_analyze: true
+    })
+  });
+}
+</code></pre>
+<h3>3. Search by Auto-Generated Tags</h3>
+<pre><code class="language-sql">-- Find all glossy ceramic tiles
+SELECT * FROM material_images
+WHERE &#39;glossy&#39; = ANY(tags)
+  AND &#39;ceramic&#39; = ANY(tags);
+
+-- Find materials by color
+SELECT * FROM material_images
+WHERE analysis_data-&gt;&gt;&#39;finish&#39; = &#39;matte&#39;
+  AND &#39;blue&#39; = ANY(tags);
+</code></pre>
+<hr>
+<h2>🔐 Security &amp; Performance</h2>
+<h3>Authentication</h3>
+<ul>
+<li>Requires valid Supabase authentication token</li>
+<li>Row Level Security (RLS) policies enforced</li>
+<li>Service role key for internal operations</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li><strong>Analysis Time:</strong> ~2-3 seconds per image</li>
+<li><strong>Total Upload Time:</strong> ~3-5 seconds (including storage + analysis)</li>
+<li><strong>Concurrent Uploads:</strong> Supported (serverless scaling)</li>
+<li><strong>Rate Limits:</strong> Together.ai API limits apply</li>
+</ul>
+<h3>Cost Optimization</h3>
+<ul>
+<li>Analysis only runs for base64 uploads (not URL uploads)</li>
+<li>Can be disabled with <code>auto_analyze: false</code></li>
+<li>Graceful fallback prevents upload failures</li>
+</ul>
+<hr>
+<h2>🧪 Testing</h2>
+<h3>Manual Test</h3>
+<pre><code class="language-bash">curl -X POST https://your-project.supabase.co/functions/v1/material-images-api \
+  -H &quot;Authorization: Bearer YOUR_ANON_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;material_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;image_data&quot;: &quot;data:image/jpeg;base64,/9j/4AAQSkZJRg...&quot;,
+    &quot;auto_analyze&quot;: true
+  }&#39;
+</code></pre>
+<h3>Expected Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;analysis_data&quot;: { ... },
+    &quot;tags&quot;: [&quot;ceramic&quot;, &quot;tile&quot;, ...],
+    &quot;color_palette&quot;: { ... }
+  }
+}
+</code></pre>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><a href="./llama-4-scout-implementation-summary.md">Llama 4 Scout Implementation Summary</a></li>
+<li><a href="./api-documentation.md">API Documentation</a></li>
+<li><a href="./setup-configuration.md">Setup &amp; Configuration</a></li>
+</ul>
+
+</div></body></html>
