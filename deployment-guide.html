@@ -768,12 +768,218 @@ docker-compose -f docker-compose.prod.yml up -d
 <li><input disabled="" type="checkbox"> Validate security headers</li>
 <li><input disabled="" type="checkbox"> Test critical workflows</li>
 </ul>
+<h2>💾 Backup &amp; Disaster Recovery</h2>
+<h3>Automated Backup Strategy</h3>
+<p><strong>Database Backups</strong> (Supabase):</p>
+<pre><code class="language-bash"># Supabase provides automatic daily backups
+# Access backups in Supabase Dashboard → Settings → Backups
+
+# Point-in-time recovery (PITR) available for 7 days
+# Restore via Supabase Dashboard or API
+</code></pre>
+<p><strong>Application Data Backups</strong>:</p>
+<pre><code class="language-bash"># Automated backup script (runs daily via cron)
+# Location: /usr/local/bin/backup-mivaa.sh
+
+# Manual backup
+backup-mivaa.sh
+
+# Backup location: /backups/mivaa_backup_YYYYMMDD_HHMMSS.tar.gz
+# Retention: Last 7 backups kept automatically
+</code></pre>
+<h3>Disaster Recovery Procedures</h3>
+<p><strong>Database Recovery</strong>:</p>
+<ol>
+<li>Go to Supabase Dashboard → Settings → Backups</li>
+<li>Select desired backup point</li>
+<li>Click &quot;Restore&quot; and confirm</li>
+<li>Verify data integrity after restore</li>
+</ol>
+<p><strong>Application Recovery</strong>:</p>
+<pre><code class="language-bash"># Restore from backup
+cd /backups
+tar -xzf mivaa_backup_YYYYMMDD_HHMMSS.tar.gz -C /app
+
+# Restart service
+systemctl restart mivaa-pdf-extractor
+</code></pre>
+<hr>
+<h2>🗄️ Database Migrations &amp; Schema Management</h2>
+<h3>Migration Strategy</h3>
+<p><strong>Using Supabase Migrations</strong>:</p>
+<pre><code class="language-bash"># Create new migration
+supabase migration new add_new_table
+
+# Apply migrations
+supabase db push
+
+# Rollback migration
+supabase db reset
+</code></pre>
+<p><strong>Zero-Downtime Deployments</strong>:</p>
+<ol>
+<li>Add new columns as nullable</li>
+<li>Deploy code that handles both old and new columns</li>
+<li>Backfill data in background job</li>
+<li>Remove old columns in subsequent deployment</li>
+</ol>
+<h3>Extension Management</h3>
+<p><strong>Required PostgreSQL Extensions</strong>:</p>
+<pre><code class="language-sql">-- Enable in Supabase Dashboard → SQL Editor
+CREATE EXTENSION IF NOT EXISTS &quot;uuid-ossp&quot;;
+CREATE EXTENSION IF NOT EXISTS &quot;vector&quot;;
+CREATE EXTENSION IF NOT EXISTS &quot;ltree&quot;;
+</code></pre>
+<hr>
+<h2>🔄 Job Recovery &amp; Signal Handling</h2>
+<h3>Job Persistence</h3>
+<p>The platform implements automatic job recovery for PDF processing:</p>
+<p><strong>Job States</strong>:</p>
+<ul>
+<li><code>pending</code> - Waiting to start</li>
+<li><code>processing</code> - Currently running</li>
+<li><code>completed</code> - Successfully finished</li>
+<li><code>failed</code> - Processing failed</li>
+<li><code>cancelled</code> - User cancelled</li>
+</ul>
+<p><strong>Recovery on Restart</strong>:</p>
+<pre><code class="language-python"># Automatic on service startup
+# Resumes jobs in &#39;processing&#39; state
+# Retries failed jobs up to max_retries
+</code></pre>
+<p><strong>Graceful Shutdown</strong>:</p>
+<pre><code class="language-bash"># Service receives SIGTERM
+# Completes current operations
+# Persists job state
+# Exits cleanly
+
+# Timeout: 30 seconds before SIGKILL
+</code></pre>
+<hr>
+<h2>📊 Performance Optimization &amp; Scaling</h2>
+<h3>Horizontal Scaling</h3>
+<p><strong>MIVAA Service Scaling</strong>:</p>
+<pre><code class="language-yaml"># docker-compose.yml
+services:
+  mivaa-service:
+    deploy:
+      replicas: 3  # Scale to 3 instances
+</code></pre>
+<p><strong>Load Balancing</strong>:</p>
+<pre><code class="language-nginx">upstream mivaa_backend {
+    server mivaa-service:8000;
+    server mivaa-service:8001;
+    server mivaa-service:8002;
+}
+
+server {
+    location / {
+        proxy_pass http://mivaa_backend;
+    }
+}
+</code></pre>
+<h3>Database Connection Pooling</h3>
+<p><strong>Supabase Connection Pool</strong>:</p>
+<pre><code class="language-bash"># Set in MIVAA environment
+DATABASE_POOL_SIZE=20
+DATABASE_POOL_TIMEOUT=30
+</code></pre>
+<h3>Caching Strategy</h3>
+<p><strong>Application-Level Caching</strong>:</p>
+<pre><code class="language-typescript">// Production caching configuration
+caching: {
+  enabled: true,
+  ttl: 3600000,        // 1 hour
+  maxSize: 1000,       // 1000 items
+  strategy: &#39;lru&#39;      // Least Recently Used
+}
+</code></pre>
+<hr>
+<h2>🚨 Monitoring &amp; Alerting</h2>
+<h3>Metrics Collection</h3>
+<p><strong>Key Metrics to Monitor</strong>:</p>
+<ul>
+<li>Request latency (p50, p95, p99)</li>
+<li>Error rate (5xx, 4xx responses)</li>
+<li>Database query performance</li>
+<li>Memory usage</li>
+<li>CPU utilization</li>
+<li>Job processing time</li>
+</ul>
+<p><strong>Sentry Configuration</strong>:</p>
+<pre><code class="language-typescript">// Frontend monitoring
+Sentry.init({
+  dsn: process.env.VITE_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 1.0,
+  integrations: [
+    new Sentry.Replay({
+      maskAllText: true,
+      blockAllMedia: true,
+    }),
+  ],
+});
+</code></pre>
+<h3>Alert Thresholds</h3>
+<pre><code class="language-typescript">alertThresholds: {
+  errorRate: 0.05,        // 5% error rate
+  responseTime: 2000,     // 2 seconds
+  memoryUsage: 0.7,       // 70% memory
+  cpuUsage: 0.8,          // 80% CPU
+}
+</code></pre>
+<hr>
+<h2>🔐 Security Hardening</h2>
+<h3>API Rate Limiting</h3>
+<pre><code class="language-bash"># MIVAA Service environment
+RATE_LIMIT_REQUESTS=50
+RATE_LIMIT_WINDOW=60  # per minute
+</code></pre>
+<h3>Security Headers</h3>
+<pre><code class="language-nginx"># nginx.conf
+add_header X-Content-Type-Options &quot;nosniff&quot;;
+add_header X-Frame-Options &quot;DENY&quot;;
+add_header X-XSS-Protection &quot;1; mode=block&quot;;
+add_header Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot;;
+add_header Content-Security-Policy &quot;default-src &#39;self&#39;&quot;;
+</code></pre>
+<h3>Secrets Rotation</h3>
+<p><strong>Rotation Schedule</strong>:</p>
+<ul>
+<li>JWT Secret: Every 90 days</li>
+<li>API Keys: Every 180 days</li>
+<li>Database Password: Every 90 days</li>
+</ul>
+<p><strong>Rotation Process</strong>:</p>
+<ol>
+<li>Generate new secret</li>
+<li>Update in secret manager</li>
+<li>Deploy with new secret</li>
+<li>Verify functionality</li>
+<li>Revoke old secret</li>
+</ol>
+<hr>
+<h2>🌐 Edge Functions Deployment</h2>
+<h3>Supabase Edge Functions</h3>
+<p><strong>Deploy Function</strong>:</p>
+<pre><code class="language-bash"># Create new function
+supabase functions new my-function
+
+# Deploy to production
+supabase functions deploy my-function --project-ref bgbavxtjlbvgplozizxu
+</code></pre>
+<p><strong>Environment Variables</strong>:</p>
+<pre><code class="language-bash"># Set in Supabase Dashboard → Edge Functions → Secrets
+supabase secrets set JWT_SECRET_KEY=your_secret
+</code></pre>
+<hr>
 <h2>🔗 Related Documentation</h2>
 <ul>
 <li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Environment setup</li>
 <li><a href="./security-authentication.md">Security &amp; Authentication</a> - Security configuration</li>
 <li><a href="./testing-strategy.md">Testing Strategy</a> - Pre-deployment testing</li>
 <li><a href="./troubleshooting.md">Troubleshooting</a> - Issue resolution</li>
+<li><a href="../mivaa-pdf-extractor/docs/JOB-RECOVERY-AND-SIGNAL-HANDLING.md">Job Recovery &amp; Signal Handling</a> - Job persistence</li>
 </ul>
 
 </div></body></html>
