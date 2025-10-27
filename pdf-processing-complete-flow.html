@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>PDF Processing Complete Flow - Material Kai Vision Platform</h1>
+<p><strong>Last Updated</strong>: 2025-10-26<br><strong>Status</strong>: Production Documentation - Verified Against Actual Implementation</p>
+<hr>
+<h2>📋 Overview</h2>
+<p>This document provides a <strong>step-by-step breakdown</strong> of the complete PDF processing pipeline, detailing every AI model used, what data is generated, and where it&#39;s stored.</p>
+<hr>
+<h2>🔄 Complete Processing Flow</h2>
+<pre><code>Step 1: PDF Upload &amp; Validation
+↓
+Step 2: Background Job Creation
+↓
+Step 3: PDF Analysis &amp; Strategy Selection
+↓
+Step 4: Text Extraction (PyMuPDF4LLM)
+↓
+Step 5: Image Extraction &amp; Upload
+↓
+Step 6: Semantic Chunking
+↓
+Step 7: Text Embeddings Generation ⚠️ BROKEN
+↓
+Step 8: Product Creation (Two-Stage)
+↓
+Step 9: Deferred AI Analysis ⚠️ NOT IMPLEMENTED
+↓
+Step 10: Job Completion
+</code></pre>
+<hr>
+<h2>📄 Step-by-Step Breakdown</h2>
+<h3><strong>Step 1: PDF Upload &amp; Validation</strong></h3>
+<p><strong>Component</strong>: Frontend → Supabase Edge Function → MIVAA Gateway<br><strong>Duration</strong>: 2-5 seconds</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>User uploads PDF via <code>MivaaPDFProcessor.tsx</code></li>
+<li>File validated (type: PDF, max size: 50MB)</li>
+<li>PDF sent to MIVAA gateway: <code>POST https://v1api.materialshub.gr/api/rag/documents/upload-async</code></li>
+</ol>
+<p><strong>AI Models Used</strong>: None</p>
+<p><strong>Data Generated</strong>:</p>
+<ul>
+<li>Document ID (UUID)</li>
+<li>Workspace ID (UUID)</li>
+<li>Filename</li>
+<li>File size</li>
+</ul>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>documents</code> table (record created)</li>
+</ul>
+<p><strong>Output</strong>: </p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;pending&quot;,
+  &quot;message&quot;: &quot;Document processing started&quot;
+}
+</code></pre>
+<hr>
+<h3><strong>Step 2: Background Job Creation</strong></h3>
+<p><strong>Component</strong>: MIVAA API (<code>app/api/rag_routes.py</code>)<br><strong>Duration</strong>: &lt;1 second</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Create background job record</li>
+<li>Set status to &quot;processing&quot;</li>
+<li>Set progress to 20%</li>
+<li>Start async processing</li>
+</ol>
+<p><strong>AI Models Used</strong>: None</p>
+<p><strong>Data Generated</strong>:</p>
+<ul>
+<li>Job ID (UUID)</li>
+<li>Status: &quot;processing&quot;</li>
+<li>Progress: 20%</li>
+<li>Created timestamp</li>
+</ul>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>background_jobs</code> table</li>
+</ul>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/api/rag_routes.py</code> (upload_document_async)</p>
+<hr>
+<h3><strong>Step 3: PDF Analysis &amp; Strategy Selection</strong></h3>
+<p><strong>Component</strong>: PDFProcessor (<code>app/services/pdf_processor.py</code>)<br><strong>Duration</strong>: 1-2 seconds</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Analyze PDF structure (page count, text density, image count)</li>
+<li>Calculate chars/page and images/page ratios</li>
+<li>Select processing strategy:<ul>
+<li><strong>Text-first</strong>: chars/page &gt; 500 (use PyMuPDF4LLM)</li>
+<li><strong>Image-first</strong>: images/page &gt; 2 (use image extraction)</li>
+<li><strong>Hybrid</strong>: Mixed content (use both)</li>
+</ul>
+</li>
+</ol>
+<p><strong>AI Models Used</strong>: None (rule-based analysis)</p>
+<p><strong>Data Generated</strong>:</p>
+<pre><code class="language-python">{
+  &quot;page_count&quot;: 71,
+  &quot;chars_per_page&quot;: 731.9,
+  &quot;images_per_page&quot;: 0.4,
+  &quot;detection&quot;: &quot;text_dominant&quot;,
+  &quot;strategy&quot;: &quot;text-first&quot;
+}
+</code></pre>
+<p><strong>Example Output</strong> (Harmony PDF):</p>
+<pre><code>📊 PDF Analysis: 71 pages, 731.9 chars/page, 0.4 images/page
+🎯 Detection: Text-first (reason: text_dominant)
+</code></pre>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/services/pdf_processor.py</code> (analyze_pdf_structure)</p>
+<hr>
+<h3><strong>Step 4: Text Extraction (PyMuPDF4LLM)</strong></h3>
+<p><strong>Component</strong>: LlamaIndex Service (<code>app/services/llamaindex_service.py</code>)<br><strong>Duration</strong>: 30-120 seconds (depends on page count)</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Use PyMuPDF4LLM to extract text with markdown formatting</li>
+<li>Preserve document structure (headings, paragraphs, lists)</li>
+<li>Extract text from all 71 pages</li>
+<li>Generate structured markdown output</li>
+</ol>
+<p><strong>AI Models Used</strong>: </p>
+<ul>
+<li><strong>GPT-4o</strong> (via LlamaIndex for text processing)</li>
+</ul>
+<p><strong>Data Generated</strong>:</p>
+<pre><code class="language-python">{
+  &quot;total_text&quot;: &quot;105,605 characters&quot;,
+  &quot;word_count&quot;: 16494,
+  &quot;markdown_formatted&quot;: True,
+  &quot;structure_preserved&quot;: True
+}
+</code></pre>
+<p><strong>Example Output</strong> (Harmony PDF):</p>
+<pre><code>Extracted text: 105,605 characters
+Word count: 16,494 words
+Pages processed: 71
+</code></pre>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/services/pdf_processor.py</code> (process_pdf_from_bytes)</p>
+<hr>
+<h3><strong>Step 5: Image Extraction &amp; Upload</strong></h3>
+<p><strong>Component</strong>: PDFProcessor (<code>app/services/pdf_processor.py</code>)<br><strong>Duration</strong>: 60-300 seconds (depends on image count)</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Extract images from PDF pages using PyMuPDF</li>
+<li>For each image:<ul>
+<li>Calculate quality metrics (resolution, sharpness, contrast)</li>
+<li>Enhance image (contrast, sharpness)</li>
+<li>Convert to JPEG format</li>
+<li>Upload to Supabase storage (bucket: <code>pdf-tiles</code>)</li>
+<li>Save metadata to <code>document_images</code> table</li>
+</ul>
+</li>
+<li><strong>CRITICAL</strong>: AI analysis is DEFERRED (not run during extraction)</li>
+</ol>
+<p><strong>AI Models Used</strong>: None (during extraction)</p>
+<p><strong>Data Generated</strong> (per image):</p>
+<pre><code class="language-python">{
+  &quot;image_url&quot;: &quot;https://supabase.co/storage/.../image.jpg&quot;,
+  &quot;page_number&quot;: 1,
+  &quot;quality_score&quot;: 0.52,
+  &quot;quality_metrics&quot;: {
+    &quot;resolution_score&quot;: 0.6,
+    &quot;sharpness_score&quot;: 0.5,
+    &quot;contrast_score&quot;: 0.45
+  },
+  &quot;processing_status&quot;: &quot;completed&quot;,
+  &quot;bbox&quot;: [x, y, width, height]
+}
+</code></pre>
+<p><strong>Example Output</strong> (Harmony PDF):</p>
+<pre><code>✅ Image uploaded to storage, AI analysis deferred: image-26-0.jpg
+✅ Image uploaded to storage, AI analysis deferred: image-41-0.jpg
+...
+Total images extracted: 170
+Average quality score: 0.52
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>document_images</code> table (170 records created)</li>
+</ul>
+<p><strong>Storage</strong>:</p>
+<ul>
+<li>Supabase Storage bucket: <code>pdf-tiles/extracted/{document_id}/</code></li>
+</ul>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/services/pdf_processor.py</code> (_process_extracted_image)</p>
+<p><strong>⚠️ CRITICAL NOTE</strong>: AI analysis columns remain NULL:</p>
+<ul>
+<li><code>llama_analysis</code>: NULL</li>
+<li><code>claude_validation</code>: NULL</li>
+<li><code>visual_clip_embedding_512</code>: NULL</li>
+<li><code>color_embedding_256</code>: NULL</li>
+<li><code>texture_embedding_256</code>: NULL</li>
+<li><code>application_embedding_512</code>: NULL</li>
+</ul>
+<hr>
+<h3><strong>Step 6: Semantic Chunking</strong></h3>
+<p><strong>Component</strong>: LlamaIndex Service (<code>app/services/llamaindex_service.py</code>)<br><strong>Duration</strong>: 10-30 seconds</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Use LlamaIndex&#39;s <code>SemanticSplitterNodeParser</code></li>
+<li>Split text into semantic chunks (not fixed-size)</li>
+<li>Classify each chunk by type using pattern matching</li>
+<li>Calculate chunk quality metrics</li>
+</ol>
+<p><strong>AI Models Used</strong>:</p>
+<ul>
+<li><strong>text-embedding-3-small</strong> (for semantic boundary detection)</li>
+</ul>
+<p><strong>Chunk Types Detected</strong>:</p>
+<ul>
+<li><code>product_description</code> (146 chunks, 85% confidence)</li>
+<li><code>technical_specs</code> (34 chunks, 90% confidence)</li>
+<li><code>supporting_content</code> (29 chunks, 60% confidence)</li>
+<li><code>certification_info</code> (5 chunks, 90% confidence)</li>
+<li><code>sustainability_info</code> (4 chunks, 90% confidence)</li>
+<li><code>index_content</code> (4 chunks, 95% confidence)</li>
+<li><code>designer_story</code> (3 chunks, 85% confidence)</li>
+<li><code>collection_overview</code> (3 chunks, 80% confidence)</li>
+<li><code>visual_showcase</code> (1 chunk, 80% confidence)</li>
+</ul>
+<p><strong>Data Generated</strong> (per chunk):</p>
+<pre><code class="language-python">{
+  &quot;chunk_index&quot;: 0,
+  &quot;content&quot;: &quot;text content...&quot;,
+  &quot;chunk_type&quot;: &quot;product_description&quot;,
+  &quot;chunk_type_confidence&quot;: 0.85,
+  &quot;metadata&quot;: {
+    &quot;chunk_size_actual&quot;: 5015,
+    &quot;word_count&quot;: 16494,
+    &quot;character_count&quot;: 105605,
+    &quot;chunk_strategy&quot;: &quot;hierarchical&quot;,
+    &quot;embedding_model&quot;: &quot;text-embedding-3-small&quot;,
+    &quot;embedding_dimension&quot;: 1536
+  }
+}
+</code></pre>
+<p><strong>Example Output</strong> (Harmony PDF):</p>
+<pre><code>Total chunks created: 229
+Chunk strategy: hierarchical
+Average chunk size: 461 characters
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>document_chunks</code> table (229 records created)</li>
+</ul>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/services/llamaindex_service.py</code> (_store_chunks_in_database)</p>
+<hr>
+<h3><strong>Step 7: Text Embeddings Generation</strong> ⚠️ <strong>BROKEN</strong></h3>
+<p><strong>Component</strong>: LlamaIndex Service<br><strong>Expected Duration</strong>: 20-60 seconds<br><strong>Actual Duration</strong>: 0 seconds (not running)</p>
+<p><strong>Expected Process</strong>:</p>
+<ol>
+<li>For each chunk, generate 1536D embedding using OpenAI</li>
+<li>Store embedding in <code>embeddings</code> table</li>
+<li>Link embedding to chunk via <code>chunk_id</code></li>
+</ol>
+<p><strong>AI Models Used</strong>:</p>
+<ul>
+<li><strong>text-embedding-3-small</strong> (OpenAI)</li>
+</ul>
+<p><strong>Expected Data Generated</strong> (per chunk):</p>
+<pre><code class="language-python">{
+  &quot;chunk_id&quot;: &quot;uuid&quot;,
+  &quot;embedding&quot;: [1536 float values],
+  &quot;model_name&quot;: &quot;text-embedding-3-small&quot;,
+  &quot;dimensions&quot;: 1536
+}
+</code></pre>
+<p><strong>❌ ACTUAL RESULT</strong>:</p>
+<pre><code>Chunks created: 229
+Embeddings created: 0
+Success rate: 0%
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>embeddings</code> table (SHOULD have 229 records, has 0)</li>
+</ul>
+<p><strong>⚠️ CRITICAL BUG</strong>: Embeddings are NOT being generated or stored. This breaks:</p>
+<ul>
+<li>Semantic search</li>
+<li>RAG queries</li>
+<li>Similarity matching</li>
+<li>All search functionality</li>
+</ul>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/services/llamaindex_service.py</code> (needs investigation)</p>
+<hr>
+<h3><strong>Step 8: Product Creation (Two-Stage)</strong></h3>
+<p><strong>Component</strong>: Product Creation Service (<code>app/services/product_creation_service.py</code>)<br><strong>Duration</strong>: 10-20 seconds</p>
+<p><strong>Process</strong>:</p>
+<h4><strong>Stage 1: Fast Classification (Claude Haiku 4.5)</strong></h4>
+<ol>
+<li>Analyze all 229 chunks with Claude Haiku</li>
+<li>Identify product candidates vs supporting content</li>
+<li>Extract basic product information</li>
+</ol>
+<p><strong>AI Model</strong>: <code>claude-haiku-4-5-20251001</code></p>
+<p><strong>Stage 1 Results</strong> (Harmony PDF):</p>
+<pre><code>Candidates identified: 65
+Processing time: 3.27 seconds
+Success rate: 100%
+</code></pre>
+<h4><strong>Stage 2: Deep Validation (Claude Sonnet 4.5)</strong></h4>
+<ol>
+<li>For each candidate, perform deep analysis with Claude Sonnet</li>
+<li>Validate product completeness</li>
+<li>Extract detailed metadata</li>
+<li>Create product records</li>
+</ol>
+<p><strong>AI Model</strong>: <code>claude-sonnet-4-5-20250929</code></p>
+<p><strong>Stage 2 Results</strong> (Harmony PDF):</p>
+<pre><code>Products created: 0
+Validation failures: 65 (100%)
+Processing time: 11.26 seconds
+Reason: Model name was invalid (fixed on 2025-10-26)
+</code></pre>
+<p><strong>Expected Data Generated</strong> (per product):</p>
+<pre><code class="language-python">{
+  &quot;name&quot;: &quot;FOLD Collection&quot;,
+  &quot;description&quot;: &quot;...&quot;,
+  &quot;properties&quot;: {
+    &quot;dimensions&quot;: &quot;15×38&quot;,
+    &quot;designer&quot;: &quot;ESTUDI{H}AC&quot;,
+    &quot;material&quot;: &quot;ceramic tile&quot;
+  },
+  &quot;source_chunks&quot;: [&quot;chunk_id_1&quot;, &quot;chunk_id_2&quot;]
+}
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>products</code> table (SHOULD have 14+ records, has 0)</li>
+</ul>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code></p>
+<hr>
+<h3><strong>Step 9: Deferred AI Analysis</strong> ⚠️ <strong>NOT IMPLEMENTED</strong></h3>
+<p><strong>Expected Component</strong>: Background worker (NOT IMPLEMENTED)<br><strong>Expected Duration</strong>: 300-600 seconds<br><strong>Actual Duration</strong>: Never runs</p>
+<p><strong>Expected Process</strong>:</p>
+<ol>
+<li>Query <code>document_images</code> where <code>processing_status = &#39;completed&#39;</code> AND AI columns are NULL</li>
+<li>For each image:<ul>
+<li>Run Llama 4 Scout analysis</li>
+<li>Run Claude Sonnet validation</li>
+<li>Generate CLIP embeddings</li>
+<li>Generate color/texture/application embeddings</li>
+</ul>
+</li>
+<li>Update database with results</li>
+</ol>
+<p><strong>AI Models Expected</strong>:</p>
+<ul>
+<li><strong>Llama 4 Scout 17B Vision</strong>: Material analysis</li>
+<li><strong>Claude Sonnet 4.5</strong>: Image validation</li>
+<li><strong>CLIP (vit-base-patch32)</strong>: Visual embeddings (512D)</li>
+<li><strong>text-embedding-3-small</strong>: Color/texture/application embeddings (with dimension reduction)</li>
+</ul>
+<p><strong>❌ ACTUAL RESULT</strong>:</p>
+<pre><code>Images with AI analysis: 0 / 170 (0%)
+Images with CLIP embeddings: 0 / 170 (0%)
+Images with color embeddings: 0 / 170 (0%)
+Images with texture embeddings: 0 / 170 (0%)
+</code></pre>
+<p><strong>⚠️ CRITICAL BUG</strong>: No background worker exists to process deferred AI analysis. All AI columns remain NULL.</p>
+<hr>
+<h3><strong>Step 10: Job Completion</strong></h3>
+<p><strong>Component</strong>: RAG Routes (<code>app/api/rag_routes.py</code>)<br><strong>Duration</strong>: &lt;1 second</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Update job status to &quot;completed&quot;</li>
+<li>Set progress to 100%</li>
+<li>Record completion timestamp</li>
+<li>Store final metadata</li>
+</ol>
+<p><strong>Data Generated</strong>:</p>
+<pre><code class="language-python">{
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;progress&quot;: 100,
+  &quot;metadata&quot;: {
+    &quot;chunks_created&quot;: 229,
+    &quot;products_created&quot;: 0,
+    &quot;processing_time&quot;: 992.5
+  }
+}
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>background_jobs</code> table (updated)</li>
+</ul>
+<hr>
+<h2>📊 Summary Statistics (Harmony PDF Test)</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Text Extraction</td>
+<td>105,605 chars</td>
+<td>105,605 chars</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>Chunks Created</td>
+<td>229</td>
+<td>229</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>Images Extracted</td>
+<td>170</td>
+<td>170</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>Text Embeddings</td>
+<td>229</td>
+<td>0</td>
+<td>❌ Broken</td>
+</tr>
+<tr>
+<td>CLIP Embeddings</td>
+<td>170</td>
+<td>0</td>
+<td>❌ Broken</td>
+</tr>
+<tr>
+<td>Llama Analysis</td>
+<td>170</td>
+<td>0</td>
+<td>❌ Broken</td>
+</tr>
+<tr>
+<td>Claude Validation</td>
+<td>170</td>
+<td>0</td>
+<td>❌ Broken</td>
+</tr>
+<tr>
+<td>Products Created</td>
+<td>14+</td>
+<td>0</td>
+<td>❌ Broken</td>
+</tr>
+</tbody></table>
+<p><strong>Overall Success Rate</strong>: 37.5% (3/8 components working)</p>
+<hr>
+<h2>🚨 Critical Issues Identified</h2>
+<h3><strong>Issue 1: Text Embeddings Not Generated</strong></h3>
+<ul>
+<li><strong>Severity</strong>: CRITICAL</li>
+<li><strong>Impact</strong>: Search functionality completely broken</li>
+<li><strong>Affected</strong>: All 229 chunks</li>
+<li><strong>Root Cause</strong>: Unknown - needs investigation</li>
+</ul>
+<h3><strong>Issue 2: Deferred AI Analysis Never Runs</strong></h3>
+<ul>
+<li><strong>Severity</strong>: CRITICAL</li>
+<li><strong>Impact</strong>: No AI intelligence on images</li>
+<li><strong>Affected</strong>: All 170 images</li>
+<li><strong>Root Cause</strong>: Background worker not implemented</li>
+</ul>
+<h3><strong>Issue 3: Product Creation Failed</strong></h3>
+<ul>
+<li><strong>Severity</strong>: HIGH</li>
+<li><strong>Impact</strong>: No products extracted</li>
+<li><strong>Affected</strong>: 65 candidates rejected</li>
+<li><strong>Root Cause</strong>: Invalid Claude model names (FIXED on 2025-10-26)</li>
+</ul>
+<hr>
+<h2>🔧 Next Steps</h2>
+<ol>
+<li><strong>Investigate text embeddings generation</strong> - Why are they not being created?</li>
+<li><strong>Implement background worker</strong> - Process deferred AI analysis</li>
+<li><strong>Re-test product creation</strong> - Verify fix with correct Claude model names</li>
+<li><strong>Add monitoring</strong> - Track success rates for each step</li>
+</ol>
+
+</div></body></html>
