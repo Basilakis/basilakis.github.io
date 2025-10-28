@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Materials Page</h1>
+<h2>Overview</h2>
+<p>The Materials Page is a user-facing catalog that displays all products from the knowledge base in a searchable, filterable interface. Unlike the admin Knowledge Base, this page is accessible to all authenticated users and provides a streamlined experience for browsing and discovering materials.</p>
+<h2>Access</h2>
+<ul>
+<li><strong>URL</strong>: <code>/materials</code></li>
+<li><strong>Access Level</strong>: All authenticated users</li>
+<li><strong>Navigation</strong>: Available from main navigation menu</li>
+</ul>
+<h2>Features</h2>
+<h3>1. Materials Catalog Display</h3>
+<p>The Materials Page integrates the <code>MaterialCatalogListing</code> component to provide a comprehensive catalog view.</p>
+<p><strong>Component</strong>: <code>src/pages/Materials.tsx</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Product grid/list view</li>
+<li>Product cards with images and metadata</li>
+<li>Category filtering</li>
+<li>Search functionality</li>
+<li>Sorting options</li>
+<li>Responsive design</li>
+</ul>
+<h3>2. Product Information Display</h3>
+<p>Each product card shows:</p>
+<ul>
+<li><strong>Product Image</strong>: Thumbnail or placeholder</li>
+<li><strong>Product Name</strong>: Clear, descriptive title</li>
+<li><strong>Description</strong>: Brief product description</li>
+<li><strong>Category</strong>: Material category badge</li>
+<li><strong>Properties</strong>: Key material properties</li>
+<li><strong>Metadata</strong>: Additional information (finish, size, application)</li>
+</ul>
+<h3>3. Search and Filter</h3>
+<p><strong>Search</strong>:</p>
+<ul>
+<li>Full-text search across product names and descriptions</li>
+<li>Real-time search results</li>
+<li>Search query highlighting</li>
+</ul>
+<p><strong>Filters</strong>:</p>
+<ul>
+<li>Category filter (tiles, panels, flooring, etc.)</li>
+<li>Property filters (finish, size, application)</li>
+<li>Metadata filters (custom fields)</li>
+</ul>
+<p><strong>Sorting</strong>:</p>
+<ul>
+<li>Name (A-Z, Z-A)</li>
+<li>Date added (newest, oldest)</li>
+<li>Category</li>
+<li>Custom sorting options</li>
+</ul>
+<h3>4. View Modes</h3>
+<p><strong>Grid View</strong> (Default):</p>
+<ul>
+<li>Card-based layout</li>
+<li>Visual emphasis on product images</li>
+<li>Compact information display</li>
+<li>Responsive grid (1-4 columns based on screen size)</li>
+</ul>
+<p><strong>List View</strong>:</p>
+<ul>
+<li>Row-based layout</li>
+<li>Detailed information display</li>
+<li>Easier scanning of multiple products</li>
+<li>Better for text-heavy content</li>
+</ul>
+<h2>User Interface</h2>
+<h3>Page Layout</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│ Header                                                  │
+│ ┌─────────────────────────────────────────────────┐   │
+│ │ 🏢 Materials Catalog              [245 Materials]│   │
+│ │ Browse and search through our comprehensive     │   │
+│ │ materials database                              │   │
+│ └─────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────┤
+│ Main Content                                            │
+│ ┌─────────────────────────────────────────────────┐   │
+│ │ MaterialCatalogListing Component                │   │
+│ │                                                  │   │
+│ │ [Search] [Filters] [Sort] [View Mode]          │   │
+│ │                                                  │   │
+│ │ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐           │   │
+│ │ │ Prod │ │ Prod │ │ Prod │ │ Prod │           │   │
+│ │ │  1   │ │  2   │ │  3   │ │  4   │           │   │
+│ │ └──────┘ └──────┘ └──────┘ └──────┘           │   │
+│ │                                                  │   │
+│ │ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐           │   │
+│ │ │ Prod │ │ Prod │ │ Prod │ │ Prod │           │   │
+│ │ │  5   │ │  6   │ │  7   │ │  8   │           │   │
+│ │ └──────┘ └──────┘ └──────┘ └──────┘           │   │
+│ └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>Empty State</h3>
+<p>When no materials are available:</p>
+<pre><code>┌─────────────────────────────────────────┐
+│                                         │
+│           📦                            │
+│                                         │
+│     No Materials Found                  │
+│                                         │
+│  There are no materials in your         │
+│  catalog yet. Process PDFs or import    │
+│  materials to get started.              │
+│                                         │
+│         [Refresh]                       │
+│                                         │
+└─────────────────────────────────────────┘
+</code></pre>
+<h3>Loading State</h3>
+<p>While loading materials:</p>
+<pre><code>┌─────────────────────────────────────────┐
+│                                         │
+│           ⟳                             │
+│                                         │
+│  Loading materials catalog...           │
+│                                         │
+└─────────────────────────────────────────┘
+</code></pre>
+<h2>Data Flow</h2>
+<h3>1. Page Load</h3>
+<pre><code class="language-typescript">// Get current user
+const { data: { user } } = await supabase.auth.getUser();
+
+// Get user&#39;s workspace
+const { data: workspaceData } = await supabase
+  .from(&#39;workspace_members&#39;)
+  .select(&#39;workspace_id&#39;)
+  .eq(&#39;user_id&#39;, user.id)
+  .single();
+
+// Load products
+const { data: productsData } = await supabase
+  .from(&#39;products&#39;)
+  .select(&#39;*&#39;)
+  .eq(&#39;workspace_id&#39;, workspaceData.workspace_id)
+  .order(&#39;created_at&#39;, { ascending: false });
+</code></pre>
+<h3>2. Data Transformation</h3>
+<p>Products are transformed from database format to Material format:</p>
+<pre><code class="language-typescript">const transformedMaterials: Material[] = productsData.map((product) =&gt; ({
+  id: product.id,
+  name: product.name,
+  description: product.description || &#39;&#39;,
+  category: product.category_id || &#39;other&#39;,
+  properties: {
+    ...(product.properties || {}),
+  },
+  metadata: {
+    ...(product.metadata || {}),
+    finish: product.properties?.finish,
+    size: product.properties?.size,
+    installationMethod: product.properties?.installation_method,
+    application: product.properties?.application,
+  },
+  standards: [],
+  createdAt: product.created_at,
+  updatedAt: product.updated_at,
+  thumbnailUrl: product.metadata?.thumbnail_url,
+  imageUrl: product.metadata?.image_url,
+}));
+</code></pre>
+<h3>3. Display</h3>
+<p>Materials passed to <code>MaterialCatalogListing</code> component:</p>
+<pre><code class="language-typescript">&lt;MaterialCatalogListing
+  materials={materials}
+  loading={loading}
+  onMaterialSelect={handleMaterialSelect}
+  onMaterialEdit={handleMaterialEdit}
+  showImages={true}
+  showMetaFields={true}
+  allowFiltering={true}
+  allowSorting={true}
+  viewMode=&quot;grid&quot;
+/&gt;
+</code></pre>
+<h2>User Interactions</h2>
+<h3>Selecting a Material</h3>
+<p><strong>Action</strong>: Click on a material card</p>
+<p><strong>Result</strong>: </p>
+<ul>
+<li>Material details displayed (future: detail modal or page)</li>
+<li>Toast notification confirms selection</li>
+<li>Material ID logged for tracking</li>
+</ul>
+<p><strong>Future Enhancement</strong>: Navigate to dedicated material detail page</p>
+<h3>Editing a Material</h3>
+<p><strong>Action</strong>: Click &quot;Edit&quot; button on material card (if permissions allow)</p>
+<p><strong>Result</strong>:</p>
+<ul>
+<li>Edit modal opens (future implementation)</li>
+<li>Material data pre-populated</li>
+<li>Save changes updates database</li>
+</ul>
+<p><strong>Note</strong>: Currently shows toast notification; full edit functionality planned</p>
+<h3>Refreshing Catalog</h3>
+<p><strong>Action</strong>: Click &quot;Refresh&quot; button (in empty state)</p>
+<p><strong>Result</strong>:</p>
+<ul>
+<li>Reloads materials from database</li>
+<li>Updates display with latest data</li>
+<li>Shows loading state during refresh</li>
+</ul>
+<h2>Integration with MaterialCatalogListing</h2>
+<p>The Materials Page uses the existing <code>MaterialCatalogListing</code> component:</p>
+<p><strong>Component</strong>: <code>src/components/Materials/MaterialCatalogListing.tsx</code></p>
+<p><strong>Props</strong>:</p>
+<pre><code class="language-typescript">interface MaterialCatalogListingProps {
+  materials: Material[];
+  loading?: boolean;
+  onMaterialSelect?: (material: Material) =&gt; void;
+  onMaterialEdit?: (material: Material) =&gt; void;
+  showImages?: boolean;
+  showMetaFields?: boolean;
+  allowFiltering?: boolean;
+  allowSorting?: boolean;
+  viewMode?: &#39;grid&#39; | &#39;list&#39;;
+}
+</code></pre>
+<p><strong>Features Provided</strong>:</p>
+<ul>
+<li>Responsive grid/list layout</li>
+<li>Image display with fallbacks</li>
+<li>Category badges</li>
+<li>Property display</li>
+<li>Metadata display</li>
+<li>Search and filter UI</li>
+<li>Sort controls</li>
+<li>View mode toggle</li>
+</ul>
+<h2>Material Data Model</h2>
+<pre><code class="language-typescript">interface Material {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  properties: {
+    finish?: string;
+    size?: string;
+    color?: string;
+    pattern?: string;
+    texture?: string;
+    // ... additional properties
+  };
+  metadata: {
+    finish?: string;
+    size?: string;
+    installationMethod?: string;
+    application?: string;
+    thumbnailUrl?: string;
+    imageUrl?: string;
+    // ... additional metadata
+  };
+  standards: string[];
+  createdAt: string;
+  updatedAt: string;
+  thumbnailUrl?: string;
+  imageUrl?: string;
+}
+</code></pre>
+<h2>Best Practices</h2>
+<h3>For Users</h3>
+<ol>
+<li><strong>Use Search</strong>: Quickly find materials by name or description</li>
+<li><strong>Apply Filters</strong>: Narrow down results by category or properties</li>
+<li><strong>Switch Views</strong>: Use grid view for visual browsing, list view for detailed comparison</li>
+<li><strong>Check Metadata</strong>: Review properties and specifications before selection</li>
+</ol>
+<h3>For Administrators</h3>
+<ol>
+<li><strong>Ensure Product Quality</strong>: Complete product information improves user experience</li>
+<li><strong>Add Images</strong>: Products with images are more engaging</li>
+<li><strong>Categorize Properly</strong>: Accurate categories enable effective filtering</li>
+<li><strong>Maintain Metadata</strong>: Rich metadata improves searchability</li>
+</ol>
+<h2>Performance Considerations</h2>
+<h3>Data Loading</h3>
+<ul>
+<li>Products loaded once on page mount</li>
+<li>No pagination (loads all products)</li>
+<li>Suitable for catalogs up to ~1000 products</li>
+<li>Future: Implement pagination for larger catalogs</li>
+</ul>
+<h3>Search and Filter</h3>
+<ul>
+<li>Client-side filtering for instant results</li>
+<li>No server round-trips for filter changes</li>
+<li>Efficient for current data volumes</li>
+</ul>
+<h3>Image Loading</h3>
+<ul>
+<li>Lazy loading for product images</li>
+<li>Placeholder images for missing thumbnails</li>
+<li>Optimized image sizes</li>
+</ul>
+<h2>Future Enhancements</h2>
+<ol>
+<li><strong>Material Detail Page</strong>: Dedicated page for each material with full information</li>
+<li><strong>Advanced Filters</strong>: More filter options (price range, availability, etc.)</li>
+<li><strong>Comparison Tool</strong>: Compare multiple materials side-by-side</li>
+<li><strong>Favorites</strong>: Save favorite materials for quick access</li>
+<li><strong>Export</strong>: Export material lists to PDF or Excel</li>
+<li><strong>Pagination</strong>: Support for larger catalogs (1000+ products)</li>
+<li><strong>Infinite Scroll</strong>: Alternative to pagination for better UX</li>
+</ol>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="./product-management.md">Product Management</a> - Admin product management</li>
+<li><a href="./knowledge-base.md">Knowledge Base</a> - Admin knowledge base overview</li>
+<li><a href="./search-system.md">Search System</a> - Search functionality</li>
+<li><a href="./pdf-processing.md">PDF Processing</a> - How materials are created from PDFs</li>
+</ul>
+
+</div></body></html>
