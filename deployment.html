@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Deployment Guide</h1>
+<p><strong>Material Kai Vision Platform</strong> - Production Deployment</p>
+<hr>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform uses a <strong>multi-service architecture</strong> with separate deployments for frontend, backend API, and database services. All deployments are automated through <strong>GitHub Actions</strong> with zero-downtime updates.</p>
+<h3>Deployment Architecture</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  Frontend (Vercel)                                          │
+│  • Global Edge Network                                      │
+│  • Automatic HTTPS                                          │
+│  • Preview deployments per PR                               │
+│  • Production: materialshub.gr                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│  MIVAA API (Self-hosted)                                    │
+│  • Docker container                                         │
+│  • Nginx reverse proxy                                      │
+│  • SSL/TLS (Let&#39;s Encrypt)                                  │
+│  • Production: v1api.materialshub.gr                        │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Supabase (Cloud)                                           │
+│  • PostgreSQL 15 + pgvector                                 │
+│  • Edge Functions (Deno)                                    │
+│  • Storage (S3-compatible)                                  │
+│  • Region: EU West 3 (Paris)                                │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>Frontend Deployment (Vercel)</h2>
+<h3>Repository</h3>
+<ul>
+<li><strong>GitHub</strong>: <code>creativeghq/material-kai-vision-platform</code></li>
+<li><strong>Branch</strong>: <code>main</code> (production), <code>develop</code> (staging)</li>
+</ul>
+<h3>Deployment Process</h3>
+<ol>
+<li><p><strong>Automatic Deployment</strong>:</p>
+<ul>
+<li>Push to <code>main</code> → Production deployment</li>
+<li>Push to any branch → Preview deployment</li>
+<li>Pull Request → Preview deployment with unique URL</li>
+</ul>
+</li>
+<li><p><strong>Build Configuration</strong>:</p>
+</li>
+</ol>
+<pre><code class="language-json">{
+  &quot;buildCommand&quot;: &quot;npm run build&quot;,
+  &quot;outputDirectory&quot;: &quot;dist&quot;,
+  &quot;installCommand&quot;: &quot;npm install&quot;,
+  &quot;framework&quot;: &quot;vite&quot;
+}
+</code></pre>
+<ol start="3">
+<li><strong>Environment Variables</strong> (Vercel Dashboard):</li>
+</ol>
+<pre><code class="language-bash"># Supabase
+VITE_SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+
+# MIVAA API
+VITE_MIVAA_API_URL=https://v1api.materialshub.gr
+
+# Feature Flags
+VITE_ENABLE_3D_GENERATION=true
+VITE_ENABLE_MATERIAL_SCRAPER=true
+</code></pre>
+<h3>GitHub Actions Workflow</h3>
+<p><strong>File</strong>: <code>.github/workflows/deploy.yml</code></p>
+<pre><code class="language-yaml">name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: &#39;18&#39;
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: &#39;--prod&#39;
+</code></pre>
+<hr>
+<h2>MIVAA API Deployment (Self-hosted)</h2>
+<h3>Repository</h3>
+<ul>
+<li><strong>GitHub</strong>: <code>Basilakis/mivaa-pdf-extractor</code></li>
+<li><strong>Branch</strong>: <code>main</code></li>
+</ul>
+<h3>Server Configuration</h3>
+<p><strong>Server</strong>: v1api.materialshub.gr<br><strong>OS</strong>: Ubuntu 22.04 LTS<br><strong>Docker</strong>: 24.0+<br><strong>Nginx</strong>: 1.18+</p>
+<h3>Deployment Process</h3>
+<ol>
+<li><strong>GitHub Actions Workflow</strong>:</li>
+</ol>
+<p><strong>File</strong>: <code>.github/workflows/deploy-mivaa.yml</code></p>
+<pre><code class="language-yaml">name: Deploy MIVAA API
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/mivaa-pdf-extractor
+            git pull origin main
+            docker-compose down
+            docker-compose build
+            docker-compose up -d
+            docker-compose logs --tail=50
+</code></pre>
+<ol start="2">
+<li><strong>Docker Configuration</strong>:</li>
+</ol>
+<p><strong>File</strong>: <code>docker-compose.yml</code></p>
+<pre><code class="language-yaml">version: &#39;3.8&#39;
+
+services:
+  mivaa-api:
+    build: .
+    container_name: mivaa-api
+    restart: always
+    ports:
+      - &quot;8000:8000&quot;
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+    volumes:
+      - ./temp:/app/temp
+      - ./logs:/app/logs
+    healthcheck:
+      test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-f&quot;, &quot;http://localhost:8000/health&quot;]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+</code></pre>
+<p><strong>File</strong>: <code>Dockerfile</code></p>
+<pre><code class="language-dockerfile">FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update &amp;&amp; apt-get install -y \
+    build-essential \
+    curl \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Run application
+CMD [&quot;uvicorn&quot;, &quot;app.main:app&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8000&quot;]
+</code></pre>
+<ol start="3">
+<li><strong>Nginx Configuration</strong>:</li>
+</ol>
+<p><strong>File</strong>: <code>/etc/nginx/sites-available/mivaa-api</code></p>
+<pre><code class="language-nginx">server {
+    listen 80;
+    server_name v1api.materialshub.gr;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name v1api.materialshub.gr;
+
+    ssl_certificate /etc/letsencrypt/live/v1api.materialshub.gr/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/v1api.materialshub.gr/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts for long-running requests
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+}
+</code></pre>
+<ol start="4">
+<li><strong>Environment Variables</strong> (Server):</li>
+</ol>
+<p><strong>File</strong>: <code>/var/www/mivaa-pdf-extractor/.env</code></p>
+<pre><code class="language-bash"># AI Services
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+TOGETHER_API_KEY=...
+REPLICATE_API_TOKEN=r8_...
+
+# Supabase
+SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
+
+# Application
+LOG_LEVEL=INFO
+ENVIRONMENT=production
+</code></pre>
+<hr>
+<h2>Supabase Deployment</h2>
+<h3>Edge Functions</h3>
+<p><strong>Deployment</strong>:</p>
+<pre><code class="language-bash"># Install Supabase CLI
+npm install -g supabase
+
+# Login
+supabase login
+
+# Link project
+supabase link --project-ref bgbavxtjlbvgplozizxu
+
+# Deploy all functions
+supabase functions deploy
+
+# Deploy specific function
+supabase functions deploy mivaa-gateway
+</code></pre>
+<h3>Database Migrations</h3>
+<p><strong>File</strong>: <code>supabase/migrations/YYYYMMDDHHMMSS_migration_name.sql</code></p>
+<pre><code class="language-sql">-- Example migration
+CREATE TABLE IF NOT EXISTS new_table (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE new_table ENABLE ROW LEVEL SECURITY;
+</code></pre>
+<p><strong>Apply Migration</strong>:</p>
+<pre><code class="language-bash">supabase db push
+</code></pre>
+<hr>
+<h2>Health Checks &amp; Monitoring</h2>
+<h3>Frontend Health</h3>
+<pre><code class="language-bash">curl https://materialshub.gr/health
+</code></pre>
+<h3>MIVAA API Health</h3>
+<pre><code class="language-bash">curl https://v1api.materialshub.gr/health
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;version&quot;: &quot;2.0.0&quot;,
+  &quot;service&quot;: &quot;MIVAA PDF Extractor&quot;,
+  &quot;database&quot;: &quot;connected&quot;,
+  &quot;storage&quot;: &quot;available&quot;
+}
+</code></pre>
+<h3>Supabase Health</h3>
+<pre><code class="language-bash">curl https://bgbavxtjlbvgplozizxu.supabase.co/rest/v1/
+</code></pre>
+<hr>
+<h2>Rollback Procedures</h2>
+<h3>Frontend Rollback (Vercel)</h3>
+<ol>
+<li>Go to Vercel Dashboard</li>
+<li>Select deployment to rollback to</li>
+<li>Click &quot;Promote to Production&quot;</li>
+</ol>
+<h3>MIVAA API Rollback</h3>
+<pre><code class="language-bash">ssh user@v1api.materialshub.gr
+cd /var/www/mivaa-pdf-extractor
+git checkout &lt;previous-commit&gt;
+docker-compose down
+docker-compose build
+docker-compose up -d
+</code></pre>
+<h3>Database Rollback</h3>
+<pre><code class="language-bash">supabase db reset --linked
+</code></pre>
+<hr>
+<h2>Secrets Management</h2>
+<h3>GitHub Secrets</h3>
+<ul>
+<li><code>VERCEL_TOKEN</code> - Vercel deployment token</li>
+<li><code>VERCEL_ORG_ID</code> - Vercel organization ID</li>
+<li><code>VERCEL_PROJECT_ID</code> - Vercel project ID</li>
+<li><code>SERVER_HOST</code> - MIVAA API server hostname</li>
+<li><code>SERVER_USER</code> - SSH username</li>
+<li><code>SSH_PRIVATE_KEY</code> - SSH private key</li>
+<li><code>VITE_SUPABASE_URL</code> - Supabase URL</li>
+<li><code>VITE_SUPABASE_ANON_KEY</code> - Supabase anon key</li>
+</ul>
+<h3>Vercel Environment Variables</h3>
+<ul>
+<li>All <code>VITE_*</code> variables</li>
+<li>Separate for Production, Preview, Development</li>
+</ul>
+<h3>Server Environment Variables</h3>
+<ul>
+<li>All API keys and secrets in <code>.env</code> file</li>
+<li>Never committed to git</li>
+<li>Managed through SSH access</li>
+</ul>
+<hr>
+<h2>Monitoring &amp; Alerts</h2>
+<h3>Error Tracking</h3>
+<ul>
+<li><strong>Platform</strong>: Sentry</li>
+<li><strong>Coverage</strong>: Frontend + Backend</li>
+<li><strong>Alerts</strong>: Email + Slack</li>
+</ul>
+<h3>Performance Monitoring</h3>
+<ul>
+<li><strong>Vercel Analytics</strong>: Frontend performance</li>
+<li><strong>Custom Metrics</strong>: MIVAA API <code>/metrics</code> endpoint</li>
+<li><strong>Database</strong>: Supabase Dashboard</li>
+</ul>
+<h3>Uptime Monitoring</h3>
+<ul>
+<li><strong>Service</strong>: UptimeRobot</li>
+<li><strong>Checks</strong>: Every 5 minutes</li>
+<li><strong>Alerts</strong>: Email + SMS</li>
+</ul>
+<hr>
+<h2>Backup &amp; Recovery</h2>
+<h3>Database Backups</h3>
+<ul>
+<li><strong>Frequency</strong>: Daily automatic backups</li>
+<li><strong>Retention</strong>: 30 days</li>
+<li><strong>Location</strong>: Supabase Cloud</li>
+</ul>
+<h3>Storage Backups</h3>
+<ul>
+<li><strong>Frequency</strong>: Weekly</li>
+<li><strong>Retention</strong>: 90 days</li>
+<li><strong>Location</strong>: Supabase Storage</li>
+</ul>
+<h3>Code Backups</h3>
+<ul>
+<li><strong>Platform</strong>: GitHub</li>
+<li><strong>Frequency</strong>: Every commit</li>
+<li><strong>Retention</strong>: Unlimited</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: 2025-10-31<br><strong>Version</strong>: 2.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>

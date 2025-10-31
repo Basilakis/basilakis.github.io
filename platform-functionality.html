@@ -40,13 +40,46 @@
 <li><strong>Quick Actions</strong>: Start processing, AI Studio access</li>
 </ul>
 <h4>Navigation Structure</h4>
+<p><strong>User-Facing Routes</strong> (All Authenticated Users):</p>
 <pre><code>├── Dashboard (/)
+├── Material Recognition (/recognition)
 ├── Search Hub (/search-hub)
-├── PDF Upload (/pdf-processing)
+├── Materials Catalog (/materials) ✨ NEW
+├── PDF Processing (/pdf-processing)
 ├── MoodBoards (/moodboard)
 ├── 3D Designer (/3d)
+├── AI Studio (/agents)
+├── Analytics (/analytics)
 ├── Web Scraper (/scraper)
-└── Admin Panel (/admin)
+└── PDF Knowledge Demo (/pdf-knowledge-demo)
+</code></pre>
+<p><strong>Admin-Only Routes</strong> (Admin Users):</p>
+<pre><code>├── Admin Dashboard (/admin)
+├── Knowledge Base (/admin/knowledge-base) ✨ ENHANCED
+├── Agent ML Coordination (/admin/agent-ml)
+├── Material Analysis (/admin/material-analysis)
+├── Training Models (/admin/training-models)
+├── Performance Monitoring (/admin/performance)
+├── RAG Management (/admin/rag)
+├── Metadata Management (/admin/metadata)
+├── API Gateway (/admin/api-gateway)
+├── OCR Processor (/admin/ocr)
+├── PDF Processing Monitor (/admin/pdf-processing-monitor)
+├── 3D Suggestions (/admin/3d-suggestions)
+├── 3D Model Debugging (/admin/3d-model-debugging)
+├── MIVAA Docs Viewer (/admin/mivaa-docs)
+├── Quality Stability Metrics (/admin/quality-stability-metrics)
+├── Phase 3 Metrics (/admin/phase3-metrics)
+├── Chunk Quality Dashboard (/admin/chunk-quality)
+├── CRM Management (/admin/crm)
+├── Packages Panel (/admin/packages)
+└── Analytics (/admin/analytics)
+</code></pre>
+<p><strong>System Routes</strong>:</p>
+<pre><code>├── Authentication (/auth)
+├── Auth Callback (/auth/callback)
+├── Health Check (/health, /ready)
+└── Coverage Reports (/coverage)
 </code></pre>
 <h3>2. 🔐 Authentication &amp; User Management</h3>
 <h4>User Authentication System</h4>
@@ -154,7 +187,46 @@
 <li><strong>Export Options</strong>: Save search results and insights</li>
 <li><strong>Search History</strong>: Track and revisit previous searches</li>
 </ul>
-<h3>5. 📄 Document Intelligence &amp; Analysis</h3>
+<h3>5. 📦 Materials Catalog ✨ NEW</h3>
+<h4>Materials Page (<code>/materials</code>)</h4>
+<p>A user-facing catalog that displays all products from the knowledge base in a searchable, filterable interface accessible to all authenticated users.</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li><strong>Product Grid/List View</strong>: Visual catalog with responsive layout</li>
+<li><strong>Search Functionality</strong>: Full-text search across product names and descriptions</li>
+<li><strong>Category Filtering</strong>: Filter by material categories (tiles, panels, flooring, etc.)</li>
+<li><strong>Property Filters</strong>: Filter by finish, size, application, and custom properties</li>
+<li><strong>Sorting Options</strong>: Sort by name, date added, category</li>
+<li><strong>View Modes</strong>: Toggle between grid view (visual) and list view (detailed)</li>
+<li><strong>Product Cards</strong>: Display product images, descriptions, categories, and metadata</li>
+<li><strong>Real-time Data</strong>: Live updates from knowledge base</li>
+<li><strong>Responsive Design</strong>: Optimized for desktop, tablet, and mobile</li>
+</ul>
+<p><strong>Product Information Display</strong>:</p>
+<ul>
+<li>Product thumbnail or placeholder image</li>
+<li>Product name and description</li>
+<li>Category badge</li>
+<li>Key material properties (finish, size, pattern, texture)</li>
+<li>Additional metadata (installation method, application)</li>
+<li>Standards and certifications</li>
+</ul>
+<p><strong>User Interactions</strong>:</p>
+<ul>
+<li>Click to view product details</li>
+<li>Search and filter to find specific materials</li>
+<li>Switch between grid and list views</li>
+<li>Refresh catalog for latest updates</li>
+</ul>
+<p><strong>Integration</strong>:</p>
+<ul>
+<li>Uses <code>MaterialCatalogListing</code> component for consistent UI</li>
+<li>Loads products from Supabase <code>products</code> table</li>
+<li>Transforms product data to Material format</li>
+<li>Workspace-isolated (users only see their workspace products)</li>
+</ul>
+<p><strong>Access</strong>: All authenticated users (not admin-only)</p>
+<h3>6. 📄 Document Intelligence &amp; Analysis</h3>
 <h4>Document Summarization (<code>/admin</code> - Knowledge Base Tab)</h4>
 <ul>
 <li><strong>AI-Generated Summaries</strong>: Intelligent document summarization using advanced AI</li>
@@ -422,6 +494,28 @@
 <li><strong>Parameter Tuning</strong>: Adjust model parameters for optimization</li>
 <li><strong>Version Management</strong>: Manage different model versions</li>
 <li><strong>Testing Environment</strong>: Safe environment for model testing</li>
+</ul>
+<h5>Knowledge Base Management (<code>/admin/knowledge-base</code>) ✨ NEW</h5>
+<ul>
+<li><strong>Product Management</strong>: Create, edit, delete, and preview products<ul>
+<li><strong>Product Form Modal</strong>: Comprehensive product creation/editing with dynamic fields</li>
+<li><strong>Product Delete Confirmation</strong>: Safe deletion with relationship warnings</li>
+<li><strong>Product Preview Modal</strong>: Detailed product view with all metadata and relationships</li>
+<li><strong>CRUD Operations</strong>: Full create, read, update, delete functionality</li>
+</ul>
+</li>
+<li><strong>Chunk Management</strong>: View and analyze text chunks from PDFs<ul>
+<li><strong>Chunk Detail Modal</strong>: Comprehensive chunk information display</li>
+<li><strong>Related Chunks</strong>: View nearby chunks for context</li>
+<li><strong>Related Images</strong>: See associated images with thumbnails</li>
+<li><strong>Embedding Information</strong>: View embedding status and metadata</li>
+<li><strong>Quality Metrics</strong>: Chunk quality scores and classification</li>
+</ul>
+</li>
+<li><strong>11 Comprehensive Tabs</strong>: Documents, Chunks, Images, Embeddings, Products, Metafields, Detections, Scores, Patterns, Relationships, Export</li>
+<li><strong>Real-time Updates</strong>: Live data refresh and synchronization</li>
+<li><strong>Advanced Filtering</strong>: Filter by type, status, quality, and custom criteria</li>
+<li><strong>Bulk Operations</strong>: Process multiple items simultaneously</li>
 </ul>
 <h4>System Configuration</h4>
 <h5>User Management</h5>

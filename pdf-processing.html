@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>PDF Processing Pipeline</h1>
+<p><strong>Material Kai Vision Platform</strong> - Comprehensive PDF Processing System</p>
+<hr>
+<h2>Overview</h2>
+<p>The PDF Processing Pipeline is a sophisticated 14-stage system that transforms material catalog PDFs into searchable, structured knowledge. The pipeline uses AI models at multiple stages to extract products, analyze images, generate embeddings, and create a comprehensive material database.</p>
+<h3>Key Features</h3>
+<ul>
+<li><strong>14-stage processing pipeline</strong> with checkpoint recovery</li>
+<li><strong>Product-focused extraction</strong> - processes only identified product pages</li>
+<li><strong>Two-stage AI classification</strong> - fast discovery + deep analysis</li>
+<li><strong>Multi-vector embeddings</strong> - 6 types for comprehensive search</li>
+<li><strong>Async job queue</strong> - background processing with real-time progress</li>
+<li><strong>Checkpoint recovery</strong> - resume from any stage on failure</li>
+<li><strong>Real-time progress tracking</strong> - live updates to frontend</li>
+</ul>
+<hr>
+<h2>Pipeline Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│  Stage 1: PDF Upload &amp; Validation                               │
+│  • File validation (size, type, corruption)                     │
+│  • Upload to Supabase Storage                                   │
+│  • Create document record                                       │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 2: Background Job Creation                               │
+│  • Create background_jobs record                                │
+│  • Initialize progress tracking                                 │
+│  • Return job_id to frontend                                    │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 3: PDF Analysis &amp; Strategy Selection                     │
+│  • Extract PDF metadata (pages, size, structure)                │
+│  • Analyze document type                                        │
+│  • Select processing strategy                                   │
+│  Checkpoint: PDF_EXTRACTED                                      │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 4: Product Discovery (AI)                                │
+│  • Claude Haiku 4.5: Fast product identification                │
+│  • Identify product count and page ranges                       │
+│  • Claude Sonnet 4.5: Validate and enrich metadata              │
+│  • Extract product names, dimensions, variants                  │
+│  Output: Product list with page ranges                          │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 5: Text Extraction (Focused)                             │
+│  • PyMuPDF4LLM: Extract text from product pages only            │
+│  • Preserve structure and formatting                            │
+│  • Extract metadata (fonts, colors, layout)                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 6: Semantic Chunking (AI)                                │
+│  • Anthropic Chunking API: Split text semantically              │
+│  • Max tokens: 800, Overlap: 100                                │
+│  • Preserve context and meaning                                 │
+│  • Create document_chunks records                               │
+│  Checkpoint: CHUNKS_CREATED                                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 7: Text Embedding Generation (AI)                        │
+│  • OpenAI text-embedding-3-small: Generate 1536D embeddings    │
+│  • Store in pgvector for similarity search                      │
+│  • Link embeddings to chunks                                    │
+│  Checkpoint: TEXT_EMBEDDINGS_GENERATED                          │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 8: Image Extraction &amp; Upload                             │
+│  • Extract images from product pages                            │
+│  • Upload to Supabase Storage (pdf-tiles bucket)                │
+│  • Create document_images records                               │
+│  • Extract image metadata (dimensions, format)                  │
+│  Checkpoint: IMAGES_EXTRACTED                                   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 9: Image Analysis (AI)                                   │
+│  • Llama 4 Scout 17B Vision: Analyze each image                 │
+│  • Extract material properties                                  │
+│  • Quality scoring (0-100)                                      │
+│  • Classify image type (product, detail, mood, etc.)            │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 10: CLIP Embedding Generation (AI)                       │
+│  • CLIP ViT-B/32: Generate 512D visual embeddings               │
+│  • Store in database for visual search                          │
+│  • Link to document_images                                      │
+│  Checkpoint: IMAGE_EMBEDDINGS_GENERATED                         │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 11: Product Creation (Two-Stage AI)                      │
+│  • Stage 1: Content classification (product/supporting/admin)   │
+│  • Stage 2: Product boundary detection                          │
+│  • Create products records with metadata                        │
+│  • Link chunks and images to products                           │
+│  Checkpoint: PRODUCTS_CREATED                                   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 12: Metafield Extraction                                 │
+│  • Extract dynamic metadata from chunks                         │
+│  • Create metafield_values records                              │
+│  • Link to chunks, products, images                             │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 13: Deferred AI Analysis (Async Background Job)          │
+│  • Claude Sonnet 4.5: Validate low-scoring images               │
+│  • Generate specialized embeddings:                             │
+│    - Color embeddings (256D)                                    │
+│    - Texture embeddings (256D)                                  │
+│    - Application embeddings (512D)                              │
+│    - Multimodal embeddings (2048D)                              │
+│  • Enhanced metadata extraction                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Stage 14: Cleanup &amp; Completion                                 │
+│  • Delete temporary files from disk                             │
+│  • Kill background processes                                    │
+│  • Update job status to &#39;completed&#39;                             │
+│  • Send completion notification                                 │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>Processing Modes</h2>
+<h3>1. Focused Extraction (Default)</h3>
+<ul>
+<li><strong>Description</strong>: Processes only product pages identified during discovery</li>
+<li><strong>Use Case</strong>: Material catalogs with mixed content</li>
+<li><strong>Advantages</strong>: Faster processing, lower cost, higher accuracy</li>
+<li><strong>API Parameter</strong>: <code>focused_extraction=true</code> (default)</li>
+</ul>
+<h3>2. Full Extraction</h3>
+<ul>
+<li><strong>Description</strong>: Processes entire PDF regardless of content type</li>
+<li><strong>Use Case</strong>: Technical documents, research papers</li>
+<li><strong>Advantages</strong>: Complete coverage</li>
+<li><strong>API Parameter</strong>: <code>focused_extraction=false</code></li>
+</ul>
+<hr>
+<h2>Checkpoint Recovery System</h2>
+<p>The pipeline includes 9 checkpoints for recovery on failure:</p>
+<h3>Checkpoint Stages</h3>
+<ol>
+<li><strong>PDF_EXTRACTED</strong> - PDF analysis complete</li>
+<li><strong>CHUNKS_CREATED</strong> - Text chunking complete</li>
+<li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Text embeddings complete</li>
+<li><strong>IMAGES_EXTRACTED</strong> - Image extraction complete</li>
+<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - Visual embeddings complete</li>
+<li><strong>PRODUCTS_CREATED</strong> - Product creation complete</li>
+<li><strong>METAFIELDS_EXTRACTED</strong> - Metafield extraction complete</li>
+<li><strong>DEFERRED_ANALYSIS_QUEUED</strong> - Background jobs queued</li>
+<li><strong>COMPLETED</strong> - All processing complete</li>
+</ol>
+<h3>Recovery Process</h3>
+<pre><code class="language-python"># On job restart
+if job.checkpoint_stage:
+    resume_from_checkpoint(job.checkpoint_stage)
+else:
+    start_from_beginning()
+</code></pre>
+<hr>
+<h2>Product Discovery</h2>
+<h3>Two-Stage AI Classification</h3>
+<h4>Stage 1: Fast Discovery (Claude Haiku 4.5)</h4>
+<ul>
+<li><strong>Purpose</strong>: Quickly identify products and page ranges</li>
+<li><strong>Input</strong>: Full PDF text</li>
+<li><strong>Output</strong>: Product count, page ranges, basic metadata</li>
+<li><strong>Time</strong>: 5-15 seconds</li>
+<li><strong>Accuracy</strong>: 90%+</li>
+</ul>
+<h4>Stage 2: Deep Analysis (Claude Sonnet 4.5)</h4>
+<ul>
+<li><strong>Purpose</strong>: Validate and enrich product metadata</li>
+<li><strong>Input</strong>: Product pages from Stage 1</li>
+<li><strong>Output</strong>: Detailed metadata (names, dimensions, variants, designers)</li>
+<li><strong>Time</strong>: 10-30 seconds</li>
+<li><strong>Accuracy</strong>: 95%+</li>
+</ul>
+<h3>Product Metadata Extracted</h3>
+<ul>
+<li>Product name</li>
+<li>Designer/studio</li>
+<li>Dimensions (width, height, depth)</li>
+<li>Variants (colors, finishes, sizes)</li>
+<li>Page ranges</li>
+<li>Image types (product shots, details, mood boards)</li>
+<li>Material properties</li>
+<li>Application areas</li>
+</ul>
+<hr>
+<h2>Image Processing</h2>
+<h3>Image Classification</h3>
+<p>Images are classified into types:</p>
+<ul>
+<li><strong>Product Images</strong>: Main product photos</li>
+<li><strong>Detail Images</strong>: Close-ups of materials/textures</li>
+<li><strong>Dimension Diagrams</strong>: Technical drawings</li>
+<li><strong>Mood Boards</strong>: Lifestyle/context images</li>
+<li><strong>Text Labels</strong>: Specification tables</li>
+</ul>
+<h3>Quality Scoring</h3>
+<p>Each image receives a quality score (0-100) based on:</p>
+<ul>
+<li>Resolution and clarity</li>
+<li>Relevance to material specifications</li>
+<li>Information density</li>
+<li>Technical content</li>
+</ul>
+<h3>Validation Workflow</h3>
+<pre><code>Image Extracted
+    ↓
+Llama Analysis → Quality Score
+    ↓
+Score &lt; 70? → Queue for Claude Validation (async)
+Score ≥ 70? → Accept and continue
+</code></pre>
+<hr>
+<h2>API Endpoints</h2>
+<h3>Upload with Product Discovery</h3>
+<pre><code class="language-http">POST /api/rag/documents/upload-with-discovery
+Content-Type: multipart/form-data
+
+Parameters:
+- file: PDF file (required)
+- workspace_id: UUID (required)
+- category_id: UUID (optional)
+- focused_extraction: boolean (default: true)
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;estimated_time&quot;: 180
+}
+</code></pre>
+<h3>Check Job Status</h3>
+<pre><code class="language-http">GET /api/rag/jobs/{job_id}/status
+
+Response:
+{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;progress&quot;: 65,
+  &quot;current_stage&quot;: &quot;IMAGE_EMBEDDINGS_GENERATED&quot;,
+  &quot;stages_completed&quot;: 9,
+  &quot;total_stages&quot;: 14,
+  &quot;products_found&quot;: 14,
+  &quot;chunks_created&quot;: 156,
+  &quot;images_extracted&quot;: 89,
+  &quot;estimated_time_remaining&quot;: 45
+}
+</code></pre>
+<hr>
+<h2>Performance Metrics</h2>
+<h3>Processing Times</h3>
+<table>
+<thead>
+<tr>
+<th>PDF Size</th>
+<th>Pages</th>
+<th>Products</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Small</td>
+<td>1-20</td>
+<td>1-5</td>
+<td>1-2 min</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>21-50</td>
+<td>6-15</td>
+<td>2-4 min</td>
+</tr>
+<tr>
+<td>Large</td>
+<td>51-100</td>
+<td>16-30</td>
+<td>4-8 min</td>
+</tr>
+<tr>
+<td>Extra Large</td>
+<td>100+</td>
+<td>30+</td>
+<td>8-15 min</td>
+</tr>
+</tbody></table>
+<h3>Resource Usage</h3>
+<ul>
+<li><strong>Memory</strong>: 2-4 GB per PDF</li>
+<li><strong>CPU</strong>: 2-4 cores</li>
+<li><strong>Storage</strong>: 2-5x PDF size (images + embeddings)</li>
+<li><strong>API Calls</strong>: 50-200 per PDF (depending on size)</li>
+</ul>
+<h3>Accuracy</h3>
+<ul>
+<li><strong>Product Detection</strong>: 95%+</li>
+<li><strong>Chunk Quality</strong>: 90%+</li>
+<li><strong>Image Classification</strong>: 88%+</li>
+<li><strong>Metadata Extraction</strong>: 85%+</li>
+</ul>
+<hr>
+<h2>Error Handling</h2>
+<h3>Common Errors</h3>
+<ol>
+<li><strong>PDF Corruption</strong>: Validate before processing</li>
+<li><strong>Timeout</strong>: Increase function timeout or split PDF</li>
+<li><strong>API Rate Limits</strong>: Implement exponential backoff</li>
+<li><strong>Storage Limits</strong>: Monitor bucket usage</li>
+<li><strong>Memory Limits</strong>: Process images in batches</li>
+</ol>
+<h3>Retry Strategy</h3>
+<pre><code class="language-python">max_retries = 3
+retry_delay = [5, 15, 30]  # seconds
+
+for attempt in range(max_retries):
+    try:
+        process_stage()
+        break
+    except Exception as e:
+        if attempt &lt; max_retries - 1:
+            time.sleep(retry_delay[attempt])
+        else:
+            mark_job_failed(e)
+</code></pre>
+<hr>
+<h2>Best Practices</h2>
+<h3>For Users</h3>
+<ol>
+<li><strong>PDF Quality</strong>: Use high-resolution PDFs with clear text</li>
+<li><strong>File Size</strong>: Keep PDFs under 50MB for optimal performance</li>
+<li><strong>Content</strong>: Ensure PDFs contain material specifications</li>
+<li><strong>Categories</strong>: Assign categories during upload for better organization</li>
+</ol>
+<h3>For Developers</h3>
+<ol>
+<li><strong>Monitoring</strong>: Track job progress and error rates</li>
+<li><strong>Cleanup</strong>: Always delete temporary files after processing</li>
+<li><strong>Checkpoints</strong>: Save progress at each stage</li>
+<li><strong>Logging</strong>: Log all AI model calls with timestamps</li>
+<li><strong>Testing</strong>: Use Harmony PDF as validation benchmark (14+ products)</li>
+</ol>
+<hr>
+<p><strong>Last Updated</strong>: 2025-10-31<br><strong>Version</strong>: 2.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>
