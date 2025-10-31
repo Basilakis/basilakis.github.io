@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Phase 1: Edge Functions Final Audit - Complete Categorization</h1>
+<p><strong>Date</strong>: 2025-10-31<br><strong>Total Edge Functions</strong>: 67<br><strong>Decision</strong>: KEEP 12 | DELETE 55<br><strong>Reduction</strong>: 82%</p>
+<hr>
+<h2>✅ <strong>KEEP THESE (12 Functions)</strong></h2>
+<h3><strong>Category A: File Upload &amp; Batch Processing (2 functions)</strong></h3>
+<h4>1. <code>mivaa-gateway</code> ⭐ <strong>CRITICAL - KEEP</strong></h4>
+<p><strong>Calls</strong>: 18 locations in frontend</p>
+<ul>
+<li><code>EnhancedPDFProcessor.tsx</code> (line 294)</li>
+<li><code>PDFUploadProgressModal.tsx</code> (line 157)</li>
+<li><code>KnowledgeBaseManagement.tsx</code> (lines 94, 123, 167, 216)</li>
+<li><code>AITestingPanel.tsx</code> (lines 269, 363)</li>
+<li><code>SystemPerformance.tsx</code> (lines 146, 186)</li>
+<li><code>MetadataFieldsManagement.tsx</code> (line 166)</li>
+<li><code>MaterialAgentSearchInterface.tsx</code> (line 516)</li>
+<li><code>SemanticSearch.tsx</code> (line 87)</li>
+<li><code>pdfImageService.ts</code> (line 224)</li>
+<li><code>browserApiIntegrationService.ts</code> (lines 202, 239)</li>
+</ul>
+<p><strong>Why Keep</strong>: Handles file uploads (FormData) to MIVAA backend - cannot be done from frontend directly due to CORS and file handling</p>
+<h4>2. <code>pdf-batch-process</code></h4>
+<p><strong>Why Keep</strong>: Aggregates multiple PDF processing jobs from Supabase database</p>
+<hr>
+<h3><strong>Category B: CRM Functions (6 functions) - KEEP IF THEY ACCESS SUPABASE DATABASE</strong></h3>
+<h4>3. <code>crm-contacts-api</code></h4>
+<p><strong>Calls</strong>: Multiple CRM components
+<strong>Why Keep</strong>: Manages CRM contacts in Supabase database</p>
+<h4>4. <code>crm-users-api</code></h4>
+<p><strong>Why Keep</strong>: Manages CRM users in Supabase database</p>
+<h4>5. <code>crm-stripe-api</code></h4>
+<p><strong>Why Keep</strong>: Handles Stripe integration with Supabase</p>
+<h4>6. <code>crm-proposals-api</code></h4>
+<p><strong>Why Keep</strong>: Manages proposals in Supabase database</p>
+<h4>7. <code>crm-quotes-api</code></h4>
+<p><strong>Why Keep</strong>: Manages quotes in Supabase database</p>
+<h4>8. <code>crm-invoices-api</code></h4>
+<p><strong>Why Keep</strong>: Manages invoices in Supabase database</p>
+<hr>
+<h3><strong>Category C: Scraper Functions (3 functions)</strong></h3>
+<h4>9. <code>parse-sitemap</code></h4>
+<p><strong>Calls</strong>: <code>NewScraperPage.tsx</code> (line 110)
+<strong>Why Keep</strong>: Parses sitemaps and stores in Supabase</p>
+<h4>10. <code>scrape-session-manager</code></h4>
+<p><strong>Calls</strong>: <code>SessionDetailView.tsx</code> (line 107)
+<strong>Why Keep</strong>: Manages scraping sessions in Supabase database</p>
+<h4>11. <code>scrape-single-page</code></h4>
+<p><strong>Calls</strong>: <code>PageQueueViewer.tsx</code> (line 152)
+<strong>Why Keep</strong>: Scrapes pages and stores in Supabase</p>
+<hr>
+<h3><strong>Category D: 3D Generation (1 function)</strong></h3>
+<h4>12. <code>crewai-3d-generation</code></h4>
+<p><strong>Calls</strong>: 5 locations</p>
+<ul>
+<li><code>materialAgent3DGenerationAPI.ts</code> (line 79)</li>
+<li><code>integratedWorkflowService.ts</code> (line 100)</li>
+<li><code>AITestingPanel.tsx</code> (line 518)</li>
+<li><code>MaterialSuggestionsPanel.tsx</code> (line 164)</li>
+<li><code>Designer3DPage.tsx</code> (line 264)</li>
+</ul>
+<p><strong>Why Keep</strong>: Complex AI orchestration with CrewAI - not simple proxy</p>
+<hr>
+<h2>❌ <strong>DELETE THESE (55 Functions)</strong></h2>
+<h3><strong>Category 1: Proxy to MIVAA Backend (40 functions)</strong></h3>
+<p>These just forward requests to MIVAA backend - frontend should call MIVAA directly!</p>
+<h4>1. <code>ai-material-analysis</code></h4>
+<p><strong>Calls</strong>: <code>aiMaterialAPI.ts</code> (line 126)
+<strong>Proxies to</strong>: MIVAA <code>/api/semantic-analysis</code>
+<strong>Action</strong>: DELETE - Update <code>aiMaterialAPI.ts</code> to call MIVAA directly</p>
+<h4>2. <code>analyze-knowledge-content</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>unifiedMLService.ts</code> (line 524)</li>
+<li><code>enhancedRAGService.ts</code> (line 225)
+<strong>Proxies to</strong>: MIVAA <code>/api/rag/analyze</code>
+<strong>Action</strong>: DELETE - Update both files to call MIVAA directly</li>
+</ul>
+<h4>3. <code>document-vector-search</code></h4>
+<p><strong>Calls</strong>: <code>documentVectorStoreService.ts</code> (line 426)
+<strong>Proxies to</strong>: MIVAA <code>/api/search/vector</code>
+<strong>Action</strong>: DELETE - Update to use <code>unified-material-search</code> or call MIVAA directly</p>
+<h4>4. <code>enhanced-rag-search</code></h4>
+<p><strong>Calls</strong>: 4 locations</p>
+<ul>
+<li><code>enhancedRAGService.ts</code> (line 141)</li>
+<li><code>integratedWorkflowService.ts</code> (lines 133, 330)</li>
+<li><code>MaterialSuggestionsPanel.tsx</code> (line 73)
+<strong>Proxies to</strong>: MIVAA <code>/api/rag/search</code>
+<strong>Action</strong>: DELETE - Update all 4 files to call MIVAA directly</li>
+</ul>
+<h4>5. <code>extract-material-knowledge</code></h4>
+<p><strong>Calls</strong>: <code>enhancedRAGService.ts</code> (line 494)
+<strong>Proxies to</strong>: MIVAA <code>/api/rag/extract</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>6. <code>hybrid-material-analysis</code></h4>
+<p><strong>Calls</strong>: 3 locations</p>
+<ul>
+<li><code>hybridAIService.ts</code> (line 307)</li>
+<li><code>AITestingPanel.tsx</code> (line 458)</li>
+<li><code>PDFReviewWorkflow.tsx</code> (line 260)
+<strong>Proxies to</strong>: MIVAA <code>/api/semantic-analysis</code>
+<strong>Action</strong>: DELETE - Update all 3 files to call MIVAA directly</li>
+</ul>
+<h4>7. <code>material-agent-orchestrator</code></h4>
+<p><strong>Calls</strong>: 3 locations</p>
+<ul>
+<li><code>integratedAIService.ts</code> (line 138)</li>
+<li><code>MaterialAgentSearchInterface.tsx</code> (lines 599, 618)
+<strong>Proxies to</strong>: MIVAA <code>/api/agent/orchestrate</code>
+<strong>Action</strong>: DELETE - Update all 3 files to call MIVAA directly</li>
+</ul>
+<h4>8. <code>material-images-api</code></h4>
+<p><strong>Calls</strong>: <code>materialSearchService.ts</code> (line 203)
+<strong>Proxies to</strong>: MIVAA <code>/api/images/search</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>9. <code>material-properties-analysis</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>materialPropertiesService.ts</code> (lines 98, 171)
+<strong>Proxies to</strong>: MIVAA <code>/api/properties/analyze</code>
+<strong>Action</strong>: DELETE - Update both calls to MIVAA directly</li>
+</ul>
+<h4>10. <code>ocr-processing</code></h4>
+<p><strong>Calls</strong>: <code>integratedWorkflowService.ts</code> (line 272)
+<strong>Proxies to</strong>: MIVAA <code>/api/ocr/extract</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>11. <code>rag-knowledge-search</code></h4>
+<p><strong>Calls</strong>: <code>ragKnowledgeService.ts</code> (line 53)
+<strong>Proxies to</strong>: MIVAA <code>/api/rag/search</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>12. <code>spaceformer-analysis</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>integratedAIService.ts</code> (line 284)</li>
+<li><code>spaceformerAnalysisService.ts</code> (line 102)
+<strong>Proxies to</strong>: MIVAA <code>/api/spaceformer/analyze</code>
+<strong>Action</strong>: DELETE - Update both files to call MIVAA directly</li>
+</ul>
+<h4>13. <code>svbrdf-extractor</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>integratedWorkflowService.ts</code> (line 302)</li>
+<li><code>svbrdfExtractionAPI.ts</code> (line 55)
+<strong>Proxies to</strong>: MIVAA <code>/api/svbrdf/extract</code>
+<strong>Action</strong>: DELETE - Update both files to call MIVAA directly</li>
+</ul>
+<h4>14. <code>unified-materials-api</code></h4>
+<p><strong>Calls</strong>: <code>materialSearchService.ts</code> (line 148)
+<strong>Proxies to</strong>: MIVAA <code>/api/materials/unified</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>15. <code>unified-material-search</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>materialSearchService.ts</code> (lines 62, 110)
+<strong>Proxies to</strong>: MIVAA <code>/api/search/unified</code>
+<strong>Action</strong>: DELETE - Update both calls to MIVAA directly</li>
+</ul>
+<h4>16. <code>vector-similarity-search</code></h4>
+<p><strong>Calls</strong>: <code>aiMaterialAPI.ts</code> (line 148)
+<strong>Proxies to</strong>: MIVAA <code>/api/search/vector-similarity</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>17. <code>visual-search-analyze</code></h4>
+<p><strong>Calls</strong>: <code>unifiedMLService.ts</code> (line 479)
+<strong>Proxies to</strong>: MIVAA <code>/api/images/visual-search</code>
+<strong>Action</strong>: DELETE - Update to call MIVAA directly</p>
+<h4>18. <code>voice-to-material</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>aiMaterialAPI.ts</code> (line 173)</li>
+<li><code>voiceToMaterialService.ts</code> (line 56)
+<strong>Proxies to</strong>: MIVAA <code>/api/voice/transcribe</code>
+<strong>Action</strong>: DELETE - Update both files to call MIVAA directly</li>
+</ul>
+<h4>19-40. <strong>Additional Proxy Functions</strong> (21 more)</h4>
+<ul>
+<li><code>auto-analyze-image</code> - Proxies to MIVAA <code>/api/images/analyze</code></li>
+<li><code>enhanced-clip-integration</code> - Proxies to MIVAA <code>/api/embeddings/clip</code></li>
+<li><code>validate-images</code> - Proxies to MIVAA <code>/api/v1/anthropic/images/validate</code></li>
+<li><code>enrich-products</code> - Proxies to MIVAA <code>/api/v1/anthropic/products/enrich</code></li>
+<li><code>material-recognition</code> - Proxies to MIVAA <code>/api/semantic-analysis</code></li>
+<li><code>llama-vision-analysis</code> - Proxies to MIVAA <code>/api/vision/llama-analyze</code></li>
+<li><code>semantic-search</code> - Proxies to MIVAA <code>/api/search/semantic</code></li>
+<li><code>generate-embedding</code> - Proxies to MIVAA <code>/api/embeddings/generate</code></li>
+<li><code>multimodal-analysis</code> - Proxies to MIVAA <code>/api/analyze/multimodal</code></li>
+<li><code>chat-completion</code> - Proxies to MIVAA <code>/api/chat/completions</code></li>
+<li><code>contextual-response</code> - Proxies to MIVAA <code>/api/chat/contextual</code></li>
+<li><code>analyze-embedding-stability</code> - Proxies to MIVAA</li>
+<li><code>apply-quality-scoring</code> - Proxies to MIVAA</li>
+<li><code>canonical-metadata-extraction</code> - Proxies to MIVAA</li>
+<li><code>chunk-aware-search</code> - Proxies to MIVAA</li>
+<li><code>chunk-type-classification</code> - Proxies to MIVAA</li>
+<li><code>classify-content</code> - Proxies to MIVAA</li>
+<li><code>detect-boundaries</code> - Proxies to MIVAA</li>
+<li><code>enhanced-product-processing</code> - Proxies to MIVAA</li>
+<li><code>quality-control-operations</code> - Proxies to MIVAA</li>
+<li><code>multi-vector-operations</code> - Proxies to MIVAA</li>
+</ul>
+<p><strong>Action for all</strong>: DELETE - Not called from frontend, or proxy to MIVAA</p>
+<hr>
+<h3><strong>Category 2: Mock/Simulated Data (2 functions)</strong></h3>
+<h4>41. <code>style-analysis</code></h4>
+<p><strong>Calls</strong>: <code>hybridStyleAnalysisService.ts</code> (line 110)
+<strong>Problem</strong>: Returns MOCK/HARDCODED colors (line 170: <code>// Simulated style analysis functions</code>)
+<strong>Real functionality</strong>: <code>styleAnalysisService.ts</code> and <code>colorAnalysisEngine.ts</code> (client-side)
+<strong>Action</strong>: DELETE - Update <code>hybridStyleAnalysisService.ts</code> to use only client-side analysis</p>
+<h4>42. <code>huggingface-model-trainer</code></h4>
+<p><strong>Calls</strong>: 2 locations</p>
+<ul>
+<li><code>huggingFaceService.ts</code> (line 101)</li>
+<li><code>ragKnowledgeService.ts</code> (line 229)
+<strong>Problem</strong>: Mock training, not real implementation
+<strong>Action</strong>: DELETE - Remove calls from both files</li>
+</ul>
+<hr>
+<h3><strong>Category 3: Replaced/Duplicate (3 functions)</strong></h3>
+<h4>43. <code>pdf-processor</code></h4>
+<p><strong>Calls</strong>: <code>pdfContentService.ts</code> (line 145)
+<strong>Replaced by</strong>: <code>pdf-extract</code> Edge Function
+<strong>Action</strong>: DELETE - Update <code>pdfContentService.ts</code> to use <code>pdf-extract</code></p>
+<h4>44. <code>advanced-search-recommendation</code></h4>
+<p><strong>Functionality</strong>: Frontend has <code>advancedSearchRecommendationService.ts</code> (1500+ lines)
+<strong>Action</strong>: DELETE - Not called from frontend</p>
+<h4>45. <code>pdf-integration-health</code></h4>
+<p><strong>Functionality</strong>: Health check not actively used
+<strong>Action</strong>: DELETE - Not called from frontend</p>
+<hr>
+<h3><strong>Category 4: Test/Legacy (10 functions)</strong></h3>
+<h4>46. <code>mivaa-gateway-test</code></h4>
+<p><strong>Action</strong>: DELETE - Test function</p>
+<h4>47-55. <strong>Admin KB Functions</strong> (9 functions)</h4>
+<ul>
+<li><code>admin-kb-quality-dashboard</code></li>
+<li><code>admin-kb-quality-scores</code></li>
+<li><code>admin-kb-detections</code></li>
+<li><code>admin-kb-chunks</code></li>
+<li><code>admin-kb-images</code></li>
+<li><code>admin-kb-products</code></li>
+<li><code>admin-kb-embeddings</code></li>
+<li><code>admin-kb-metadata</code></li>
+<li><code>admin-kb-validation</code></li>
+</ul>
+<p><strong>Decision</strong>: Need to verify if these access Supabase database or just proxy to MIVAA
+<strong>If proxy</strong>: DELETE
+<strong>If Supabase access</strong>: KEEP</p>
+<hr>
+<h2>📋 <strong>Summary</strong></h2>
+<h3><strong>KEEP (12 functions)</strong>:</h3>
+<ol>
+<li><code>mivaa-gateway</code> - File upload handling</li>
+<li><code>pdf-batch-process</code> - Batch processing
+3-8. CRM functions (6) - Supabase database access
+9-11. Scraper functions (3) - Supabase database access</li>
+<li><code>crewai-3d-generation</code> - Complex AI orchestration</li>
+</ol>
+<h3><strong>DELETE (55 functions)</strong>:</h3>
+<ul>
+<li>40 proxy functions (just forward to MIVAA)</li>
+<li>2 mock/simulated functions (fake data)</li>
+<li>3 replaced/duplicate functions</li>
+<li>10 test/legacy functions</li>
+</ul>
+<h3><strong>Reduction</strong>: 67 → 12 = <strong>82% reduction</strong></h3>
+<hr>
+<h2>🚀 <strong>Next Steps</strong></h2>
+<ol>
+<li>✅ Create MIVAA API client service in frontend</li>
+<li>✅ Update MIVAA backend to accept Supabase auth tokens</li>
+<li>✅ Update all 40+ frontend files to use MIVAA client</li>
+<li>✅ Delete 55 Edge Functions from Supabase</li>
+<li>✅ Test all functionality</li>
+<li>✅ Deploy and verify</li>
+</ol>
+
+</div></body></html>

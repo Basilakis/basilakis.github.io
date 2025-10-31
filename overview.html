@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material Kai Vision Platform - Complete Overview</h1>
+<p><strong>The Future of Material Intelligence: AI-Powered Document Processing, Search, and Knowledge Management</strong></p>
+<hr>
+<h2>Executive Summary</h2>
+<p>The <strong>Material Kai Vision Platform</strong> is a production-grade AI-powered system serving <strong>5,000+ users</strong> with <strong>99.5%+ uptime</strong>. It transforms material catalog PDFs into searchable, structured knowledge using <strong>12 AI models</strong> across a <strong>14-stage processing pipeline</strong>. The platform combines document processing, material recognition, multi-vector search, and knowledge management into a unified system.</p>
+<h3>Key Capabilities</h3>
+<ul>
+<li><strong>Intelligent PDF Processing</strong>: 14-stage AI pipeline with checkpoint recovery</li>
+<li><strong>Product Discovery</strong>: Two-stage AI classification (95%+ accuracy)</li>
+<li><strong>Multi-Vector Search</strong>: 6 embedding types for comprehensive material discovery</li>
+<li><strong>Material Recognition</strong>: Llama 4 Scout 17B Vision (69.4% MMMU, #1 OCR)</li>
+<li><strong>Knowledge Management</strong>: Real-time updates with workspace isolation</li>
+<li><strong>3D Generation</strong>: AI-powered material visualization</li>
+<li><strong>Admin Dashboard</strong>: Comprehensive monitoring and analytics</li>
+</ul>
+<hr>
+<h2>Platform Architecture</h2>
+<h3>Technology Stack</h3>
+<p><strong>Frontend</strong>:</p>
+<ul>
+<li>React 18 + TypeScript + Vite</li>
+<li>Shadcn/ui + TailwindCSS</li>
+<li>Deployed on Vercel Edge Network</li>
+<li>Real-time updates via Supabase subscriptions</li>
+</ul>
+<p><strong>Backend</strong>:</p>
+<ul>
+<li>MIVAA API: FastAPI + Python 3.11</li>
+<li>74+ REST API endpoints</li>
+<li>Docker containerized</li>
+<li>Self-hosted on dedicated server</li>
+</ul>
+<p><strong>Database</strong>:</p>
+<ul>
+<li>Supabase PostgreSQL 15</li>
+<li>pgvector extension for similarity search</li>
+<li>Row-Level Security (RLS) for multi-tenancy</li>
+<li>30+ Edge Functions (TypeScript/Deno)</li>
+</ul>
+<p><strong>AI Services</strong>:</p>
+<ul>
+<li>OpenAI (GPT-4o, text-embedding-3-small)</li>
+<li>Anthropic (Claude Sonnet 4.5, Claude Haiku 4.5)</li>
+<li>Together AI (Llama 4 Scout 17B Vision)</li>
+<li>CLIP (Visual embeddings)</li>
+<li>Replicate (Image generation)</li>
+</ul>
+<h3>System Flow</h3>
+<pre><code>User uploads PDF → Frontend (React)
+    ↓
+Supabase Edge Function (mivaa-gateway)
+    ↓
+MIVAA API (FastAPI) → Creates background job
+    ↓
+14-Stage Processing Pipeline:
+  1. PDF Analysis (PyMuPDF4LLM)
+  2. Product Discovery (Claude Haiku → Sonnet)
+  3. Text Extraction (focused on product pages)
+  4. Semantic Chunking (Anthropic)
+  5. Text Embeddings (OpenAI 1536D)
+  6. Image Extraction
+  7. Image Analysis (Llama Vision)
+  8. CLIP Embeddings (512D)
+  9. Product Creation (Two-stage AI)
+  10. Metafield Extraction
+  11. Deferred AI Analysis (async)
+  12. Specialized Embeddings (color, texture, application)
+  13. Quality Validation (Claude)
+  14. Cleanup &amp; Completion
+    ↓
+Data stored in Supabase → Available for search
+    ↓
+Real-time updates → Frontend displays results
+</code></pre>
+<hr>
+<h2>AI Models &amp; Intelligence</h2>
+<h3>12 AI Models Across 7 Pipeline Stages</h3>
+<h4>1. Anthropic Claude Models</h4>
+<p><strong>Claude Sonnet 4.5</strong> (Premium Tier):</p>
+<ul>
+<li><strong>Use Cases</strong>: Deep product analysis, complex metadata extraction, quality validation</li>
+<li><strong>Context</strong>: 200,000 tokens</li>
+<li><strong>Performance</strong>: Highest accuracy for complex reasoning</li>
+<li><strong>Pipeline Stages</strong>: Product Discovery (Stage 2), Deferred AI Analysis (Stage 11)</li>
+</ul>
+<p><strong>Claude Haiku 4.5</strong> (Mid Tier):</p>
+<ul>
+<li><strong>Use Cases</strong>: Fast content classification, product boundary detection</li>
+<li><strong>Context</strong>: 200,000 tokens</li>
+<li><strong>Performance</strong>: 3x faster than Sonnet, 90% accuracy</li>
+<li><strong>Pipeline Stages</strong>: Product Discovery (Stage 1), Content Classification</li>
+</ul>
+<h4>2. OpenAI Models</h4>
+<p><strong>GPT-4o</strong>:</p>
+<ul>
+<li><strong>Use Cases</strong>: Product discovery, conversational AI, complex reasoning</li>
+<li><strong>Context</strong>: 128,000 tokens</li>
+<li><strong>Performance</strong>: High accuracy, multimodal capabilities</li>
+<li><strong>Pipeline Stages</strong>: Product Discovery (alternative to Claude)</li>
+</ul>
+<p><strong>text-embedding-3-small</strong>:</p>
+<ul>
+<li><strong>Use Cases</strong>: Text chunk embeddings, semantic search</li>
+<li><strong>Dimensions</strong>: 1536</li>
+<li><strong>Performance</strong>: 62.3% MTEB score</li>
+<li><strong>Cost</strong>: $0.02 per 1M tokens</li>
+<li><strong>Pipeline Stages</strong>: Text Embedding Generation (Stage 5)</li>
+</ul>
+<h4>3. Together AI - Llama 4 Scout 17B Vision</h4>
+<ul>
+<li><strong>Parameters</strong>: 17 billion</li>
+<li><strong>Modality</strong>: Vision + Text</li>
+<li><strong>Use Cases</strong>: Material image analysis, product classification, OCR</li>
+<li><strong>Performance</strong>: <ul>
+<li>69.4% MMMU (Massive Multitask Multimodal Understanding)</li>
+<li>#1 ranked for OCR tasks</li>
+<li>85%+ accuracy on material recognition</li>
+</ul>
+</li>
+<li><strong>Cost</strong>: $0.30 per 1M tokens</li>
+<li><strong>Pipeline Stages</strong>: Image Analysis (Stage 7), Material Recognition</li>
+</ul>
+<h4>4. CLIP (OpenAI)</h4>
+<ul>
+<li><strong>Model</strong>: Vision Transformer Base 32</li>
+<li><strong>Dimensions</strong>: 512</li>
+<li><strong>Use Cases</strong>: Visual embeddings, image-text similarity, visual search</li>
+<li><strong>Performance</strong>: Industry standard for visual embeddings</li>
+<li><strong>Cost</strong>: Free (self-hosted)</li>
+<li><strong>Pipeline Stages</strong>: Image Embedding Generation (Stage 8)</li>
+</ul>
+<h4>5. Replicate Models</h4>
+<p><strong>Stable Diffusion XL</strong>: 3D texture generation, material visualization<br><strong>FLUX-Schnell</strong>: Fast image generation, material previews</p>
+<h3>Multi-Vector Embeddings (6 Types)</h3>
+<p>The platform generates <strong>6 types of embeddings</strong> for comprehensive search:</p>
+<ol>
+<li><strong>Text Embeddings</strong> (1536D) - OpenAI text-embedding-3-small</li>
+<li><strong>Visual CLIP Embeddings</strong> (512D) - CLIP ViT-B/32</li>
+<li><strong>Color Embeddings</strong> (256D) - Custom color analysis</li>
+<li><strong>Texture Embeddings</strong> (256D) - Custom texture analysis</li>
+<li><strong>Application Embeddings</strong> (512D) - Use-case classifier</li>
+<li><strong>Multimodal Embeddings</strong> (2048D) - Combined text + visual</li>
+</ol>
+<hr>
+<h2>PDF Processing Pipeline (14 Stages)</h2>
+<h3>Stage-by-Stage Breakdown</h3>
+<p><strong>Stage 1: PDF Upload &amp; Validation</strong></p>
+<ul>
+<li>File validation (size, type, corruption)</li>
+<li>Upload to Supabase Storage</li>
+<li>Create document record</li>
+</ul>
+<p><strong>Stage 2: Background Job Creation</strong></p>
+<ul>
+<li>Create background_jobs record</li>
+<li>Initialize progress tracking</li>
+<li>Return job_id to frontend</li>
+</ul>
+<p><strong>Stage 3: PDF Analysis</strong></p>
+<ul>
+<li>Extract PDF metadata (pages, size, structure)</li>
+<li>Analyze document type</li>
+<li>Select processing strategy</li>
+<li><strong>Checkpoint</strong>: PDF_EXTRACTED</li>
+</ul>
+<p><strong>Stage 4: Product Discovery (AI)</strong></p>
+<ul>
+<li><strong>Claude Haiku 4.5</strong>: Fast product identification (5-15 seconds)</li>
+<li>Identify product count and page ranges</li>
+<li><strong>Claude Sonnet 4.5</strong>: Validate and enrich metadata (10-30 seconds)</li>
+<li>Extract product names, dimensions, variants, designers</li>
+<li><strong>Output</strong>: Product list with page ranges (95%+ accuracy)</li>
+</ul>
+<p><strong>Stage 5: Text Extraction (Focused)</strong></p>
+<ul>
+<li>PyMuPDF4LLM: Extract text from product pages only</li>
+<li>Preserve structure and formatting</li>
+<li>Extract metadata (fonts, colors, layout)</li>
+</ul>
+<p><strong>Stage 6: Semantic Chunking (AI)</strong></p>
+<ul>
+<li>Anthropic Chunking API: Split text semantically</li>
+<li>Max tokens: 800, Overlap: 100</li>
+<li>Preserve context and meaning</li>
+<li>Create document_chunks records</li>
+<li><strong>Checkpoint</strong>: CHUNKS_CREATED</li>
+</ul>
+<p><strong>Stage 7: Text Embedding Generation (AI)</strong></p>
+<ul>
+<li>OpenAI text-embedding-3-small: Generate 1536D embeddings</li>
+<li>Store in pgvector for similarity search</li>
+<li>Link embeddings to chunks</li>
+<li><strong>Checkpoint</strong>: TEXT_EMBEDDINGS_GENERATED</li>
+</ul>
+<p><strong>Stage 8: Image Extraction &amp; Upload</strong></p>
+<ul>
+<li>Extract images from product pages</li>
+<li>Upload to Supabase Storage (pdf-tiles bucket)</li>
+<li>Create document_images records</li>
+<li>Extract image metadata (dimensions, format)</li>
+<li><strong>Checkpoint</strong>: IMAGES_EXTRACTED</li>
+</ul>
+<p><strong>Stage 9: Image Analysis (AI)</strong></p>
+<ul>
+<li>Llama 4 Scout 17B Vision: Analyze each image (1-3 seconds)</li>
+<li>Extract material properties</li>
+<li>Quality scoring (0-100)</li>
+<li>Classify image type (product, detail, mood, diagram)</li>
+</ul>
+<p><strong>Stage 10: CLIP Embedding Generation (AI)</strong></p>
+<ul>
+<li>CLIP ViT-B/32: Generate 512D visual embeddings (50-150ms per image)</li>
+<li>Store in database for visual search</li>
+<li>Link to document_images</li>
+<li><strong>Checkpoint</strong>: IMAGE_EMBEDDINGS_GENERATED</li>
+</ul>
+<p><strong>Stage 11: Product Creation (Two-Stage AI)</strong></p>
+<ul>
+<li><strong>Stage 1</strong>: Content classification (product/supporting/administrative)</li>
+<li><strong>Stage 2</strong>: Product boundary detection</li>
+<li>Create products records with metadata</li>
+<li>Link chunks and images to products</li>
+<li><strong>Checkpoint</strong>: PRODUCTS_CREATED</li>
+</ul>
+<p><strong>Stage 12: Metafield Extraction</strong></p>
+<ul>
+<li>Extract dynamic metadata from chunks</li>
+<li>Create metafield_values records</li>
+<li>Link to chunks, products, images</li>
+</ul>
+<p><strong>Stage 13: Deferred AI Analysis (Async Background Job)</strong></p>
+<ul>
+<li>Claude Sonnet 4.5: Validate low-scoring images</li>
+<li>Generate specialized embeddings:<ul>
+<li>Color embeddings (256D)</li>
+<li>Texture embeddings (256D)</li>
+<li>Application embeddings (512D)</li>
+<li>Multimodal embeddings (2048D)</li>
+</ul>
+</li>
+<li>Enhanced metadata extraction</li>
+</ul>
+<p><strong>Stage 14: Cleanup &amp; Completion</strong></p>
+<ul>
+<li>Delete temporary files from disk</li>
+<li>Kill background processes</li>
+<li>Update job status to &#39;completed&#39;</li>
+<li>Send completion notification</li>
+</ul>
+<h3>Processing Performance</h3>
+<table>
+<thead>
+<tr>
+<th>PDF Size</th>
+<th>Pages</th>
+<th>Products</th>
+<th>Time</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Small</td>
+<td>1-20</td>
+<td>1-5</td>
+<td>1-2 min</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>21-50</td>
+<td>6-15</td>
+<td>2-4 min</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Large</td>
+<td>51-100</td>
+<td>16-30</td>
+<td>4-8 min</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Extra Large</td>
+<td>100+</td>
+<td>30+</td>
+<td>8-15 min</td>
+<td>95%+</td>
+</tr>
+</tbody></table>
+<p><strong>Benchmark</strong>: Harmony PDF extracts <strong>14+ distinct products</strong> with complete metadata (product names, dimensions, designers, page ranges, variants, image types).</p>
+<h3>Checkpoint Recovery System</h3>
+<p>The pipeline includes <strong>9 checkpoints</strong> for recovery on failure:</p>
+<ol>
+<li>PDF_EXTRACTED</li>
+<li>CHUNKS_CREATED</li>
+<li>TEXT_EMBEDDINGS_GENERATED</li>
+<li>IMAGES_EXTRACTED</li>
+<li>IMAGE_EMBEDDINGS_GENERATED</li>
+<li>PRODUCTS_CREATED</li>
+<li>METAFIELDS_EXTRACTED</li>
+<li>DEFERRED_ANALYSIS_QUEUED</li>
+<li>COMPLETED</li>
+</ol>
+<p>On job restart, the system resumes from the last completed checkpoint, avoiding redundant processing.</p>
+<hr>
+<h2>Search &amp; Discovery</h2>
+<h3>Multi-Vector Search System</h3>
+<p>The platform uses <strong>6 embedding types</strong> for comprehensive search:</p>
+<p><strong>Semantic Search</strong> (Text):</p>
+<ul>
+<li>Query: &quot;sustainable wood materials&quot;</li>
+<li>Embedding: OpenAI text-embedding-3-small (1536D)</li>
+<li>Similarity: Cosine similarity via pgvector</li>
+<li>Accuracy: 85%+</li>
+</ul>
+<p><strong>Visual Search</strong> (Images):</p>
+<ul>
+<li>Query: Upload image or describe visually</li>
+<li>Embedding: CLIP ViT-B/32 (512D)</li>
+<li>Similarity: Visual similarity matching</li>
+<li>Accuracy: 88%+</li>
+</ul>
+<p><strong>Hybrid Search</strong> (Combined):</p>
+<ul>
+<li>Query: Text + Image + Filters</li>
+<li>Weights: Configurable (e.g., 60% semantic, 40% keyword)</li>
+<li>Ranking: Multi-factor scoring</li>
+<li>Accuracy: 90%+</li>
+</ul>
+<p><strong>Specialized Search</strong>:</p>
+<ul>
+<li>Color-based: Find materials by color palette</li>
+<li>Texture-based: Find similar textures</li>
+<li>Application-based: Find materials for specific use cases</li>
+</ul>
+<h3>Search Performance</h3>
+<ul>
+<li><strong>Response Time</strong>: 200-800ms</li>
+<li><strong>Accuracy</strong>: 85%+</li>
+<li><strong>Concurrent Users</strong>: 5,000+</li>
+<li><strong>Throughput</strong>: 1000+ queries/minute</li>
+</ul>
+<hr>
+<h2>Database Architecture</h2>
+<h3>Core Tables</h3>
+<p><strong>workspaces</strong>: Multi-tenant workspace management<br><strong>documents</strong>: PDF documents and metadata<br><strong>document_chunks</strong>: Semantic text chunks with 1536D embeddings<br><strong>document_images</strong>: Extracted images with 512D CLIP embeddings<br><strong>products</strong>: Product records from PDFs<br><strong>background_jobs</strong>: Async job tracking with checkpoint recovery<br><strong>material_metadata_fields</strong>: Dynamic metafield definitions<br><strong>metafield_values</strong>: Metafield data for chunks/products/images</p>
+<h3>Storage Buckets</h3>
+<p><strong>pdf-documents</strong>: Original PDF files (50MB max)<br><strong>pdf-tiles</strong>: Extracted images (10MB max)<br><strong>material-images</strong>: Material photos (10MB max)<br><strong>3d-models</strong>: Generated 3D models (100MB max)</p>
+<h3>Security</h3>
+<p><strong>Row-Level Security (RLS)</strong>: All tables protected<br><strong>Workspace Isolation</strong>: Users only access their workspace data<br><strong>JWT Authentication</strong>: Supabase Auth with automatic token refresh<br><strong>Encryption</strong>: At rest and in transit</p>
+<hr>
+<h2>Frontend Features</h2>
+<h3>User-Facing Features</h3>
+<p><strong>Dashboard</strong>: Metrics, feature grid, quick actions<br><strong>PDF Processing</strong>: Drag-and-drop upload with real-time progress<br><strong>Materials Catalog</strong>: Searchable, filterable product catalog<br><strong>Search Hub</strong>: AI-powered semantic search<br><strong>Material Recognition</strong>: Upload images for material identification<br><strong>3D Generation</strong>: AI-powered material visualization<br><strong>Mood Boards</strong>: Create and share material collections<br><strong>Shopping Cart</strong>: Quote requests and commission tracking</p>
+<h3>Admin Features</h3>
+<p><strong>Knowledge Base Management</strong>: View/edit chunks, images, products<br><strong>PDF Processing Monitor</strong>: Real-time job tracking<br><strong>AI Metrics Dashboard</strong>: Model usage and cost tracking<br><strong>Quality Dashboard</strong>: Chunk quality and embedding stability<br><strong>System Performance</strong>: Response times, error rates, uptime<br><strong>User Management</strong>: Workspace members and permissions<br><strong>Async Job Queue Monitor</strong>: Background job status and recovery</p>
+<hr>
+<h2>API Ecosystem</h2>
+<h3>74+ REST API Endpoints</h3>
+<p><strong>Categories</strong>:</p>
+<ol>
+<li>RAG &amp; Document Processing (15 endpoints)</li>
+<li>Search APIs (6 endpoints)</li>
+<li>Embedding APIs (5 endpoints)</li>
+<li>Products API (8 endpoints)</li>
+<li>Images API (6 endpoints)</li>
+<li>AI Services (7 endpoints)</li>
+<li>Background Jobs (5 endpoints)</li>
+<li>Admin &amp; Monitoring (12 endpoints)</li>
+<li>Document Management (13 endpoints)</li>
+<li>Anthropic APIs (3 endpoints)</li>
+<li>Together AI APIs (3 endpoints)</li>
+<li>Health &amp; Monitoring (4 endpoints)</li>
+</ol>
+<p><strong>Documentation</strong>:</p>
+<ul>
+<li>Swagger UI: <code>https://v1api.materialshub.gr/docs</code></li>
+<li>ReDoc: <code>https://v1api.materialshub.gr/redoc</code></li>
+<li>OpenAPI Schema: <code>https://v1api.materialshub.gr/openapi.json</code></li>
+</ul>
+<hr>
+<h2>Production Metrics</h2>
+<h3>Performance</h3>
+<ul>
+<li><strong>Uptime</strong>: 99.5%+</li>
+<li><strong>Users</strong>: 5,000+</li>
+<li><strong>Search Response</strong>: 200-800ms</li>
+<li><strong>PDF Processing</strong>: 1-15 minutes (size-dependent)</li>
+<li><strong>Concurrent Jobs</strong>: Unlimited queue</li>
+</ul>
+<h3>Accuracy</h3>
+<ul>
+<li><strong>Product Detection</strong>: 95%+</li>
+<li><strong>Search Accuracy</strong>: 85%+</li>
+<li><strong>Material Recognition</strong>: 90%+</li>
+<li><strong>Image Classification</strong>: 88%+</li>
+</ul>
+<h3>Scalability</h3>
+<ul>
+<li><strong>Database</strong>: Auto-scaling with connection pooling</li>
+<li><strong>Frontend</strong>: Global Edge Network (Vercel)</li>
+<li><strong>API</strong>: Docker containerized with horizontal scaling</li>
+<li><strong>Storage</strong>: Unlimited (Supabase)</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: 2025-10-31<br><strong>Version</strong>: 2.0.0<br><strong>Status</strong>: Production<br><strong>Users</strong>: 5,000+<br><strong>Uptime</strong>: 99.5%+</p>
+
+</div></body></html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material Kai Vision Platform - Complete Cleanup Plan</h1>
+<p><strong>Date</strong>: 2025-10-31<br><strong>Purpose</strong>: Comprehensive cleanup of unused API endpoints and Supabase Edge Functions</p>
+<hr>
+<h2>🎯 Executive Summary</h2>
+<p>After deep code analysis across both repositories, here&#39;s what we found:</p>
+<h3>API Endpoints (MIVAA Backend)</h3>
+<ul>
+<li><strong>Total</strong>: 74+ endpoints</li>
+<li><strong>Can Remove</strong>: 5-8 endpoints (~10% reduction)</li>
+<li><strong>Must Consolidate</strong>: 3 duplicate endpoints</li>
+<li><strong>Must Keep</strong>: 60+ endpoints (all actively used)</li>
+</ul>
+<h3>Supabase Edge Functions</h3>
+<ul>
+<li><strong>Total</strong>: 67 functions</li>
+<li><strong>Can Remove</strong>: <del>25-30 functions (</del>40% reduction)</li>
+<li><strong>Must Keep</strong>: ~35-40 functions (actively used)</li>
+</ul>
+<h3>Overall Impact</h3>
+<ul>
+<li><strong>Cleaner codebase</strong>: ~30% reduction in unused code</li>
+<li><strong>Better maintainability</strong>: No confusion about which endpoints/functions to use</li>
+<li><strong>Faster deployments</strong>: Less code to deploy</li>
+<li><strong>Reduced attack surface</strong>: Fewer endpoints to secure</li>
+</ul>
+<hr>
+<h2>📋 Phase 1: API Endpoint Cleanup</h2>
+<h3>❌ Safe to Remove (5-8 endpoints)</h3>
+<h4>1. Unused Search Endpoints (2)</h4>
+<pre><code>DELETE /api/search/recommendations
+DELETE /api/analytics
+</code></pre>
+<p><strong>Reason</strong>: No frontend calls found<br><strong>Impact</strong>: None - not used<br><strong>Files to update</strong>:</p>
+<ul>
+<li><code>mivaa-pdf-extractor/app/api/search_routes.py</code></li>
+<li><code>mivaa-pdf-extractor/app/main.py</code></li>
+<li><code>docs/api-reference.md</code></li>
+</ul>
+<h4>2. Test/Legacy Document Endpoints (3)</h4>
+<pre><code>DELETE /api/documents/test-batch
+DELETE /api/documents/new-batch-process
+DELETE /api/documents/batch-process-fixed
+</code></pre>
+<p><strong>Reason</strong>: Test endpoints, replaced by background jobs<br><strong>Impact</strong>: None - test/legacy code<br><strong>Files to update</strong>:</p>
+<ul>
+<li><code>mivaa-pdf-extractor/app/api/documents_routes.py</code></li>
+<li><code>mivaa-pdf-extractor/app/main.py</code></li>
+<li><code>docs/api-reference.md</code></li>
+</ul>
+<h4>3. Duplicate PDF Extraction Endpoints (3) - <strong>AFTER consolidation</strong></h4>
+<pre><code>DELETE /api/v1/extract/markdown
+DELETE /api/v1/extract/tables
+DELETE /api/v1/extract/images
+</code></pre>
+<p><strong>Reason</strong>: Duplicates of <code>/api/pdf/extract/*</code><br><strong>Impact</strong>: Must update references first<br><strong>Files to update</strong>:</p>
+<ul>
+<li><code>mivaa-pdf-extractor/app/api/pdf_routes.py</code></li>
+<li><code>src/config/mivaaStandardization.ts</code> (update to use <code>/api/pdf/extract/*</code>)</li>
+<li><code>docs/api-reference.md</code></li>
+<li>Test scripts</li>
+</ul>
+<hr>
+<h3>⚠️ Consolidation Required</h3>
+<p><strong>Problem</strong>: Two sets of endpoints doing the SAME thing:</p>
+<ol>
+<li><code>/api/pdf/extract/*</code> (used by <code>pdf-extract</code> Edge Function)</li>
+<li><code>/api/v1/extract/*</code> (referenced in config but NOT called)</li>
+</ol>
+<p><strong>Solution</strong>: Keep <code>/api/pdf/extract/*</code>, remove <code>/api/v1/extract/*</code></p>
+<p><strong>Steps</strong>:</p>
+<ol>
+<li><p>Update <code>src/config/mivaaStandardization.ts</code>:</p>
+<pre><code class="language-typescript">// BEFORE
+&#39;pdf_extract_markdown&#39;: { path: &#39;/api/v1/extract/markdown&#39;, method: &#39;POST&#39; },
+
+// AFTER
+&#39;pdf_extract_markdown&#39;: { path: &#39;/api/pdf/extract/markdown&#39;, method: &#39;POST&#39; },
+</code></pre>
+</li>
+<li><p>Update <code>supabase/functions/mivaa-gateway/index.ts</code> (if needed)</p>
+</li>
+<li><p>Remove <code>/api/v1/extract/*</code> endpoint definitions from backend</p>
+</li>
+<li><p>Test <code>pdf-extract</code> Edge Function still works</p>
+</li>
+</ol>
+<hr>
+<h3>✅ Must Keep (60+ endpoints)</h3>
+<p>All these are actively used:</p>
+<ul>
+<li><strong>Document Processing</strong>: <code>/api/documents/process-url</code> (14-stage pipeline)</li>
+<li><strong>PDF Extraction</strong>: <code>/api/pdf/extract/*</code> (used by Edge Function)</li>
+<li><strong>Search</strong>: <code>/api/search/semantic</code>, <code>/api/search/vector</code>, <code>/api/search/hybrid</code></li>
+<li><strong>RAG System</strong>: All 7 endpoints</li>
+<li><strong>Embeddings</strong>: All 3 endpoints</li>
+<li><strong>Products</strong>: All 8 endpoints</li>
+<li><strong>Images</strong>: All 5 endpoints (Material Kai integration)</li>
+<li><strong>AI Services</strong>: TogetherAI, Anthropic, Claude (all fully implemented)</li>
+<li><strong>Background Jobs</strong>: All 5 endpoints</li>
+<li><strong>Admin &amp; Monitoring</strong>: All 13 endpoints</li>
+</ul>
+<hr>
+<h2>📋 Phase 2: Supabase Edge Functions Cleanup</h2>
+<h3>✅ Must Keep (35-40 functions)</h3>
+<h4>Core Functions (28 verified)</h4>
+<ol>
+<li><code>mivaa-gateway</code> ⭐ <strong>CRITICAL</strong> - Gateway to MIVAA API</li>
+<li><code>pdf-extract</code> - Simple PDF extraction</li>
+<li><code>pdf-batch-process</code> - Batch processing</li>
+<li><code>extract-material-knowledge</code> - Material knowledge extraction</li>
+<li><code>get-material-categories</code> - Dynamic categories</li>
+<li><code>rag-knowledge-search</code> - RAG search</li>
+<li><code>unified-material-search</code> - Unified search</li>
+<li><code>visual-search-query</code> - Visual search</li>
+<li><code>visual-search-analyze</code> - Image analysis</li>
+<li><code>visual-search-batch</code> - Batch visual search</li>
+<li><code>visual-search-status</code> - Status monitoring</li>
+<li><code>spaceformer-analysis</code> - Spatial analysis</li>
+<li><code>crewai-3d-generation</code> - 3D generation</li>
+<li><code>svbrdf-extractor</code> - SVBRDF extraction</li>
+<li><code>voice-to-material</code> - Voice search</li>
+<li><code>extract-categories</code> - Category extraction</li>
+<li><code>admin-kb-detections</code> - Admin monitoring</li>
+<li><code>admin-kb-embeddings-stats</code> - Admin monitoring</li>
+<li><code>admin-kb-metadata</code> - Admin monitoring</li>
+<li><code>admin-kb-patterns</code> - Admin monitoring</li>
+<li><code>admin-kb-quality-dashboard</code> - Admin monitoring</li>
+<li><code>admin-kb-quality-scores</code> - Admin monitoring</li>
+<li><code>crm-contacts-api</code> - CRM</li>
+<li><code>crm-users-api</code> - CRM</li>
+<li><code>crm-stripe-api</code> - Payments</li>
+<li><code>shopping-cart-api</code> - E-commerce</li>
+<li><code>quote-request-api</code> - E-commerce</li>
+<li><code>proposals-api</code> - E-commerce</li>
+</ol>
+<h4>Recently Verified (7 more)</h4>
+<ol start="29">
+<li><code>material-agent-orchestrator</code> - Material agent search</li>
+<li><code>material-scraper</code> - Scraping</li>
+<li><code>scrape-session-manager</code> - Scraping</li>
+<li><code>scrape-single-page</code> - Scraping</li>
+<li><code>moodboard-products-api</code> - Moodboard</li>
+<li><code>moodboard-quote-api</code> - Moodboard</li>
+<li><code>parse-sitemap</code> - Sitemap parsing (likely used by scraper)</li>
+</ol>
+<hr>
+<h3>❌ Likely Can Remove (~25-30 functions)</h3>
+<p><strong>⚠️ IMPORTANT</strong>: Must verify EACH function before removal!</p>
+<h4>Duplicate/Test Functions (3)</h4>
+<ul>
+<li><code>pdf-processor</code> - Replaced by <code>pdf-extract</code></li>
+<li><code>pdf-integration-health</code> - Health check not used</li>
+<li><code>mivaa-gateway-test</code> - Test function</li>
+</ul>
+<h4>Unused Analysis Functions (~10)</h4>
+<ul>
+<li><code>analyze-embedding-stability</code></li>
+<li><code>analyze-knowledge-content</code></li>
+<li><code>apply-quality-scoring</code></li>
+<li><code>auto-analyze-image</code></li>
+<li><code>canonical-metadata-extraction</code></li>
+<li><code>chunk-aware-search</code></li>
+<li><code>chunk-type-classification</code></li>
+<li><code>classify-content</code></li>
+<li><code>detect-boundaries</code></li>
+<li><code>document-vector-search</code></li>
+</ul>
+<h4>Unused Processing Functions (~8)</h4>
+<ul>
+<li><code>enhanced-clip-integration</code></li>
+<li><code>enhanced-product-processing</code></li>
+<li><code>enrich-products</code></li>
+<li><code>process-ai-analysis-queue</code></li>
+<li><code>process-image-queue</code></li>
+<li><code>process-image-semantic-linking</code></li>
+<li><code>quality-control-operations</code></li>
+<li><code>validate-images</code></li>
+</ul>
+<h4>Unused Utility Functions (~4-9)</h4>
+<ul>
+<li><code>advanced-search-recommendation</code></li>
+<li><code>huggingface-model-trainer</code></li>
+<li><code>hybrid-material-analysis</code></li>
+<li><code>material-images-api</code></li>
+<li><code>material-recognition</code></li>
+<li><code>mivaa-jwt-generator</code></li>
+<li><code>multi-vector-operations</code></li>
+<li><code>ocr-processing</code></li>
+<li><code>retrieval-api</code></li>
+<li><code>style-analysis</code></li>
+</ul>
+<hr>
+<h2>🚀 Execution Plan</h2>
+<h3>Step 1: Backup Everything ✅</h3>
+<pre><code class="language-bash"># Create backup branch
+git checkout -b backup-before-cleanup
+git push origin backup-before-cleanup
+
+# Export Supabase Edge Functions
+# (Manual backup via Supabase dashboard)
+</code></pre>
+<h3>Step 2: API Endpoint Cleanup</h3>
+<h4>2.1 Remove Unused Search Endpoints</h4>
+<pre><code class="language-bash"># Edit mivaa-pdf-extractor/app/api/search_routes.py
+# Remove /recommendations and /analytics endpoints
+# Update main.py router
+# Update documentation
+</code></pre>
+<h4>2.2 Remove Test Document Endpoints</h4>
+<pre><code class="language-bash"># Edit mivaa-pdf-extractor/app/api/documents_routes.py
+# Remove test-batch, new-batch-process, batch-process-fixed
+# Update main.py router
+# Update documentation
+</code></pre>
+<h4>2.3 Consolidate Duplicate PDF Endpoints</h4>
+<pre><code class="language-bash"># 1. Update src/config/mivaaStandardization.ts
+# 2. Update supabase/functions/mivaa-gateway/index.ts
+# 3. Test pdf-extract Edge Function
+# 4. Remove /api/v1/extract/* from backend
+# 5. Update documentation
+</code></pre>
+<h3>Step 3: Supabase Edge Functions Cleanup</h3>
+<h4>3.1 Verify Each Function Before Removal</h4>
+<pre><code class="language-powershell"># For EACH function, run:
+Get-ChildItem -Path src -Recurse -Include *.ts,*.tsx | Select-String -Pattern &quot;function-name&quot;
+Get-ChildItem -Path supabase/functions -Recurse -Include *.ts | Select-String -Pattern &quot;function-name&quot;
+</code></pre>
+<h4>3.2 Remove Verified Unused Functions</h4>
+<pre><code class="language-bash"># Only remove if ZERO references found
+# Delete function directory
+# Update documentation
+</code></pre>
+<h3>Step 4: Update Documentation</h3>
+<h4>4.1 Update API Documentation</h4>
+<ul>
+<li><code>docs/api-reference.md</code> - Remove deleted endpoints</li>
+<li><code>docs/overview.md</code> - Update endpoint counts</li>
+<li><code>mivaa-pdf-extractor/README.md</code> - Update examples</li>
+</ul>
+<h4>4.2 Update FastAPI Docs</h4>
+<ul>
+<li><code>mivaa-pdf-extractor/app/main.py</code> - Update OpenAPI schema</li>
+<li>Test <code>/docs</code> and <code>/redoc</code> endpoints</li>
+</ul>
+<h3>Step 5: Testing</h3>
+<h4>5.1 Test Core Functionality</h4>
+<pre><code class="language-bash"># Run existing test scripts
+node scripts/testing/nova-product-focused-test.js
+node scripts/testing/comprehensive-production-validation.js
+</code></pre>
+<h4>5.2 Test Edge Functions</h4>
+<pre><code class="language-bash"># Test each active Edge Function
+# Verify no 404 errors
+# Check logs for errors
+</code></pre>
+<h4>5.3 E2E Testing</h4>
+<ul>
+<li>Upload PDF → Verify 14-stage pipeline works</li>
+<li>Test search functionality</li>
+<li>Test visual search</li>
+<li>Test admin dashboard</li>
+<li>Test CRM features</li>
+<li>Test moodboard features</li>
+<li>Test scraper features</li>
+</ul>
+<h3>Step 6: Deploy</h3>
+<h4>6.1 Deploy MIVAA Backend</h4>
+<pre><code class="language-bash">cd mivaa-pdf-extractor
+git add .
+git commit -m &quot;cleanup: Remove unused API endpoints&quot;
+git push origin main
+# Deployment happens automatically via GitHub Actions
+</code></pre>
+<h4>6.2 Deploy Frontend</h4>
+<pre><code class="language-bash">cd material-kai-vision-platform
+git add .
+git commit -m &quot;cleanup: Update API endpoint references&quot;
+git push origin main
+# Vercel deployment happens automatically
+</code></pre>
+<h4>6.3 Monitor</h4>
+<ul>
+<li>Check deployment logs</li>
+<li>Monitor error rates</li>
+<li>Verify all features work</li>
+</ul>
+<hr>
+<h2>📊 Expected Results</h2>
+<h3>Before Cleanup</h3>
+<ul>
+<li><strong>API Endpoints</strong>: 74+</li>
+<li><strong>Edge Functions</strong>: 67</li>
+<li><strong>Total Code</strong>: ~100% baseline</li>
+</ul>
+<h3>After Cleanup</h3>
+<ul>
+<li><strong>API Endpoints</strong>: ~65 (-10%)</li>
+<li><strong>Edge Functions</strong>: ~40 (-40%)</li>
+<li><strong>Total Code</strong>: ~70% of baseline</li>
+</ul>
+<h3>Benefits</h3>
+<ol>
+<li>✅ <strong>Cleaner codebase</strong> - Easier to understand and maintain</li>
+<li>✅ <strong>Faster deployments</strong> - Less code to build and deploy</li>
+<li>✅ <strong>Better documentation</strong> - Only document what&#39;s actually used</li>
+<li>✅ <strong>Reduced confusion</strong> - No duplicate endpoints</li>
+<li>✅ <strong>Improved security</strong> - Smaller attack surface</li>
+<li>✅ <strong>Better performance</strong> - Less code to load and execute</li>
+</ol>
+<hr>
+<h2>⚠️ Risks &amp; Mitigation</h2>
+<h3>Risk 1: Accidentally Remove Used Function</h3>
+<p><strong>Mitigation</strong>: </p>
+<ul>
+<li>Verify EACH function with PowerShell search</li>
+<li>Check both frontend AND Edge Function calls</li>
+<li>Create backup before any deletions</li>
+<li>Test thoroughly after each removal</li>
+</ul>
+<h3>Risk 2: Break Existing Integrations</h3>
+<p><strong>Mitigation</strong>:</p>
+<ul>
+<li>Keep all documented endpoints</li>
+<li>Test all core user flows</li>
+<li>Monitor error logs after deployment</li>
+<li>Have rollback plan ready</li>
+</ul>
+<h3>Risk 3: Miss Internal Dependencies</h3>
+<p><strong>Mitigation</strong>:</p>
+<ul>
+<li>Check Edge Function → Edge Function calls</li>
+<li>Verify MIVAA API → MIVAA API calls</li>
+<li>Review all import statements</li>
+<li>Test integration points</li>
+</ul>
+<hr>
+<h2>🎯 Success Criteria</h2>
+<ul>
+<li>✅ All unused endpoints/functions removed</li>
+<li>✅ All duplicate endpoints consolidated</li>
+<li>✅ All documentation updated</li>
+<li>✅ All tests passing</li>
+<li>✅ Zero production errors</li>
+<li>✅ All features working as before</li>
+<li>✅ Deployment successful</li>
+<li>✅ User experience unchanged</li>
+</ul>
+
+</div></body></html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AI Models &amp; Integration</h1>
+<p><strong>Material Kai Vision Platform</strong> - AI Model Inventory and Usage</p>
+<hr>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform integrates <strong>12 AI models</strong> across <strong>7 pipeline stages</strong> to provide comprehensive material intelligence, document processing, and search capabilities. Each model is selected for specific tasks based on performance benchmarks, cost efficiency, and accuracy requirements.</p>
+<hr>
+<h2>Model Inventory</h2>
+<h3>1. Anthropic Claude Models</h3>
+<h4>Claude Sonnet 4.5</h4>
+<ul>
+<li><strong>Provider</strong>: Anthropic</li>
+<li><strong>Model ID</strong>: <code>claude-sonnet-4.5-20241022</code></li>
+<li><strong>Context Window</strong>: 200,000 tokens</li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Deep product analysis and enrichment</li>
+<li>Complex metadata extraction</li>
+<li>Quality validation of low-scoring images</li>
+<li>Semantic chunking strategy</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: Highest accuracy for complex reasoning</li>
+<li><strong>Cost</strong>: Premium tier</li>
+<li><strong>Pipeline Stages</strong>: Product Discovery, Deferred AI Analysis</li>
+</ul>
+<h4>Claude Haiku 4.5</h4>
+<ul>
+<li><strong>Provider</strong>: Anthropic</li>
+<li><strong>Model ID</strong>: <code>claude-haiku-4.5-20241022</code></li>
+<li><strong>Context Window</strong>: 200,000 tokens</li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Fast content classification</li>
+<li>Product boundary detection</li>
+<li>Initial product discovery</li>
+<li>Quick metadata extraction</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: 3x faster than Sonnet, 90% accuracy</li>
+<li><strong>Cost</strong>: Mid-tier</li>
+<li><strong>Pipeline Stages</strong>: Product Discovery (Stage 1), Content Classification</li>
+</ul>
+<hr>
+<h3>2. OpenAI Models</h3>
+<h4>GPT-4o</h4>
+<ul>
+<li><strong>Provider</strong>: OpenAI</li>
+<li><strong>Model ID</strong>: <code>gpt-4o</code></li>
+<li><strong>Context Window</strong>: 128,000 tokens</li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Product discovery and classification</li>
+<li>Conversational AI</li>
+<li>Complex reasoning tasks</li>
+<li>Metadata enrichment</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: High accuracy, multimodal capabilities</li>
+<li><strong>Cost</strong>: Premium tier</li>
+<li><strong>Pipeline Stages</strong>: Product Discovery (alternative to Claude)</li>
+</ul>
+<h4>text-embedding-3-small</h4>
+<ul>
+<li><strong>Provider</strong>: OpenAI</li>
+<li><strong>Model ID</strong>: <code>text-embedding-3-small</code></li>
+<li><strong>Dimensions</strong>: 1536</li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Text chunk embeddings</li>
+<li>Semantic search</li>
+<li>Similarity matching</li>
+<li>Document clustering</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: 62.3% MTEB score</li>
+<li><strong>Cost</strong>: $0.02 per 1M tokens</li>
+<li><strong>Pipeline Stages</strong>: Text Embedding Generation</li>
+</ul>
+<hr>
+<h3>3. Together AI Models</h3>
+<h4>Llama 4 Scout 17B Vision</h4>
+<ul>
+<li><strong>Provider</strong>: Together AI (Meta)</li>
+<li><strong>Model ID</strong>: <code>meta-llama/Llama-4-Scout-17B-16E-Instruct</code></li>
+<li><strong>Parameters</strong>: 17 billion</li>
+<li><strong>Modality</strong>: Vision + Text</li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Material image analysis</li>
+<li>Product image classification</li>
+<li>Visual quality scoring</li>
+<li>OCR and text extraction from images</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: <ul>
+<li>69.4% MMMU (Massive Multitask Multimodal Understanding)</li>
+<li>#1 ranked for OCR tasks</li>
+<li>85%+ accuracy on material recognition</li>
+</ul>
+</li>
+<li><strong>Cost</strong>: $0.30 per 1M tokens</li>
+<li><strong>Pipeline Stages</strong>: Image Analysis, Material Recognition</li>
+</ul>
+<hr>
+<h3>4. CLIP (OpenAI)</h3>
+<h4>CLIP ViT-B/32</h4>
+<ul>
+<li><strong>Provider</strong>: OpenAI</li>
+<li><strong>Model</strong>: Vision Transformer Base 32</li>
+<li><strong>Dimensions</strong>: 512</li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Visual embeddings for images</li>
+<li>Image-text similarity</li>
+<li>Visual search</li>
+<li>Cross-modal retrieval</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: Industry standard for visual embeddings</li>
+<li><strong>Cost</strong>: Free (self-hosted)</li>
+<li><strong>Pipeline Stages</strong>: Image Embedding Generation</li>
+</ul>
+<hr>
+<h3>5. Replicate Models</h3>
+<h4>Stable Diffusion XL</h4>
+<ul>
+<li><strong>Provider</strong>: Stability AI (via Replicate)</li>
+<li><strong>Model ID</strong>: <code>stability-ai/sdxl</code></li>
+<li><strong>Use Cases</strong>:<ul>
+<li>3D texture generation</li>
+<li>Material visualization</li>
+<li>Design mockups</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: High-quality image generation</li>
+<li><strong>Cost</strong>: $0.0055 per generation</li>
+<li><strong>Pipeline Stages</strong>: 3D Generation (optional)</li>
+</ul>
+<h4>FLUX-Schnell</h4>
+<ul>
+<li><strong>Provider</strong>: Black Forest Labs (via Replicate)</li>
+<li><strong>Model ID</strong>: <code>black-forest-labs/flux-schnell</code></li>
+<li><strong>Use Cases</strong>:<ul>
+<li>Fast image generation</li>
+<li>Material previews</li>
+<li>Quick mockups</li>
+</ul>
+</li>
+<li><strong>Performance</strong>: 4x faster than SDXL</li>
+<li><strong>Cost</strong>: $0.003 per generation</li>
+<li><strong>Pipeline Stages</strong>: Image Generation (optional)</li>
+</ul>
+<hr>
+<h2>AI Pipeline Integration</h2>
+<h3>PDF Processing Pipeline</h3>
+<p>The PDF processing pipeline uses AI models at 7 key stages:</p>
+<h4>Stage 1: PDF Analysis</h4>
+<ul>
+<li><strong>Model</strong>: PyMuPDF4LLM (rule-based)</li>
+<li><strong>Purpose</strong>: Extract text and structure from PDF</li>
+<li><strong>Output</strong>: Raw text, page layout, metadata</li>
+</ul>
+<h4>Stage 2: Product Discovery</h4>
+<ul>
+<li><strong>Models</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5 (or GPT-4o)</li>
+<li><strong>Purpose</strong>: Identify products and boundaries before extraction</li>
+<li><strong>Process</strong>:<ol>
+<li>Haiku performs fast initial classification</li>
+<li>Identifies product count and page ranges</li>
+<li>Sonnet validates and enriches product metadata</li>
+</ol>
+</li>
+<li><strong>Output</strong>: Product list with page ranges, names, metadata</li>
+</ul>
+<h4>Stage 3: Semantic Chunking</h4>
+<ul>
+<li><strong>Model</strong>: Anthropic Chunking API</li>
+<li><strong>Purpose</strong>: Split text into semantically meaningful chunks</li>
+<li><strong>Parameters</strong>:<ul>
+<li>Max tokens: 800</li>
+<li>Overlap: 100 tokens</li>
+<li>Strategy: Semantic boundaries</li>
+</ul>
+</li>
+<li><strong>Output</strong>: Text chunks with metadata</li>
+</ul>
+<h4>Stage 4: Text Embedding Generation</h4>
+<ul>
+<li><strong>Model</strong>: OpenAI text-embedding-3-small</li>
+<li><strong>Purpose</strong>: Generate vector embeddings for semantic search</li>
+<li><strong>Dimensions</strong>: 1536</li>
+<li><strong>Output</strong>: Vector embeddings stored in pgvector</li>
+</ul>
+<h4>Stage 5: Image Extraction &amp; Analysis</h4>
+<ul>
+<li><strong>Model</strong>: Llama 4 Scout 17B Vision</li>
+<li><strong>Purpose</strong>: Analyze extracted images for material properties</li>
+<li><strong>Process</strong>:<ol>
+<li>Extract images from PDF</li>
+<li>Llama analyzes each image (material type, quality, properties)</li>
+<li>Quality scoring (0-100)</li>
+<li>Low-scoring images queued for Claude validation</li>
+</ol>
+</li>
+<li><strong>Output</strong>: Image metadata, quality scores, material properties</li>
+</ul>
+<h4>Stage 6: Visual Embedding Generation</h4>
+<ul>
+<li><strong>Model</strong>: CLIP ViT-B/32</li>
+<li><strong>Purpose</strong>: Generate visual embeddings for image search</li>
+<li><strong>Dimensions</strong>: 512</li>
+<li><strong>Output</strong>: Visual embeddings for similarity search</li>
+</ul>
+<h4>Stage 7: Deferred AI Analysis (Async)</h4>
+<ul>
+<li><strong>Models</strong>: Claude Sonnet 4.5, specialized embedding models</li>
+<li><strong>Purpose</strong>: Deep analysis of low-quality images and complex metadata</li>
+<li><strong>Process</strong>:<ol>
+<li>Background job processes low-scoring images</li>
+<li>Claude performs detailed analysis</li>
+<li>Generates specialized embeddings (color, texture, application)</li>
+</ol>
+</li>
+<li><strong>Output</strong>: Enhanced metadata, additional embeddings</li>
+</ul>
+<hr>
+<h2>Multi-Vector Embeddings</h2>
+<p>The platform generates <strong>6 types of embeddings</strong> for comprehensive search:</p>
+<h3>1. Text Embeddings</h3>
+<ul>
+<li><strong>Model</strong>: OpenAI text-embedding-3-small</li>
+<li><strong>Dimensions</strong>: 1536</li>
+<li><strong>Use</strong>: Semantic text search</li>
+<li><strong>Generated</strong>: During PDF processing (Stage 4)</li>
+</ul>
+<h3>2. Visual CLIP Embeddings</h3>
+<ul>
+<li><strong>Model</strong>: CLIP ViT-B/32</li>
+<li><strong>Dimensions</strong>: 512</li>
+<li><strong>Use</strong>: Visual similarity search</li>
+<li><strong>Generated</strong>: During image extraction (Stage 6)</li>
+</ul>
+<h3>3. Color Embeddings</h3>
+<ul>
+<li><strong>Model</strong>: Custom color analysis</li>
+<li><strong>Dimensions</strong>: 256</li>
+<li><strong>Use</strong>: Color-based search and filtering</li>
+<li><strong>Generated</strong>: Deferred AI analysis</li>
+</ul>
+<h3>4. Texture Embeddings</h3>
+<ul>
+<li><strong>Model</strong>: Custom texture analysis</li>
+<li><strong>Dimensions</strong>: 256</li>
+<li><strong>Use</strong>: Texture similarity search</li>
+<li><strong>Generated</strong>: Deferred AI analysis</li>
+</ul>
+<h3>5. Application Embeddings</h3>
+<ul>
+<li><strong>Model</strong>: Specialized application classifier</li>
+<li><strong>Dimensions</strong>: 512</li>
+<li><strong>Use</strong>: Use-case based search</li>
+<li><strong>Generated</strong>: Deferred AI analysis</li>
+</ul>
+<h3>6. Multimodal Embeddings</h3>
+<ul>
+<li><strong>Model</strong>: Combined text + visual</li>
+<li><strong>Dimensions</strong>: 2048</li>
+<li><strong>Use</strong>: Cross-modal search</li>
+<li><strong>Generated</strong>: Deferred AI analysis</li>
+</ul>
+<hr>
+<h2>Model Selection Strategy</h2>
+<h3>Speed vs. Accuracy Trade-offs</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Fast Model</th>
+<th>Accurate Model</th>
+<th>Strategy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Product Discovery</td>
+<td>Claude Haiku 4.5</td>
+<td>Claude Sonnet 4.5</td>
+<td>Two-stage: Haiku → Sonnet</td>
+</tr>
+<tr>
+<td>Image Analysis</td>
+<td>Llama 4 Scout</td>
+<td>Claude Sonnet 4.5</td>
+<td>Llama first, Claude for low scores</td>
+</tr>
+<tr>
+<td>Text Embeddings</td>
+<td>text-embedding-3-small</td>
+<td>text-embedding-3-large</td>
+<td>Small for cost efficiency</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Claude Haiku 4.5</td>
+<td>GPT-4o</td>
+<td>Haiku for speed</td>
+</tr>
+</tbody></table>
+<h3>Cost Optimization</h3>
+<ul>
+<li><strong>Batch Processing</strong>: Group similar tasks to reduce API calls</li>
+<li><strong>Caching</strong>: Cache embeddings and analysis results</li>
+<li><strong>Tiered Processing</strong>: Use fast models first, expensive models only when needed</li>
+<li><strong>Async Processing</strong>: Defer expensive operations to background jobs</li>
+</ul>
+<hr>
+<h2>Performance Benchmarks</h2>
+<h3>Model Response Times</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Average Latency</th>
+<th>Max Tokens/sec</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Claude Haiku 4.5</td>
+<td>200-500ms</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>Claude Sonnet 4.5</td>
+<td>800-2000ms</td>
+<td>500</td>
+</tr>
+<tr>
+<td>GPT-4o</td>
+<td>500-1500ms</td>
+<td>800</td>
+</tr>
+<tr>
+<td>Llama 4 Scout</td>
+<td>1-3s per image</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>text-embedding-3-small</td>
+<td>100-300ms</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>CLIP</td>
+<td>50-150ms per image</td>
+<td>N/A</td>
+</tr>
+</tbody></table>
+<h3>Accuracy Metrics</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Model</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Product Detection</td>
+<td>Claude Sonnet 4.5</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Material Recognition</td>
+<td>Llama 4 Scout</td>
+<td>90%+</td>
+</tr>
+<tr>
+<td>Semantic Search</td>
+<td>text-embedding-3-small</td>
+<td>85%+</td>
+</tr>
+<tr>
+<td>Image Classification</td>
+<td>CLIP</td>
+<td>88%+</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>API Configuration</h2>
+<h3>Environment Variables</h3>
+<pre><code class="language-bash"># Anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Together AI
+TOGETHER_API_KEY=...
+
+# Replicate
+REPLICATE_API_TOKEN=r8_...
+</code></pre>
+<h3>Rate Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Tier</th>
+<th>RPM</th>
+<th>TPM</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Anthropic</td>
+<td>Production</td>
+<td>1000</td>
+<td>100,000</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>Tier 4</td>
+<td>5000</td>
+<td>800,000</td>
+</tr>
+<tr>
+<td>Together AI</td>
+<td>Standard</td>
+<td>600</td>
+<td>60,000</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td>Standard</td>
+<td>100</td>
+<td>N/A</td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>Last Updated</strong>: 2025-10-31<br><strong>Version</strong>: 2.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>

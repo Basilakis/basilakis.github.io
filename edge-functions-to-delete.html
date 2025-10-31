@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Edge Functions to Delete - Phase 1 Migration</h1>
+<p><strong>Date</strong>: 2025-10-31<br><strong>Total to Delete</strong>: 55 functions</p>
+<hr>
+<h2>Category 1: Proxy Functions (40 functions)</h2>
+<ol>
+<li><code>analyze-knowledge-content</code> - Proxies to MIVAA</li>
+<li><code>document-vector-search</code> - Proxies to MIVAA</li>
+<li><code>extract-material-knowledge</code> - Proxies to MIVAA</li>
+<li><code>hybrid-material-analysis</code> - Proxies to MIVAA</li>
+<li><code>material-agent-orchestrator</code> - Proxies to MIVAA</li>
+<li><code>material-images-api</code> - Proxies to MIVAA</li>
+<li><code>ocr-processing</code> - Proxies to MIVAA</li>
+<li><code>rag-knowledge-search</code> - Proxies to MIVAA</li>
+<li><code>spaceformer-analysis</code> - Proxies to MIVAA</li>
+<li><code>svbrdf-extractor</code> - Proxies to MIVAA</li>
+<li><code>unified-material-search</code> - Proxies to MIVAA</li>
+<li><code>visual-search-analyze</code> - Proxies to MIVAA</li>
+<li><code>voice-to-material</code> - Proxies to MIVAA</li>
+<li><code>auto-analyze-image</code> - Proxies to MIVAA</li>
+<li><code>enhanced-clip-integration</code> - Proxies to MIVAA</li>
+<li><code>validate-images</code> - Proxies to MIVAA</li>
+<li><code>enrich-products</code> - Proxies to MIVAA</li>
+<li><code>material-recognition</code> - Proxies to MIVAA</li>
+<li><code>analyze-embedding-stability</code> - Proxies to MIVAA</li>
+<li><code>apply-quality-scoring</code> - Proxies to MIVAA</li>
+<li><code>canonical-metadata-extraction</code> - Proxies to MIVAA</li>
+<li><code>chunk-aware-search</code> - Proxies to MIVAA</li>
+<li><code>chunk-type-classification</code> - Proxies to MIVAA</li>
+<li><code>classify-content</code> - Proxies to MIVAA</li>
+<li><code>detect-boundaries</code> - Proxies to MIVAA</li>
+<li><code>enhanced-product-processing</code> - Proxies to MIVAA</li>
+<li><code>quality-control-operations</code> - Proxies to MIVAA</li>
+<li><code>multi-vector-operations</code> - Proxies to MIVAA</li>
+<li><code>extract-categories</code> - Proxies to MIVAA</li>
+<li><code>get-material-categories</code> - Proxies to MIVAA</li>
+<li><code>process-ai-analysis-queue</code> - Proxies to MIVAA</li>
+<li><code>process-image-queue</code> - Proxies to MIVAA</li>
+<li><code>process-image-semantic-linking</code> - Proxies to MIVAA</li>
+<li><code>visual-search-batch</code> - Proxies to MIVAA</li>
+<li><code>visual-search-query</code> - Proxies to MIVAA</li>
+<li><code>visual-search-status</code> - Proxies to MIVAA</li>
+<li><code>retrieval-api</code> - Proxies to MIVAA</li>
+<li><code>material-scraper</code> - Proxies to MIVAA</li>
+<li><code>pdf-extract</code> - Proxies to MIVAA (replaced by mivaa-gateway)</li>
+<li><code>mivaa-jwt-generator</code> - Not needed (JWT handled by middleware)</li>
+</ol>
+<h2>Category 2: Mock/Simulated Data (2 functions)</h2>
+<ol start="41">
+<li><code>style-analysis</code> - Returns MOCK data</li>
+<li><code>huggingface-model-trainer</code> - Mock training</li>
+</ol>
+<h2>Category 3: Replaced/Duplicate (3 functions)</h2>
+<ol start="43">
+<li><code>pdf-processor</code> - Replaced by mivaa-gateway</li>
+<li><code>advanced-search-recommendation</code> - Not used</li>
+<li><code>pdf-integration-health</code> - Not used</li>
+</ol>
+<h2>Category 4: Test/Legacy (10 functions)</h2>
+<ol start="46">
+<li><code>mivaa-gateway-test</code> - Test function</li>
+<li><code>admin-kb-quality-dashboard</code> - Admin KB function (verify if needed)</li>
+<li><code>admin-kb-quality-scores</code> - Admin KB function (verify if needed)</li>
+<li><code>admin-kb-detections</code> - Admin KB function (verify if needed)</li>
+<li><code>admin-kb-embeddings-stats</code> - Admin KB function (verify if needed)</li>
+<li><code>admin-kb-metadata</code> - Admin KB function (verify if needed)</li>
+<li><code>admin-kb-patterns</code> - Admin KB function (verify if needed)</li>
+</ol>
+<h2>Category 5: CRM/Shopping (Not in KEEP list - verify)</h2>
+<ol start="53">
+<li><code>proposals-api</code> - Verify if this is same as crm-proposals-api</li>
+<li><code>quote-request-api</code> - Verify if this is same as crm-quotes-api</li>
+<li><code>shopping-cart-api</code> - Verify if needed</li>
+<li><code>moodboard-products-api</code> - Verify if needed</li>
+<li><code>moodboard-quote-api</code> - Verify if needed</li>
+</ol>
+<hr>
+<h2>KEEP These (12 functions)</h2>
+<ol>
+<li><code>mivaa-gateway</code> - File upload handling</li>
+<li><code>pdf-batch-process</code> - Batch processing</li>
+<li><code>crm-contacts-api</code> - CRM contacts</li>
+<li><code>crm-users-api</code> - CRM users</li>
+<li><code>crm-stripe-api</code> - Stripe integration</li>
+<li><code>crewai-3d-generation</code> - 3D generation</li>
+<li><code>parse-sitemap</code> - Sitemap parsing</li>
+<li><code>scrape-session-manager</code> - Scraping sessions</li>
+<li><code>scrape-single-page</code> - Page scraping</li>
+</ol>
+<p><strong>NOTE</strong>: Missing from filesystem:</p>
+<ul>
+<li><code>crm-proposals-api</code> (mentioned in audit but not in filesystem)</li>
+<li><code>crm-quotes-api</code> (mentioned in audit but not in filesystem)</li>
+<li><code>crm-invoices-api</code> (mentioned in audit but not in filesystem)</li>
+</ul>
+<p>These might be named differently or combined with other functions.</p>
+<hr>
+<h2>Deletion Commands</h2>
+<pre><code class="language-bash"># Delete proxy functions (40)
+rm -rf supabase/functions/analyze-knowledge-content
+rm -rf supabase/functions/document-vector-search
+rm -rf supabase/functions/extract-material-knowledge
+rm -rf supabase/functions/hybrid-material-analysis
+rm -rf supabase/functions/material-agent-orchestrator
+rm -rf supabase/functions/material-images-api
+rm -rf supabase/functions/ocr-processing
+rm -rf supabase/functions/rag-knowledge-search
+rm -rf supabase/functions/spaceformer-analysis
+rm -rf supabase/functions/svbrdf-extractor
+rm -rf supabase/functions/unified-material-search
+rm -rf supabase/functions/visual-search-analyze
+rm -rf supabase/functions/voice-to-material
+rm -rf supabase/functions/auto-analyze-image
+rm -rf supabase/functions/enhanced-clip-integration
+rm -rf supabase/functions/validate-images
+rm -rf supabase/functions/enrich-products
+rm -rf supabase/functions/material-recognition
+rm -rf supabase/functions/analyze-embedding-stability
+rm -rf supabase/functions/apply-quality-scoring
+rm -rf supabase/functions/canonical-metadata-extraction
+rm -rf supabase/functions/chunk-aware-search
+rm -rf supabase/functions/chunk-type-classification
+rm -rf supabase/functions/classify-content
+rm -rf supabase/functions/detect-boundaries
+rm -rf supabase/functions/enhanced-product-processing
+rm -rf supabase/functions/quality-control-operations
+rm -rf supabase/functions/multi-vector-operations
+rm -rf supabase/functions/extract-categories
+rm -rf supabase/functions/get-material-categories
+rm -rf supabase/functions/process-ai-analysis-queue
+rm -rf supabase/functions/process-image-queue
+rm -rf supabase/functions/process-image-semantic-linking
+rm -rf supabase/functions/visual-search-batch
+rm -rf supabase/functions/visual-search-query
+rm -rf supabase/functions/visual-search-status
+rm -rf supabase/functions/retrieval-api
+rm -rf supabase/functions/material-scraper
+rm -rf supabase/functions/pdf-extract
+rm -rf supabase/functions/mivaa-jwt-generator
+
+# Delete mock functions (2)
+rm -rf supabase/functions/style-analysis
+rm -rf supabase/functions/huggingface-model-trainer
+
+# Delete replaced/duplicate (3)
+rm -rf supabase/functions/pdf-processor
+rm -rf supabase/functions/advanced-search-recommendation
+rm -rf supabase/functions/pdf-integration-health
+
+# Delete test/legacy (6)
+rm -rf supabase/functions/mivaa-gateway-test
+rm -rf supabase/functions/admin-kb-quality-dashboard
+rm -rf supabase/functions/admin-kb-quality-scores
+rm -rf supabase/functions/admin-kb-detections
+rm -rf supabase/functions/admin-kb-embeddings-stats
+rm -rf supabase/functions/admin-kb-metadata
+rm -rf supabase/functions/admin-kb-patterns
+
+# Delete CRM/Shopping (verify first - 5)
+rm -rf supabase/functions/proposals-api
+rm -rf supabase/functions/quote-request-api
+rm -rf supabase/functions/shopping-cart-api
+rm -rf supabase/functions/moodboard-products-api
+rm -rf supabase/functions/moodboard-quote-api
+</code></pre>
+
+</div></body></html>

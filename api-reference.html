@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>API Reference</h1>
+<p><strong>Material Kai Vision Platform</strong> - Complete API Documentation</p>
+<hr>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform provides <strong>74+ REST API endpoints</strong> across <strong>14 categories</strong> for document processing, AI analysis, search, and material intelligence. All APIs use JSON for request/response and support JWT authentication.</p>
+<h3>Base URLs</h3>
+<ul>
+<li><strong>MIVAA API</strong>: <code>https://v1api.materialshub.gr</code></li>
+<li><strong>Supabase Edge Functions</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1</code></li>
+<li><strong>Frontend</strong>: <code>https://materialshub.gr</code></li>
+</ul>
+<h3>Authentication</h3>
+<p>All API requests require JWT authentication via Bearer token:</p>
+<pre><code class="language-http">Authorization: Bearer &lt;jwt_token&gt;
+</code></pre>
+<h3>API Documentation</h3>
+<ul>
+<li><strong>Swagger UI</strong>: <code>https://v1api.materialshub.gr/docs</code></li>
+<li><strong>ReDoc</strong>: <code>https://v1api.materialshub.gr/redoc</code></li>
+<li><strong>OpenAPI Schema</strong>: <code>https://v1api.materialshub.gr/openapi.json</code></li>
+</ul>
+<hr>
+<h2>API Categories</h2>
+<h3>1. RAG &amp; Document Processing (15 endpoints)</h3>
+<h4>Upload Document with Product Discovery</h4>
+<pre><code class="language-http">POST /api/rag/documents/upload-with-discovery
+Content-Type: multipart/form-data
+
+Parameters:
+- file: PDF file (required)
+- workspace_id: UUID (required)
+- category_id: UUID (optional)
+- focused_extraction: boolean (default: true)
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;estimated_time&quot;: 180
+}
+</code></pre>
+<h4>Query RAG System</h4>
+<pre><code class="language-http">POST /api/rag/query
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;What materials are suitable for outdoor furniture?&quot;,
+  &quot;top_k&quot;: 5,
+  &quot;similarity_threshold&quot;: 0.7,
+  &quot;include_metadata&quot;: true,
+  &quot;enable_reranking&quot;: true,
+  &quot;document_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;]
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;results&quot;: [
+    {
+      &quot;chunk_id&quot;: &quot;uuid&quot;,
+      &quot;content&quot;: &quot;...&quot;,
+      &quot;similarity_score&quot;: 0.92,
+      &quot;metadata&quot;: {...},
+      &quot;document_id&quot;: &quot;uuid&quot;,
+      &quot;page_number&quot;: 5
+    }
+  ],
+  &quot;query_time_ms&quot;: 245
+}
+</code></pre>
+<h4>Chat with RAG</h4>
+<pre><code class="language-http">POST /api/rag/chat
+Content-Type: application/json
+
+{
+  &quot;message&quot;: &quot;Tell me about sustainable materials&quot;,
+  &quot;conversation_id&quot;: &quot;uuid&quot;,
+  &quot;context_window&quot;: 5,
+  &quot;temperature&quot;: 0.7,
+  &quot;max_tokens&quot;: 500
+}
+</code></pre>
+<h4>Get Document Content</h4>
+<pre><code class="language-http">GET /api/rag/documents/{document_id}/content
+
+Response:
+{
+  &quot;document&quot;: {...},
+  &quot;chunks&quot;: [...],
+  &quot;images&quot;: [...],
+  &quot;products&quot;: [...],
+  &quot;ai_usage&quot;: {...}
+}
+</code></pre>
+<h4>List Documents</h4>
+<pre><code class="language-http">GET /api/rag/documents?page=1&amp;page_size=20&amp;workspace_id=uuid
+</code></pre>
+<h4>Delete Document</h4>
+<pre><code class="language-http">DELETE /api/rag/documents/{document_id}
+</code></pre>
+<h4>Get RAG Statistics</h4>
+<pre><code class="language-http">GET /api/rag/stats?workspace_id=uuid
+
+Response:
+{
+  &quot;total_documents&quot;: 45,
+  &quot;total_chunks&quot;: 1234,
+  &quot;total_embeddings&quot;: 1234,
+  &quot;total_images&quot;: 567,
+  &quot;total_products&quot;: 89,
+  &quot;storage_used_mb&quot;: 1234.5
+}
+</code></pre>
+<hr>
+<h3>2. Search APIs (6 endpoints)</h3>
+<h4>Semantic Search</h4>
+<pre><code class="language-http">POST /api/search/semantic
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;modern minimalist furniture&quot;,
+  &quot;top_k&quot;: 10,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;filters&quot;: {
+    &quot;category&quot;: &quot;furniture&quot;,
+    &quot;price_range&quot;: [100, 1000]
+  }
+}
+</code></pre>
+<h4>Vector Search</h4>
+<pre><code class="language-http">POST /api/search/vector
+Content-Type: application/json
+
+{
+  &quot;embedding&quot;: [0.123, 0.456, ...],
+  &quot;top_k&quot;: 10,
+  &quot;similarity_threshold&quot;: 0.75
+}
+</code></pre>
+<h4>Hybrid Search</h4>
+<pre><code class="language-http">POST /api/search/hybrid
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;sustainable wood materials&quot;,
+  &quot;top_k&quot;: 10,
+  &quot;weights&quot;: {
+    &quot;semantic&quot;: 0.6,
+    &quot;keyword&quot;: 0.4
+  }
+}
+</code></pre>
+<h4>Get Search Recommendations</h4>
+<pre><code class="language-http">GET /api/search/recommendations?query=furniture&amp;limit=5
+</code></pre>
+<h4>Search Analytics</h4>
+<pre><code class="language-http">GET /api/analytics?workspace_id=uuid&amp;start_date=2025-01-01&amp;end_date=2025-01-31
+</code></pre>
+<hr>
+<h3>3. Embedding APIs (5 endpoints)</h3>
+<h4>Generate Text Embedding</h4>
+<pre><code class="language-http">POST /api/embeddings/generate
+Content-Type: application/json
+
+{
+  &quot;text&quot;: &quot;Modern sustainable furniture design&quot;,
+  &quot;model&quot;: &quot;text-embedding-3-small&quot;
+}
+
+Response:
+{
+  &quot;embedding&quot;: [0.123, 0.456, ...],
+  &quot;dimensions&quot;: 1536,
+  &quot;model&quot;: &quot;text-embedding-3-small&quot;
+}
+</code></pre>
+<h4>Generate Batch Embeddings</h4>
+<pre><code class="language-http">POST /api/embeddings/batch
+Content-Type: application/json
+
+{
+  &quot;texts&quot;: [&quot;text1&quot;, &quot;text2&quot;, &quot;text3&quot;],
+  &quot;model&quot;: &quot;text-embedding-3-small&quot;
+}
+</code></pre>
+<h4>Generate CLIP Embeddings</h4>
+<pre><code class="language-http">POST /api/embeddings/clip-generate
+Content-Type: application/json
+
+{
+  &quot;image_url&quot;: &quot;https://...&quot;,
+  &quot;text&quot;: &quot;modern chair design&quot;
+}
+
+Response:
+{
+  &quot;image_embedding&quot;: [...],
+  &quot;text_embedding&quot;: [...],
+  &quot;dimensions&quot;: 512
+}
+</code></pre>
+<hr>
+<h3>4. Products API (8 endpoints)</h3>
+<h4>List Products</h4>
+<pre><code class="language-http">GET /api/products?workspace_id=uuid&amp;page=1&amp;page_size=20&amp;category=furniture
+</code></pre>
+<h4>Get Product</h4>
+<pre><code class="language-http">GET /api/products/{product_id}
+
+Response:
+{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;NOVA Chair&quot;,
+  &quot;description&quot;: &quot;...&quot;,
+  &quot;metadata&quot;: {...},
+  &quot;images&quot;: [...],
+  &quot;chunks&quot;: [...],
+  &quot;created_at&quot;: &quot;2025-01-01T00:00:00Z&quot;
+}
+</code></pre>
+<h4>Create Product</h4>
+<pre><code class="language-http">POST /api/products
+Content-Type: application/json
+
+{
+  &quot;name&quot;: &quot;Product Name&quot;,
+  &quot;description&quot;: &quot;...&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;metadata&quot;: {...}
+}
+</code></pre>
+<h4>Update Product</h4>
+<pre><code class="language-http">PUT /api/products/{product_id}
+Content-Type: application/json
+
+{
+  &quot;name&quot;: &quot;Updated Name&quot;,
+  &quot;metadata&quot;: {...}
+}
+</code></pre>
+<h4>Delete Product</h4>
+<pre><code class="language-http">DELETE /api/products/{product_id}
+</code></pre>
+<h4>Link Product to Chunks</h4>
+<pre><code class="language-http">POST /api/products/{product_id}/chunks
+Content-Type: application/json
+
+{
+  &quot;chunk_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;, &quot;uuid3&quot;]
+}
+</code></pre>
+<h4>Link Product to Images</h4>
+<pre><code class="language-http">POST /api/products/{product_id}/images
+Content-Type: application/json
+
+{
+  &quot;image_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;]
+}
+</code></pre>
+<hr>
+<h3>5. Images API (6 endpoints)</h3>
+<h4>List Images</h4>
+<pre><code class="language-http">GET /api/images?workspace_id=uuid&amp;page=1&amp;page_size=20
+</code></pre>
+<h4>Get Image</h4>
+<pre><code class="language-http">GET /api/images/{image_id}
+
+Response:
+{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;url&quot;: &quot;https://...&quot;,
+  &quot;metadata&quot;: {...},
+  &quot;ai_analysis&quot;: {
+    &quot;llama_analysis&quot;: {...},
+    &quot;claude_validation&quot;: {...},
+    &quot;quality_score&quot;: 85
+  },
+  &quot;embeddings&quot;: {
+    &quot;clip&quot;: [...],
+    &quot;color&quot;: [...],
+    &quot;texture&quot;: [...]
+  }
+}
+</code></pre>
+<h4>Upload Image</h4>
+<pre><code class="language-http">POST /api/images/upload
+Content-Type: multipart/form-data
+
+Parameters:
+- file: Image file (required)
+- workspace_id: UUID (required)
+- metadata: JSON (optional)
+</code></pre>
+<h4>Analyze Image</h4>
+<pre><code class="language-http">POST /api/images/{image_id}/analyze
+Content-Type: application/json
+
+{
+  &quot;models&quot;: [&quot;llama&quot;, &quot;claude&quot;, &quot;clip&quot;],
+  &quot;generate_embeddings&quot;: true
+}
+</code></pre>
+<h4>Delete Image</h4>
+<pre><code class="language-http">DELETE /api/images/{image_id}
+</code></pre>
+<hr>
+<h3>6. AI Services (7 endpoints)</h3>
+<h4>Llama Vision Analysis</h4>
+<pre><code class="language-http">POST /api/vision/llama-analyze
+Content-Type: application/json
+
+{
+  &quot;image_url&quot;: &quot;https://...&quot;,
+  &quot;prompt&quot;: &quot;Analyze this material image&quot;,
+  &quot;max_tokens&quot;: 500
+}
+
+Response:
+{
+  &quot;analysis&quot;: &quot;...&quot;,
+  &quot;material_type&quot;: &quot;wood&quot;,
+  &quot;quality_score&quot;: 85,
+  &quot;properties&quot;: {...}
+}
+</code></pre>
+<h4>Semantic Analysis</h4>
+<pre><code class="language-http">POST /api/semantic-analysis
+Content-Type: application/json
+
+{
+  &quot;text&quot;: &quot;Analyze this product description&quot;,
+  &quot;model&quot;: &quot;llama-4-scout&quot;
+}
+</code></pre>
+<h4>Chat Completion</h4>
+<pre><code class="language-http">POST /api/chat/completions
+Content-Type: application/json
+
+{
+  &quot;messages&quot;: [
+    {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;What is sustainable design?&quot;}
+  ],
+  &quot;model&quot;: &quot;gpt-4o&quot;,
+  &quot;temperature&quot;: 0.7,
+  &quot;max_tokens&quot;: 500
+}
+</code></pre>
+<h4>Contextual Response</h4>
+<pre><code class="language-http">POST /api/chat/contextual
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;Tell me about this material&quot;,
+  &quot;context&quot;: {...},
+  &quot;conversation_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<hr>
+<h3>7. Background Jobs (5 endpoints)</h3>
+<h4>Get Job Status</h4>
+<pre><code class="language-http">GET /api/jobs/{job_id}/status
+
+Response:
+{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;progress&quot;: 65,
+  &quot;current_stage&quot;: &quot;IMAGE_EMBEDDINGS_GENERATED&quot;,
+  &quot;stages_completed&quot;: 9,
+  &quot;total_stages&quot;: 14,
+  &quot;products_found&quot;: 14,
+  &quot;chunks_created&quot;: 156,
+  &quot;images_extracted&quot;: 89,
+  &quot;estimated_time_remaining&quot;: 45,
+  &quot;errors&quot;: []
+}
+</code></pre>
+<h4>List Jobs</h4>
+<pre><code class="language-http">GET /api/jobs?workspace_id=uuid&amp;status=processing&amp;page=1&amp;page_size=20
+</code></pre>
+<h4>Retry Job</h4>
+<pre><code class="language-http">POST /api/jobs/{job_id}/retry
+</code></pre>
+<h4>Cancel Job</h4>
+<pre><code class="language-http">POST /api/jobs/{job_id}/cancel
+</code></pre>
+<h4>Get Job Logs</h4>
+<pre><code class="language-http">GET /api/jobs/{job_id}/logs
+</code></pre>
+<hr>
+<h3>8. Admin &amp; Monitoring (12 endpoints)</h3>
+<h4>System Health</h4>
+<pre><code class="language-http">GET /health
+
+Response:
+{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;version&quot;: &quot;2.0.0&quot;,
+  &quot;service&quot;: &quot;MIVAA PDF Extractor&quot;,
+  &quot;database&quot;: &quot;connected&quot;,
+  &quot;storage&quot;: &quot;available&quot;
+}
+</code></pre>
+<h4>Performance Metrics</h4>
+<pre><code class="language-http">GET /metrics
+
+Response:
+{
+  &quot;requests_total&quot;: 12345,
+  &quot;requests_per_minute&quot;: 45,
+  &quot;average_response_time_ms&quot;: 245,
+  &quot;error_rate&quot;: 0.02,
+  &quot;active_jobs&quot;: 3
+}
+</code></pre>
+<h4>Performance Summary</h4>
+<pre><code class="language-http">GET /performance/summary
+</code></pre>
+<h4>AI Metrics</h4>
+<pre><code class="language-http">GET /api/ai-metrics?start_date=2025-01-01&amp;end_date=2025-01-31
+
+Response:
+{
+  &quot;total_api_calls&quot;: 5678,
+  &quot;cost_usd&quot;: 123.45,
+  &quot;models_used&quot;: {
+    &quot;claude-sonnet-4.5&quot;: 1234,
+    &quot;gpt-4o&quot;: 567,
+    &quot;llama-4-scout&quot;: 890
+  }
+}
+</code></pre>
+<hr>
+<h2>Error Responses</h2>
+<p>All errors follow this format:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;VALIDATION_ERROR&quot;,
+    &quot;message&quot;: &quot;Invalid request parameters&quot;,
+    &quot;details&quot;: {...}
+  },
+  &quot;timestamp&quot;: &quot;2025-01-01T00:00:00Z&quot;,
+  &quot;request_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<h3>Error Codes</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>HTTP Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VALIDATION_ERROR</code></td>
+<td>400</td>
+<td>Invalid request parameters</td>
+</tr>
+<tr>
+<td><code>UNAUTHORIZED</code></td>
+<td>401</td>
+<td>Missing or invalid authentication</td>
+</tr>
+<tr>
+<td><code>FORBIDDEN</code></td>
+<td>403</td>
+<td>Insufficient permissions</td>
+</tr>
+<tr>
+<td><code>NOT_FOUND</code></td>
+<td>404</td>
+<td>Resource not found</td>
+</tr>
+<tr>
+<td><code>RATE_LIMIT_EXCEEDED</code></td>
+<td>429</td>
+<td>Too many requests</td>
+</tr>
+<tr>
+<td><code>INTERNAL_ERROR</code></td>
+<td>500</td>
+<td>Server error</td>
+</tr>
+<tr>
+<td><code>SERVICE_UNAVAILABLE</code></td>
+<td>503</td>
+<td>Service temporarily unavailable</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Rate Limits</h2>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Requests/Minute</th>
+<th>Requests/Day</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Free</td>
+<td>60</td>
+<td>1,000</td>
+</tr>
+<tr>
+<td>Pro</td>
+<td>600</td>
+<td>10,000</td>
+</tr>
+<tr>
+<td>Enterprise</td>
+<td>Unlimited</td>
+<td>Unlimited</td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>Last Updated</strong>: 2025-10-31<br><strong>Version</strong>: 2.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>

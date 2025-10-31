@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Accurate Deletion Plan - Material Kai Vision Platform</h1>
+<p><strong>Date</strong>: 2025-10-31<br><strong>Status</strong>: Ready for Execution<br><strong>Based on</strong>: Complete platform architecture review with evidence</p>
+<hr>
+<h2>✅ <strong>VERIFIED: What Can Be Safely Deleted</strong></h2>
+<h3><strong>Supabase Edge Functions</strong> (11 functions safe to delete)</h3>
+<h4><strong>Category 1: Mock/Simulated Data</strong> (2 functions)</h4>
+<h5>1. <code>style-analysis</code></h5>
+<p><strong>Evidence</strong>: Line 170 in <code>supabase/functions/style-analysis/index.ts</code>:</p>
+<pre><code class="language-typescript">// Simulated style analysis functions
+async function analyzeColors(contentData: any, contentType: string): Promise&lt;ColorAnalysis&gt; {
+  // Simulate color extraction and analysis
+  const dominantColors = [
+    { hex: &#39;#2C3E50&#39;, rgb: [44, 62, 80] as [number, number, number], ... },
+    // Hardcoded colors!
+  ];
+</code></pre>
+<p><strong>Called by</strong>: <code>hybridStyleAnalysisService.ts</code> (line 110)<br><strong>Problem</strong>: Returns FAKE data, not real analysis<br><strong>Real functionality</strong>: <code>styleAnalysisService.ts</code> and <code>colorAnalysisEngine.ts</code> (client-side)<br><strong>Action</strong>: DELETE and update <code>hybridStyleAnalysisService.ts</code> to use only client-side analysis</p>
+<h5>2. <code>huggingface-model-trainer</code></h5>
+<p><strong>Called by</strong>: <code>huggingFaceService.ts</code> (line 101), <code>ragKnowledgeService.ts</code> (line 229)<br><strong>Problem</strong>: Mock training, not real implementation<br><strong>Action</strong>: DELETE</p>
+<hr>
+<h4><strong>Category 2: Functionality in MIVAA Backend</strong> (4 functions)</h4>
+<h5>3. <code>auto-analyze-image</code></h5>
+<p><strong>Functionality</strong>: MIVAA <code>/api/images/analyze</code> endpoint<br><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE</p>
+<h5>4. <code>enhanced-clip-integration</code></h5>
+<p><strong>Functionality</strong>: CLIP embeddings integrated in MIVAA PDF processing pipeline<br><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE</p>
+<h5>5. <code>validate-images</code></h5>
+<p><strong>Functionality</strong>: MIVAA <code>/api/v1/anthropic/images/validate</code> endpoint<br><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE</p>
+<h5>6. <code>enrich-products</code></h5>
+<p><strong>Functionality</strong>: MIVAA <code>/api/v1/anthropic/products/enrich</code> endpoint<br><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE</p>
+<hr>
+<h4><strong>Category 3: Replaced by Other Functions</strong> (2 functions)</h4>
+<h5>7. <code>document-vector-search</code></h5>
+<p><strong>Called by</strong>: <code>documentVectorStoreService.ts</code> (line 426)<br><strong>Replaced by</strong>: <code>unified-material-search</code> and <code>rag-knowledge-search</code><br><strong>Action</strong>: DELETE after updating <code>documentVectorStoreService.ts</code> to use <code>unified-material-search</code></p>
+<h5>8. <code>advanced-search-recommendation</code></h5>
+<p><strong>Functionality</strong>: Frontend has <code>advancedSearchRecommendationService.ts</code> (1500+ lines)<br><strong>Evidence</strong>: No frontend calls to Edge Function found<br><strong>Action</strong>: DELETE</p>
+<hr>
+<h4><strong>Category 4: Test/Legacy</strong> (3 functions)</h4>
+<h5>9. <code>pdf-processor</code></h5>
+<p><strong>Replaced by</strong>: <code>pdf-extract</code> Edge Function<br><strong>Evidence</strong>: Only called by <code>pdfContentService.ts</code> (line 145) - can be updated to use <code>pdf-extract</code><br><strong>Action</strong>: DELETE after updating <code>pdfContentService.ts</code></p>
+<h5>10. <code>pdf-integration-health</code></h5>
+<p><strong>Functionality</strong>: Health check not actively used<br><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE</p>
+<h5>11. <code>mivaa-gateway-test</code></h5>
+<p><strong>Functionality</strong>: Test function<br><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE</p>
+<hr>
+<h3><strong>MIVAA API Endpoints</strong> (5-8 endpoints safe to delete)</h3>
+<h4><strong>Category 1: Unused Search</strong> (2 endpoints)</h4>
+<h5>1. <code>GET /api/search/recommendations</code></h5>
+<p><strong>Evidence</strong>: No frontend calls, functionality in <code>advancedSearchRecommendationService.ts</code><br><strong>Action</strong>: DELETE from <code>search.py</code></p>
+<h5>2. <code>GET /api/analytics</code></h5>
+<p><strong>Evidence</strong>: No frontend calls found<br><strong>Action</strong>: DELETE from <code>search.py</code></p>
+<hr>
+<h4><strong>Category 2: Test/Legacy Documents</strong> (3 endpoints)</h4>
+<h5>3. <code>POST /api/documents/test-batch</code></h5>
+<p><strong>Evidence</strong>: Test endpoint, line 807 in <code>documents.py</code><br><strong>Action</strong>: DELETE</p>
+<h5>4. <code>POST /api/documents/new-batch-process</code></h5>
+<p><strong>Evidence</strong>: Legacy endpoint, line 851 in <code>documents.py</code><br><strong>Action</strong>: DELETE</p>
+<h5>5. <code>POST /api/documents/batch-process-fixed</code></h5>
+<p><strong>Evidence</strong>: Legacy endpoint, line 864 in <code>documents.py</code><br><strong>Action</strong>: DELETE</p>
+<hr>
+<h4><strong>Category 3: Duplicate PDF Extraction</strong> (3 endpoints - AFTER consolidation)</h4>
+<h5>6. <code>POST /api/v1/extract/markdown</code></h5>
+<h5>7. <code>POST /api/v1/extract/tables</code></h5>
+<h5>8. <code>POST /api/v1/extract/images</code></h5>
+<p><strong>Evidence</strong>: Duplicates of <code>/api/pdf/extract/*</code> endpoints<br><strong>Used by</strong>: <code>pdf-extract</code> Edge Function calls <code>/api/pdf/extract/*</code><br><strong>Action</strong>: </p>
+<ol>
+<li><strong>FIRST</strong>: Verify all calls use <code>/api/pdf/extract/*</code></li>
+<li><strong>THEN</strong>: DELETE <code>/api/v1/extract/*</code> endpoints from <code>pdf_routes.py</code></li>
+</ol>
+<hr>
+<h2>⚠️ <strong>NEED FINAL VERIFICATION</strong> (12-18 functions)</h2>
+<p>These functions need one more check before deletion:</p>
+<h3><strong>Potentially Unused</strong> (need to verify no internal Edge Function → Edge Function calls)</h3>
+<ol>
+<li><code>analyze-embedding-stability</code></li>
+<li><code>apply-quality-scoring</code></li>
+<li><code>canonical-metadata-extraction</code></li>
+<li><code>chunk-aware-search</code></li>
+<li><code>chunk-type-classification</code></li>
+<li><code>classify-content</code></li>
+<li><code>detect-boundaries</code></li>
+<li><code>enhanced-product-processing</code></li>
+<li><code>process-ai-analysis-queue</code></li>
+<li><code>process-image-queue</code></li>
+<li><code>process-image-semantic-linking</code></li>
+<li><code>quality-control-operations</code></li>
+<li><code>multi-vector-operations</code></li>
+<li><code>retrieval-api</code></li>
+<li><code>visual-search-batch</code></li>
+<li><code>visual-search-query</code></li>
+<li><code>visual-search-status</code></li>
+<li><code>parse-sitemap</code></li>
+</ol>
+<p><strong>Next Step</strong>: Search for internal calls within Edge Functions themselves</p>
+<hr>
+<h2>🚀 <strong>Execution Plan</strong></h2>
+<h3><strong>Phase 1: Update Frontend Code</strong> (Before Deletion)</h3>
+<h4>1. Update <code>hybridStyleAnalysisService.ts</code></h4>
+<p><strong>File</strong>: <code>src/services/ml/hybridStyleAnalysisService.ts</code><br><strong>Change</strong>: Remove call to <code>style-analysis</code> Edge Function (line 110)<br><strong>Use</strong>: Only client-side <code>styleAnalysisService.ts</code></p>
+<h4>2. Update <code>documentVectorStoreService.ts</code></h4>
+<p><strong>File</strong>: <code>src/services/documentVectorStoreService.ts</code><br><strong>Change</strong>: Replace <code>document-vector-search</code> with <code>unified-material-search</code> (line 426)</p>
+<h4>3. Update <code>pdfContentService.ts</code></h4>
+<p><strong>File</strong>: <code>src/services/pdfContentService.ts</code><br><strong>Change</strong>: Replace <code>pdf-processor</code> with <code>pdf-extract</code> (line 145)</p>
+<hr>
+<h3><strong>Phase 2: Delete Edge Functions</strong></h3>
+<pre><code class="language-bash">cd material-kai-vision-platform
+
+# Delete mock/simulated functions
+rm -rf supabase/functions/style-analysis
+rm -rf supabase/functions/huggingface-model-trainer
+
+# Delete functions with functionality in MIVAA backend
+rm -rf supabase/functions/auto-analyze-image
+rm -rf supabase/functions/enhanced-clip-integration
+rm -rf supabase/functions/validate-images
+rm -rf supabase/functions/enrich-products
+
+# Delete replaced functions
+rm -rf supabase/functions/document-vector-search
+rm -rf supabase/functions/advanced-search-recommendation
+
+# Delete test/legacy functions
+rm -rf supabase/functions/pdf-processor
+rm -rf supabase/functions/pdf-integration-health
+rm -rf supabase/functions/mivaa-gateway-test
+
+git add .
+git commit -m &quot;cleanup: Remove 11 unused/mock Supabase Edge Functions&quot;
+</code></pre>
+<hr>
+<h3><strong>Phase 3: Delete MIVAA API Endpoints</strong></h3>
+<pre><code class="language-bash">cd mivaa-pdf-extractor
+
+# Edit files:
+# - app/api/search.py (remove /recommendations and /analytics)
+# - app/api/documents.py (remove test-batch, new-batch-process, batch-process-fixed)
+# - app/api/pdf_routes.py (remove /api/v1/extract/* after verification)
+# - app/main.py (update router if needed)
+
+git add .
+git commit -m &quot;cleanup: Remove 5-8 unused API endpoints&quot;
+</code></pre>
+<hr>
+<h3><strong>Phase 4: Update Documentation</strong></h3>
+<pre><code class="language-bash"># Update all docs
+# - docs/api-reference.md
+# - docs/supabase-edge-functions-audit.md
+# - docs/complete-platform-architecture.md
+# - mivaa-pdf-extractor/README.md
+# - Update FastAPI OpenAPI schema
+
+git add docs/
+git commit -m &quot;docs: Update after cleanup&quot;
+</code></pre>
+<hr>
+<h3><strong>Phase 5: Test</strong></h3>
+<pre><code class="language-bash"># Test core functionality
+# - PDF upload and processing
+# - Search functionality
+# - Visual search
+# - Admin dashboard
+# - CRM features
+# - Style analysis (client-side only)
+</code></pre>
+<hr>
+<h2>📊 <strong>Expected Results</strong></h2>
+<h3><strong>Before Cleanup</strong>:</h3>
+<ul>
+<li>Supabase Edge Functions: 67</li>
+<li>MIVAA API Endpoints: 74+</li>
+<li>Total: 141+</li>
+</ul>
+<h3><strong>After Cleanup</strong>:</h3>
+<ul>
+<li>Supabase Edge Functions: 56 (-11, -16%)</li>
+<li>MIVAA API Endpoints: 66-69 (-5-8, -7-11%)</li>
+<li>Total: 122-125 (-13-19, -9-13%)</li>
+</ul>
+<h3><strong>Benefits</strong>:</h3>
+<ul>
+<li>✅ No more mock/fake data</li>
+<li>✅ Cleaner codebase</li>
+<li>✅ Faster deployments</li>
+<li>✅ Better documentation</li>
+<li>✅ Reduced confusion</li>
+<li>✅ Smaller attack surface</li>
+</ul>
+<hr>
+<h2>⚠️ <strong>CRITICAL: What NOT to Delete</strong></h2>
+<h3><strong>MUST KEEP</strong> (41-46 functions verified with evidence):</h3>
+<ol>
+<li><code>mivaa-gateway</code> - PRIMARY GATEWAY</li>
+<li><code>pdf-extract</code> - PDF extraction</li>
+<li><code>pdf-batch-process</code> - Batch processing</li>
+<li><code>unified-material-search</code> - Main search</li>
+<li><code>rag-knowledge-search</code> - RAG search</li>
+<li><code>enhanced-rag-search</code> - Enhanced RAG</li>
+<li><code>material-agent-orchestrator</code> - AI orchestration</li>
+<li><code>ocr-processing</code> - OCR extraction</li>
+<li><code>spaceformer-analysis</code> - Space analysis</li>
+<li><code>hybrid-material-analysis</code> - Hybrid AI</li>
+<li><code>visual-search-analyze</code> - Visual search</li>
+<li><code>material-recognition</code> - Material recognition</li>
+<li><code>ai-material-analysis</code> - AI analysis</li>
+<li>All CRM functions (6)</li>
+<li>All moodboard functions (2)</li>
+<li>All scraper functions (3)</li>
+<li>All 3D generation functions (2)</li>
+<li><code>voice-to-material</code> - Voice search</li>
+<li>All admin KB functions (6)</li>
+<li>All utility functions (3)</li>
+<li><code>analyze-knowledge-content</code> - Knowledge analysis</li>
+<li><code>extract-material-knowledge</code> - Knowledge extraction</li>
+<li><code>material-images-api</code> - Material images</li>
+<li><code>unified-materials-api</code> - Materials API</li>
+<li><code>vector-similarity-search</code> - Vector search</li>
+<li><code>material-properties-analysis</code> - Properties analysis</li>
+</ol>
+
+</div></body></html>

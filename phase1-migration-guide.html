@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Phase 1: Hybrid Architecture Migration Guide</h1>
+<p><strong>Status</strong>: IN PROGRESS<br><strong>Date</strong>: 2025-10-31<br><strong>Goal</strong>: Migrate from 67 Edge Functions to 12, reduce latency by 50%, reduce costs by 90%</p>
+<hr>
+<h2>✅ <strong>Completed Steps</strong></h2>
+<h3><strong>Step 1: Audit Complete</strong> ✅</h3>
+<ul>
+<li>Created <code>docs/phase1-edge-functions-final-audit.md</code></li>
+<li>Categorized all 67 Edge Functions</li>
+<li><strong>Decision</strong>: KEEP 12 | DELETE 55 (82% reduction)</li>
+</ul>
+<h3><strong>Step 2: MIVAA API Client Created</strong> ✅</h3>
+<ul>
+<li>Created <code>src/services/mivaaApiClient.ts</code></li>
+<li>Centralized client for all MIVAA backend calls</li>
+<li>Features:<ul>
+<li>Direct calls to MIVAA backend (no proxy overhead)</li>
+<li>Supabase auth token integration</li>
+<li>Automatic retry logic</li>
+<li>Error handling</li>
+<li>Type safety</li>
+</ul>
+</li>
+</ul>
+<h3><strong>Step 3: MIVAA Backend Updated</strong> ✅</h3>
+<ul>
+<li>Updated <code>mivaa-pdf-extractor/app/middleware/jwt_auth.py</code></li>
+<li>Added Supabase JWT validation support</li>
+<li>Now accepts both:<ul>
+<li>Supabase JWT tokens (from frontend)</li>
+<li>MIVAA JWT tokens (internal)</li>
+<li>Simple API keys (Material Kai API key)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>🚀 <strong>Next Steps</strong></h2>
+<h3><strong>Step 4: Update Frontend Services</strong> (IN PROGRESS)</h3>
+<p>We need to update <strong>40+ frontend files</strong> to use the new MIVAA API client instead of Edge Functions.</p>
+<h4><strong>Files to Update</strong> (from audit):</h4>
+<ol>
+<li><p><strong>AI Material Analysis</strong> (1 file)</p>
+<ul>
+<li><code>src/services/aiMaterialAPI.ts</code> (line 126)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;ai-material-analysis&#39;)</code></li>
+<li>With: <code>mivaaApi.analyzeMaterial()</code></li>
+</ul>
+</li>
+<li><p><strong>Knowledge Content Analysis</strong> (2 files)</p>
+<ul>
+<li><code>src/services/ml/unifiedMLService.ts</code> (line 524)</li>
+<li><code>src/services/enhancedRAGService.ts</code> (line 225)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;analyze-knowledge-content&#39;)</code></li>
+<li>With: <code>mivaaApi.analyzeKnowledge()</code></li>
+</ul>
+</li>
+<li><p><strong>Enhanced RAG Search</strong> (4 files)</p>
+<ul>
+<li><code>src/services/enhancedRAGService.ts</code> (line 141)</li>
+<li><code>src/services/integratedWorkflowService.ts</code> (lines 133, 330)</li>
+<li><code>src/components/Admin/MaterialSuggestionsPanel.tsx</code> (line 73)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;enhanced-rag-search&#39;)</code></li>
+<li>With: <code>mivaaApi.searchSemantic()</code></li>
+</ul>
+</li>
+<li><p><strong>Hybrid Material Analysis</strong> (3 files)</p>
+<ul>
+<li><code>src/services/hybridAIService.ts</code> (line 307)</li>
+<li><code>src/components/Admin/AITestingPanel.tsx</code> (line 458)</li>
+<li><code>src/components/PDF/PDFReviewWorkflow.tsx</code> (line 260)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;hybrid-material-analysis&#39;)</code></li>
+<li>With: <code>mivaaApi.analyzeMaterial()</code></li>
+</ul>
+</li>
+<li><p><strong>Material Agent Orchestrator</strong> (3 files)</p>
+<ul>
+<li><code>src/services/integratedAIService.ts</code> (line 138)</li>
+<li><code>src/components/AI/MaterialAgentSearchInterface.tsx</code> (lines 599, 618)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;material-agent-orchestrator&#39;)</code></li>
+<li>With: <code>mivaaApi.orchestrateAgent()</code></li>
+</ul>
+</li>
+<li><p><strong>OCR Processing</strong> (1 file)</p>
+<ul>
+<li><code>src/services/integratedWorkflowService.ts</code> (line 272)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;ocr-processing&#39;)</code></li>
+<li>With: <code>mivaaApi.extractOcr()</code></li>
+</ul>
+</li>
+<li><p><strong>Spaceformer Analysis</strong> (2 files)</p>
+<ul>
+<li><code>src/services/integratedAIService.ts</code> (line 284)</li>
+<li><code>src/services/spaceformerAnalysisService.ts</code> (line 102)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;spaceformer-analysis&#39;)</code></li>
+<li>With: <code>mivaaApi.analyzeSpaceformer()</code></li>
+</ul>
+</li>
+<li><p><strong>SVBRDF Extraction</strong> (2 files)</p>
+<ul>
+<li><code>src/services/integratedWorkflowService.ts</code> (line 302)</li>
+<li><code>src/services/svbrdfExtractionAPI.ts</code> (line 55)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;svbrdf-extractor&#39;)</code></li>
+<li>With: <code>mivaaApi.extractSvbrdf()</code></li>
+</ul>
+</li>
+<li><p><strong>Unified Material Search</strong> (2 files)</p>
+<ul>
+<li><code>src/services/materialSearchService.ts</code> (lines 62, 110)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;unified-material-search&#39;)</code></li>
+<li>With: <code>mivaaApi.searchMaterials()</code></li>
+</ul>
+</li>
+<li><p><strong>Visual Search</strong> (1 file)</p>
+<ul>
+<li><code>src/services/ml/unifiedMLService.ts</code> (line 479)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;visual-search-analyze&#39;)</code></li>
+<li>With: <code>mivaaApi.searchVisual()</code></li>
+</ul>
+</li>
+<li><p><strong>Voice to Material</strong> (2 files)</p>
+<ul>
+<li><code>src/services/aiMaterialAPI.ts</code> (line 173)</li>
+<li><code>src/services/voiceToMaterialService.ts</code> (line 56)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;voice-to-material&#39;)</code></li>
+<li>With: <code>mivaaApi.voiceToMaterial()</code></li>
+</ul>
+</li>
+<li><p><strong>Style Analysis</strong> (1 file) - SPECIAL CASE</p>
+<ul>
+<li><code>src/services/ml/hybridStyleAnalysisService.ts</code> (line 110)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;style-analysis&#39;)</code> (returns MOCK data!)</li>
+<li>With: Use only client-side analysis (already in <code>styleAnalysisService.ts</code>)</li>
+</ul>
+</li>
+<li><p><strong>PDF Processor</strong> (1 file)</p>
+<ul>
+<li><code>src/services/pdfContentService.ts</code> (line 145)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;pdf-processor&#39;)</code></li>
+<li>With: Keep using <code>mivaa-gateway</code> Edge Function (file upload)</li>
+</ul>
+</li>
+<li><p><strong>Material Properties</strong> (1 file)</p>
+<ul>
+<li><code>src/services/ml/materialPropertiesService.ts</code> (lines 98, 171)</li>
+<li>Replace: <code>supabase.functions.invoke(&#39;material-properties-analysis&#39;)</code></li>
+<li>With: <code>mivaaApi.analyzeProperties()</code></li>
+</ul>
+</li>
+<li><p><strong>Additional Files</strong> (20+ more)</p>
+<ul>
+<li>See <code>docs/phase1-edge-functions-final-audit.md</code> for complete list</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3><strong>Step 5: Delete Edge Functions</strong> (NOT STARTED)</h3>
+<p>After all frontend files are updated and tested, delete 55 Edge Functions:</p>
+<pre><code class="language-bash"># Delete proxy functions
+rm -rf supabase/functions/ai-material-analysis
+rm -rf supabase/functions/analyze-knowledge-content
+rm -rf supabase/functions/document-vector-search
+rm -rf supabase/functions/enhanced-rag-search
+rm -rf supabase/functions/extract-material-knowledge
+rm -rf supabase/functions/hybrid-material-analysis
+rm -rf supabase/functions/material-agent-orchestrator
+rm -rf supabase/functions/material-images-api
+rm -rf supabase/functions/material-properties-analysis
+rm -rf supabase/functions/ocr-processing
+rm -rf supabase/functions/rag-knowledge-search
+rm -rf supabase/functions/spaceformer-analysis
+rm -rf supabase/functions/svbrdf-extractor
+rm -rf supabase/functions/unified-materials-api
+rm -rf supabase/functions/unified-material-search
+rm -rf supabase/functions/vector-similarity-search
+rm -rf supabase/functions/visual-search-analyze
+rm -rf supabase/functions/voice-to-material
+rm -rf supabase/functions/style-analysis
+rm -rf supabase/functions/huggingface-model-trainer
+rm -rf supabase/functions/pdf-processor
+rm -rf supabase/functions/advanced-search-recommendation
+rm -rf supabase/functions/pdf-integration-health
+rm -rf supabase/functions/mivaa-gateway-test
+# ... and 31 more (see audit document)
+
+# Commit changes
+git add .
+git commit -m &quot;Phase 1: Delete 55 unused Edge Functions (proxy to MIVAA)&quot;
+git push
+</code></pre>
+<hr>
+<h3><strong>Step 6: Delete MIVAA API Endpoints</strong> (NOT STARTED)</h3>
+<p>Delete unused/duplicate endpoints from MIVAA backend:</p>
+<ol>
+<li><code>GET /api/search/recommendations</code> (functionality in frontend)</li>
+<li><code>GET /api/analytics</code> (not used)</li>
+<li><code>POST /api/documents/test-batch</code> (test endpoint)</li>
+<li><code>POST /api/documents/new-batch-process</code> (legacy)</li>
+<li><code>POST /api/documents/batch-process-fixed</code> (legacy)</li>
+</ol>
+<hr>
+<h3><strong>Step 7: Update Test Scripts</strong> (NOT STARTED)</h3>
+<p>Update all test scripts in <code>scripts/testing/</code> to use new architecture:</p>
+<ul>
+<li><code>test-frontend-pdf-workflow.js</code> - Update to call MIVAA directly</li>
+<li><code>nova-product-focused-test.js</code> - Update to use new client</li>
+<li>All other test scripts</li>
+</ul>
+<hr>
+<h3><strong>Step 8: Clean Up Documentation</strong> (NOT STARTED)</h3>
+<ol>
+<li><p>Delete obsolete .md files:</p>
+<ul>
+<li><code>docs/supabase-usage-analysis.md</code> (analysis complete)</li>
+<li><code>docs/queue-job-mechanism-analysis.md</code> (for Phase 2)</li>
+<li><code>docs/accurate-deletion-plan.md</code> (superseded by audit)</li>
+<li><code>docs/supabase-edge-functions-audit.md</code> (superseded by audit)</li>
+</ul>
+</li>
+<li><p>Update remaining documentation:</p>
+<ul>
+<li><code>docs/complete-platform-architecture.md</code> - Update to reflect Hybrid Architecture</li>
+<li><code>README.md</code> - Update architecture section</li>
+<li><code>mivaa-pdf-extractor/README.md</code> - Update API documentation</li>
+</ul>
+</li>
+<li><p>Create new documentation:</p>
+<ul>
+<li><code>docs/hybrid-architecture-guide.md</code> - How the new architecture works</li>
+<li><code>docs/mivaa-api-client-usage.md</code> - How to use the new MIVAA API client</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3><strong>Step 9: End-to-End Testing</strong> (NOT STARTED)</h3>
+<p>Test all platform features:</p>
+<ol>
+<li>PDF upload and processing</li>
+<li>Search functionality (semantic, visual, hybrid)</li>
+<li>CRM features</li>
+<li>Admin dashboard</li>
+<li>Moodboard features</li>
+<li>All AI features (OCR, style analysis, material recognition)</li>
+<li>Verify no errors in browser console</li>
+<li>Verify no errors in MIVAA backend logs</li>
+</ol>
+<hr>
+<h3><strong>Step 10: Deploy and Verify</strong> (NOT STARTED)</h3>
+<ol>
+<li>Deploy frontend to Vercel (git push triggers automatic deployment)</li>
+<li>Deploy MIVAA backend (git push triggers GitHub Actions deployment)</li>
+<li>Verify all functionality in production</li>
+<li>Monitor for errors</li>
+<li>Verify performance improvements (50% faster response times expected)</li>
+</ol>
+<hr>
+<h2>📊 <strong>Expected Impact</strong></h2>
+<h3><strong>Performance</strong></h3>
+<ul>
+<li>⚡ <strong>50% faster</strong> response times (no proxy overhead)</li>
+<li>🚀 <strong>200-500ms latency reduction</strong> per request</li>
+</ul>
+<h3><strong>Cost</strong></h3>
+<ul>
+<li>💰 <strong>90% cheaper</strong> (55 fewer Edge Functions)</li>
+<li>📉 <strong>Reduced Supabase Edge Function invocations</strong> from 1M+/month to ~100K/month</li>
+</ul>
+<h3><strong>Maintainability</strong></h3>
+<ul>
+<li>🧹 <strong>82% fewer Edge Functions</strong> (67 → 12)</li>
+<li>📝 <strong>Simpler architecture</strong> (direct calls instead of proxies)</li>
+<li>🔧 <strong>Easier debugging</strong> (fewer layers)</li>
+</ul>
+<hr>
+<h2>🔐 <strong>Security Considerations</strong></h2>
+<h3><strong>Authentication Flow</strong></h3>
+<p><strong>Before</strong> (Edge Function proxy):</p>
+<pre><code>Frontend → Supabase Edge Function → MIVAA Backend
+         (Supabase auth)         (Material Kai API key)
+</code></pre>
+<p><strong>After</strong> (Direct call):</p>
+<pre><code>Frontend → MIVAA Backend
+         (Supabase JWT token)
+</code></pre>
+<h3><strong>Environment Variables Required</strong></h3>
+<p><strong>Frontend</strong> (Vercel):</p>
+<ul>
+<li><code>VITE_MIVAA_API_URL=https://v1api.materialshub.gr</code></li>
+</ul>
+<p><strong>MIVAA Backend</strong> (Server):</p>
+<ul>
+<li><code>SUPABASE_JWT_SECRET=&lt;your-supabase-jwt-secret&gt;</code> (from Supabase project settings)</li>
+<li><code>JWT_SECRET_KEY=&lt;your-mivaa-jwt-secret&gt;</code> (existing)</li>
+<li><code>MATERIAL_KAI_API_KEY=&lt;your-api-key&gt;</code> (existing)</li>
+<li><code>MATERIAL_KAI_WORKSPACE_ID=&lt;your-workspace-id&gt;</code> (existing)</li>
+</ul>
+<hr>
+<h2>🎯 <strong>Current Status</strong></h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Step 1: Audit Complete</li>
+<li><input checked="" disabled="" type="checkbox"> Step 2: MIVAA API Client Created</li>
+<li><input checked="" disabled="" type="checkbox"> Step 3: MIVAA Backend Updated</li>
+<li><input disabled="" type="checkbox"> Step 4: Update Frontend Services (IN PROGRESS)</li>
+<li><input disabled="" type="checkbox"> Step 5: Delete Edge Functions</li>
+<li><input disabled="" type="checkbox"> Step 6: Delete MIVAA API Endpoints</li>
+<li><input disabled="" type="checkbox"> Step 7: Update Test Scripts</li>
+<li><input disabled="" type="checkbox"> Step 8: Clean Up Documentation</li>
+<li><input disabled="" type="checkbox"> Step 9: End-to-End Testing</li>
+<li><input disabled="" type="checkbox"> Step 10: Deploy and Verify</li>
+</ul>
+<p><strong>Next Action</strong>: Start updating frontend services (Step 4)</p>
+
+</div></body></html>

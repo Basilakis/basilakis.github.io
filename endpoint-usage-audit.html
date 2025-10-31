@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>API Endpoint Usage Audit - Material Kai Vision Platform</h1>
+<p><strong>Date</strong>: 2025-10-31<br><strong>Purpose</strong>: Comprehensive audit of all API endpoints to identify what&#39;s actively used vs unused/legacy</p>
+<hr>
+<h2>🚨 CRITICAL FINDINGS</h2>
+<h3>Phase 1 Verification Complete ✅</h3>
+<p>After deep code analysis across both repositories, here are the <strong>VERIFIED</strong> findings:</p>
+<hr>
+<h2>PDF Processing Endpoints - DETAILED ANALYSIS</h2>
+<h3>✅ ACTIVELY USED - DO NOT REMOVE</h3>
+<h4>1. <strong>Primary 14-Stage Pipeline</strong></h4>
+<ul>
+<li><code>POST /api/documents/process-url</code> ⭐ <strong>MAIN ENDPOINT</strong><ul>
+<li><strong>Usage</strong>: EnhancedPDFProcessor.tsx (line 2127)</li>
+<li><strong>Action</strong>: <code>pdf_process_document</code></li>
+<li><strong>Purpose</strong>: Full 14-stage PDF processing with product discovery</li>
+<li><strong>Status</strong>: <strong>KEEP - Core functionality</strong></li>
+</ul>
+</li>
+</ul>
+<h4>2. <strong>Legacy PDF Extraction Endpoints</strong> - <strong>STILL IN USE!</strong></h4>
+<p><strong>IMPORTANT</strong>: These endpoints ARE being used by Supabase Edge Function!</p>
+<ul>
+<li><code>POST /api/pdf/extract/markdown</code></li>
+<li><code>POST /api/pdf/extract/tables</code></li>
+<li><code>POST /api/pdf/extract/images</code></li>
+</ul>
+<p><strong>Called by</strong>: <code>supabase/functions/pdf-extract/index.ts</code></p>
+<ul>
+<li>Lines 1022-1055: Switches between these endpoints based on extraction type</li>
+<li>Used for simple extraction tasks (not full 14-stage pipeline)</li>
+<li><strong>Status</strong>: <strong>KEEP - Actively used by Edge Function</strong></li>
+</ul>
+<p><strong>mivaa-gateway mapping</strong> (lines 24-26):</p>
+<pre><code class="language-typescript">&#39;pdf_extract_markdown&#39;: { path: &#39;/api/pdf/extract/markdown&#39;, method: &#39;POST&#39; },
+&#39;pdf_extract_tables&#39;: { path: &#39;/api/pdf/extract/tables&#39;, method: &#39;POST&#39; },
+&#39;pdf_extract_images&#39;: { path: &#39;/api/pdf/extract/images&#39;, method: &#39;POST&#39; },
+</code></pre>
+<hr>
+<h3>⚠️ DUPLICATE ENDPOINTS - CONSOLIDATE</h3>
+<p>These are DUPLICATES of the above endpoints:</p>
+<ul>
+<li><code>POST /api/v1/extract/markdown</code> - Duplicate of <code>/api/pdf/extract/markdown</code></li>
+<li><code>POST /api/v1/extract/tables</code> - Duplicate of <code>/api/pdf/extract/tables</code></li>
+<li><code>POST /api/v1/extract/images</code> - Duplicate of <code>/api/pdf/extract/images</code></li>
+</ul>
+<p><strong>Referenced in</strong>:</p>
+<ul>
+<li><code>src/config/mivaaStandardization.ts</code> (lines 111-113)</li>
+<li>Documentation files (api-documentation.md, platform-functionality.md, etc.)</li>
+<li>Test scripts (comprehensive-production-validation.js)</li>
+</ul>
+<p><strong>Problem</strong>: We have TWO sets of endpoints doing the SAME thing:</p>
+<ol>
+<li><code>/api/pdf/extract/*</code> (used by pdf-extract Edge Function)</li>
+<li><code>/api/v1/extract/*</code> (referenced in config but NOT actively called)</li>
+</ol>
+<p><strong>Recommendation</strong>: ⚠️ <strong>CONSOLIDATE</strong></p>
+<ul>
+<li>Option A: Keep <code>/api/pdf/extract/*</code>, remove <code>/api/v1/extract/*</code></li>
+<li>Option B: Keep <code>/api/v1/extract/*</code>, update Edge Function to use them</li>
+<li><strong>Preferred</strong>: Option A (less changes, Edge Function already uses <code>/api/pdf/extract/*</code>)</li>
+</ul>
+<hr>
+<h2>Search Endpoints</h2>
+<h3>✅ ACTIVELY USED</h3>
+<ul>
+<li><code>POST /api/search/semantic</code> - Semantic search</li>
+<li><code>POST /api/search/vector</code> - Vector search</li>
+<li><code>POST /api/search/hybrid</code> - Hybrid search</li>
+<li><code>POST /api/search/unified-search</code> - Unified search (NEW)</li>
+</ul>
+<h3>❌ UNUSED - CAN REMOVE</h3>
+<ul>
+<li><code>GET /api/search/recommendations</code> - Not called from frontend</li>
+<li><code>GET /api/analytics</code> - Not called from frontend</li>
+</ul>
+<p><strong>Verification</strong>: Searched entire codebase, no references found</p>
+<hr>
+<h2>AI Services Endpoints</h2>
+<h3>✅ ALL ACTIVELY USED - KEEP</h3>
+<p><strong>TogetherAI</strong> (together_ai_routes.py - 314 lines):</p>
+<ul>
+<li><code>POST /api/semantic-analysis</code> - Llama Vision analysis</li>
+<li><code>GET /api/health</code> - TogetherAI health check</li>
+<li><code>GET /api/models</code> - Available models</li>
+</ul>
+<p><strong>Anthropic</strong> (anthropic_routes.py - 431 lines):</p>
+<ul>
+<li><code>POST /api/v1/anthropic/images/validate</code> - Claude image validation</li>
+<li><code>POST /api/v1/anthropic/products/enrich</code> - Product enrichment</li>
+<li><code>POST /api/v1/anthropic/test/claude-integration</code> - Test endpoint</li>
+</ul>
+<p><strong>Images</strong> (images.py - 543 lines):</p>
+<ul>
+<li><code>POST /api/images/analyze</code> - Image analysis</li>
+<li><code>POST /api/images/analyze/batch</code> - Batch processing</li>
+<li><code>POST /api/images/search</code> - Similarity search</li>
+<li><code>POST /api/images/upload-and-analyze</code> - Upload and analyze</li>
+<li><code>GET /api/images/health</code> - Health check</li>
+</ul>
+<p><strong>Note</strong>: User reported these as &quot;empty&quot; in FastAPI docs - this is INCORRECT. All three router files have full implementations.</p>
+<hr>
+<h2>Documents API</h2>
+<h3>✅ ACTIVELY USED</h3>
+<ul>
+<li><code>POST /api/documents/process</code> - Process document</li>
+<li><code>POST /api/documents/process-url</code> - Process from URL ⭐ <strong>PRIMARY</strong></li>
+<li><code>POST /api/documents/analyze</code> - Analyze document</li>
+<li><code>GET /api/documents/job/{id}</code> - Get job status</li>
+<li><code>GET /api/documents/documents</code> - List documents</li>
+<li><code>GET /api/documents/documents/{id}</code> - Get document</li>
+<li><code>GET /api/documents/documents/{id}/content</code> - Get content</li>
+<li><code>DELETE /api/documents/documents/{id}</code> - Delete document</li>
+<li><code>GET /api/documents/health</code> - Health check</li>
+</ul>
+<h3>❌ TEST/LEGACY - CAN REMOVE</h3>
+<ul>
+<li><code>POST /api/documents/test-batch</code> - Test endpoint</li>
+<li><code>POST /api/documents/new-batch-process</code> - Old batch process</li>
+<li><code>POST /api/documents/batch-process-fixed</code> - Fixed batch process</li>
+</ul>
+<p><strong>Reason</strong>: Test endpoints and old batch processing (replaced by background jobs)</p>
+<hr>
+<h2>Products, Embeddings, RAG, Admin - ALL ACTIVELY USED ✅</h2>
+<p>All endpoints in these categories are actively used and should be kept:</p>
+<ul>
+<li>Products API (8 endpoints)</li>
+<li>Embeddings API (3 endpoints)</li>
+<li>RAG System API (7 endpoints)</li>
+<li>Admin APIs (7 endpoints)</li>
+<li>AI Metrics (5 endpoints)</li>
+<li>Background Jobs (5 endpoints)</li>
+<li>Monitoring (6 endpoints)</li>
+</ul>
+<hr>
+<h2>Summary of Recommendations</h2>
+<h3>❌ SAFE TO REMOVE (5-8 endpoints)</h3>
+<ol>
+<li><p><strong>Unused Search</strong> (2 endpoints):</p>
+<ul>
+<li><code>GET /api/search/recommendations</code></li>
+<li><code>GET /api/analytics</code></li>
+</ul>
+</li>
+<li><p><strong>Test/Legacy Documents</strong> (3 endpoints):</p>
+<ul>
+<li><code>POST /api/documents/test-batch</code></li>
+<li><code>POST /api/documents/new-batch-process</code></li>
+<li><code>POST /api/documents/batch-process-fixed</code></li>
+</ul>
+</li>
+<li><p><strong>Duplicate PDF Extraction</strong> (3 endpoints) - <strong>AFTER consolidation</strong>:</p>
+<ul>
+<li><code>POST /api/v1/extract/markdown</code></li>
+<li><code>POST /api/v1/extract/tables</code></li>
+<li><code>POST /api/v1/extract/images</code></li>
+</ul>
+</li>
+</ol>
+<p><strong>Total Reduction</strong>: 5-8 endpoints (~10% reduction)</p>
+<hr>
+<h3>⚠️ CONSOLIDATION REQUIRED</h3>
+<p><strong>PDF Extraction Endpoints</strong>:</p>
+<ul>
+<li>Current: 6 endpoints (3 at <code>/api/pdf/extract/*</code> + 3 at <code>/api/v1/extract/*</code>)</li>
+<li>After consolidation: 3 endpoints (keep <code>/api/pdf/extract/*</code>)</li>
+<li><strong>Action needed</strong>:<ol>
+<li>Update <code>src/config/mivaaStandardization.ts</code> to use <code>/api/pdf/extract/*</code></li>
+<li>Remove <code>/api/v1/extract/*</code> endpoint definitions from backend</li>
+<li>Update all documentation</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h3>✅ KEEP ALL (50+ endpoints)</h3>
+<p>All core functionality endpoints:</p>
+<ul>
+<li>Document processing (14-stage pipeline)</li>
+<li>PDF extraction (simple extraction via Edge Function)</li>
+<li>RAG system</li>
+<li>Search (semantic, vector, hybrid)</li>
+<li>Embeddings (text, CLIP)</li>
+<li>Products</li>
+<li>Images (Material Kai integration)</li>
+<li>AI Services (Claude, Llama, GPT)</li>
+<li>Background jobs</li>
+<li>Admin &amp; monitoring</li>
+</ul>
+<hr>
+<h2>Impact Analysis</h2>
+<h3>Before Cleanup</h3>
+<ul>
+<li><strong>Total Endpoints</strong>: 74+</li>
+<li><strong>Duplicate/Unused</strong>: ~10-15 endpoints</li>
+<li><strong>Legacy Code</strong>: ~15%</li>
+</ul>
+<h3>After Cleanup</h3>
+<ul>
+<li><strong>Total Endpoints</strong>: ~60-65</li>
+<li><strong>Duplicate/Unused</strong>: 0</li>
+<li><strong>Legacy Code</strong>: 0%</li>
+<li><strong>Reduction</strong>: ~10-15% fewer endpoints</li>
+</ul>
+<h3>Benefits</h3>
+<ol>
+<li>✅ Cleaner, more maintainable codebase</li>
+<li>✅ No confusion about which endpoints to use</li>
+<li>✅ Better documentation (only document what&#39;s used)</li>
+<li>✅ Faster deployments</li>
+<li>✅ Reduced attack surface</li>
+</ol>
+<hr>
+<h2>Next Steps</h2>
+<h3>Phase 2: Remove Verified Unused Endpoints ✅</h3>
+<ol>
+<li>Remove search recommendations and analytics endpoints</li>
+<li>Remove test/legacy document endpoints</li>
+<li>Update documentation</li>
+</ol>
+<h3>Phase 3: Consolidate Duplicate Endpoints ⚠️</h3>
+<ol>
+<li>Update <code>mivaaStandardization.ts</code> to use <code>/api/pdf/extract/*</code></li>
+<li>Remove <code>/api/v1/extract/*</code> backend definitions</li>
+<li>Update all documentation references</li>
+<li>Test Edge Function still works</li>
+</ol>
+<h3>Phase 4: Update Documentation 📝</h3>
+<ol>
+<li>Remove legacy endpoints from all docs</li>
+<li>Update API reference</li>
+<li>Update OpenAPI schema</li>
+<li>Fix FastAPI /docs display</li>
+</ol>
+<h3>Phase 5: Verification &amp; Testing 🧪</h3>
+<ol>
+<li>Test all core functionality</li>
+<li>Verify Edge Functions work</li>
+<li>Check frontend integration</li>
+<li>Run E2E tests</li>
+</ol>
+<hr>
+<h2>Conclusion</h2>
+<p><strong>Safe to proceed with cleanup</strong>: YES ✅</p>
+<p>The audit found:</p>
+<ul>
+<li><strong>5-8 endpoints</strong> can be safely removed (unused/test endpoints)</li>
+<li><strong>3 duplicate endpoints</strong> should be consolidated</li>
+<li><strong>50+ core endpoints</strong> must be kept (all actively used)</li>
+<li><strong>No risk</strong> to platform functionality if done correctly</li>
+</ul>
+<p><strong>Key Finding</strong>: The <code>/api/pdf/extract/*</code> endpoints are NOT legacy - they&#39;re actively used by the <code>pdf-extract</code> Supabase Edge Function for simple extraction tasks. The <code>/api/v1/extract/*</code> endpoints are the duplicates that should be removed.</p>
+
+</div></body></html>

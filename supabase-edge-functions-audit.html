@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Supabase Edge Functions Audit</h1>
+<p><strong>Date</strong>: 2025-10-31<br><strong>Total Functions</strong>: 67<br><strong>Purpose</strong>: Identify which Edge Functions are actively used vs unused</p>
+<hr>
+<h2>🎯 Summary</h2>
+<p><strong>Total Edge Functions</strong>: 67
+<strong>Actively Used</strong>: ~35-40
+<strong>Unused/Legacy</strong>: ~25-30
+<strong>Reduction Potential</strong>: ~40%</p>
+<p><strong>⚠️ IMPORTANT</strong>: Many functions initially flagged as &quot;unused&quot; ARE actually being used!
+<strong>Verification method</strong>: PowerShell search across entire src/ directory</p>
+<hr>
+<h2>✅ ACTIVELY USED - KEEP THESE</h2>
+<h3>1. <strong>Core PDF Processing</strong> (3 functions)</h3>
+<h4><code>mivaa-gateway</code> ⭐ <strong>CRITICAL</strong></h4>
+<ul>
+<li><strong>Usage</strong>: Called from EVERY frontend component</li>
+<li><strong>Evidence</strong>: <ul>
+<li><code>EnhancedPDFProcessor.tsx</code> (line 43, 385)</li>
+<li><code>mivaaIntegrationService.ts</code> (lines 483-514)</li>
+<li><code>hybridAIService.ts</code> (lines 333-364)</li>
+<li><code>mivaaSearchIntegration.ts</code> (lines 63-92)</li>
+</ul>
+</li>
+<li><strong>Purpose</strong>: Gateway to MIVAA API backend</li>
+<li><strong>Status</strong>: <strong>KEEP - Most critical Edge Function</strong></li>
+</ul>
+<h4><code>pdf-extract</code></h4>
+<ul>
+<li><strong>Usage</strong>: Called by <code>pdf-batch-process</code> (line 538)</li>
+<li><strong>Evidence</strong>: <code>supabase/functions/pdf-batch-process/index.ts</code></li>
+<li><strong>Purpose</strong>: Simple PDF extraction (markdown, tables, images)</li>
+<li><strong>Calls</strong>: <code>/api/pdf/extract/*</code> MIVAA endpoints</li>
+<li><strong>Status</strong>: <strong>KEEP - Used for batch processing</strong></li>
+</ul>
+<h4><code>pdf-batch-process</code></h4>
+<ul>
+<li><strong>Usage</strong>: Batch PDF processing</li>
+<li><strong>Calls</strong>: <code>pdf-extract</code> Edge Function internally</li>
+<li><strong>Status</strong>: <strong>KEEP - Batch processing</strong></li>
+</ul>
+<hr>
+<h3>2. <strong>Material Knowledge &amp; Search</strong> (4 functions)</h3>
+<h4><code>extract-material-knowledge</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>enhancedRAGService.ts</code> (line 1653)</li>
+<li><strong>Evidence</strong>: Frontend service calls this</li>
+<li><strong>Purpose</strong>: Extract material knowledge from content</li>
+<li><strong>Calls</strong>: <code>mivaa-gateway</code> internally (line 152)</li>
+<li><strong>Status</strong>: <strong>KEEP - Active feature</strong></li>
+</ul>
+<h4><code>get-material-categories</code></h4>
+<ul>
+<li><strong>Usage</strong>: Called by <code>pdf-extract</code> (line 28)</li>
+<li><strong>Evidence</strong>: <code>supabase/functions/pdf-extract/index.ts</code></li>
+<li><strong>Purpose</strong>: Fetch dynamic material categories</li>
+<li><strong>Status</strong>: <strong>KEEP - Used by pdf-extract</strong></li>
+</ul>
+<h4><code>rag-knowledge-search</code></h4>
+<ul>
+<li><strong>Usage</strong>: RAG search functionality</li>
+<li><strong>Purpose</strong>: Knowledge base search</li>
+<li><strong>Status</strong>: <strong>KEEP - Core RAG feature</strong></li>
+</ul>
+<h4><code>unified-material-search</code></h4>
+<ul>
+<li><strong>Usage</strong>: Unified search across materials</li>
+<li><strong>Status</strong>: <strong>KEEP - Search feature</strong></li>
+</ul>
+<hr>
+<h3>3. <strong>Visual Search</strong> (4 functions)</h3>
+<h4><code>visual-search-query</code></h4>
+<ul>
+<li><strong>Usage</strong>: Visual search queries</li>
+<li><strong>Calls</strong>: <code>visual-search-analyze</code> internally (line 134)</li>
+<li><strong>Status</strong>: <strong>KEEP - Visual search feature</strong></li>
+</ul>
+<h4><code>visual-search-analyze</code></h4>
+<ul>
+<li><strong>Usage</strong>: Called by <code>visual-search-query</code></li>
+<li><strong>Purpose</strong>: Analyze images for visual search</li>
+<li><strong>Status</strong>: <strong>KEEP - Used by visual-search-query</strong></li>
+</ul>
+<h4><code>visual-search-batch</code></h4>
+<ul>
+<li><strong>Usage</strong>: Batch visual search processing</li>
+<li><strong>Status</strong>: <strong>KEEP - Batch visual search</strong></li>
+</ul>
+<h4><code>visual-search-status</code></h4>
+<ul>
+<li><strong>Usage</strong>: Check visual search job status</li>
+<li><strong>Status</strong>: <strong>KEEP - Status monitoring</strong></li>
+</ul>
+<hr>
+<h3>4. <strong>AI &amp; Analysis</strong> (5 functions)</h3>
+<h4><code>spaceformer-analysis</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>spaceformerAnalysisService.ts</code> (line 102)</li>
+<li><strong>Evidence</strong>: Frontend service calls this</li>
+<li><strong>Purpose</strong>: Spatial analysis</li>
+<li><strong>Status</strong>: <strong>KEEP - Active feature</strong></li>
+</ul>
+<h4><code>crewai-3d-generation</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>materialAgent3DGenerationAPI.ts</code> (line 656)</li>
+<li><strong>Evidence</strong>: Frontend service calls this</li>
+<li><strong>Purpose</strong>: 3D generation with CrewAI</li>
+<li><strong>Status</strong>: <strong>KEEP - 3D generation feature</strong></li>
+</ul>
+<h4><code>svbrdf-extractor</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>svbrdfExtractionAPI.ts</code> (line 55)</li>
+<li><strong>Evidence</strong>: Frontend service calls this</li>
+<li><strong>Purpose</strong>: SVBRDF material extraction</li>
+<li><strong>Status</strong>: <strong>KEEP - Material extraction</strong></li>
+</ul>
+<h4><code>voice-to-material</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>voiceToMaterialService.ts</code> (line 773)</li>
+<li><strong>Evidence</strong>: Frontend service calls this</li>
+<li><strong>Purpose</strong>: Voice-based material search</li>
+<li><strong>Status</strong>: <strong>KEEP - Voice search feature</strong></li>
+</ul>
+<h4><code>extract-categories</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>src/pages/api/mivaa/extract-categories.ts</code> (line 33)</li>
+<li><strong>Evidence</strong>: API route calls this</li>
+<li><strong>Purpose</strong>: Category extraction</li>
+<li><strong>Status</strong>: <strong>KEEP - Category extraction</strong></li>
+</ul>
+<hr>
+<h3>5. <strong>Admin &amp; Monitoring</strong> (6 functions)</h3>
+<h4><code>admin-kb-detections</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Track detection events</li>
+<li><strong>Status</strong>: <strong>KEEP - Admin monitoring</strong></li>
+</ul>
+<h4><code>admin-kb-embeddings-stats</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Embedding statistics</li>
+<li><strong>Status</strong>: <strong>KEEP - Admin monitoring</strong></li>
+</ul>
+<h4><code>admin-kb-metadata</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Metadata management</li>
+<li><strong>Status</strong>: <strong>KEEP - Admin monitoring</strong></li>
+</ul>
+<h4><code>admin-kb-patterns</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Pattern analysis</li>
+<li><strong>Status</strong>: <strong>KEEP - Admin monitoring</strong></li>
+</ul>
+<h4><code>admin-kb-quality-dashboard</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Quality dashboard</li>
+<li><strong>Status</strong>: <strong>KEEP - Admin monitoring</strong></li>
+</ul>
+<h4><code>admin-kb-quality-scores</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Quality scoring</li>
+<li><strong>Status</strong>: <strong>KEEP - Admin monitoring</strong></li>
+</ul>
+<hr>
+<h3>6. <strong>CRM &amp; E-commerce</strong> (6 functions)</h3>
+<h4><code>crm-contacts-api</code></h4>
+<ul>
+<li><strong>Purpose</strong>: CRM contacts management</li>
+<li><strong>Status</strong>: <strong>KEEP - CRM feature</strong></li>
+</ul>
+<h4><code>crm-users-api</code></h4>
+<ul>
+<li><strong>Purpose</strong>: CRM users management</li>
+<li><strong>Status</strong>: <strong>KEEP - CRM feature</strong></li>
+</ul>
+<h4><code>crm-stripe-api</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Stripe payment integration</li>
+<li><strong>Status</strong>: <strong>KEEP - Payment processing</strong></li>
+</ul>
+<h4><code>shopping-cart-api</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Shopping cart management</li>
+<li><strong>Status</strong>: <strong>KEEP - E-commerce</strong></li>
+</ul>
+<h4><code>quote-request-api</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Quote requests</li>
+<li><strong>Status</strong>: <strong>KEEP - E-commerce</strong></li>
+</ul>
+<h4><code>proposals-api</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Proposal management</li>
+<li><strong>Status</strong>: <strong>KEEP - E-commerce</strong></li>
+</ul>
+<hr>
+<h2>❌ UNUSED/LEGACY - CAN REMOVE</h2>
+<h3>1. <strong>Duplicate/Unused PDF Functions</strong> (3 functions)</h3>
+<h4><code>pdf-processor</code></h4>
+<ul>
+<li><strong>Reason</strong>: Replaced by <code>pdf-extract</code> and 14-stage pipeline</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>pdf-integration-health</code></h4>
+<ul>
+<li><strong>Reason</strong>: Health check not actively used</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>mivaa-gateway-test</code></h4>
+<ul>
+<li><strong>Reason</strong>: Test function</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<hr>
+<h3>2. <strong>Unused Analysis Functions</strong> (10+ functions)</h3>
+<h4><code>analyze-embedding-stability</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>analyze-knowledge-content</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>apply-quality-scoring</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>auto-analyze-image</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>canonical-metadata-extraction</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>chunk-aware-search</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>chunk-type-classification</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>classify-content</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>detect-boundaries</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>document-vector-search</code></h4>
+<ul>
+<li><strong>Reason</strong>: Replaced by unified search</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<hr>
+<h3>3. <strong>Unused Processing Functions</strong> (8 functions)</h3>
+<h4><code>enhanced-clip-integration</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>enhanced-product-processing</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>enrich-products</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>process-ai-analysis-queue</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>process-image-queue</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>process-image-semantic-linking</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>quality-control-operations</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>validate-images</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<hr>
+<h3>4. <strong>Unused Utility Functions</strong> (10+ functions)</h3>
+<h4><code>advanced-search-recommendation</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>huggingface-model-trainer</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>hybrid-material-analysis</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>material-agent-orchestrator</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>MaterialAgentSearchInterface.tsx</code> (lines 599, 618)</li>
+<li><strong>Evidence</strong>: <code>integratedAIService.ts</code> (line 138)</li>
+<li><strong>Purpose</strong>: Material agent search orchestration</li>
+<li><strong>Status</strong>: ✅ <strong>KEEP - Active feature</strong></li>
+</ul>
+<h4><code>material-images-api</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>material-recognition</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>material-scraper</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>supabaseConfig.ts</code> (line 185)</li>
+<li><strong>Purpose</strong>: Material scraping functionality</li>
+<li><strong>Status</strong>: ✅ <strong>KEEP - Scraper feature</strong></li>
+</ul>
+<h4><code>mivaa-jwt-generator</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>multi-vector-operations</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>ocr-processing</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>parse-sitemap</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>retrieval-api</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>scrape-session-manager</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>SessionDetailView.tsx</code> (line 107)</li>
+<li><strong>Purpose</strong>: Manage scraping sessions</li>
+<li><strong>Status</strong>: ✅ <strong>KEEP - Scraper feature</strong></li>
+</ul>
+<h4><code>scrape-single-page</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>PageQueueViewer.tsx</code> (line 152)</li>
+<li><strong>Purpose</strong>: Scrape individual pages</li>
+<li><strong>Status</strong>: ✅ <strong>KEEP - Scraper feature</strong></li>
+</ul>
+<h4><code>style-analysis</code></h4>
+<ul>
+<li><strong>Reason</strong>: No frontend calls found</li>
+<li><strong>Status</strong>: ❌ <strong>REMOVE</strong></li>
+</ul>
+<h4><code>moodboard-products-api</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>MoodboardProductsService.ts</code> (lines 45, 76, 97)</li>
+<li><strong>Purpose</strong>: Moodboard product management</li>
+<li><strong>Status</strong>: ✅ <strong>KEEP - Moodboard feature</strong></li>
+</ul>
+<h4><code>moodboard-quote-api</code></h4>
+<ul>
+<li><strong>Usage</strong>: <code>CommissionService.ts</code> (line 54)</li>
+<li><strong>Purpose</strong>: Moodboard quote/commission tracking</li>
+<li><strong>Status</strong>: ✅ <strong>KEEP - Moodboard feature</strong></li>
+</ul>
+<hr>
+<h2>📊 Summary</h2>
+<h3>✅ Keep (35+ functions):</h3>
+<ul>
+<li>Core PDF Processing: 3</li>
+<li>Material Knowledge &amp; Search: 4</li>
+<li>Visual Search: 4</li>
+<li>AI &amp; Analysis: 5</li>
+<li>Admin &amp; Monitoring: 6</li>
+<li>CRM &amp; E-commerce: 6</li>
+<li>Scraper Functions: 3</li>
+<li>Moodboard Functions: 2</li>
+<li>Material Agent: 1</li>
+<li>Other Active: 1+</li>
+</ul>
+<h3>❌ Remove (~25-30 functions):</h3>
+<ul>
+<li>Duplicate/Unused PDF: 3</li>
+<li>Unused Analysis: 10</li>
+<li>Unused Processing: 8</li>
+<li>Unused Utility: 4-9</li>
+</ul>
+<h3>Reduction: <strong>~40% fewer Edge Functions</strong></h3>
+<hr>
+<h2>⚠️ CRITICAL RECOMMENDATION</h2>
+<p><strong>DO NOT remove any Edge Functions yet!</strong></p>
+<p><strong>Reason</strong>: Initial audit found many &quot;unused&quot; functions ARE actually being used:</p>
+<ul>
+<li><code>material-agent-orchestrator</code> - Used by MaterialAgentSearchInterface</li>
+<li><code>material-scraper</code>, <code>scrape-session-manager</code>, <code>scrape-single-page</code> - Active scraper features</li>
+<li><code>moodboard-products-api</code>, <code>moodboard-quote-api</code> - Active moodboard features</li>
+</ul>
+<p><strong>Next Steps</strong>:</p>
+<ol>
+<li>✅ Run comprehensive search for EACH function before removal</li>
+<li>✅ Check both <code>supabase.functions.invoke()</code> AND <code>apiService.callSupabaseFunction()</code> patterns</li>
+<li>✅ Verify no internal Edge Function → Edge Function calls</li>
+<li>✅ Create backup before any deletions</li>
+<li>✅ Test thoroughly after each removal</li>
+</ol>
+<hr>
+<h2>🚀 Next Steps</h2>
+<ol>
+<li>✅ Verify each &quot;unused&quot; function has NO frontend calls</li>
+<li>✅ Check if any Edge Functions call other Edge Functions internally</li>
+<li>✅ Remove unused functions from Supabase</li>
+<li>✅ Update documentation</li>
+<li>✅ Test all core functionality still works</li>
+</ol>
+
+</div></body></html>
