@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Metafield Quick Reference</h1>
+<h2>🎯 What Are Metafields?</h2>
+<p>Structured metadata attributes extracted from PDFs and linked to products, chunks, and images.</p>
+<p><strong>Examples</strong>: Material, Color, Dimensions, Texture, Finish, Weight, Application, Certifications, Pricing</p>
+<hr>
+<h2>🔄 5-Stage Metafield Processing</h2>
+<h3>Stage 0: Identify (0-15%)</h3>
+<p><strong>AI</strong>: Claude Sonnet 4.5 / GPT-4o</p>
+<ul>
+<li>Analyze PDF</li>
+<li>Identify products</li>
+<li>Detect metafield types</li>
+<li><strong>Output</strong>: Product catalog with metafield types</li>
+</ul>
+<h3>Stage 2: Extract from Text (30-50%)</h3>
+<p><strong>AI</strong>: Anthropic Claude</p>
+<ul>
+<li>Create semantic chunks</li>
+<li>Preserve metafield info</li>
+<li>Generate embeddings (1536D)</li>
+<li><strong>Output</strong>: Chunks with metafield metadata</li>
+</ul>
+<h3>Stage 3: Extract from Images (50-70%)</h3>
+<p><strong>AI</strong>: Llama Vision + CLIP</p>
+<ul>
+<li>Analyze images</li>
+<li>Detect colors, texture, finish</li>
+<li>Generate embeddings (512D)</li>
+<li><strong>Output</strong>: Images with visual metafields</li>
+</ul>
+<h3>Stage 4: Consolidate (70-90%)</h3>
+<p><strong>AI</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5</p>
+<ul>
+<li>Merge metafields from all sources</li>
+<li>Validate completeness</li>
+<li>Create product records</li>
+<li><strong>Output</strong>: Product with consolidated metafields</li>
+</ul>
+<h3>Stage 12: Link (95-97%)</h3>
+<p><strong>Process</strong>: Extract &amp; Link</p>
+<ul>
+<li>Parse metafield values</li>
+<li>Create database records</li>
+<li>Link to products/chunks/images</li>
+<li><strong>Output</strong>: metafield_values in database</li>
+</ul>
+<hr>
+<h2>📊 Metafield Types (200+)</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Material</strong></td>
+<td>Composition, Texture, Finish, Pattern, Weight</td>
+<td>20+</td>
+</tr>
+<tr>
+<td><strong>Dimensions</strong></td>
+<td>Length, Width, Height, Thickness, Diameter</td>
+<td>10+</td>
+</tr>
+<tr>
+<td><strong>Appearance</strong></td>
+<td>Color, Gloss, Surface, Transparency, Grain</td>
+<td>15+</td>
+</tr>
+<tr>
+<td><strong>Performance</strong></td>
+<td>Durability, Water Resistance, Fire Rating</td>
+<td>15+</td>
+</tr>
+<tr>
+<td><strong>Application</strong></td>
+<td>Use, Installation, Maintenance, Care</td>
+<td>20+</td>
+</tr>
+<tr>
+<td><strong>Compliance</strong></td>
+<td>Certifications, Standards, Safety</td>
+<td>15+</td>
+</tr>
+<tr>
+<td><strong>Commercial</strong></td>
+<td>Pricing, Availability, Lead Time, SKU</td>
+<td>20+</td>
+</tr>
+<tr>
+<td><strong>Other</strong></td>
+<td>Designer, Studio, Category, Variants</td>
+<td>20+</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>💾 Database Schema</h2>
+<h3>metafields table</h3>
+<pre><code class="language-sql">id UUID PRIMARY KEY
+workspace_id UUID
+name VARCHAR(255)           -- &quot;material&quot;, &quot;color&quot;, &quot;dimensions&quot;
+type VARCHAR(50)            -- &quot;text&quot;, &quot;number&quot;, &quot;select&quot;, &quot;multiselect&quot;
+metadata JSONB
+created_at TIMESTAMP
+</code></pre>
+<h3>metafield_values table</h3>
+<pre><code class="language-sql">id UUID PRIMARY KEY
+metafield_id UUID           -- Links to metafields
+product_id UUID             -- Links to products
+chunk_id UUID               -- Links to document_chunks
+image_id UUID               -- Links to document_images
+value_text VARCHAR(1000)    -- Text value
+value_number FLOAT          -- Numeric value
+value_boolean BOOLEAN       -- Boolean value
+value_date DATE             -- Date value
+value_json JSONB            -- Complex value
+confidence_score FLOAT      -- 0.0-1.0
+extraction_method VARCHAR   -- &quot;ai_extraction&quot;, &quot;ocr&quot;, &quot;manual&quot;
+created_at TIMESTAMP
+</code></pre>
+<hr>
+<h2>🔍 Extraction Accuracy</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Product Detection</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Material Recognition</td>
+<td>90%+</td>
+</tr>
+<tr>
+<td>Metafield Extraction</td>
+<td>88%+</td>
+</tr>
+<tr>
+<td>Dimension Extraction</td>
+<td>92%+</td>
+</tr>
+<tr>
+<td>Color Detection</td>
+<td>94%+</td>
+</tr>
+<tr>
+<td>Texture Detection</td>
+<td>85%+</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🚀 API Quick Reference</h2>
+<h3>Get Product with Metafields</h3>
+<pre><code class="language-http">GET /api/products/{product_id}
+
+Response: {
+  &quot;id&quot;: &quot;prod_456&quot;,
+  &quot;name&quot;: &quot;VALENOVA&quot;,
+  &quot;metafields&quot;: {
+    &quot;material&quot;: &quot;White Body Tile&quot;,
+    &quot;dimensions&quot;: &quot;11.8×11.8&quot;,
+    &quot;finish&quot;: &quot;matte&quot;
+  }
+}
+</code></pre>
+<h3>Search by Metafields</h3>
+<pre><code class="language-http">GET /api/search/properties?material=ceramic&amp;color=white
+
+Response: {
+  &quot;products&quot;: [...],
+  &quot;count&quot;: 15
+}
+</code></pre>
+<h3>Get Metafield Values</h3>
+<pre><code class="language-http">GET /api/products/{product_id}/metafields
+
+Response: {
+  &quot;metafields&quot;: [
+    {
+      &quot;field_id&quot;: &quot;mf_001&quot;,
+      &quot;name&quot;: &quot;material&quot;,
+      &quot;value&quot;: &quot;White Body Tile&quot;,
+      &quot;confidence_score&quot;: 0.98,
+      &quot;extraction_method&quot;: &quot;ai_extraction&quot;
+    }
+  ]
+}
+</code></pre>
+<hr>
+<h2>📈 Processing Flow</h2>
+<pre><code>PDF Upload
+    ↓
+Stage 0: Identify metafield types (Claude)
+    ↓
+Stage 1: Extract product pages
+    ↓
+Stage 2: Create chunks with metafield info (Anthropic)
+    ↓
+Stage 3: Analyze images for visual metafields (Llama + CLIP)
+    ↓
+Stage 4: Create products, consolidate metafields (Claude)
+    ↓
+Stage 12: Link metafields to database (Extract &amp; Link)
+    ↓
+✅ Complete - All metafields extracted and linked
+</code></pre>
+<hr>
+<h2>🔗 Linking Relationships</h2>
+<pre><code>Product
+  ├── product_metafield_values
+  │   └── metafield_id → metafields
+  │
+  ├── document_chunks
+  │   └── chunk_metafield_values
+  │       └── metafield_id → metafields
+  │
+  └── document_images
+      └── image_metafield_values
+          └── metafield_id → metafields
+</code></pre>
+<hr>
+<h2>✅ Key Features</h2>
+<p>✅ Automatic identification of metafield types
+✅ Multi-source extraction (text, images, chunks)
+✅ Confidence scoring (0.0-1.0)
+✅ Extraction method tracking (AI, OCR, manual)
+✅ 200+ metafield types supported
+✅ Relationship linking (products, chunks, images)
+✅ Search integration
+✅ Dynamic metafield creation
+✅ Type validation
+✅ Multi-value support</p>
+<hr>
+<h2>📝 Example: VALENOVA Product</h2>
+<h3>Identified Metafields (Stage 0)</h3>
+<pre><code class="language-json">{
+  &quot;material&quot;: &quot;White Body Tile&quot;,
+  &quot;dimensions&quot;: &quot;11.8×11.8&quot;,
+  &quot;finish&quot;: &quot;Matte&quot;,
+  &quot;colors&quot;: [&quot;clay&quot;, &quot;sand&quot;, &quot;white&quot;, &quot;taupe&quot;],
+  &quot;patterns&quot;: &quot;12 patterns&quot;
+}
+</code></pre>
+<h3>Extracted from Chunks (Stage 2)</h3>
+<pre><code class="language-json">{
+  &quot;dimensions&quot;: &quot;11.8×11.8 inches&quot;,
+  &quot;material&quot;: &quot;White Body Tile&quot;,
+  &quot;patterns&quot;: &quot;12 patterns&quot;
+}
+</code></pre>
+<h3>Extracted from Images (Stage 3)</h3>
+<pre><code class="language-json">{
+  &quot;colors&quot;: [&quot;clay&quot;, &quot;sand&quot;, &quot;white&quot;, &quot;taupe&quot;],
+  &quot;texture&quot;: &quot;matte&quot;,
+  &quot;finish&quot;: &quot;smooth&quot;,
+  &quot;material_type&quot;: &quot;ceramic&quot;
+}
+</code></pre>
+<h3>Final Product Record (Stage 4)</h3>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;VALENOVA&quot;,
+  &quot;metafields&quot;: {
+    &quot;material&quot;: &quot;White Body Tile&quot;,
+    &quot;dimensions&quot;: [&quot;11.8×11.8&quot;],
+    &quot;finish&quot;: &quot;matte&quot;,
+    &quot;colors&quot;: [&quot;clay&quot;, &quot;sand&quot;, &quot;white&quot;, &quot;taupe&quot;],
+    &quot;patterns&quot;: &quot;12 patterns&quot;,
+    &quot;designer&quot;: &quot;SG NY&quot;,
+    &quot;studio&quot;: &quot;Stacy Garcia&quot;,
+    &quot;category&quot;: &quot;tiles&quot;
+  }
+}
+</code></pre>
+<h3>Database Records (Stage 12)</h3>
+<pre><code class="language-sql">-- Product metafield
+INSERT INTO product_metafield_values
+VALUES (&#39;uuid_1&#39;, &#39;prod_456&#39;, &#39;mf_001&#39;, &#39;White Body Tile&#39;, 0.98, &#39;ai_extraction&#39;);
+
+-- Chunk metafield
+INSERT INTO chunk_metafield_values
+VALUES (&#39;uuid_2&#39;, &#39;chunk_123&#39;, &#39;mf_002&#39;, &#39;11.8×11.8&#39;, 0.95, &#39;ai_extraction&#39;);
+
+-- Image metafield
+INSERT INTO image_metafield_values
+VALUES (&#39;uuid_3&#39;, &#39;img_789&#39;, &#39;mf_003&#39;, &#39;matte&#39;, 0.92, &#39;ai_extraction&#39;);
+</code></pre>
+<hr>
+<h2>🎯 Best Practices</h2>
+<ol>
+<li><strong>Validate Confidence</strong> - Use metafields with confidence &gt; 0.85</li>
+<li><strong>Link Multiple Sources</strong> - Link same metafield to product, chunks, images</li>
+<li><strong>Support Multiple Values</strong> - Use multiselect for colors, patterns, variants</li>
+<li><strong>Track Extraction Method</strong> - Document AI, OCR, or manual extraction</li>
+<li><strong>Monitor Accuracy</strong> - Track extraction accuracy over time</li>
+<li><strong>Update Regularly</strong> - Refresh when products are updated</li>
+</ol>
+<hr>
+<h2>📚 Related Docs</h2>
+<ul>
+<li><strong>Full Guide</strong>: <code>docs/metafield-extraction-guide.md</code></li>
+<li><strong>Workflow</strong>: <code>docs/metafield-workflow-summary.md</code></li>
+<li><strong>Pipeline</strong>: <code>docs/pdf-processing-pipeline.md</code></li>
+<li><strong>Database</strong>: <code>docs/database-schema-complete.md</code></li>
+<li><strong>API</strong>: <code>docs/api-endpoints.md</code></li>
+</ul>
+
+</div></body></html>
