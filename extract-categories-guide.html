@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Extract Categories Guide</h1>
+<h2>Overview</h2>
+<p>The <code>extract_categories</code> parameter allows you to control <strong>what content</strong> is extracted from PDFs during processing. This enables focused extraction of specific content types (products, certificates, logos, specifications) while skipping irrelevant content.</p>
+<hr>
+<h2>How It Works</h2>
+<h3><strong>1. Product Discovery (Stage 0)</strong></h3>
+<p>Claude/GPT analyzes the <strong>entire PDF</strong> and classifies content into categories:</p>
+<ul>
+<li><strong>Products</strong>: Product specifications, materials, dimensions</li>
+<li><strong>Certificates</strong>: Environmental certifications (EPD, LEED, etc.)</li>
+<li><strong>Logos</strong>: Company logos, brand marks</li>
+<li><strong>Specifications</strong>: Technical specifications, installation guides</li>
+<li><strong>Other</strong>: Marketing content, company history, administrative pages</li>
+</ul>
+<h3><strong>2. Focused Extraction (Stage 1)</strong></h3>
+<p>Based on <code>focused_extraction</code> and <code>extract_categories</code> parameters:</p>
+<ul>
+<li>If <code>focused_extraction=True</code>: Extract <strong>only</strong> pages matching <code>extract_categories</code></li>
+<li>If <code>focused_extraction=False</code>: Extract <strong>all</strong> pages (ignore <code>extract_categories</code>)</li>
+</ul>
+<h3><strong>3. Content Processing (Stages 2-5)</strong></h3>
+<ul>
+<li><strong>Chunks</strong>: Created only from extracted pages</li>
+<li><strong>Images</strong>: Saved only from extracted pages (filtered by category)</li>
+<li><strong>Products</strong>: Created from Claude discovery results</li>
+<li><strong>Embeddings</strong>: Generated for extracted content only</li>
+</ul>
+<hr>
+<h2>API Parameters</h2>
+<h3><strong><code>focused_extraction</code></strong> (boolean, default: <code>True</code>)</h3>
+<p>Controls whether to filter content by categories.</p>
+<ul>
+<li><strong><code>True</code></strong>: Process only pages matching <code>extract_categories</code></li>
+<li><strong><code>False</code></strong>: Process entire PDF (all pages, all images)</li>
+</ul>
+<h3><strong><code>extract_categories</code></strong> (string, default: <code>&quot;products&quot;</code>)</h3>
+<p>Comma-separated list of categories to extract.</p>
+<p><strong>Available Categories</strong>:</p>
+<ul>
+<li><code>products</code> - Product pages (✅ <strong>Fully Implemented</strong>)</li>
+<li><code>certificates</code> - Certification pages (⚠️ <strong>TODO</strong>)</li>
+<li><code>logos</code> - Logo/branding pages (⚠️ <strong>TODO</strong>)</li>
+<li><code>specifications</code> - Technical specification pages (⚠️ <strong>TODO</strong>)</li>
+<li><code>all</code> - All content (same as <code>focused_extraction=False</code>)</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<pre><code>extract_categories=&quot;products&quot;                    # Only products
+extract_categories=&quot;products,certificates&quot;       # Products + certificates
+extract_categories=&quot;all&quot;                         # Everything
+</code></pre>
+<hr>
+<h2>Use Cases</h2>
+<h3><strong>Use Case 1: Product Catalog (Default)</strong></h3>
+<p>Extract only product information, skip marketing/admin content.</p>
+<pre><code class="language-bash">POST /api/rag/documents/upload-with-discovery
+{
+  &quot;file&quot;: &quot;catalog.pdf&quot;,
+  &quot;focused_extraction&quot;: true,
+  &quot;extract_categories&quot;: &quot;products&quot;
+}
+</code></pre>
+<p><strong>Result</strong>:</p>
+<ul>
+<li>✅ Chunks from product pages only</li>
+<li>✅ Images from product pages only</li>
+<li>✅ Products created from discovery</li>
+<li>❌ Marketing content skipped</li>
+<li>❌ Company history skipped</li>
+</ul>
+<hr>
+<h3><strong>Use Case 2: Products + Certificates</strong></h3>
+<p>Extract products and environmental certifications.</p>
+<pre><code class="language-bash">POST /api/rag/documents/upload-with-discovery
+{
+  &quot;file&quot;: &quot;catalog.pdf&quot;,
+  &quot;focused_extraction&quot;: true,
+  &quot;extract_categories&quot;: &quot;products,certificates&quot;
+}
+</code></pre>
+<p><strong>Result</strong> (when certificates category is implemented):</p>
+<ul>
+<li>✅ Chunks from product pages</li>
+<li>✅ Chunks from certificate pages</li>
+<li>✅ Images from product pages</li>
+<li>✅ Images from certificate pages</li>
+<li>✅ Products created</li>
+<li>✅ Certificates extracted and linked to products</li>
+</ul>
+<hr>
+<h3><strong>Use Case 3: Full PDF Processing</strong></h3>
+<p>Extract everything from the PDF.</p>
+<pre><code class="language-bash">POST /api/rag/documents/upload-with-discovery
+{
+  &quot;file&quot;: &quot;catalog.pdf&quot;,
+  &quot;focused_extraction&quot;: false
+}
+</code></pre>
+<p><strong>OR</strong>:</p>
+<pre><code class="language-bash">POST /api/rag/documents/upload-with-discovery
+{
+  &quot;file&quot;: &quot;catalog.pdf&quot;,
+  &quot;focused_extraction&quot;: true,
+  &quot;extract_categories&quot;: &quot;all&quot;
+}
+</code></pre>
+<p><strong>Result</strong>:</p>
+<ul>
+<li>✅ Chunks from all pages</li>
+<li>✅ Images from all pages</li>
+<li>✅ Products created from discovery</li>
+<li>✅ All content processed</li>
+</ul>
+<hr>
+<h2>Implementation Status</h2>
+<h3><strong>✅ Fully Implemented: Products Category</strong></h3>
+<p><strong>How it works</strong>:</p>
+<ol>
+<li>Claude analyzes PDF → identifies products on pages 5-11</li>
+<li><code>product_pages = {5, 6, 7, 8, 9, 10, 11}</code></li>
+<li>If <code>extract_categories=&quot;products&quot;</code>:<ul>
+<li>Chunks created from pages 5-11 only</li>
+<li>Images saved from pages 5-11 only</li>
+<li>Products created from discovery</li>
+</ul>
+</li>
+</ol>
+<p><strong>Code Location</strong>: <code>mivaa-pdf-extractor/app/api/rag_routes.py</code></p>
+<ul>
+<li>Lines 2057-2071: Product page filtering</li>
+<li>Lines 2202-2264: Image filtering by category</li>
+</ul>
+<hr>
+<h3><strong>⚠️ TODO: Other Categories</strong></h3>
+<p><strong>Certificates, Logos, Specifications</strong> are not yet implemented.</p>
+<p><strong>What needs to be done</strong>:</p>
+<ol>
+<li><strong>Update Product Discovery Service</strong> to classify content into categories</li>
+<li><strong>Add category-specific page sets</strong> (like <code>product_pages</code>, add <code>certificate_pages</code>, <code>logo_pages</code>, etc.)</li>
+<li><strong>Update image filtering logic</strong> to handle multiple categories</li>
+<li><strong>Create database tables</strong> for certificates, logos, specifications</li>
+<li><strong>Add API endpoints</strong> to retrieve category-specific content</li>
+</ol>
+<p><strong>Placeholder Code</strong> (Lines 2220-2223):</p>
+<pre><code class="language-python"># TODO: Add support for other categories (certificates, logos, specifications)
+# For now, only &#39;products&#39; category is fully implemented
+</code></pre>
+<hr>
+<h2>Database Schema</h2>
+<h3><strong>Image Metadata</strong></h3>
+<p>Images now include category information:</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;page_number&quot;: 5,
+  &quot;image_url&quot;: &quot;https://...&quot;,
+  &quot;metadata&quot;: {
+    &quot;category&quot;: &quot;product&quot;,              // NEW: Image category
+    &quot;extract_categories&quot;: [&quot;products&quot;], // NEW: What was requested
+    &quot;focused_extraction&quot;: true,
+    &quot;product_page&quot;: true
+  }
+}
+</code></pre>
+<hr>
+<h2>Migration Path</h2>
+<h3><strong>Phase 1: Products Only (Current)</strong></h3>
+<ul>
+<li>✅ Extract products</li>
+<li>✅ Filter images by product pages</li>
+<li>✅ Skip non-product content</li>
+</ul>
+<h3><strong>Phase 2: Add Certificates</strong></h3>
+<ul>
+<li>Update Claude prompt to identify certificate pages</li>
+<li>Create <code>certificates</code> table</li>
+<li>Link certificates to products</li>
+<li>Filter images by certificate pages</li>
+</ul>
+<h3><strong>Phase 3: Add Logos &amp; Specifications</strong></h3>
+<ul>
+<li>Identify logo pages (usually first few pages)</li>
+<li>Identify specification pages (technical details)</li>
+<li>Create appropriate database tables</li>
+<li>Link to products</li>
+</ul>
+<h3><strong>Phase 4: Advanced Classification</strong></h3>
+<ul>
+<li>AI-powered content classification</li>
+<li>Automatic category detection</li>
+<li>Smart filtering based on user preferences</li>
+</ul>
+<hr>
+<h2>Testing</h2>
+<h3><strong>Test 1: Products Only (Default)</strong></h3>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/documents/upload-with-discovery&quot; \
+  -F &quot;file=@harmony.pdf&quot; \
+  -F &quot;focused_extraction=true&quot; \
+  -F &quot;extract_categories=products&quot;
+</code></pre>
+<p><strong>Expected</strong>:</p>
+<ul>
+<li>Images only from product pages (5-11)</li>
+<li>Chunks only from product pages</li>
+<li>Non-product pages skipped</li>
+</ul>
+<h3><strong>Test 2: Full PDF</strong></h3>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/documents/upload-with-discovery&quot; \
+  -F &quot;file=@harmony.pdf&quot; \
+  -F &quot;focused_extraction=false&quot;
+</code></pre>
+<p><strong>Expected</strong>:</p>
+<ul>
+<li>Images from all pages (1-11)</li>
+<li>Chunks from all pages</li>
+<li>All content processed</li>
+</ul>
+<hr>
+<h2>Summary</h2>
+<h3><strong>Current Behavior</strong>:</h3>
+<ul>
+<li>✅ <code>extract_categories=&quot;products&quot;</code> → Only product pages processed</li>
+<li>✅ <code>focused_extraction=True</code> → Filtering enabled</li>
+<li>✅ <code>focused_extraction=False</code> → All content processed</li>
+<li>✅ Image metadata includes category information</li>
+</ul>
+<h3><strong>Future Enhancements</strong>:</h3>
+<ul>
+<li>⚠️ Implement <code>certificates</code> category</li>
+<li>⚠️ Implement <code>logos</code> category</li>
+<li>⚠️ Implement <code>specifications</code> category</li>
+<li>⚠️ Add category-specific database tables</li>
+<li>⚠️ Add category-specific API endpoints</li>
+</ul>
+<h3><strong>Key Benefits</strong>:</h3>
+<ul>
+<li>🎯 <strong>Focused Processing</strong>: Only extract what you need</li>
+<li>💰 <strong>Cost Savings</strong>: Skip irrelevant content (fewer AI calls)</li>
+<li>⚡ <strong>Faster Processing</strong>: Less content to process</li>
+<li>🗄️ <strong>Cleaner Data</strong>: No marketing/admin clutter</li>
+<li>🔧 <strong>Configurable</strong>: Choose what to extract per upload</li>
+</ul>
+
+</div></body></html>
