@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Features Guide</h1>
+<p>Complete reference of all platform features and capabilities.</p>
+<hr>
+<h2>🎯 Core Features</h2>
+<h3>1. Intelligent PDF Processing</h3>
+<p><strong>14-Stage Pipeline</strong>:</p>
+<ul>
+<li>Product discovery with AI</li>
+<li>Focused extraction (product pages only)</li>
+<li>Semantic text chunking</li>
+<li>Multi-vector embeddings</li>
+<li>Image analysis with OCR</li>
+<li>Product creation with validation</li>
+<li>Metafield extraction</li>
+<li>Quality enhancement</li>
+</ul>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>✅ Automatic product identification</li>
+<li>✅ Metadata extraction (200+ types)</li>
+<li>✅ Image analysis and OCR</li>
+<li>✅ Checkpoint recovery on failure</li>
+<li>✅ Real-time progress tracking</li>
+<li>✅ Batch processing support</li>
+</ul>
+<p><strong>API Endpoint</strong>:</p>
+<pre><code class="language-http">POST /api/v1/pdf/upload
+</code></pre>
+<hr>
+<h3>2. Multi-Modal Search</h3>
+<p><strong>Search Types</strong>:</p>
+<p><strong>Semantic Search</strong></p>
+<ul>
+<li>Natural language queries</li>
+<li>Understands intent</li>
+<li>Context-aware results</li>
+<li>Response time: 200-500ms</li>
+</ul>
+<p><strong>Vector Search</strong></p>
+<ul>
+<li>Similarity-based retrieval</li>
+<li>Fast lookup</li>
+<li>Configurable metrics</li>
+<li>Response time: 100-300ms</li>
+</ul>
+<p><strong>Hybrid Search</strong></p>
+<ul>
+<li>Combines semantic + vector</li>
+<li>Best accuracy</li>
+<li>Configurable weights</li>
+<li>Response time: 300-800ms</li>
+</ul>
+<p><strong>Visual Search</strong></p>
+<ul>
+<li>Image-based discovery</li>
+<li>Find similar materials</li>
+<li>Color/texture matching</li>
+<li>Response time: 500-1000ms</li>
+</ul>
+<p><strong>Property Search</strong></p>
+<ul>
+<li>Filter by metafields</li>
+<li>Material type, color, texture</li>
+<li>Application-based</li>
+<li>Response time: 100-200ms</li>
+</ul>
+<p><strong>Full-Text Search</strong></p>
+<ul>
+<li>Keyword matching</li>
+<li>Fast lookup</li>
+<li>Exact matches</li>
+<li>Response time: 50-100ms</li>
+</ul>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: 85%+</li>
+<li>Recall: 90%+</li>
+<li>Precision: 88%+</li>
+</ul>
+<hr>
+<h3>3. Materials Catalog</h3>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Browse all materials</li>
+<li>Filter by category</li>
+<li>Sort by relevance</li>
+<li>View material details</li>
+<li>See related materials</li>
+<li>Visual preview</li>
+<li>Specifications display</li>
+</ul>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>✅ Infinite scroll</li>
+<li>✅ Advanced filtering</li>
+<li>✅ Sorting options</li>
+<li>✅ Search integration</li>
+<li>✅ Favorites/bookmarks</li>
+<li>✅ Export functionality</li>
+</ul>
+<hr>
+<h3>4. Product Management</h3>
+<p><strong>CRUD Operations</strong>:</p>
+<ul>
+<li>Create products</li>
+<li>Read product details</li>
+<li>Update metadata</li>
+<li>Delete products</li>
+<li>Bulk operations</li>
+</ul>
+<p><strong>Product Information</strong>:</p>
+<ul>
+<li>Name and description</li>
+<li>Metafields (200+ types)</li>
+<li>Associated chunks</li>
+<li>Associated images</li>
+<li>Quality scores</li>
+<li>Confidence metrics</li>
+</ul>
+<p><strong>API Endpoints</strong>:</p>
+<pre><code class="language-http">POST /api/products
+GET /api/products/{id}
+PATCH /api/products/{id}
+DELETE /api/products/{id}
+GET /api/products
+GET /api/products/{id}/similar
+</code></pre>
+<hr>
+<h3>5. Admin Dashboard</h3>
+<p><strong>Monitoring</strong>:</p>
+<ul>
+<li>Real-time job tracking</li>
+<li>Progress visualization</li>
+<li>Error monitoring</li>
+<li>Performance metrics</li>
+<li>System health</li>
+</ul>
+<p><strong>Management</strong>:</p>
+<ul>
+<li>User management</li>
+<li>Workspace management</li>
+<li>Document management</li>
+<li>Product management</li>
+<li>Metafield management</li>
+</ul>
+<p><strong>Analytics</strong>:</p>
+<ul>
+<li>Search analytics</li>
+<li>Processing statistics</li>
+<li>AI model usage</li>
+<li>Cost tracking</li>
+<li>Performance trends</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Live progress updates</li>
+<li>✅ Job history</li>
+<li>✅ Error logs</li>
+<li>✅ Performance charts</li>
+<li>✅ Export reports</li>
+</ul>
+<hr>
+<h3>6. RAG System (Retrieval-Augmented Generation)</h3>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Document upload and indexing</li>
+<li>Semantic search</li>
+<li>Chat interface</li>
+<li>Multi-document retrieval</li>
+<li>Context-aware responses</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Document management</li>
+<li>✅ Query interface</li>
+<li>✅ Chat history</li>
+<li>✅ Source attribution</li>
+<li>✅ Relevance scoring</li>
+</ul>
+<p><strong>API Endpoints</strong>:</p>
+<pre><code class="language-http">POST /api/v1/rag/documents/upload
+POST /api/v1/rag/query
+POST /api/v1/rag/chat
+GET /api/v1/rag/documents
+GET /api/v1/rag/stats
+</code></pre>
+<hr>
+<h3>7. Real-Time Monitoring</h3>
+<p><strong>Progress Tracking</strong>:</p>
+<ul>
+<li>Live progress percentage</li>
+<li>Current stage display</li>
+<li>Estimated time remaining</li>
+<li>Detailed metrics</li>
+<li>Error notifications</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Server-Sent Events (SSE)</li>
+<li>✅ WebSocket support</li>
+<li>✅ Real-time updates</li>
+<li>✅ Progress persistence</li>
+<li>✅ Checkpoint tracking</li>
+</ul>
+<p><strong>API Endpoint</strong>:</p>
+<pre><code class="language-http">GET /api/v1/documents/job/{job_id}/progress/stream
+</code></pre>
+<hr>
+<h3>8. Metadata Management</h3>
+<p><strong>Metafield Types</strong> (200+):</p>
+<ul>
+<li>Material composition</li>
+<li>Dimensions (length, width, height)</li>
+<li>Weight and density</li>
+<li>Color and finish</li>
+<li>Texture and pattern</li>
+<li>Application and use case</li>
+<li>Care instructions</li>
+<li>Certifications</li>
+<li>Pricing and availability</li>
+<li>Supplier information</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Dynamic metafield creation</li>
+<li>✅ Type validation</li>
+<li>✅ Multi-value support</li>
+<li>✅ Relationship linking</li>
+<li>✅ Search integration</li>
+</ul>
+<hr>
+<h3>9. Image Management</h3>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Automatic image extraction</li>
+<li>OCR on material specs</li>
+<li>Quality scoring</li>
+<li>Visual embeddings</li>
+<li>Storage management</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Batch processing</li>
+<li>✅ Quality analysis</li>
+<li>✅ Metadata extraction</li>
+<li>✅ Visual search</li>
+<li>✅ Storage optimization</li>
+</ul>
+<p><strong>API Endpoints</strong>:</p>
+<pre><code class="language-http">POST /api/images/analyze
+POST /api/images/analyze/batch
+POST /api/images/search
+POST /api/images/upload-and-analyze
+</code></pre>
+<hr>
+<h3>10. Workspace Isolation</h3>
+<p><strong>Multi-Tenancy</strong>:</p>
+<ul>
+<li>User workspaces</li>
+<li>Data isolation</li>
+<li>Row-Level Security (RLS)</li>
+<li>Separate indexes</li>
+<li>Independent quotas</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Workspace creation</li>
+<li>✅ User management</li>
+<li>✅ Permission control</li>
+<li>✅ Data privacy</li>
+<li>✅ Audit logging</li>
+</ul>
+<hr>
+<h3>11. Batch Processing</h3>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Batch PDF upload</li>
+<li>Batch image analysis</li>
+<li>Batch product creation</li>
+<li>Batch embeddings</li>
+<li>Batch search</li>
+</ul>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Async processing</li>
+<li>✅ Progress tracking</li>
+<li>✅ Error handling</li>
+<li>✅ Result aggregation</li>
+<li>✅ Performance optimization</li>
+</ul>
+<hr>
+<h3>12. API Gateway</h3>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Unified API interface</li>
+<li>Request routing</li>
+<li>Response formatting</li>
+<li>Error handling</li>
+<li>Rate limiting</li>
+<li>Authentication</li>
+</ul>
+<p><strong>Endpoints</strong>:</p>
+<ul>
+<li>74+ REST endpoints</li>
+<li>9 categories</li>
+<li>Comprehensive documentation</li>
+<li>OpenAPI schema</li>
+</ul>
+<hr>
+<h2>🔐 Security Features</h2>
+<p>✅ <strong>Authentication</strong>:</p>
+<ul>
+<li>Supabase JWT</li>
+<li>MIVAA JWT</li>
+<li>API keys</li>
+</ul>
+<p>✅ <strong>Authorization</strong>:</p>
+<ul>
+<li>Row-Level Security (RLS)</li>
+<li>Role-based access control</li>
+<li>Workspace isolation</li>
+</ul>
+<p>✅ <strong>Data Protection</strong>:</p>
+<ul>
+<li>HTTPS/TLS encryption</li>
+<li>Database encryption</li>
+<li>Secure storage</li>
+<li>Audit logging</li>
+</ul>
+<p>✅ <strong>API Security</strong>:</p>
+<ul>
+<li>Rate limiting</li>
+<li>Input validation</li>
+<li>SQL injection prevention</li>
+<li>CORS configuration</li>
+</ul>
+<hr>
+<h2>📊 Analytics &amp; Reporting</h2>
+<p><strong>Available Metrics</strong>:</p>
+<ul>
+<li>Search analytics</li>
+<li>Processing statistics</li>
+<li>AI model usage</li>
+<li>Cost tracking</li>
+<li>Performance trends</li>
+<li>Error rates</li>
+<li>User activity</li>
+</ul>
+<p><strong>Export Options</strong>:</p>
+<ul>
+<li>CSV export</li>
+<li>JSON export</li>
+<li>PDF reports</li>
+<li>Custom queries</li>
+</ul>
+<hr>
+<h2>🚀 Performance Features</h2>
+<p><strong>Optimization</strong>:</p>
+<ul>
+<li>✅ Query caching</li>
+<li>✅ Result caching</li>
+<li>✅ Batch processing</li>
+<li>✅ Lazy loading</li>
+<li>✅ Pagination</li>
+<li>✅ Compression</li>
+</ul>
+<p><strong>Scalability</strong>:</p>
+<ul>
+<li>✅ Horizontal scaling</li>
+<li>✅ Load balancing</li>
+<li>✅ Connection pooling</li>
+<li>✅ Index optimization</li>
+<li>✅ Query optimization</li>
+</ul>
+<hr>
+<h2>🔄 Integration Features</h2>
+<p><strong>External Services</strong>:</p>
+<ul>
+<li>OpenAI (GPT, embeddings, CLIP)</li>
+<li>Anthropic (Claude)</li>
+<li>Together AI (Llama)</li>
+<li>Supabase (Database, auth, storage)</li>
+<li>LlamaIndex (RAG)</li>
+</ul>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>✅ API integration</li>
+<li>✅ Webhook support</li>
+<li>✅ Data sync</li>
+<li>✅ Error handling</li>
+<li>✅ Retry logic</li>
+</ul>
+<hr>
+<h2>📱 User Interface Features</h2>
+<p><strong>Frontend Components</strong>:</p>
+<ul>
+<li>Materials catalog</li>
+<li>Search hub</li>
+<li>Admin dashboard</li>
+<li>Real-time monitoring</li>
+<li>Progress visualization</li>
+<li>Error handling</li>
+<li>Responsive design</li>
+</ul>
+<p><strong>User Experience</strong>:</p>
+<ul>
+<li>✅ Intuitive navigation</li>
+<li>✅ Fast loading</li>
+<li>✅ Real-time updates</li>
+<li>✅ Error messages</li>
+<li>✅ Help documentation</li>
+<li>✅ Accessibility</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>

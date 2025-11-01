@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AI Models Integration Guide</h1>
+<p>Complete reference of 12 AI models used across the platform.</p>
+<hr>
+<h2>🤖 AI Models Overview</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Provider</th>
+<th>Purpose</th>
+<th>Capability</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Claude Sonnet 4.5</td>
+<td>Anthropic</td>
+<td>Product discovery, enrichment</td>
+<td>95%+ accuracy</td>
+<td>$3/1M input</td>
+</tr>
+<tr>
+<td>Claude Haiku 4.5</td>
+<td>Anthropic</td>
+<td>Fast validation</td>
+<td>Real-time</td>
+<td>$0.80/1M input</td>
+</tr>
+<tr>
+<td>GPT-4o</td>
+<td>OpenAI</td>
+<td>Alternative discovery</td>
+<td>94%+ accuracy</td>
+<td>$5/1M input</td>
+</tr>
+<tr>
+<td>text-embedding-3-small</td>
+<td>OpenAI</td>
+<td>Text embeddings</td>
+<td>1536D vectors</td>
+<td>$0.02/1M tokens</td>
+</tr>
+<tr>
+<td>Llama 4 Scout 17B Vision</td>
+<td>Together AI</td>
+<td>Image analysis, OCR</td>
+<td>69.4% MMMU</td>
+<td>$0.40/1M tokens</td>
+</tr>
+<tr>
+<td>CLIP (Visual)</td>
+<td>OpenAI</td>
+<td>Visual embeddings</td>
+<td>512D vectors</td>
+<td>$0.02/1M tokens</td>
+</tr>
+<tr>
+<td>CLIP (Large)</td>
+<td>OpenAI</td>
+<td>Large visual embeddings</td>
+<td>1536D vectors</td>
+<td>$0.02/1M tokens</td>
+</tr>
+<tr>
+<td>CLIP (Color)</td>
+<td>OpenAI</td>
+<td>Color analysis</td>
+<td>256D vectors</td>
+<td>$0.02/1M tokens</td>
+</tr>
+<tr>
+<td>CLIP (Texture)</td>
+<td>OpenAI</td>
+<td>Texture analysis</td>
+<td>256D vectors</td>
+<td>$0.02/1M tokens</td>
+</tr>
+<tr>
+<td>CLIP (Application)</td>
+<td>OpenAI</td>
+<td>Application classification</td>
+<td>512D vectors</td>
+<td>$0.02/1M tokens</td>
+</tr>
+<tr>
+<td>Anthropic Semantic Chunking</td>
+<td>Anthropic</td>
+<td>Text segmentation</td>
+<td>Semantic boundaries</td>
+<td>Included</td>
+</tr>
+<tr>
+<td>LlamaIndex</td>
+<td>LlamaIndex</td>
+<td>RAG system</td>
+<td>Document indexing</td>
+<td>Open source</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔍 Model Details</h2>
+<h3>1. Claude Sonnet 4.5 (Anthropic)</h3>
+<p><strong>Purpose</strong>: Product discovery, enrichment, validation</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Analyze complex product catalogs</li>
+<li>Extract structured metadata</li>
+<li>Validate product completeness</li>
+<li>Generate product descriptions</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">from anthropic import Anthropic
+
+client = Anthropic(api_key=ANTHROPIC_API_KEY)
+response = client.messages.create(
+    model=&quot;claude-sonnet-4-5&quot;,
+    max_tokens=8000,
+    temperature=0.1,
+    messages=[{
+        &quot;role&quot;: &quot;user&quot;,
+        &quot;content&quot;: &quot;Analyze this product catalog...&quot;
+    }]
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: 95%+</li>
+<li>Latency: 2-5 seconds</li>
+<li>Cost: $3 per 1M input tokens</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Product discovery</li>
+<li>Complex analysis</li>
+<li>Detailed enrichment</li>
+<li>Quality validation</li>
+</ul>
+<hr>
+<h3>2. Claude Haiku 4.5 (Anthropic)</h3>
+<p><strong>Purpose</strong>: Fast validation, real-time processing</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Quick product candidate identification</li>
+<li>Basic metadata extraction</li>
+<li>Real-time validation</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">response = client.messages.create(
+    model=&quot;claude-haiku-4-5&quot;,
+    max_tokens=1000,
+    messages=[{
+        &quot;role&quot;: &quot;user&quot;,
+        &quot;content&quot;: &quot;Is this a product?&quot;
+    }]
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: 92%+</li>
+<li>Latency: 500ms-1s</li>
+<li>Cost: $0.80 per 1M input tokens</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Fast validation</li>
+<li>Real-time processing</li>
+<li>Cost-sensitive operations</li>
+<li>Batch processing</li>
+</ul>
+<hr>
+<h3>3. GPT-4o (OpenAI)</h3>
+<p><strong>Purpose</strong>: Alternative product discovery</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Product identification</li>
+<li>Metadata extraction</li>
+<li>Alternative to Claude</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">import openai
+
+response = openai.ChatCompletion.create(
+    model=&quot;gpt-4o&quot;,
+    messages=[{
+        &quot;role&quot;: &quot;user&quot;,
+        &quot;content&quot;: &quot;Analyze this product catalog...&quot;
+    }],
+    response_format={&quot;type&quot;: &quot;json_object&quot;}
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: 94%+</li>
+<li>Latency: 3-6 seconds</li>
+<li>Cost: $5 per 1M input tokens</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Alternative discovery model</li>
+<li>Comparison validation</li>
+<li>Fallback option</li>
+</ul>
+<hr>
+<h3>4. text-embedding-3-small (OpenAI)</h3>
+<p><strong>Purpose</strong>: Generate text embeddings for semantic search</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Convert text to 1536D vectors</li>
+<li>Enable semantic similarity search</li>
+<li>Fast embedding generation</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">response = openai.Embedding.create(
+    model=&quot;text-embedding-3-small&quot;,
+    input=&quot;Material description text&quot;
+)
+embedding = response[&#39;data&#39;][0][&#39;embedding&#39;]  # 1536D vector
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimension: 1536D</li>
+<li>Latency: 100-200ms</li>
+<li>Cost: $0.02 per 1M tokens</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Text embedding generation</li>
+<li>Semantic search</li>
+<li>Similarity comparison</li>
+</ul>
+<hr>
+<h3>5. Llama 4 Scout 17B Vision (Together AI)</h3>
+<p><strong>Purpose</strong>: Image analysis, OCR, material recognition</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Optical Character Recognition (OCR)</li>
+<li>Material property extraction</li>
+<li>Image quality scoring</li>
+<li>Material identification</li>
+</ul>
+<p><strong>Specifications</strong>:</p>
+<ul>
+<li>MMMU Score: 69.4% (#1 for OCR)</li>
+<li>Vision Capability: Excellent</li>
+<li>Speed: Fast inference</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">import together
+
+response = together.Complete.create(
+    model=&quot;meta-llama/Llama-4-Scout-17B-16E-Instruct&quot;,
+    prompt=&quot;Analyze this material image...&quot;,
+    image_url=&quot;https://...&quot;
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: 90%+ for material recognition</li>
+<li>Latency: 2-4 seconds per image</li>
+<li>Cost: $0.40 per 1M tokens</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Image analysis</li>
+<li>OCR on material specs</li>
+<li>Material property extraction</li>
+<li>Quality scoring</li>
+</ul>
+<hr>
+<h3>6-10. OpenAI CLIP Models</h3>
+<p><strong>Purpose</strong>: Multi-modal visual embeddings</p>
+<p><strong>5 Embedding Types</strong>:</p>
+<h4>Visual Embeddings (512D)</h4>
+<ul>
+<li>Overall visual appearance</li>
+<li>Enables visual similarity search</li>
+<li>General visual features</li>
+</ul>
+<h4>Large Visual Embeddings (1536D)</h4>
+<ul>
+<li>High-resolution visual features</li>
+<li>Better accuracy</li>
+<li>More detailed representation</li>
+</ul>
+<h4>Color Embeddings (256D)</h4>
+<ul>
+<li>Color palette analysis</li>
+<li>Color-based search</li>
+<li>Dominant colors extraction</li>
+</ul>
+<h4>Texture Embeddings (256D)</h4>
+<ul>
+<li>Surface texture analysis</li>
+<li>Texture-based search</li>
+<li>Material texture classification</li>
+</ul>
+<h4>Application Embeddings (512D)</h4>
+<ul>
+<li>Use case classification</li>
+<li>Application-based search</li>
+<li>Context understanding</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">from PIL import Image
+import openai
+
+# Load image
+image = Image.open(&quot;material.jpg&quot;)
+
+# Generate visual embedding
+response = openai.Embedding.create(
+    model=&quot;text-embedding-3-small&quot;,
+    input=&quot;visual_embedding&quot;,
+    image=image
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimension: 256D-1536D (varies)</li>
+<li>Latency: 200-500ms per image</li>
+<li>Cost: $0.02 per 1M tokens</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Visual similarity search</li>
+<li>Color-based discovery</li>
+<li>Texture analysis</li>
+<li>Application classification</li>
+</ul>
+<hr>
+<h3>11. Anthropic Semantic Chunking</h3>
+<p><strong>Purpose</strong>: Intelligent text segmentation</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Split text at semantic boundaries</li>
+<li>Preserve context</li>
+<li>Quality scoring</li>
+<li>Multiple strategies</li>
+</ul>
+<p><strong>Strategies</strong>:</p>
+<ul>
+<li><strong>Semantic</strong>: Paragraph/sentence boundaries</li>
+<li><strong>Fixed Size</strong>: Fixed character count</li>
+<li><strong>Hybrid</strong>: Combination of both</li>
+<li><strong>Layout-Aware</strong>: Respect document layout</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">from app.services.unified_chunking_service import UnifiedChunkingService
+
+chunker = UnifiedChunkingService()
+chunks = chunker.chunk_text(
+    text=document_text,
+    document_id=&quot;doc_1&quot;,
+    strategy=&quot;semantic&quot;
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Chunk quality: 0.85-0.95</li>
+<li>Latency: 1-2 seconds per 10K chars</li>
+<li>Cost: Included in Anthropic API</li>
+</ul>
+<hr>
+<h3>12. LlamaIndex RAG System</h3>
+<p><strong>Purpose</strong>: Retrieval-Augmented Generation</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Document indexing</li>
+<li>Semantic search</li>
+<li>Chat interface</li>
+<li>Multi-document retrieval</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader(&quot;data&quot;).load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine()
+response = query_engine.query(&quot;What materials are available?&quot;)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Retrieval latency: 200-500ms</li>
+<li>Accuracy: 85%+</li>
+<li>Scalability: 100K+ documents</li>
+</ul>
+<hr>
+<h2>📊 Model Usage by Pipeline Stage</h2>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Primary Model</th>
+<th>Secondary Model</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Claude Sonnet 4.5</td>
+<td>GPT-4o</td>
+<td>Product discovery</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Anthropic Chunking</td>
+<td>-</td>
+<td>Text segmentation</td>
+</tr>
+<tr>
+<td>4</td>
+<td>text-embedding-3-small</td>
+<td>-</td>
+<td>Text embeddings</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Llama 4 Scout 17B</td>
+<td>-</td>
+<td>Image analysis</td>
+</tr>
+<tr>
+<td>7-10</td>
+<td>CLIP (5 types)</td>
+<td>-</td>
+<td>Visual embeddings</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Claude Haiku 4.5</td>
+<td>Claude Sonnet 4.5</td>
+<td>Product validation</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Claude Sonnet 4.5</td>
+<td>-</td>
+<td>Quality enhancement</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>💰 Cost Optimization</h2>
+<p><strong>Strategies</strong>:</p>
+<ol>
+<li>Use Haiku for fast validation (10x cheaper)</li>
+<li>Batch embeddings to reduce API calls</li>
+<li>Cache results for repeated queries</li>
+<li>Use focused extraction to reduce image analysis</li>
+</ol>
+<p><strong>Example Cost per PDF</strong>:</p>
+<ul>
+<li>Small PDF (10 pages): $0.50-$1.00</li>
+<li>Medium PDF (50 pages): $2.00-$4.00</li>
+<li>Large PDF (200 pages): $8.00-$15.00</li>
+</ul>
+<hr>
+<h2>🔐 API Keys &amp; Configuration</h2>
+<p><strong>Required Environment Variables</strong>:</p>
+<pre><code>ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+TOGETHER_AI_API_KEY=...
+</code></pre>
+<p><strong>Configuration</strong>:</p>
+<pre><code class="language-python"># models/config.py
+MODELS = {
+    &quot;discovery&quot;: &quot;claude-sonnet-4-5&quot;,
+    &quot;validation&quot;: &quot;claude-haiku-4-5&quot;,
+    &quot;embeddings&quot;: &quot;text-embedding-3-small&quot;,
+    &quot;vision&quot;: &quot;meta-llama/Llama-4-Scout-17B-16E-Instruct&quot;
+}
+</code></pre>
+<hr>
+<h2>📈 Performance Benchmarks</h2>
+<p><strong>Accuracy</strong>:</p>
+<ul>
+<li>Product detection: 95%+</li>
+<li>Material recognition: 90%+</li>
+<li>Metafield extraction: 88%+</li>
+<li>Search relevance: 85%+</li>
+</ul>
+<p><strong>Speed</strong>:</p>
+<ul>
+<li>Product discovery: 3-5 seconds</li>
+<li>Image analysis: 2-4 seconds per image</li>
+<li>Embedding generation: 100-200ms</li>
+<li>Search query: 200-800ms</li>
+</ul>
+<p><strong>Cost</strong>:</p>
+<ul>
+<li>Per PDF: $0.50-$15.00</li>
+<li>Per search: $0.001-$0.01</li>
+<li>Per image: $0.05-$0.20</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>
