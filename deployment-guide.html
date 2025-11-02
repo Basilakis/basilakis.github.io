@@ -24,13 +24,396 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>Deployment Guide</h1>
+<h2>🔐 <strong>Complete Secrets Reference</strong></h2>
+<p><strong>All secrets required for deployment across all platforms.</strong></p>
+<h3><strong>Supabase Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Used</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Public</td>
+<td>Frontend, Backend, Edge Functions</td>
+<td>Supabase project URL</td>
+<td><code>https://bgbavxtjlbvgplozizxu.supabase.co</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>Public</td>
+<td>Frontend, Backend</td>
+<td>Public anonymous key for client-side</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Backend, Edge Functions</td>
+<td>Service role key (admin access)</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_JWT_SECRET</code></td>
+<td><strong>Secret</strong></td>
+<td>Backend</td>
+<td>JWT verification secret</td>
+<td><code>your-super-secret-jwt-secret-with-at-least-32-characters</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_DB_PASSWORD</code></td>
+<td><strong>Secret</strong></td>
+<td>Direct DB access (optional)</td>
+<td>Database password</td>
+<td><code>your-secure-db-password</code></td>
+</tr>
+</tbody></table>
+<h3><strong>GitHub Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Used</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GH_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>Personal access token for deployments</td>
+<td><code>ghp_xxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VERCEL_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>Vercel deployment token</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VERCEL_ORG_ID</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>Vercel organization ID</td>
+<td><code>team_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VERCEL_PROJECT_ID</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>Vercel project ID</td>
+<td><code>prj_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>SSH_PRIVATE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>SSH key for server deployment</td>
+<td><code>-----BEGIN OPENSSH PRIVATE KEY-----...</code></td>
+</tr>
+<tr>
+<td><code>SSH_HOST</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>Server hostname</td>
+<td><code>v1api.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>SSH_USER</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>SSH username</td>
+<td><code>root</code> or <code>deploy</code></td>
+</tr>
+</tbody></table>
+<h3><strong>Vercel Environment Variables</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Environment</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Supabase project URL</td>
+<td><code>https://bgbavxtjlbvgplozizxu.supabase.co</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Supabase anonymous key</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Service role key for Edge Functions</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>MIVAA_GATEWAY_URL</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>MIVAA API endpoint</td>
+<td><code>https://v1api.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>MIVAA_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>MIVAA JWT token</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>VITE_OPENAI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>OpenAI API key</td>
+<td><code>sk-proj-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_ANTHROPIC_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Anthropic API key</td>
+<td><code>sk-ant-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_TOGETHER_AI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Together AI API key</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_REPLICATE_API_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Replicate API token</td>
+<td><code>r8_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>NODE_ENV</code></td>
+<td>Public</td>
+<td>Production</td>
+<td>Node environment</td>
+<td><code>production</code></td>
+</tr>
+<tr>
+<td><code>VITE_DEBUG</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Debug mode</td>
+<td><code>false</code> (production), <code>true</code> (preview)</td>
+</tr>
+</tbody></table>
+<h3><strong>Backend/MIVAA Service Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Set</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Supabase project URL</td>
+<td><code>https://bgbavxtjlbvgplozizxu.supabase.co</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Supabase anonymous key</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Service role key</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>JWT_SECRET_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>JWT signing secret</td>
+<td><code>your-super-secret-jwt-secret-with-at-least-32-characters</code></td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>OpenAI API key</td>
+<td><code>sk-proj-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Anthropic API key</td>
+<td><code>sk-ant-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>TOGETHER_AI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Together AI API key</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>REPLICATE_API_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Replicate API token</td>
+<td><code>r8_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>SENTRY_DSN</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Sentry error tracking DSN</td>
+<td><code>https://xxxxx@xxxxx.ingest.sentry.io/xxxxx</code></td>
+</tr>
+<tr>
+<td><code>CORS_ORIGINS</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Allowed CORS origins</td>
+<td><code>https://your-domain.com,https://preview.vercel.app</code></td>
+</tr>
+<tr>
+<td><code>ENVIRONMENT</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Environment name</td>
+<td><code>production</code>, <code>staging</code>, <code>development</code></td>
+</tr>
+<tr>
+<td><code>DEBUG</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Debug mode</td>
+<td><code>false</code> (production), <code>true</code> (development)</td>
+</tr>
+<tr>
+<td><code>LOG_LEVEL</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Logging level</td>
+<td><code>ERROR</code>, <code>WARNING</code>, <code>INFO</code>, <code>DEBUG</code></td>
+</tr>
+</tbody></table>
+<h3><strong>AI Service API Keys</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Secret Name</th>
+<th>Where Used</th>
+<th>How to Get</th>
+<th>Pricing</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>OpenAI</strong></td>
+<td><code>OPENAI_API_KEY</code></td>
+<td>Frontend, Backend</td>
+<td><a href="https://platform.openai.com/api-keys">https://platform.openai.com/api-keys</a></td>
+<td>Pay-per-use</td>
+</tr>
+<tr>
+<td><strong>Anthropic</strong></td>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Backend</td>
+<td><a href="https://console.anthropic.com/">https://console.anthropic.com/</a></td>
+<td>Pay-per-use</td>
+</tr>
+<tr>
+<td><strong>Together AI</strong></td>
+<td><code>TOGETHER_AI_API_KEY</code></td>
+<td>Backend</td>
+<td><a href="https://api.together.xyz/settings/api-keys">https://api.together.xyz/settings/api-keys</a></td>
+<td>Pay-per-use</td>
+</tr>
+<tr>
+<td><strong>Replicate</strong></td>
+<td><code>REPLICATE_API_TOKEN</code></td>
+<td>Frontend, Backend</td>
+<td><a href="https://replicate.com/account/api-tokens">https://replicate.com/account/api-tokens</a></td>
+<td>Pay-per-use</td>
+</tr>
+</tbody></table>
+<h3><strong>Optional Monitoring &amp; Analytics Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Used</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SENTRY_DSN</code></td>
+<td><strong>Secret</strong></td>
+<td>Backend</td>
+<td>Sentry error tracking</td>
+<td><code>https://xxxxx@xxxxx.ingest.sentry.io/xxxxx</code></td>
+</tr>
+<tr>
+<td><code>SENTRY_AUTH_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>Sentry release tracking</td>
+<td><code>sntrys_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>GOOGLE_ANALYTICS_ID</code></td>
+<td>Public</td>
+<td>Frontend</td>
+<td>Google Analytics tracking</td>
+<td><code>G-XXXXXXXXXX</code></td>
+</tr>
+<tr>
+<td><code>POSTHOG_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Frontend</td>
+<td>PostHog analytics</td>
+<td><code>phc_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+</tbody></table>
+<hr>
 <h2>🚀 Deployment Architecture</h2>
 <p>The Material Kai Vision Platform uses a multi-service deployment strategy:</p>
 <ol>
 <li><strong>Frontend</strong>: Vercel (Static hosting + Edge functions)</li>
 <li><strong>MIVAA Service</strong>: Docker containers (Self-hosted or cloud)</li>
 <li><strong>Database</strong>: Supabase (Managed PostgreSQL)</li>
-<li><strong>External APIs</strong>: Third-party services (OpenAI, HuggingFace, Replicate)</li>
+<li><strong>External APIs</strong>: Third-party services (OpenAI, Anthropic, Together AI, Replicate)</li>
 </ol>
 <h2>🏗️ Infrastructure Overview</h2>
 <pre><code class="language-mermaid">graph TB
