@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Troubleshooting Guide</h1>
+<p>Common issues and solutions for Material Kai Vision Platform.</p>
+<hr>
+<h2>🔴 Critical Issues</h2>
+<h3>API Service Down</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>502 Bad Gateway errors</li>
+<li>Connection refused</li>
+<li>Timeout errors</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check service status
+sudo systemctl status mivaa-api
+
+# Check if port is listening
+sudo netstat -tlnp | grep 8000
+
+# Check logs
+sudo journalctl -u mivaa-api -f
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Restart service</p>
+<pre><code class="language-bash">sudo systemctl restart mivaa-api
+</code></pre>
+</li>
+<li><p>Check disk space</p>
+<pre><code class="language-bash">df -h
+</code></pre>
+</li>
+<li><p>Check memory</p>
+<pre><code class="language-bash">free -h
+</code></pre>
+</li>
+<li><p>Check database connection</p>
+<pre><code class="language-bash">psql -h db.supabase.co -U postgres -d postgres -c &quot;SELECT 1&quot;
+</code></pre>
+</li>
+</ol>
+<hr>
+<h3>Database Connection Failed</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>&quot;Connection refused&quot; errors</li>
+<li>Timeout on queries</li>
+<li>&quot;Too many connections&quot;</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check connection pool
+SELECT count(*) FROM pg_stat_activity;
+
+# Check max connections
+SHOW max_connections;
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Increase connection pool</p>
+<pre><code class="language-sql">ALTER SYSTEM SET max_connections = 200;
+SELECT pg_reload_conf();
+</code></pre>
+</li>
+<li><p>Kill idle connections</p>
+<pre><code class="language-sql">SELECT pg_terminate_backend(pid) 
+FROM pg_stat_activity 
+WHERE state = &#39;idle&#39; AND query_start &lt; now() - interval &#39;1 hour&#39;;
+</code></pre>
+</li>
+<li><p>Restart database</p>
+<ul>
+<li>Use Supabase dashboard</li>
+<li>Or SSH and restart PostgreSQL</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>Out of Memory (OOM)</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Process killed</li>
+<li>&quot;Cannot allocate memory&quot;</li>
+<li>Slow performance</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check memory usage
+free -h
+
+# Check process memory
+ps aux | grep mivaa
+
+# Check swap
+swapon -s
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Increase server memory</p>
+</li>
+<li><p>Optimize batch size</p>
+</li>
+<li><p>Clear cache</p>
+<pre><code class="language-bash">sync; echo 3 &gt; /proc/sys/vm/drop_caches
+</code></pre>
+</li>
+<li><p>Restart service</p>
+<pre><code class="language-bash">sudo systemctl restart mivaa-api
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2>🟡 Common Issues</h2>
+<h3>PDF Processing Fails</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Job stuck at certain stage</li>
+<li>Error in logs</li>
+<li>Timeout</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check job status
+curl https://v1api.materialshub.gr/api/v1/documents/job/{job_id}
+
+# Check logs
+sudo journalctl -u mivaa-api -f | grep {job_id}
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p><strong>Stage 0 (Product Discovery)</strong></p>
+<ul>
+<li>Check PDF format</li>
+<li>Verify file size &lt; 100MB</li>
+<li>Check AI API keys</li>
+</ul>
+</li>
+<li><p><strong>Stage 2 (Text Extraction)</strong></p>
+<ul>
+<li>Verify PDF is readable</li>
+<li>Check for corrupted pages</li>
+<li>Try different extraction method</li>
+</ul>
+</li>
+<li><p><strong>Stage 6 (Image Analysis)</strong></p>
+<ul>
+<li>Check image count</li>
+<li>Verify image quality</li>
+<li>Check Together AI quota</li>
+</ul>
+</li>
+<li><p><strong>Resume from checkpoint</strong></p>
+<pre><code class="language-bash">POST /api/v1/documents/job/{job_id}/resume
+</code></pre>
+</li>
+</ol>
+<hr>
+<h3>Search Returns No Results</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Empty search results</li>
+<li>Low relevance scores</li>
+<li>Timeout on search</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check embeddings exist
+SELECT COUNT(*) FROM embeddings WHERE chunk_id = &#39;{chunk_id}&#39;;
+
+# Check index health
+SELECT * FROM pg_stat_user_indexes WHERE relname = &#39;idx_embeddings_text&#39;;
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Verify embeddings generated</p>
+<pre><code class="language-bash">GET /api/embeddings/generate
+</code></pre>
+</li>
+<li><p>Rebuild indexes</p>
+<pre><code class="language-sql">REINDEX INDEX idx_embeddings_text;
+</code></pre>
+</li>
+<li><p>Check query embedding</p>
+<pre><code class="language-bash">POST /api/embeddings/generate
+Body: { &quot;text&quot;: &quot;your query&quot; }
+</code></pre>
+</li>
+<li><p>Adjust similarity threshold</p>
+<pre><code class="language-bash">POST /api/search/semantic
+Body: { &quot;query&quot;: &quot;...&quot;, &quot;threshold&quot;: 0.5 }
+</code></pre>
+</li>
+</ol>
+<hr>
+<h3>High Latency</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>Slow API responses</li>
+<li>Timeout errors</li>
+<li>Poor user experience</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check API response time
+time curl https://v1api.materialshub.gr/health
+
+# Check database query time
+EXPLAIN ANALYZE SELECT * FROM chunks WHERE document_id = &#39;...&#39;;
+
+# Check network latency
+ping v1api.materialshub.gr
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Optimize queries</p>
+<pre><code class="language-sql">CREATE INDEX idx_chunks_document_page ON chunks(document_id, page_number);
+</code></pre>
+</li>
+<li><p>Enable query caching</p>
+<pre><code class="language-python"># In MIVAA backend
+@cache(ttl=300)
+async def get_chunks(document_id):
+    ...
+</code></pre>
+</li>
+<li><p>Scale horizontally</p>
+<ul>
+<li>Add more API instances</li>
+<li>Use load balancer</li>
+</ul>
+</li>
+<li><p>Optimize embeddings</p>
+<ul>
+<li>Use smaller dimension</li>
+<li>Cache results</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>Authentication Failures</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>401 Unauthorized</li>
+<li>403 Forbidden</li>
+<li>JWT token errors</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check JWT token
+curl -H &quot;Authorization: Bearer {token}&quot; https://v1api.materialshub.gr/health
+
+# Decode JWT
+echo {token} | jq -R &#39;split(&quot;.&quot;) | .[1] | @base64d | fromjson&#39;
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Verify token not expired</p>
+<pre><code class="language-bash"># Check expiry
+echo {token} | jq -R &#39;split(&quot;.&quot;) | .[1] | @base64d | fromjson | .exp&#39;
+</code></pre>
+</li>
+<li><p>Refresh token</p>
+<pre><code class="language-bash">POST /auth/refresh
+</code></pre>
+</li>
+<li><p>Check API key</p>
+<pre><code class="language-bash">curl -H &quot;X-API-Key: {key}&quot; https://v1api.materialshub.gr/health
+</code></pre>
+</li>
+<li><p>Verify workspace access</p>
+<pre><code class="language-bash">GET /api/workspaces
+</code></pre>
+</li>
+</ol>
+<hr>
+<h3>Image Analysis Fails</h3>
+<p><strong>Symptoms</strong>:</p>
+<ul>
+<li>&quot;Image analysis failed&quot;</li>
+<li>Llama API errors</li>
+<li>Quality score 0</li>
+</ul>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check image file
+file /path/to/image.png
+
+# Check image size
+ls -lh /path/to/image.png
+
+# Check Llama API
+curl https://api.together.xyz/health
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Verify image format</p>
+<ul>
+<li>Supported: PNG, JPG, WEBP</li>
+<li>Size: &lt; 10MB</li>
+<li>Resolution: &gt; 100x100px</li>
+</ul>
+</li>
+<li><p>Check Together AI quota</p>
+<ul>
+<li>Verify API key</li>
+<li>Check rate limits</li>
+<li>Check account balance</li>
+</ul>
+</li>
+<li><p>Retry with different image</p>
+<pre><code class="language-bash">POST /api/images/analyze
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2>🟢 Performance Optimization</h2>
+<h3>Slow Embeddings Generation</h3>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Batch embeddings</p>
+<pre><code class="language-bash">POST /api/embeddings/batch
+Body: { &quot;texts&quot;: [...] }
+</code></pre>
+</li>
+<li><p>Use smaller model</p>
+<pre><code class="language-python">model = &quot;text-embedding-3-small&quot;  # Instead of large
+</code></pre>
+</li>
+<li><p>Cache results</p>
+<pre><code class="language-python">@cache(ttl=3600)
+async def get_embedding(text):
+    ...
+</code></pre>
+</li>
+</ol>
+<hr>
+<h3>Slow Search Queries</h3>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Add indexes</p>
+<pre><code class="language-sql">CREATE INDEX idx_chunks_quality ON chunks(quality_score);
+</code></pre>
+</li>
+<li><p>Limit results</p>
+<pre><code class="language-bash">POST /api/search/semantic
+Body: { &quot;query&quot;: &quot;...&quot;, &quot;limit&quot;: 10 }
+</code></pre>
+</li>
+<li><p>Use vector search (faster)</p>
+<pre><code class="language-bash">POST /api/search/vector
+</code></pre>
+</li>
+</ol>
+<hr>
+<h3>High Database Load</h3>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><p>Enable connection pooling</p>
+<pre><code class="language-python">pool_size = 20
+max_overflow = 10
+</code></pre>
+</li>
+<li><p>Optimize queries</p>
+<ul>
+<li>Use EXPLAIN ANALYZE</li>
+<li>Add indexes</li>
+<li>Denormalize if needed</li>
+</ul>
+</li>
+<li><p>Archive old data</p>
+<pre><code class="language-sql">DELETE FROM chunks WHERE created_at &lt; NOW() - INTERVAL &#39;1 year&#39;;
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2>📞 Support Resources</h2>
+<p><strong>Documentation</strong>:</p>
+<ul>
+<li>API Reference: <code>/docs</code></li>
+<li>ReDoc: <code>/redoc</code></li>
+<li>OpenAPI Schema: <code>/openapi.json</code></li>
+</ul>
+<p><strong>Monitoring</strong>:</p>
+<ul>
+<li>Vercel Dashboard: <a href="https://vercel.com/dashboard">https://vercel.com/dashboard</a></li>
+<li>Supabase Dashboard: <a href="https://app.supabase.com">https://app.supabase.com</a></li>
+<li>Server Logs: SSH to v1api.materialshub.gr</li>
+</ul>
+<p><strong>Contact</strong>:</p>
+<ul>
+<li>Email: <a href="mailto:support@materialkaivision.com">support@materialkaivision.com</a></li>
+<li>GitHub Issues: <a href="https://github.com/creativeghq/material-kai-vision-platform/issues">https://github.com/creativeghq/material-kai-vision-platform/issues</a></li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>

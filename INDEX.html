@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Documentation Index</h1>
+<p>Complete documentation for Material Kai Vision Platform.</p>
+<hr>
+<h2>📚 Documentation Structure</h2>
+<h3>🎯 Getting Started</h3>
+<p><strong><a href="overview.md">overview.md</a></strong> - Complete platform overview</p>
+<ul>
+<li>Executive summary</li>
+<li>Architecture overview</li>
+<li>AI models integration</li>
+<li>14-stage PDF processing pipeline</li>
+<li>Search capabilities</li>
+<li>Database architecture</li>
+<li>Production metrics</li>
+</ul>
+<p><strong><a href="features-guide.md">features-guide.md</a></strong> - All platform features</p>
+<ul>
+<li>Intelligent PDF processing</li>
+<li>Multi-modal search</li>
+<li>Materials catalog</li>
+<li>Product management</li>
+<li>Admin dashboard</li>
+<li>RAG system</li>
+<li>Real-time monitoring</li>
+<li>Metadata management</li>
+<li>Image management</li>
+<li>Workspace isolation</li>
+<li>Batch processing</li>
+<li>API gateway</li>
+<li>Security features</li>
+<li>Analytics &amp; reporting</li>
+</ul>
+<hr>
+<h3>🏗️ Architecture &amp; Design</h3>
+<p><strong><a href="system-architecture.md">system-architecture.md</a></strong> - Complete system architecture</p>
+<ul>
+<li>Three-tier architecture</li>
+<li>Hybrid architecture pattern</li>
+<li>Database schema overview</li>
+<li>Authentication &amp; security</li>
+<li>API endpoints (113)</li>
+<li>AI integration</li>
+<li>Scalability</li>
+<li>Data flow</li>
+<li>Technology stack</li>
+<li>Monitoring &amp; observability</li>
+<li>Security measures</li>
+<li>Production metrics</li>
+</ul>
+<p><strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Database schema reference</p>
+<ul>
+<li>Core tables (workspaces, documents, chunks, products, images, embeddings)</li>
+<li>Products + Metadata architecture (JSONB)</li>
+<li>Document entities (certificates, logos, specifications)</li>
+<li>Product-document relationships</li>
+<li>Relationship tables (chunk-product, chunk-image, product-image, product-document)</li>
+<li>Row-Level Security (RLS)</li>
+<li>Indexes for performance</li>
+<li>Storage capacity</li>
+<li>Backup &amp; recovery</li>
+</ul>
+<p><strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job queue &amp; async processing</p>
+<ul>
+<li>Supabase-native job queue architecture</li>
+<li>Checkpoint-based recovery system</li>
+<li>Auto-recovery for stuck jobs</li>
+<li>Real-time progress tracking</li>
+<li>Priority-based job processing</li>
+<li>Health monitoring &amp; observability</li>
+<li>Database tables (background_jobs, job_progress, job_checkpoints)</li>
+<li>Processing flow &amp; lifecycle</li>
+<li>Key services (AsyncQueueService, CheckpointRecoveryService, JobMonitorService)</li>
+<li>Configuration &amp; tuning</li>
+<li>Production metrics &amp; reliability</li>
+</ul>
+<hr>
+<h3>🤖 AI &amp; Processing</h3>
+<p><strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models integration</p>
+<ul>
+<li>12 AI models overview</li>
+<li>Claude Sonnet 4.5 (product discovery, enrichment)</li>
+<li>Claude Haiku 4.5 (fast validation)</li>
+<li>GPT-4o (alternative discovery)</li>
+<li>OpenAI embeddings (text-embedding-3-small)</li>
+<li>Llama 4 Scout 17B Vision (image analysis, OCR)</li>
+<li>OpenAI CLIP (5 embedding types)</li>
+<li>Anthropic Semantic Chunking</li>
+<li>LlamaIndex RAG system</li>
+<li>Model usage by pipeline stage</li>
+<li>Cost optimization</li>
+<li>API keys &amp; configuration</li>
+<li>Performance benchmarks</li>
+</ul>
+<p><strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - 14-stage PDF processing</p>
+<ul>
+<li>Pipeline overview</li>
+<li>Stage 0A: Product Discovery (0-10%) - Products + Metadata extraction</li>
+<li>Stage 0B: Document Entity Discovery (10-15%) - Certificates, Logos, Specs</li>
+<li>Stage 1: Focused Extraction (15-30%)</li>
+<li>Stage 2: Text Extraction (30-40%)</li>
+<li>Stage 3: Semantic Chunking (40-50%)</li>
+<li>Stage 4: Text Embeddings (50-60%)</li>
+<li>Stage 5: Image Extraction (60-70%)</li>
+<li>Stage 6: Image Analysis (70-80%)</li>
+<li>Stages 7-10: Multi-Vector Embeddings (80-91%)</li>
+<li>Stage 11: Product Creation (91-95%)</li>
+<li>Stage 12: Metafield Extraction (95-97%)</li>
+<li>Stage 13: Quality Enhancement (97-100%)</li>
+<li>Checkpoint recovery (9 checkpoints)</li>
+<li>Performance metrics</li>
+<li>API endpoint</li>
+</ul>
+<p><strong><a href="product-discovery-architecture.md">product-discovery-architecture.md</a></strong> - Product discovery system</p>
+<ul>
+<li>Products + Metadata architecture (inseparable)</li>
+<li>Document entities (certificates, logos, specifications)</li>
+<li>Factory/group identification for agentic queries</li>
+<li>Product-document relationships</li>
+<li>API endpoints for entity management</li>
+<li>Future extensibility (marketing, bank statements)</li>
+<li>Database schema (document_entities, product_document_relationships)</li>
+</ul>
+<hr>
+<h3>🔌 API Reference</h3>
+<p><strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - Complete API reference</p>
+<ul>
+<li>113 endpoints across 14 categories</li>
+<li>RAG Routes (25 endpoints)</li>
+<li>Admin Routes (18 endpoints)</li>
+<li>Search Routes (18 endpoints)</li>
+<li>Documents Routes (11 endpoints)</li>
+<li>AI Services Routes (10 endpoints)</li>
+<li>Images Routes (5 endpoints)</li>
+<li>Document Entities Routes (5 endpoints) ✨ NEW</li>
+<li>PDF Routes (4 endpoints)</li>
+<li>Products Routes (3 endpoints)</li>
+<li>Embeddings Routes (3 endpoints)</li>
+<li>Together AI Routes (3 endpoints)</li>
+<li>Anthropic Routes (3 endpoints)</li>
+<li>Monitoring Routes (3 endpoints)</li>
+<li>AI Metrics Routes (2 endpoints)</li>
+<li>Authentication methods</li>
+<li>Response format</li>
+<li>Rate limiting</li>
+</ul>
+<hr>
+<h3>🚀 Deployment &amp; Operations</h3>
+<p><strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Production deployment</p>
+<ul>
+<li>Deployment architecture</li>
+<li>Frontend deployment (Vercel)</li>
+<li>Backend deployment (Self-hosted)</li>
+<li>Database deployment (Supabase)</li>
+<li>CI/CD pipeline</li>
+<li>Secrets management</li>
+<li>Monitoring &amp; alerts</li>
+<li>Rollback procedures</li>
+<li>Pre-deployment checklist</li>
+<li>Performance targets</li>
+<li>Deployment links</li>
+</ul>
+<p><strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues &amp; solutions</p>
+<ul>
+<li>Critical issues (API down, database connection, OOM)</li>
+<li>Common issues (PDF processing, search, latency, auth, images)</li>
+<li>Performance optimization</li>
+<li>Support resources</li>
+</ul>
+<hr>
+<h2>🎓 Learning Path</h2>
+<h3>For New Developers</h3>
+<ol>
+<li>Start with <strong><a href="overview.md">overview.md</a></strong> - Understand the platform</li>
+<li>Read <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Learn the architecture</li>
+<li>Study <strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - Understand the core pipeline</li>
+<li>Review <strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - Learn the API</li>
+<li>Check <strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Understand deployment</li>
+</ol>
+<h3>For API Integration</h3>
+<ol>
+<li>Read <strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - All endpoints</li>
+<li>Check <strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models used</li>
+<li>Review <strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Data structure</li>
+<li>Study <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Authentication</li>
+</ol>
+<h3>For Operations</h3>
+<ol>
+<li>Read <strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Deployment process</li>
+<li>Study <strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues</li>
+<li>Review <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Monitoring</li>
+<li>Check <strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Backup strategy</li>
+</ol>
+<h3>For Product Managers</h3>
+<ol>
+<li>Start with <strong><a href="overview.md">overview.md</a></strong> - Platform overview</li>
+<li>Read <strong><a href="features-guide.md">features-guide.md</a></strong> - All features</li>
+<li>Review <strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - Processing pipeline</li>
+<li>Check <strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI capabilities</li>
+</ol>
+<hr>
+<h2>📊 Quick Reference</h2>
+<h3>Key Numbers</h3>
+<ul>
+<li><strong>5,000+</strong> users in production</li>
+<li><strong>99.5%+</strong> uptime SLA</li>
+<li><strong>12</strong> AI models integrated</li>
+<li><strong>14</strong> processing pipeline stages</li>
+<li><strong>74+</strong> API endpoints</li>
+<li><strong>9</strong> API categories</li>
+<li><strong>6</strong> embedding types</li>
+<li><strong>200+</strong> metafield types</li>
+<li><strong>95%+</strong> product detection accuracy</li>
+<li><strong>85%+</strong> search relevance</li>
+<li><strong>90%+</strong> material recognition accuracy</li>
+</ul>
+<h3>Technology Stack</h3>
+<p><strong>Frontend</strong>: React 18, TypeScript, Vite, Shadcn/ui, Vercel<br><strong>Backend</strong>: FastAPI, Python 3.11, Uvicorn, self-hosted<br><strong>Database</strong>: PostgreSQL 15, pgvector, Supabase<br><strong>AI</strong>: Claude, GPT-4o, Llama, CLIP, LlamaIndex  </p>
+<h3>API Categories</h3>
+<ol>
+<li>PDF Processing (12 endpoints)</li>
+<li>Document Management (13 endpoints)</li>
+<li>Search APIs (8 endpoints)</li>
+<li>Image Analysis (5 endpoints)</li>
+<li>RAG System (7 endpoints)</li>
+<li>Embeddings (3 endpoints)</li>
+<li>Products (6 endpoints)</li>
+<li>Admin &amp; Monitoring (8 endpoints)</li>
+<li>AI Services (11 endpoints)</li>
+</ol>
+<hr>
+<h2>🔗 External Resources</h2>
+<p><strong>API Documentation</strong>:</p>
+<ul>
+<li>Swagger UI: <code>/docs</code></li>
+<li>ReDoc: <code>/redoc</code></li>
+<li>OpenAPI Schema: <code>/openapi.json</code></li>
+</ul>
+<p><strong>Dashboards</strong>:</p>
+<ul>
+<li>Vercel: <a href="https://vercel.com/dashboard">https://vercel.com/dashboard</a></li>
+<li>Supabase: <a href="https://app.supabase.com">https://app.supabase.com</a></li>
+<li>Server: SSH to v1api.materialshub.gr</li>
+</ul>
+<p><strong>Repositories</strong>:</p>
+<ul>
+<li>Frontend: <a href="https://github.com/creativeghq/material-kai-vision-platform">https://github.com/creativeghq/material-kai-vision-platform</a></li>
+<li>Backend: <a href="https://github.com/creativeghq/mivaa-pdf-extractor">https://github.com/creativeghq/mivaa-pdf-extractor</a></li>
+</ul>
+<hr>
+<h2>📝 Documentation Standards</h2>
+<p>All documentation follows these standards:</p>
+<ul>
+<li>✅ Clear, concise language</li>
+<li>✅ Code examples where applicable</li>
+<li>✅ Structured with headers</li>
+<li>✅ Links to related docs</li>
+<li>✅ No task lists or planning documents</li>
+<li>✅ Production-focused content</li>
+<li>✅ Updated regularly</li>
+</ul>
+<hr>
+<h2>🔄 Documentation Updates</h2>
+<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production<br><strong>Maintainer</strong>: Development Team</p>
+<hr>
+<h2>📞 Support</h2>
+<p>For questions or issues:</p>
+<ul>
+<li>Check <strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong></li>
+<li>Review <strong><a href="api-endpoints.md">api-endpoints.md</a></strong></li>
+<li>Contact: <a href="mailto:support@materialkaivision.com">support@materialkaivision.com</a></li>
+<li>GitHub Issues: <a href="https://github.com/creativeghq/material-kai-vision-platform/issues">https://github.com/creativeghq/material-kai-vision-platform/issues</a></li>
+</ul>
+<hr>
+<p><strong>Total Documentation</strong>: 10 comprehensive guides<br><strong>Total Lines</strong>: 5,000+<br><strong>Coverage</strong>: 100% of platform features</p>
+
+</div></body></html>

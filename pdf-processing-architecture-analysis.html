@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>PDF Processing Architecture Analysis</h1>
+<h2>Current Implementation Issues</h2>
+<h3>1. <strong>Two Separate Endpoints with Different Approaches</strong></h3>
+<h4><strong>Endpoint 1: <code>/documents/upload-with-discovery</code></strong> (CORRECT APPROACH)</h4>
+<ul>
+<li><strong>Purpose</strong>: Upload PDF with AI-powered product discovery</li>
+<li><strong>Product Discovery</strong>: ✅ <strong>DYNAMIC</strong> - Uses Claude/GPT to identify products</li>
+<li><strong>Focused Extraction</strong>: Optional parameter (<code>focused_extraction=True/False</code>)</li>
+<li><strong>How it works</strong>:<ol>
+<li><strong>Stage 0</strong>: Claude/GPT analyzes entire PDF → discovers products dynamically</li>
+<li><strong>Stage 1</strong>: If <code>focused_extraction=True</code>, only process pages from discovery</li>
+<li><strong>Stage 2</strong>: Create chunks for product content</li>
+<li><strong>Stage 3</strong>: Extract and process images</li>
+<li><strong>Stage 4</strong>: Create product records from discovery</li>
+<li><strong>Stage 5</strong>: Queue Claude validation (async)</li>
+</ol>
+</li>
+</ul>
+<h4><strong>Endpoint 2: <code>/documents/upload-focused</code></strong> (PROBLEMATIC APPROACH)</h4>
+<ul>
+<li><strong>Purpose</strong>: Upload PDF for specific product extraction</li>
+<li><strong>Product Discovery</strong>: ❌ <strong>HARDCODED</strong> - Requires manual product name input</li>
+<li><strong>Focused Extraction</strong>: Always enabled</li>
+<li><strong>How it works</strong>:<ol>
+<li>User provides <code>product_name</code>, <code>designer</code>, <code>search_terms</code></li>
+<li><code>FocusedProductExtractor</code> searches for text matches in PDF</li>
+<li>Extracts only pages containing those search terms</li>
+<li>Processes extracted pages</li>
+</ol>
+</li>
+</ul>
+<p><strong>PROBLEM</strong>: This endpoint uses text search instead of AI discovery, defeating the purpose of Claude Stage 0.</p>
+<hr>
+<h3>2. <strong>Focused Extraction Logic Issues</strong></h3>
+<h4><strong>Current Implementation</strong> (Lines 2057-2071):</h4>
+<pre><code class="language-python">product_pages = set()
+if focused_extraction:
+    logger.info(f&quot;   ENABLED - Processing ONLY pages with {len(catalog.products)} products&quot;)
+    for product in catalog.products:
+        product_pages.update(product.page_range)  # ✅ Uses Claude discovery results
+    
+    pages_to_skip = set(range(1, pdf_result.page_count + 1)) - product_pages
+    for page_num in pages_to_skip:
+        tracker.skip_page_processing(page_num, &quot;Not a product page (focused extraction)&quot;)
+else:
+    logger.info(f&quot;   DISABLED - Processing ALL {pdf_result.page_count} pages&quot;)
+    product_pages = set(range(1, pdf_result.page_count + 1))  # ✅ Process all pages
+</code></pre>
+<p><strong>This is CORRECT!</strong> It uses Claude&#39;s discovery results to determine product pages.</p>
+<h4><strong>Image Processing Logic</strong> (Lines 2245-2250):</h4>
+<pre><code class="language-python"># Process images with Llama + CLIP (always extract images, even in focused mode)
+images_processed = 0
+logger.info(f&quot;   Total images extracted from PDF: {len(pdf_result_with_images.extracted_images)}&quot;)
+logger.info(f&quot;   Images grouped by page: {len(images_by_page)} pages with images&quot;)
+logger.info(f&quot;   Product pages to process: {sorted(product_pages)}&quot;)
+</code></pre>
+<p><strong>ISSUE</strong>: The comment says &quot;always extract images, even in focused mode&quot; but the code should respect <code>focused_extraction</code> flag.</p>
+<hr>
+<h3>3. <strong>What Happens with <code>focused_extraction=True</code> vs <code>False</code></strong></h3>
+<h4><strong>When <code>focused_extraction=True</code> (DEFAULT)</strong>:</h4>
+<ol>
+<li><strong>Stage 0</strong>: Claude analyzes entire PDF → identifies products on pages 5-11</li>
+<li><strong>Stage 1</strong>: <code>product_pages = {5, 6, 7, 8, 9, 10, 11}</code> (from Claude discovery)</li>
+<li><strong>Stage 2</strong>: Chunks created ONLY from pages 5-11</li>
+<li><strong>Stage 3</strong>: Images extracted from ALL pages, but should only process images from pages 5-11</li>
+<li><strong>Stage 4</strong>: Products created from Claude discovery (11 products)</li>
+</ol>
+<p><strong>Expected Behavior</strong>:</p>
+<ul>
+<li>✅ Chunks: Only from product pages (pages 5-11)</li>
+<li>⚠️ Images: Should only save images from product pages (pages 5-11)</li>
+<li>✅ Products: All 11 products from Claude discovery</li>
+</ul>
+<h4><strong>When <code>focused_extraction=False</code></strong>:</h4>
+<ol>
+<li><strong>Stage 0</strong>: Claude analyzes entire PDF → identifies products on pages 5-11</li>
+<li><strong>Stage 1</strong>: <code>product_pages = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}</code> (ALL pages)</li>
+<li><strong>Stage 2</strong>: Chunks created from ALL pages</li>
+<li><strong>Stage 3</strong>: Images extracted and processed from ALL pages</li>
+<li><strong>Stage 4</strong>: Products created from Claude discovery (11 products)</li>
+</ol>
+<p><strong>Expected Behavior</strong>:</p>
+<ul>
+<li>✅ Chunks: From all pages (1-11)</li>
+<li>✅ Images: From all pages (1-11)</li>
+<li>✅ Products: All 11 products from Claude discovery</li>
+</ul>
+<hr>
+<h2>Recommendations</h2>
+<h3><strong>1. Remove or Deprecate <code>/documents/upload-focused</code> Endpoint</strong></h3>
+<p><strong>Reason</strong>: This endpoint uses hardcoded product names instead of AI discovery, which contradicts the platform&#39;s intelligent discovery architecture.</p>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><strong>Option A</strong>: Delete the endpoint entirely</li>
+<li><strong>Option B</strong>: Redirect it to <code>/documents/upload-with-discovery</code> with <code>focused_extraction=True</code></li>
+<li><strong>Option C</strong>: Keep it for backward compatibility but mark as deprecated</li>
+</ul>
+<h3><strong>2. Fix Image Processing to Respect <code>focused_extraction</code> Flag</strong></h3>
+<p><strong>Current Issue</strong>: Images are saved from ALL pages regardless of <code>focused_extraction</code> setting.</p>
+<p><strong>Fix Required</strong>: Add filtering logic to only save images from <code>product_pages</code> when <code>focused_extraction=True</code>.</p>
+<p><strong>Location</strong>: Lines 2198-2236 in <code>rag_routes.py</code></p>
+<pre><code class="language-python"># BEFORE (saves all images):
+for img_data in pdf_result_with_images.extracted_images:
+    # Save all images
+
+# AFTER (respects focused_extraction):
+for img_data in pdf_result_with_images.extracted_images:
+    # Extract page number
+    page_num = extract_page_number(img_data[&#39;filename&#39;])
+    
+    # Skip images not on product pages if focused extraction is enabled
+    if focused_extraction and page_num not in product_pages:
+        logger.debug(f&quot;Skipping image from page {page_num} (not a product page)&quot;)
+        continue
+    
+    # Save image to database
+</code></pre>
+<h3><strong>3. Clarify API Documentation</strong></h3>
+<p><strong>Current Confusion</strong>:</p>
+<ul>
+<li>Two endpoints with similar names but different approaches</li>
+<li><code>focused_extraction</code> parameter not clearly documented</li>
+<li>Relationship between product discovery and focused extraction unclear</li>
+</ul>
+<p><strong>Recommended Documentation</strong>:</p>
+<pre><code class="language-markdown">## PDF Upload Endpoints
+
+### `/documents/upload-with-discovery` (RECOMMENDED)
+
+Upload PDF with AI-powered product discovery.
+
+**Parameters**:
+- `file`: PDF file (required)
+- `discovery_model`: AI model for discovery - &quot;claude&quot; (default) or &quot;gpt&quot;
+- `focused_extraction`: Boolean (default: True)
+  - `True`: Process ONLY pages containing products identified by AI
+  - `False`: Process entire PDF, but still use AI to identify products
+
+**How it works**:
+1. AI analyzes entire PDF to identify products (Claude/GPT)
+2. If `focused_extraction=True`: Extract only product pages
+3. If `focused_extraction=False`: Extract all pages
+4. Create chunks, images, and products based on extraction scope
+
+**Use Cases**:
+- `focused_extraction=True`: Product catalogs (skip marketing/admin pages)
+- `focused_extraction=False`: Mixed content PDFs (process everything)
+</code></pre>
+<h3><strong>4. Ensure Consistency Across All Processing Stages</strong></h3>
+<p><strong>Current State</strong>:</p>
+<ul>
+<li>✅ Stage 2 (Chunking): Respects <code>focused_extraction</code></li>
+<li>❌ Stage 3 (Images): Does NOT respect <code>focused_extraction</code></li>
+<li>✅ Stage 4 (Products): Uses Claude discovery (always correct)</li>
+</ul>
+<p><strong>Required Changes</strong>:</p>
+<ul>
+<li>Fix Stage 3 to respect <code>focused_extraction</code> flag</li>
+<li>Ensure all stages use the same <code>product_pages</code> set</li>
+<li>Add validation to ensure consistency</li>
+</ul>
+<hr>
+<h2>Summary</h2>
+<h3><strong>Key Issues</strong>:</h3>
+<ol>
+<li>❌ <code>/documents/upload-focused</code> uses hardcoded product names (should use AI discovery)</li>
+<li>❌ Image processing doesn&#39;t respect <code>focused_extraction</code> flag</li>
+<li>❌ Two endpoints with overlapping functionality cause confusion</li>
+</ol>
+<h3><strong>Correct Architecture</strong>:</h3>
+<ol>
+<li>✅ Use <code>/documents/upload-with-discovery</code> as primary endpoint</li>
+<li>✅ Claude/GPT discovers products dynamically (no hardcoded names)</li>
+<li>✅ <code>focused_extraction</code> parameter controls processing scope</li>
+<li>✅ All stages (chunks, images, products) respect the same <code>product_pages</code> set</li>
+</ol>
+<h3><strong>Next Steps</strong>:</h3>
+<ol>
+<li>Fix image processing to respect <code>focused_extraction</code> flag</li>
+<li>Deprecate or remove <code>/documents/upload-focused</code> endpoint</li>
+<li>Update API documentation to clarify behavior</li>
+<li>Add validation tests for both <code>focused_extraction=True</code> and <code>False</code></li>
+</ol>
+
+</div></body></html>

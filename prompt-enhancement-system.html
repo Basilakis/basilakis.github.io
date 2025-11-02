@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Prompt Enhancement System</h1>
+<h2>Overview</h2>
+<p>The <strong>Prompt Enhancement System</strong> transforms simple agent prompts (e.g., &quot;Search for Nova&quot;) into detailed, comprehensive extraction prompts using admin-configured templates and contextual enrichment.</p>
+<p>This system enables:</p>
+<ul>
+<li><strong>Admin Control</strong>: Customize extraction prompts through admin panel</li>
+<li><strong>Agent Simplicity</strong>: Agents send simple requests, backend handles complexity</li>
+<li><strong>Quality Assurance</strong>: Consistent, high-quality extraction across all documents</li>
+<li><strong>Flexibility</strong>: Easy to update prompts without code changes</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<pre><code>┌─────────────────┐
+│  Agent Request  │  &quot;Search for Nova&quot;
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│  PromptEnhancementService               │
+│  1. Parse agent intent                  │
+│  2. Load admin template from database   │
+│  3. Add workspace context               │
+│  4. Build enhanced prompt               │
+└────────┬────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│  Enhanced Prompt                        │
+│  &quot;Analyze this PDF catalog and         │
+│   identify ALL products...              │
+│   SPECIAL: Focus on finding &#39;Nova&#39;...  │
+│   [Full detailed instructions]&quot;         │
+└────────┬────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Claude/GPT AI  │  Processes with full context
+└─────────────────┘
+</code></pre>
+<hr>
+<h2>How It Works</h2>
+<h3>1. Agent Sends Simple Prompt</h3>
+<p><strong>Example Agent Requests:</strong></p>
+<pre><code>&quot;extract products&quot;
+&quot;search for NOVA&quot;
+&quot;find certificates&quot;
+&quot;get all logos&quot;
+</code></pre>
+<h3>2. System Enhances Prompt</h3>
+<p>The <code>PromptEnhancementService</code> enhances the prompt by:</p>
+<ol>
+<li><p><strong>Parsing Intent</strong>: Understands what the agent wants</p>
+<ul>
+<li>&quot;search for NOVA&quot; → Find specific product named &quot;NOVA&quot;</li>
+<li>&quot;extract products&quot; → Extract all products comprehensively</li>
+</ul>
+</li>
+<li><p><strong>Loading Admin Template</strong>: Retrieves custom prompt from database</p>
+<ul>
+<li>Stage: <code>discovery</code></li>
+<li>Category: <code>products</code></li>
+<li>Workspace: User&#39;s workspace ID</li>
+</ul>
+</li>
+<li><p><strong>Adding Context</strong>: Enriches with workspace settings</p>
+<ul>
+<li>Quality thresholds</li>
+<li>Document metadata</li>
+<li>Previous extraction results</li>
+</ul>
+</li>
+<li><p><strong>Building Final Prompt</strong>: Combines everything</p>
+<ul>
+<li>Admin template (detailed instructions)</li>
+<li>Agent intent (specific focus)</li>
+<li>Workspace context (quality requirements)</li>
+<li>PDF content (actual data to analyze)</li>
+</ul>
+</li>
+</ol>
+<h3>3. AI Processes Enhanced Prompt</h3>
+<p>Claude/GPT receives the full, detailed prompt and returns comprehensive results.</p>
+<hr>
+<h2>Admin Prompt Management</h2>
+<h3>Database Schema</h3>
+<p><strong>Table: <code>extraction_prompts</code></strong></p>
+<pre><code class="language-sql">CREATE TABLE extraction_prompts (
+    id UUID PRIMARY KEY,
+    workspace_id UUID NOT NULL,
+    stage TEXT NOT NULL,  -- &#39;discovery&#39;, &#39;chunking&#39;, &#39;image_analysis&#39;, &#39;entity_creation&#39;
+    category TEXT NOT NULL,  -- &#39;products&#39;, &#39;certificates&#39;, &#39;logos&#39;, &#39;specifications&#39;
+    name TEXT NOT NULL,
+    template TEXT NOT NULL,  -- The actual prompt template
+    description TEXT,
+    quality_threshold FLOAT DEFAULT 0.7,
+    is_active BOOLEAN DEFAULT true,
+    version INTEGER DEFAULT 1,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    created_by UUID,
+    updated_by UUID
+);
+</code></pre>
+<h3>Default Prompts</h3>
+<p>Default prompts are seeded using:</p>
+<pre><code class="language-bash">cd mivaa-pdf-extractor
+python scripts/seed_default_prompts.py
+</code></pre>
+<p><strong>Default Prompts Include:</strong></p>
+<ul>
+<li><code>discovery/products</code> - Comprehensive product extraction</li>
+<li><code>discovery/certificates</code> - Certificate and compliance discovery</li>
+<li><code>discovery/logos</code> - Logo and brand mark identification</li>
+<li><code>discovery/specifications</code> - Technical specification extraction</li>
+</ul>
+<h3>Customizing Prompts</h3>
+<p><strong>Via Admin API:</strong></p>
+<pre><code class="language-bash"># Get current prompt
+GET /api/admin/extraction-prompts/discovery/products
+
+# Update prompt
+PUT /api/admin/extraction-prompts/discovery/products
+{
+  &quot;template&quot;: &quot;Your custom prompt template...&quot;,
+  &quot;quality_threshold&quot;: 0.8,
+  &quot;description&quot;: &quot;Updated for better accuracy&quot;
+}
+
+# View history
+GET /api/admin/extraction-prompts/history/{prompt_id}
+</code></pre>
+<p><strong>Via Admin Panel:</strong></p>
+<ol>
+<li>Navigate to Admin → Extraction Prompts</li>
+<li>Select stage and category</li>
+<li>Edit template in rich text editor</li>
+<li>Test prompt before saving</li>
+<li>Save and version automatically increments</li>
+</ol>
+<hr>
+<h2>Example: &quot;Search for Nova&quot;</h2>
+<h3>Input</h3>
+<pre><code class="language-json">{
+  &quot;agent_prompt&quot;: &quot;search for NOVA&quot;,
+  &quot;categories&quot;: [&quot;products&quot;],
+  &quot;workspace_id&quot;: &quot;ffafc28b-1b8b-4b0d-b226-9f9a6154004e&quot;
+}
+</code></pre>
+<h3>Enhancement Process</h3>
+<p><strong>Step 1: Parse Intent</strong></p>
+<pre><code class="language-python">{
+  &quot;action&quot;: &quot;search&quot;,
+  &quot;target&quot;: &quot;NOVA&quot;,
+  &quot;category&quot;: &quot;products&quot;,
+  &quot;specificity&quot;: &quot;high&quot;
+}
+</code></pre>
+<p><strong>Step 2: Load Admin Template</strong></p>
+<pre><code>Analyze this PDF catalog and identify ALL products with complete metadata.
+
+**REQUIRED INFORMATION:**
+- Product name and all variants
+- Page ranges where product appears
+- Designer/brand/studio information
+...
+</code></pre>
+<p><strong>Step 3: Add Context</strong></p>
+<pre><code class="language-python">{
+  &quot;workspace_settings&quot;: {
+    &quot;quality_threshold&quot;: 0.7,
+    &quot;preferred_models&quot;: [&quot;claude-sonnet-4-5&quot;]
+  },
+  &quot;document_context&quot;: {
+    &quot;total_pages&quot;: 52,
+    &quot;pdf_preview&quot;: &quot;HARMONY COLLECTION...&quot;
+  }
+}
+</code></pre>
+<p><strong>Step 4: Build Enhanced Prompt</strong></p>
+<pre><code>You are analyzing a material/product catalog PDF with 52 pages.
+
+**USER REQUEST:** &quot;search for NOVA&quot;
+
+Your task is to identify and extract content across the following categories:
+
+**PRODUCTS:**
+Analyze this PDF catalog and identify ALL products with complete metadata.
+[Full admin template...]
+
+**SPECIAL HANDLING FOR USER REQUEST:**
+- User mentioned specific product name: &quot;NOVA&quot;
+- Prioritize finding this product
+- Provide comprehensive results with high confidence scores
+- Include all variants, dimensions, and metadata for NOVA
+
+**OUTPUT FORMAT (JSON):**
+{
+  &quot;products&quot;: [
+    {
+      &quot;name&quot;: &quot;NOVA&quot;,
+      &quot;designer&quot;: &quot;...&quot;,
+      ...
+    }
+  ],
+  ...
+}
+
+**PDF CONTENT:**
+[First 50,000 characters of PDF text]
+
+Analyze the above content and return ONLY valid JSON...
+</code></pre>
+<h3>Output</h3>
+<pre><code class="language-json">{
+  &quot;products&quot;: [
+    {
+      &quot;name&quot;: &quot;NOVA&quot;,
+      &quot;designer&quot;: &quot;SG NY&quot;,
+      &quot;studio&quot;: &quot;SG NY&quot;,
+      &quot;page_range&quot;: [12, 13, 14],
+      &quot;dimensions&quot;: [&quot;15×38&quot;, &quot;20×40&quot;],
+      &quot;variants&quot;: [
+        {&quot;type&quot;: &quot;color&quot;, &quot;value&quot;: &quot;beige&quot;},
+        {&quot;type&quot;: &quot;finish&quot;, &quot;value&quot;: &quot;matte&quot;}
+      ],
+      &quot;category&quot;: &quot;tiles&quot;,
+      &quot;metafields&quot;: {
+        &quot;slip_resistance&quot;: &quot;R11&quot;,
+        &quot;fire_rating&quot;: &quot;A1&quot;,
+        &quot;thickness&quot;: &quot;8mm&quot;
+      },
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;total_products&quot;: 1,
+  &quot;confidence_score&quot;: 0.95
+}
+</code></pre>
+<hr>
+<h2>API Integration</h2>
+<h3>Upload with Agent Prompt</h3>
+<pre><code class="language-bash">POST /api/rag/documents/upload
+Content-Type: multipart/form-data
+
+file: harmony.pdf
+categories: products
+agent_prompt: search for NOVA
+enable_prompt_enhancement: true
+workspace_id: ffafc28b-1b8b-4b0d-b226-9f9a6154004e
+</code></pre>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc-123&quot;,
+  &quot;document_id&quot;: &quot;doc-456&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;message&quot;: &quot;Document upload started with products extraction&quot;,
+  &quot;status_url&quot;: &quot;/api/rag/documents/job/abc-123&quot;,
+  &quot;categories&quot;: [&quot;products&quot;],
+  &quot;discovery_model&quot;: &quot;claude&quot;,
+  &quot;prompt_enhancement_enabled&quot;: true
+}
+</code></pre>
+<hr>
+<h2>Benefits</h2>
+<h3>For Admins</h3>
+<p>✅ <strong>Full Control</strong>: Customize extraction prompts without code changes<br>✅ <strong>Version History</strong>: Track all prompt changes with audit trail<br>✅ <strong>Quality Tuning</strong>: Adjust quality thresholds per category<br>✅ <strong>Testing</strong>: Test prompts before deploying to production  </p>
+<h3>For Agents</h3>
+<p>✅ <strong>Simplicity</strong>: Send simple requests like &quot;search for Nova&quot;<br>✅ <strong>Consistency</strong>: Always get high-quality, detailed results<br>✅ <strong>Flexibility</strong>: No need to know extraction details  </p>
+<h3>For System</h3>
+<p>✅ <strong>Maintainability</strong>: Update prompts without code deployment<br>✅ <strong>Scalability</strong>: Easy to add new categories and stages<br>✅ <strong>Quality</strong>: Consistent extraction across all documents<br>✅ <strong>Auditability</strong>: Full history of prompt changes  </p>
+<hr>
+<h2>Best Practices</h2>
+<h3>Writing Good Prompts</h3>
+<ol>
+<li><strong>Be Specific</strong>: Clearly define what to extract</li>
+<li><strong>Provide Examples</strong>: Show expected output format</li>
+<li><strong>Set Quality Bars</strong>: Define minimum confidence scores</li>
+<li><strong>Handle Edge Cases</strong>: Account for variations in documents</li>
+<li><strong>Use Structured Output</strong>: Request JSON for easy parsing</li>
+</ol>
+<h3>Testing Prompts</h3>
+<pre><code class="language-bash">POST /api/admin/extraction-prompts/test
+{
+  &quot;stage&quot;: &quot;discovery&quot;,
+  &quot;category&quot;: &quot;products&quot;,
+  &quot;template&quot;: &quot;Your test prompt...&quot;,
+  &quot;test_content&quot;: &quot;Sample PDF text...&quot;
+}
+</code></pre>
+<h3>Monitoring Performance</h3>
+<ul>
+<li>Track confidence scores per prompt version</li>
+<li>Monitor extraction accuracy</li>
+<li>Review failed extractions</li>
+<li>Iterate on prompts based on results</li>
+</ul>
+<hr>
+<h2>Future Enhancements</h2>
+<ul>
+<li><input disabled="" type="checkbox"> A/B testing for prompts</li>
+<li><input disabled="" type="checkbox"> Auto-optimization based on results</li>
+<li><input disabled="" type="checkbox"> Multi-language prompt support</li>
+<li><input disabled="" type="checkbox"> Prompt templates marketplace</li>
+<li><input disabled="" type="checkbox"> AI-assisted prompt generation</li>
+</ul>
+
+</div></body></html>
