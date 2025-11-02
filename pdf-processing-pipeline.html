@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>PDF Processing Pipeline - Complete Technical Guide</h1>
+<p>14-stage intelligent pipeline for transforming material catalogs into searchable knowledge.</p>
+<hr>
+<h2>🎯 Pipeline Overview</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 0A: Product Discovery (0-10%)                             │
+│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ Purpose: Extract products with ALL metadata (inseparable)      │
+│ Output: Products with metadata JSONB (factory, specs, etc.)    │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 0B: Document Entity Discovery (10-15%) - OPTIONAL         │
+│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ Purpose: Extract certificates, logos, specifications           │
+│ Output: Document entities stored separately with relationships │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 1: Focused Extraction (15-30%)                            │
+│ Process: Extract ONLY pages containing identified products     │
+│ Output: Focused PDF with product content                       │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 2: Text Extraction (30-40%)                               │
+│ Tool: PyMuPDF4LLM                                              │
+│ Output: Structured markdown with preserved layout              │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 3: Semantic Chunking (40-50%)                             │
+│ Tool: Anthropic Semantic Chunking                              │
+│ Output: 229+ semantic chunks (Harmony PDF example)             │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 4: Text Embeddings (50-60%)                               │
+│ Model: OpenAI text-embedding-3-small                           │
+│ Output: 1536D vectors for semantic search                      │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 5: Image Extraction (60-70%)                              │
+│ Process: Extract all images, store in Supabase Storage         │
+│ Output: Images with metadata                                   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 6: Image Analysis (70-80%)                                │
+│ Model: Llama 4 Scout 17B Vision                                │
+│ Output: OCR, materials, quality scores (0-1 scale)             │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 7-10: Multi-Vector Embeddings (80-91%)                    │
+│ Models: OpenAI CLIP (5 types)                                  │
+│ Output: Visual, color, texture, application embeddings         │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 11: Product Creation (91-95%)                             │
+│ Models: Claude Haiku 4.5 → Claude Sonnet 4.5                   │
+│ Output: Product records with relationships                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 12: Entity Linking (95-97%)                               │
+│ Process: Link products, chunks, images, document entities      │
+│ Output: Relationships with relevance scores                    │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 13: Quality Enhancement (97-100%) - ASYNC                 │
+│ Model: Claude Sonnet 4.5                                       │
+│ Output: Enhanced product records &amp; validated entities          │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>📋 Detailed Stage Breakdown</h2>
+<h3>Stage 0A: Product Discovery (0-10%)</h3>
+<p><strong>Purpose</strong>: Extract products with ALL metadata (Products + Metadata = Inseparable)</p>
+<p><strong>AI Model</strong>: Claude Sonnet 4.5 or GPT-4o</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Extract full PDF text</li>
+<li>Analyze content structure</li>
+<li>Identify product boundaries</li>
+<li>Extract products WITH all metadata in one pass</li>
+<li>Store in products table with metadata JSONB</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;products&quot;: [
+    {
+      &quot;name&quot;: &quot;NOVA&quot;,
+      &quot;description&quot;: &quot;Modern ceramic tile collection&quot;,
+      &quot;page_range&quot;: [12, 13, 14],
+      &quot;metadata&quot;: {
+        &quot;designer&quot;: &quot;SG NY&quot;,
+        &quot;studio&quot;: &quot;SG NY&quot;,
+        &quot;category&quot;: &quot;tiles&quot;,
+        &quot;dimensions&quot;: [&quot;15×38&quot;, &quot;20×40&quot;],
+        &quot;variants&quot;: [{&quot;type&quot;: &quot;color&quot;, &quot;value&quot;: &quot;beige&quot;}],
+        &quot;factory&quot;: &quot;Castellón Factory&quot;,
+        &quot;factory_group&quot;: &quot;Harmony Group&quot;,
+        &quot;manufacturer&quot;: &quot;Harmony Materials&quot;,
+        &quot;country_of_origin&quot;: &quot;Spain&quot;,
+        &quot;slip_resistance&quot;: &quot;R11&quot;,
+        &quot;fire_rating&quot;: &quot;A1&quot;,
+        &quot;thickness&quot;: &quot;8mm&quot;,
+        &quot;water_absorption&quot;: &quot;Class 3&quot;,
+        &quot;finish&quot;: &quot;matte&quot;,
+        &quot;material&quot;: &quot;ceramic&quot;
+      },
+      &quot;image_indices&quot;: [12, 13],
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;total_products&quot;: 14,
+  &quot;confidence_score&quot;: 0.95
+}
+</code></pre>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li>Table: <code>products</code></li>
+<li>ALL metadata stored in <code>metadata</code> JSONB column</li>
+<li>Products and metadata are inseparable</li>
+</ul>
+<p><strong>Example (Harmony PDF)</strong>:</p>
+<ul>
+<li>14 distinct products identified</li>
+<li>95% confidence score</li>
+<li>Processing time: 3-5 seconds</li>
+</ul>
+<hr>
+<h3>Stage 0B: Document Entity Discovery (10-15%) - OPTIONAL</h3>
+<p><strong>Purpose</strong>: Extract certificates, logos, specifications as separate knowledge base</p>
+<p><strong>AI Model</strong>: Claude Sonnet 4.5 or GPT-4o</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Analyze PDF for document entities</li>
+<li>Extract certificates (ISO, CE, quality certifications)</li>
+<li>Extract logos (company, brand, certification marks)</li>
+<li>Extract specifications (technical docs, installation guides)</li>
+<li>Identify factory/group for each entity</li>
+<li>Store in document_entities table</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;certificates&quot;: [
+    {
+      &quot;name&quot;: &quot;ISO 9001:2015&quot;,
+      &quot;certificate_type&quot;: &quot;quality_management&quot;,
+      &quot;issuer&quot;: &quot;TÜV SÜD&quot;,
+      &quot;issue_date&quot;: &quot;2024-01-15&quot;,
+      &quot;expiry_date&quot;: &quot;2027-01-15&quot;,
+      &quot;standards&quot;: [&quot;ISO 9001:2015&quot;],
+      &quot;page_range&quot;: [45, 46],
+      &quot;factory_name&quot;: &quot;Castellón Factory&quot;,
+      &quot;factory_group&quot;: &quot;Harmony Group&quot;,
+      &quot;confidence&quot;: 0.92
+    }
+  ],
+  &quot;logos&quot;: [
+    {
+      &quot;name&quot;: &quot;Company Logo&quot;,
+      &quot;logo_type&quot;: &quot;company&quot;,
+      &quot;description&quot;: &quot;Main company brand logo&quot;,
+      &quot;page_range&quot;: [1, 2],
+      &quot;confidence&quot;: 0.98
+    }
+  ],
+  &quot;specifications&quot;: [
+    {
+      &quot;name&quot;: &quot;Installation Guide&quot;,
+      &quot;spec_type&quot;: &quot;installation&quot;,
+      &quot;description&quot;: &quot;Step-by-step installation instructions&quot;,
+      &quot;page_range&quot;: [50, 52],
+      &quot;confidence&quot;: 0.90
+    }
+  ]
+}
+</code></pre>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li>Table: <code>document_entities</code></li>
+<li>Linked to products via <code>product_document_relationships</code></li>
+<li>Supports factory/group filtering for agentic queries</li>
+</ul>
+<p><strong>Agentic Query Examples</strong>:</p>
+<ul>
+<li>&quot;Get certifications for Castellón Factory&quot;</li>
+<li>&quot;Get logos for Harmony Group&quot;</li>
+<li>&quot;Get specifications for product NOVA&quot;</li>
+</ul>
+<hr>
+<h3>Stage 1: Focused Extraction (15-30%)</h3>
+<p><strong>Purpose</strong>: Extract ONLY product-related pages</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Use product discovery results</li>
+<li>Identify page ranges for each product</li>
+<li>Extract only those pages</li>
+<li>Skip marketing/administrative content</li>
+</ol>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>40-60% reduction in processing time</li>
+<li>Focused on relevant content</li>
+<li>Reduced noise in embeddings</li>
+</ul>
+<p><strong>Output</strong>: Focused PDF with product content</p>
+<hr>
+<h3>Stage 2: Text Extraction (30-40%)</h3>
+<p><strong>Tool</strong>: PyMuPDF4LLM</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Extract text from focused PDF</li>
+<li>Preserve document structure</li>
+<li>Handle complex layouts</li>
+<li>Generate markdown</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-markdown"># Product Name
+
+## Specifications
+- Material: ...
+- Dimensions: ...
+- Color: ...
+
+## Description
+...
+</code></pre>
+<hr>
+<h3>Stage 3: Semantic Chunking (40-50%)</h3>
+<p><strong>Tool</strong>: Anthropic Semantic Chunking</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Split text at semantic boundaries</li>
+<li>Respect paragraph/sentence structure</li>
+<li>Configurable chunk sizes (512-2048 chars)</li>
+<li>Calculate quality scores</li>
+</ol>
+<p><strong>Chunking Strategies</strong>:</p>
+<ul>
+<li><strong>Semantic</strong>: Paragraph/sentence boundaries</li>
+<li><strong>Fixed Size</strong>: Fixed character count</li>
+<li><strong>Hybrid</strong>: Combination of both</li>
+<li><strong>Layout-Aware</strong>: Respect document layout</li>
+</ul>
+<p><strong>Quality Scoring</strong>:</p>
+<ul>
+<li>Completeness (0-1)</li>
+<li>Coherence (0-1)</li>
+<li>Boundary quality (0-1)</li>
+<li>Final score: Average of above</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;chunks&quot;: [
+    {
+      &quot;id&quot;: &quot;chunk_1&quot;,
+      &quot;content&quot;: &quot;...&quot;,
+      &quot;quality_score&quot;: 0.92,
+      &quot;page_range&quot;: &quot;1-2&quot;,
+      &quot;metadata&quot;: {}
+    }
+  ],
+  &quot;total_chunks&quot;: 229
+}
+</code></pre>
+<hr>
+<h3>Stage 4: Text Embeddings (50-60%)</h3>
+<p><strong>Model</strong>: OpenAI text-embedding-3-small</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Generate embeddings for each chunk</li>
+<li>Store in pgvector</li>
+<li>Create similarity indexes</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<ul>
+<li>1536D vectors</li>
+<li>Stored in <code>embeddings</code> table</li>
+<li>Indexed for fast similarity search</li>
+</ul>
+<hr>
+<h3>Stage 5: Image Extraction (60-70%)</h3>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Extract all images from PDF</li>
+<li>Store in Supabase Storage</li>
+<li>Generate base64 for analysis</li>
+<li>Create image metadata</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;images&quot;: [
+    {
+      &quot;id&quot;: &quot;image_1&quot;,
+      &quot;page&quot;: 2,
+      &quot;filename&quot;: &quot;page_2_image_1.png&quot;,
+      &quot;url&quot;: &quot;https://storage.supabase.co/...&quot;,
+      &quot;size&quot;: &quot;1024x768&quot;,
+      &quot;format&quot;: &quot;png&quot;
+    }
+  ],
+  &quot;total_images&quot;: 45
+}
+</code></pre>
+<hr>
+<h3>Stage 6: Image Analysis (70-80%)</h3>
+<p><strong>Model</strong>: Llama 4 Scout 17B Vision</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Analyze each image</li>
+<li>Perform OCR on material specs</li>
+<li>Extract material properties</li>
+<li>Calculate quality score</li>
+</ol>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;image_id&quot;: &quot;image_1&quot;,
+  &quot;ocr_text&quot;: &quot;Material: Wool, 100%&quot;,
+  &quot;materials&quot;: [&quot;Wool&quot;],
+  &quot;properties&quot;: {
+    &quot;weight&quot;: &quot;400 gsm&quot;,
+    &quot;weave&quot;: &quot;Plain&quot;
+  },
+  &quot;quality_score&quot;: 0.87
+}
+</code></pre>
+<p><strong>Quality Scoring</strong>:</p>
+<ul>
+<li>Text clarity (0-1)</li>
+<li>Material visibility (0-1)</li>
+<li>Spec completeness (0-1)</li>
+<li>Final score: Average</li>
+</ul>
+<hr>
+<h3>Stages 7-10: Multi-Vector Embeddings (80-91%)</h3>
+<p><strong>Model</strong>: OpenAI CLIP</p>
+<p><strong>5 Embedding Types</strong>:</p>
+<ol>
+<li><p><strong>Visual Embeddings</strong> (512D)</p>
+<ul>
+<li>Overall visual appearance</li>
+<li>Enables visual similarity search</li>
+</ul>
+</li>
+<li><p><strong>Large Visual Embeddings</strong> (1536D)</p>
+<ul>
+<li>High-resolution visual features</li>
+<li>Better accuracy</li>
+</ul>
+</li>
+<li><p><strong>Color Embeddings</strong> (256D)</p>
+<ul>
+<li>Color palette analysis</li>
+<li>Color-based search</li>
+</ul>
+</li>
+<li><p><strong>Texture Embeddings</strong> (256D)</p>
+<ul>
+<li>Surface texture analysis</li>
+<li>Texture-based search</li>
+</ul>
+</li>
+<li><p><strong>Application Embeddings</strong> (512D)</p>
+<ul>
+<li>Use case classification</li>
+<li>Application-based search</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>Stage 11: Product Creation (91-95%)</h3>
+<p><strong>Models</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5</p>
+<p><strong>Two-Stage Validation</strong>:</p>
+<p><strong>Stage 1 (Haiku - Fast)</strong>:</p>
+<ul>
+<li>Analyze all chunks</li>
+<li>Identify product candidates</li>
+<li>Extract basic information</li>
+<li>Processing time: 3-5 seconds</li>
+</ul>
+<p><strong>Stage 2 (Sonnet - Deep)</strong>:</p>
+<ul>
+<li>For each candidate, perform deep analysis</li>
+<li>Validate product completeness</li>
+<li>Extract detailed metadata</li>
+<li>Create product records</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;product_id&quot;: &quot;prod_1&quot;,
+  &quot;name&quot;: &quot;Product Name&quot;,
+  &quot;description&quot;: &quot;...&quot;,
+  &quot;metafields&quot;: {},
+  &quot;chunks&quot;: [&quot;chunk_1&quot;, &quot;chunk_2&quot;],
+  &quot;images&quot;: [&quot;image_1&quot;, &quot;image_2&quot;],
+  &quot;confidence_score&quot;: 0.95
+}
+</code></pre>
+<hr>
+<h3>Stage 12: Metafield Extraction (95-97%)</h3>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Extract structured metadata</li>
+<li>Link to products and chunks</li>
+<li>Support 200+ metafield types</li>
+</ol>
+<p><strong>Metafield Types</strong>:</p>
+<ul>
+<li>Material composition</li>
+<li>Dimensions</li>
+<li>Weight</li>
+<li>Color</li>
+<li>Texture</li>
+<li>Application</li>
+<li>Care instructions</li>
+<li>Certifications</li>
+<li>Pricing</li>
+<li>Availability</li>
+</ul>
+<hr>
+<h3>Stage 13: Quality Enhancement (97-100%) - ASYNC</h3>
+<p><strong>Model</strong>: Claude Sonnet 4.5</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Validate product completeness</li>
+<li>Enrich with additional metadata</li>
+<li>Improve descriptions</li>
+<li>Runs asynchronously</li>
+</ol>
+<p><strong>Output</strong>: Enhanced product records</p>
+<hr>
+<h2>🔄 Checkpoint Recovery</h2>
+<p>9 checkpoints for failure recovery:</p>
+<ol>
+<li><strong>INITIALIZED</strong> - Job created</li>
+<li><strong>PDF_EXTRACTED</strong> - PDF analysis complete</li>
+<li><strong>CHUNKS_CREATED</strong> - Text chunking complete</li>
+<li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Text embeddings complete</li>
+<li><strong>IMAGES_EXTRACTED</strong> - Image extraction complete</li>
+<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - Visual embeddings complete</li>
+<li><strong>PRODUCTS_DETECTED</strong> - Products identified</li>
+<li><strong>PRODUCTS_CREATED</strong> - Product creation complete</li>
+<li><strong>COMPLETED</strong> - All processing complete</li>
+</ol>
+<p><strong>Recovery Process</strong>:</p>
+<pre><code class="language-python">if job.checkpoint_stage:
+    resume_from_checkpoint(job.checkpoint_stage)
+else:
+    start_from_beginning()
+</code></pre>
+<hr>
+<h2>📊 Performance Metrics</h2>
+<p><strong>Harmony PDF Example</strong>:</p>
+<ul>
+<li>Total pages: 156</li>
+<li>Products identified: 14</li>
+<li>Chunks created: 229</li>
+<li>Images extracted: 45</li>
+<li>Processing time: 8-12 minutes</li>
+<li>Success rate: 100%</li>
+</ul>
+<p><strong>Accuracy Metrics</strong>:</p>
+<ul>
+<li>Product detection: 95%+</li>
+<li>Material recognition: 90%+</li>
+<li>Metafield extraction: 88%+</li>
+<li>Search relevance: 85%+</li>
+</ul>
+<hr>
+<h2>🚀 API Endpoint</h2>
+<pre><code class="language-http">POST /api/v1/pdf/upload
+Content-Type: multipart/form-data
+
+Parameters:
+- file: PDF file
+- title: Optional document title
+- discovery_model: &quot;claude&quot; (default) or &quot;gpt&quot;
+- focused_extraction: true (default)
+
+Response: { job_id, status_url, processing_stages }
+</code></pre>
+<hr>
+<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Pipeline Version</strong>: 14-Stage<br><strong>Status</strong>: Production</p>
+
+</div></body></html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>System Architecture</h1>
+<p>Complete technical architecture of Material Kai Vision Platform.</p>
+<hr>
+<h2>🏗️ Three-Tier Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ FRONTEND TIER (Vercel Edge Network)                         │
+│ React 18 + TypeScript + Vite + Shadcn/UI                   │
+│ - Materials Catalog                                         │
+│ - Search Hub (Semantic, Vector, Hybrid, Visual)            │
+│ - Admin Dashboard                                           │
+│ - Real-time Monitoring                                      │
+│ - 3D Material Visualization                                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+                    (HTTPS REST API)
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ API TIER (MIVAA - FastAPI)                                  │
+│ Python 3.11 + FastAPI + Uvicorn                            │
+│ Deployed: v1api.materialshub.gr                            │
+│ - 74+ REST API endpoints                                    │
+│ - 14-stage PDF processing pipeline                          │
+│ - RAG system (LlamaIndex)                                   │
+│ - Search APIs (Semantic, Vector, Hybrid)                   │
+│ - AI Services (Claude, GPT, Llama, CLIP)                   │
+│ - Product Management                                        │
+│ - Admin &amp; Monitoring                                        │
+│ - Background job processing                                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+                    (PostgreSQL + pgvector)
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ DATA TIER (Supabase PostgreSQL 15 + pgvector)              │
+│ - Documents &amp; Chunks                                        │
+│ - Products &amp; Metafields                                     │
+│ - Images &amp; Embeddings                                       │
+│ - Vector Indexes (pgvector)                                 │
+│ - Row-Level Security (RLS)                                  │
+│ - Real-time subscriptions                                   │
+│ - Storage (Supabase Storage)                                │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>🔌 Hybrid Architecture Pattern</h2>
+<p><strong>Key Design</strong>: Frontend calls MIVAA directly (no proxy Edge Functions)</p>
+<pre><code>Frontend (Vercel)
+    ↓
+    └─→ MIVAA API (v1api.materialshub.gr)
+            ↓
+            ├─→ Supabase (Data)
+            ├─→ OpenAI (Embeddings)
+            ├─→ Anthropic (Claude)
+            ├─→ Together AI (Llama)
+            └─→ Supabase Storage (Images)
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>✅ Reduced latency (no proxy layer)</li>
+<li>✅ Lower costs (fewer Edge Functions)</li>
+<li>✅ Simpler architecture</li>
+<li>✅ Better error handling</li>
+<li>✅ Direct authentication</li>
+</ul>
+<hr>
+<h2>📊 Database Schema</h2>
+<h3>Core Tables</h3>
+<p><strong>workspaces</strong></p>
+<ul>
+<li>Multi-tenant isolation</li>
+<li>User workspace association</li>
+<li>Metadata storage</li>
+</ul>
+<p><strong>documents</strong></p>
+<ul>
+<li>PDF metadata</li>
+<li>Processing status</li>
+<li>File references</li>
+<li>Workspace association</li>
+</ul>
+<p><strong>chunks</strong></p>
+<ul>
+<li>Text segments</li>
+<li>Quality scores</li>
+<li>Document references</li>
+<li>Embedding references</li>
+</ul>
+<p><strong>products</strong></p>
+<ul>
+<li>Extracted products</li>
+<li>Metadata</li>
+<li>Chunk associations</li>
+<li>Image associations</li>
+</ul>
+<p><strong>images</strong></p>
+<ul>
+<li>Extracted images</li>
+<li>Analysis results</li>
+<li>Quality scores</li>
+<li>Storage references</li>
+</ul>
+<p><strong>metafields</strong></p>
+<ul>
+<li>Structured metadata</li>
+<li>Product associations</li>
+<li>Chunk associations</li>
+<li>Type definitions</li>
+</ul>
+<p><strong>embeddings</strong></p>
+<ul>
+<li>Vector storage (pgvector)</li>
+<li>6 types: text, visual, color, texture, application, semantic</li>
+<li>Similarity indexes</li>
+<li>Chunk/image references</li>
+</ul>
+<p><strong>background_jobs</strong></p>
+<ul>
+<li>Async job tracking</li>
+<li>Status monitoring</li>
+<li>Progress tracking</li>
+<li>Error handling</li>
+</ul>
+<p><strong>job_progress</strong></p>
+<ul>
+<li>Real-time progress updates</li>
+<li>Stage tracking</li>
+<li>Checkpoint data</li>
+<li>Performance metrics</li>
+</ul>
+<hr>
+<h2>🔐 Authentication &amp; Security</h2>
+<h3>Triple Authentication Support</h3>
+<ol>
+<li><p><strong>Supabase JWT</strong> (Frontend)</p>
+<ul>
+<li>HS256 algorithm</li>
+<li>&quot;authenticated&quot; audience</li>
+<li>24-hour expiry</li>
+<li>User identification</li>
+</ul>
+</li>
+<li><p><strong>MIVAA JWT</strong> (Internal)</p>
+<ul>
+<li>Service-to-service</li>
+<li>Long-lived tokens</li>
+<li>API operations</li>
+</ul>
+</li>
+<li><p><strong>API Keys</strong> (External)</p>
+<ul>
+<li>Simple authentication</li>
+<li>Rate limiting</li>
+<li>External integrations</li>
+</ul>
+</li>
+</ol>
+<h3>Row-Level Security (RLS)</h3>
+<pre><code class="language-sql">-- Users can only access their workspace data
+CREATE POLICY &quot;workspace_isolation&quot;
+ON documents
+FOR SELECT
+USING (workspace_id = auth.uid());
+</code></pre>
+<hr>
+<h2>🚀 API Endpoints (74+)</h2>
+<h3>9 Categories</h3>
+<ol>
+<li><p><strong>PDF Processing</strong> (12 endpoints)</p>
+<ul>
+<li>Upload, extract, process PDFs</li>
+<li>Job status tracking</li>
+<li>Progress streaming</li>
+</ul>
+</li>
+<li><p><strong>Document Management</strong> (13 endpoints)</p>
+<ul>
+<li>CRUD operations</li>
+<li>Batch processing</li>
+<li>Content retrieval</li>
+</ul>
+</li>
+<li><p><strong>Search APIs</strong> (8 endpoints)</p>
+<ul>
+<li>Semantic search</li>
+<li>Vector search</li>
+<li>Hybrid search</li>
+<li>Visual search</li>
+</ul>
+</li>
+<li><p><strong>Image Analysis</strong> (5 endpoints)</p>
+<ul>
+<li>Image analysis</li>
+<li>Batch processing</li>
+<li>Similarity search</li>
+</ul>
+</li>
+<li><p><strong>RAG System</strong> (7 endpoints)</p>
+<ul>
+<li>Document upload</li>
+<li>Query interface</li>
+<li>Chat functionality</li>
+<li>Statistics</li>
+</ul>
+</li>
+<li><p><strong>Embeddings</strong> (3 endpoints)</p>
+<ul>
+<li>Text embeddings</li>
+<li>Batch embeddings</li>
+<li>CLIP embeddings</li>
+</ul>
+</li>
+<li><p><strong>Products</strong> (6 endpoints)</p>
+<ul>
+<li>CRUD operations</li>
+<li>Similarity search</li>
+<li>Listing</li>
+</ul>
+</li>
+<li><p><strong>Admin &amp; Monitoring</strong> (8 endpoints)</p>
+<ul>
+<li>Job monitoring</li>
+<li>Progress tracking</li>
+<li>Health checks</li>
+<li>Metrics</li>
+</ul>
+</li>
+<li><p><strong>AI Services</strong> (11 endpoints)</p>
+<ul>
+<li>Classification</li>
+<li>Boundary detection</li>
+<li>Validation</li>
+<li>Enrichment</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>🤖 AI Integration</h2>
+<h3>12 AI Models</h3>
+<p><strong>Anthropic</strong>:</p>
+<ul>
+<li>Claude Sonnet 4.5 (Product discovery, enrichment)</li>
+<li>Claude Haiku 4.5 (Fast validation)</li>
+<li>Semantic Chunking (Text segmentation)</li>
+</ul>
+<p><strong>OpenAI</strong>:</p>
+<ul>
+<li>GPT-4o (Alternative discovery)</li>
+<li>text-embedding-3-small (Text embeddings)</li>
+<li>CLIP (5 embedding types)</li>
+</ul>
+<p><strong>Together AI</strong>:</p>
+<ul>
+<li>Llama 4 Scout 17B Vision (Image analysis, OCR)</li>
+</ul>
+<p><strong>LlamaIndex</strong>:</p>
+<ul>
+<li>RAG system (Document indexing, retrieval)</li>
+</ul>
+<hr>
+<h2>📈 Scalability</h2>
+<h3>Horizontal Scaling</h3>
+<p><strong>Frontend</strong>:</p>
+<ul>
+<li>Vercel Edge Network (global CDN)</li>
+<li>Auto-scaling</li>
+<li>99.99% uptime SLA</li>
+</ul>
+<p><strong>API</strong>:</p>
+<ul>
+<li>FastAPI with Uvicorn</li>
+<li>Load balancing</li>
+<li>Horizontal pod autoscaling</li>
+<li>Connection pooling</li>
+</ul>
+<p><strong>Database</strong>:</p>
+<ul>
+<li>Supabase managed PostgreSQL</li>
+<li>Automatic backups</li>
+<li>Read replicas</li>
+<li>pgvector indexes</li>
+</ul>
+<h3>Performance Optimization</h3>
+<p><strong>Caching</strong>:</p>
+<ul>
+<li>Redis for frequently accessed data</li>
+<li>Query result caching</li>
+<li>Embedding caching</li>
+</ul>
+<p><strong>Indexing</strong>:</p>
+<ul>
+<li>pgvector indexes for similarity search</li>
+<li>Full-text search indexes</li>
+<li>Composite indexes</li>
+</ul>
+<p><strong>Batch Processing</strong>:</p>
+<ul>
+<li>Batch embeddings</li>
+<li>Batch image analysis</li>
+<li>Batch product creation</li>
+</ul>
+<hr>
+<h2>🔄 Data Flow</h2>
+<h3>PDF Upload Flow</h3>
+<pre><code>1. User uploads PDF (Frontend)
+   ↓
+2. Frontend calls MIVAA API
+   ↓
+3. MIVAA creates job record
+   ↓
+4. Background task starts
+   ↓
+5. 14-stage pipeline executes
+   ↓
+6. Progress updates to database
+   ↓
+7. Frontend polls for updates
+   ↓
+8. Results stored in database
+   ↓
+9. Frontend displays results
+</code></pre>
+<h3>Search Flow</h3>
+<pre><code>1. User enters search query (Frontend)
+   ↓
+2. Frontend calls MIVAA search API
+   ↓
+3. MIVAA generates query embedding
+   ↓
+4. pgvector similarity search
+   ↓
+5. Results ranked and filtered
+   ↓
+6. Results returned to frontend
+   ↓
+7. Frontend displays results
+</code></pre>
+<hr>
+<h2>🛠️ Technology Stack</h2>
+<p><strong>Frontend</strong>:</p>
+<ul>
+<li>React 18</li>
+<li>TypeScript</li>
+<li>Vite</li>
+<li>Shadcn/ui</li>
+<li>TailwindCSS</li>
+<li>Vercel deployment</li>
+</ul>
+<p><strong>Backend</strong>:</p>
+<ul>
+<li>FastAPI</li>
+<li>Python 3.11</li>
+<li>Uvicorn</li>
+<li>Pydantic</li>
+<li>SQLAlchemy</li>
+</ul>
+<p><strong>Database</strong>:</p>
+<ul>
+<li>PostgreSQL 15</li>
+<li>pgvector</li>
+<li>Supabase</li>
+<li>Redis (optional)</li>
+</ul>
+<p><strong>AI Services</strong>:</p>
+<ul>
+<li>OpenAI API</li>
+<li>Anthropic API</li>
+<li>Together AI API</li>
+<li>LlamaIndex</li>
+</ul>
+<p><strong>Infrastructure</strong>:</p>
+<ul>
+<li>Vercel (Frontend)</li>
+<li>Self-hosted server (Backend)</li>
+<li>Supabase (Database)</li>
+<li>Supabase Storage (Images)</li>
+</ul>
+<hr>
+<h2>📊 Monitoring &amp; Observability</h2>
+<h3>Metrics</h3>
+<ul>
+<li>Request latency</li>
+<li>Error rates</li>
+<li>Processing time</li>
+<li>API usage</li>
+<li>Database performance</li>
+<li>AI model costs</li>
+</ul>
+<h3>Logging</h3>
+<ul>
+<li>Structured logging</li>
+<li>Error tracking</li>
+<li>Performance profiling</li>
+<li>Audit logs</li>
+</ul>
+<h3>Alerting</h3>
+<ul>
+<li>Health checks</li>
+<li>Error thresholds</li>
+<li>Performance degradation</li>
+<li>Resource limits</li>
+</ul>
+<hr>
+<h2>🔒 Security Measures</h2>
+<p>✅ HTTPS/TLS encryption<br>✅ JWT authentication<br>✅ Row-Level Security (RLS)<br>✅ API rate limiting<br>✅ Input validation<br>✅ SQL injection prevention<br>✅ CORS configuration<br>✅ Audit logging  </p>
+<hr>
+<h2>📈 Production Metrics</h2>
+<ul>
+<li><strong>Uptime</strong>: 99.5%+</li>
+<li><strong>API Endpoints</strong>: 74+</li>
+<li><strong>Processing Speed</strong>: 1-15 minutes per PDF</li>
+<li><strong>Accuracy</strong>: 95%+ product detection</li>
+<li><strong>Scalability</strong>: 5,000+ concurrent users</li>
+<li><strong>Data Volume</strong>: 100,000+ products indexed</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+
+</div></body></html>
