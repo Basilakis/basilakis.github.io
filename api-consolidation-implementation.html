@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>API Consolidation Implementation Guide</h1>
+<p><strong>Status:</strong> Phase 1 Complete ✅<br><strong>Date:</strong> 2025-11-02<br><strong>Version:</strong> 2.1.0</p>
+<hr>
+<h2>Executive Summary</h2>
+<p>Successfully implemented <strong>Phase 1: Backend Implementation</strong> of the API consolidation plan, reducing endpoint complexity and improving developer experience through parameter-based routing.</p>
+<h3>Key Achievements</h3>
+<p>✅ <strong>Consolidated Upload Endpoint</strong> - Single entry point for all upload scenarios<br>✅ <strong>Enhanced Search Endpoint</strong> - Strategy-based routing for all search types<br>✅ <strong>Enhanced Query Endpoint</strong> - Auto-detecting modality for multimodal queries<br>✅ <strong>Unified Health Check</strong> - Single endpoint for all service health checks<br>✅ <strong>Deprecation Warnings</strong> - Added to old endpoints with migration guides</p>
+<hr>
+<h2>Implementation Details</h2>
+<h3>1. Consolidated Upload Endpoint</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/rag/documents/upload</code></p>
+<p><strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/documents/process</code> (simple extraction)</li>
+<li><code>/api/documents/process-url</code> (URL processing)</li>
+<li><code>/api/documents/upload</code> (old unified upload)</li>
+</ul>
+<p><strong>New Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>processing_mode</code></td>
+<td>string</td>
+<td><code>&quot;standard&quot;</code></td>
+<td>Processing mode: <code>quick</code>, <code>standard</code>, <code>deep</code></td>
+</tr>
+<tr>
+<td><code>categories</code></td>
+<td>string</td>
+<td><code>&quot;all&quot;</code></td>
+<td>Categories to extract: <code>products</code>, <code>certificates</code>, <code>logos</code>, <code>specifications</code>, <code>all</code>, <code>extract_only</code></td>
+</tr>
+<tr>
+<td><code>file_url</code></td>
+<td>string</td>
+<td><code>null</code></td>
+<td>URL to download PDF from (alternative to file upload)</td>
+</tr>
+<tr>
+<td><code>discovery_model</code></td>
+<td>string</td>
+<td><code>&quot;claude&quot;</code></td>
+<td>AI model for discovery: <code>claude</code>, <code>gpt</code>, <code>haiku</code></td>
+</tr>
+<tr>
+<td><code>enable_prompt_enhancement</code></td>
+<td>boolean</td>
+<td><code>true</code></td>
+<td>Enable AI prompt enhancement</td>
+</tr>
+<tr>
+<td><code>agent_prompt</code></td>
+<td>string</td>
+<td><code>null</code></td>
+<td>Natural language instruction</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>string</td>
+<td>Required</td>
+<td>Workspace ID</td>
+</tr>
+</tbody></table>
+<p><strong>Processing Modes:</strong></p>
+<ol>
+<li><p><strong>Quick Mode</strong> (<code>processing_mode=&quot;quick&quot;</code>)</p>
+<ul>
+<li>Fast extraction without RAG</li>
+<li>No embeddings generated</li>
+<li>No product discovery</li>
+<li>Use for: Simple text/image extraction</li>
+</ul>
+</li>
+<li><p><strong>Standard Mode</strong> (<code>processing_mode=&quot;standard&quot;</code>) - DEFAULT</p>
+<ul>
+<li>Full RAG pipeline</li>
+<li>Text embeddings generated</li>
+<li>Product discovery and extraction</li>
+<li>Use for: Normal document processing</li>
+</ul>
+</li>
+<li><p><strong>Deep Mode</strong> (<code>processing_mode=&quot;deep&quot;</code>)</p>
+<ul>
+<li>Complete analysis with all AI models</li>
+<li>Image embeddings (CLIP)</li>
+<li>Advanced product enrichment</li>
+<li>Quality validation</li>
+<li>Use for: High-quality catalog processing</li>
+</ul>
+</li>
+</ol>
+<p><strong>Migration Examples:</strong></p>
+<pre><code class="language-bash"># OLD: Simple extraction
+POST /api/documents/process
+{
+  &quot;file&quot;: &lt;file&gt;,
+  &quot;extract_text&quot;: true,
+  &quot;extract_images&quot;: false
+}
+
+# NEW: Consolidated upload with quick mode
+POST /api/rag/documents/upload
+{
+  &quot;file&quot;: &lt;file&gt;,
+  &quot;processing_mode&quot;: &quot;quick&quot;,
+  &quot;categories&quot;: &quot;extract_only&quot;
+}
+</code></pre>
+<pre><code class="language-bash"># OLD: URL processing
+POST /api/documents/process-url
+{
+  &quot;url&quot;: &quot;https://example.com/catalog.pdf&quot;
+}
+
+# NEW: Consolidated upload with URL
+POST /api/rag/documents/upload
+{
+  &quot;file_url&quot;: &quot;https://example.com/catalog.pdf&quot;,
+  &quot;processing_mode&quot;: &quot;standard&quot;,
+  &quot;categories&quot;: &quot;all&quot;
+}
+</code></pre>
+<hr>
+<h3>2. Enhanced Search Endpoint</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/rag/search</code></p>
+<p><strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/search/semantic</code></li>
+<li><code>/api/search/similarity</code></li>
+<li><code>/api/search/multimodal</code></li>
+<li><code>/api/unified-search</code></li>
+<li><code>/api/search/materials/visual</code></li>
+</ul>
+<p><strong>New Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>strategy</code></td>
+<td>string</td>
+<td><code>&quot;semantic&quot;</code></td>
+<td>Search strategy: <code>semantic</code>, <code>vector</code>, <code>multi_vector</code>, <code>hybrid</code>, <code>material</code>, <code>image</code></td>
+</tr>
+</tbody></table>
+<p><strong>Search Strategies:</strong></p>
+<ol>
+<li><p><strong>Semantic Search</strong> (<code>strategy=&quot;semantic&quot;</code>) - DEFAULT</p>
+<ul>
+<li>Natural language understanding</li>
+<li>Context-aware matching</li>
+<li>Best for: Text queries, conceptual search</li>
+</ul>
+</li>
+<li><p><strong>Vector Search</strong> (<code>strategy=&quot;vector&quot;</code>)</p>
+<ul>
+<li>Pure vector similarity</li>
+<li>Fast and efficient</li>
+<li>Best for: Similar document finding</li>
+</ul>
+</li>
+<li><p><strong>Multi-Vector Search</strong> (<code>strategy=&quot;multi_vector&quot;</code>)</p>
+<ul>
+<li>Combines text and image embeddings</li>
+<li>Multimodal understanding</li>
+<li>Best for: Queries with both text and visual elements</li>
+</ul>
+</li>
+<li><p><strong>Hybrid Search</strong> (<code>strategy=&quot;hybrid&quot;</code>)</p>
+<ul>
+<li>Combines semantic and keyword search</li>
+<li>Best of both worlds</li>
+<li>Best for: Complex queries requiring precision and recall</li>
+</ul>
+</li>
+<li><p><strong>Material Search</strong> (<code>strategy=&quot;material&quot;</code>)</p>
+<ul>
+<li>Specialized for material properties</li>
+<li>Visual and textual material matching</li>
+<li>Best for: Finding materials by appearance or properties</li>
+</ul>
+</li>
+<li><p><strong>Image Search</strong> (<code>strategy=&quot;image&quot;</code>)</p>
+<ul>
+<li>Image-based similarity</li>
+<li>CLIP embeddings</li>
+<li>Best for: Finding visually similar content</li>
+</ul>
+</li>
+</ol>
+<p><strong>Migration Examples:</strong></p>
+<pre><code class="language-bash"># OLD: Semantic search
+POST /api/search/semantic
+{
+  &quot;query&quot;: &quot;modern minimalist furniture&quot;,
+  &quot;top_k&quot;: 10
+}
+
+# NEW: Consolidated search with semantic strategy
+POST /api/rag/search?strategy=semantic
+{
+  &quot;query&quot;: &quot;modern minimalist furniture&quot;,
+  &quot;top_k&quot;: 10
+}
+</code></pre>
+<pre><code class="language-bash"># OLD: Multimodal search
+POST /api/search/multimodal
+{
+  &quot;query&quot;: &quot;textured ceramic tiles&quot;,
+  &quot;top_k&quot;: 20
+}
+
+# NEW: Consolidated search with multi_vector strategy
+POST /api/rag/search?strategy=multi_vector
+{
+  &quot;query&quot;: &quot;textured ceramic tiles&quot;,
+  &quot;top_k&quot;: 20
+}
+</code></pre>
+<hr>
+<h3>3. Enhanced Query Endpoint</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/rag/query</code></p>
+<p><strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/query/multimodal</code></li>
+<li><code>/api/documents/{id}/query</code></li>
+<li><code>/api/documents/{id}/summarize</code></li>
+</ul>
+<p><strong>New Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>modality</code></td>
+<td>string</td>
+<td>Auto-detected</td>
+<td>Query modality: <code>text</code>, <code>image</code>, <code>multimodal</code></td>
+</tr>
+<tr>
+<td><code>image_url</code></td>
+<td>string</td>
+<td><code>null</code></td>
+<td>Image URL for image or multimodal queries</td>
+</tr>
+<tr>
+<td><code>image_data</code></td>
+<td>string</td>
+<td><code>null</code></td>
+<td>Base64-encoded image data</td>
+</tr>
+</tbody></table>
+<p><strong>Modality Detection:</strong></p>
+<p>The system automatically detects the query modality:</p>
+<ol>
+<li><p><strong>Text Query</strong> (Auto-detected)</p>
+<ul>
+<li>Only <code>query</code> parameter provided</li>
+<li>Pure text-based RAG</li>
+<li>Best for: Factual questions, information retrieval</li>
+</ul>
+</li>
+<li><p><strong>Image Query</strong> (Auto-detected)</p>
+<ul>
+<li><code>image_url</code> or <code>image_data</code> provided without text</li>
+<li>Vision model analysis</li>
+<li>Best for: Visual similarity, image understanding</li>
+</ul>
+</li>
+<li><p><strong>Multimodal Query</strong> (Auto-detected)</p>
+<ul>
+<li>Both <code>query</code> and image provided</li>
+<li>Combined text and vision analysis</li>
+<li>Best for: Complex queries requiring both text and visual understanding</li>
+</ul>
+</li>
+</ol>
+<p><strong>Migration Examples:</strong></p>
+<pre><code class="language-bash"># OLD: Multimodal query
+POST /api/query/multimodal
+{
+  &quot;query&quot;: &quot;Find products similar to this image&quot;,
+  &quot;image_url&quot;: &quot;https://example.com/reference.jpg&quot;
+}
+
+# NEW: Consolidated query with auto-detection
+POST /api/rag/query
+{
+  &quot;query&quot;: &quot;Find products similar to this image&quot;,
+  &quot;image_url&quot;: &quot;https://example.com/reference.jpg&quot;
+}
+</code></pre>
+<hr>
+<h3>4. Unified Health Check</h3>
+<p><strong>Endpoint:</strong> <code>GET /health</code></p>
+<p><strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/pdf/health</code></li>
+<li><code>/api/documents/health</code></li>
+<li><code>/api/search/health</code></li>
+<li><code>/api/rag/health</code></li>
+<li><code>/api/images/health</code></li>
+<li><code>/api/products/health</code></li>
+<li><code>/api/embeddings/health</code></li>
+<li>All other individual service health checks</li>
+</ul>
+<p><strong>Response Format:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;timestamp&quot;: &quot;2025-11-02T10:30:00Z&quot;,
+  &quot;version&quot;: &quot;2.1.0&quot;,
+  &quot;service&quot;: &quot;MIVAA&quot;,
+  &quot;services&quot;: {
+    &quot;database&quot;: {
+      &quot;status&quot;: &quot;healthy&quot;,
+      &quot;message&quot;: &quot;Connected&quot;,
+      &quot;latency_ms&quot;: 45
+    },
+    &quot;storage&quot;: {
+      &quot;status&quot;: &quot;healthy&quot;,
+      &quot;message&quot;: &quot;Available&quot;
+    },
+    &quot;anthropic&quot;: {
+      &quot;status&quot;: &quot;healthy&quot;,
+      &quot;message&quot;: &quot;Claude Sonnet 4.5 available&quot;
+    },
+    &quot;openai&quot;: {
+      &quot;status&quot;: &quot;healthy&quot;,
+      &quot;message&quot;: &quot;GPT-5 available&quot;
+    },
+    &quot;together_ai&quot;: {
+      &quot;status&quot;: &quot;healthy&quot;,
+      &quot;message&quot;: &quot;Llama 4 Scout available&quot;
+    },
+    &quot;llamaindex&quot;: {
+      &quot;status&quot;: &quot;healthy&quot;,
+      &quot;message&quot;: &quot;Service operational&quot;
+    }
+  }
+}
+</code></pre>
+<p><strong>Migration Example:</strong></p>
+<pre><code class="language-bash"># OLD: Multiple health check calls
+curl /api/pdf/health
+curl /api/documents/health
+curl /api/search/health
+# ... 10+ more endpoints
+
+# NEW: Single health check call
+curl /health
+</code></pre>
+<hr>
+<h2>Next Steps</h2>
+<h3>Phase 2: Documentation &amp; Testing (Days 6-10)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Update API documentation (<code>/docs/api-endpoints.md</code>)</li>
+<li><input disabled="" type="checkbox"> Create comprehensive migration guide</li>
+<li><input disabled="" type="checkbox"> Update OpenAPI schema</li>
+<li><input disabled="" type="checkbox"> Write integration tests for new endpoints</li>
+<li><input disabled="" type="checkbox"> Test deprecation warnings</li>
+<li><input disabled="" type="checkbox"> Update Postman collection</li>
+</ul>
+<h3>Phase 3: Frontend Migration (Days 11-15)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Update <code>src/services/mivaaApiClient.ts</code></li>
+<li><input disabled="" type="checkbox"> Update Supabase Edge Function gateway</li>
+<li><input disabled="" type="checkbox"> Update all frontend components using old endpoints</li>
+<li><input disabled="" type="checkbox"> Test end-to-end workflows</li>
+<li><input disabled="" type="checkbox"> Deploy to staging</li>
+<li><input disabled="" type="checkbox"> Monitor for issues</li>
+</ul>
+<h3>Phase 4: Deprecation &amp; Cleanup (Day 30+)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Remove deprecated endpoints</li>
+<li><input disabled="" type="checkbox"> Clean up old code</li>
+<li><input disabled="" type="checkbox"> Update final documentation</li>
+<li><input disabled="" type="checkbox"> Celebrate! 🎉</li>
+</ul>
+<hr>
+<h2>Files Modified</h2>
+<h3>Backend Files</h3>
+<ol>
+<li><p><strong><code>mivaa-pdf-extractor/app/api/rag_routes.py</code></strong></p>
+<ul>
+<li>Added consolidated upload endpoint (lines 262-702)</li>
+<li>Enhanced search endpoint with strategy parameter (lines 2989-3169)</li>
+<li>Enhanced query endpoint with modality detection (lines 2907-3084)</li>
+</ul>
+</li>
+<li><p><strong><code>mivaa-pdf-extractor/app/api/documents.py</code></strong></p>
+<ul>
+<li>Added deprecation warnings to <code>/process</code> endpoint (line 470)</li>
+<li>Added deprecation warnings to <code>/process-url</code> endpoint (line 680)</li>
+</ul>
+</li>
+<li><p><strong><code>mivaa-pdf-extractor/app/main.py</code></strong></p>
+<ul>
+<li>Enhanced health check endpoint (lines 958-1202)</li>
+<li>Updated HealthResponse model (line 98)</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Testing Checklist</h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> No TypeScript/Python errors</li>
+<li><input disabled="" type="checkbox"> Upload endpoint accepts file uploads</li>
+<li><input disabled="" type="checkbox"> Upload endpoint accepts URL downloads</li>
+<li><input disabled="" type="checkbox"> Search endpoint routes to correct strategy</li>
+<li><input disabled="" type="checkbox"> Query endpoint auto-detects modality</li>
+<li><input disabled="" type="checkbox"> Health check returns all service statuses</li>
+<li><input disabled="" type="checkbox"> Deprecation warnings appear in old endpoints</li>
+<li><input disabled="" type="checkbox"> All parameters validated correctly</li>
+<li><input disabled="" type="checkbox"> Error handling works properly</li>
+<li><input disabled="" type="checkbox"> Documentation is comprehensive</li>
+</ul>
+<hr>
+<h2>Notes</h2>
+<ul>
+<li>All new endpoints include comprehensive docstrings with examples</li>
+<li>Deprecation warnings guide users to new endpoints</li>
+<li>Parameter validation ensures correct usage</li>
+<li>TODO comments mark features not yet implemented (multimodal, hybrid search, etc.)</li>
+<li>All changes are backward compatible during deprecation period</li>
+</ul>
+
+</div></body></html>
