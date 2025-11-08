@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Metadata Management System</h1>
+<h2>Overview</h2>
+<p>The MIVAA Metadata Management System provides intelligent extraction, classification, and application of metadata from PDF catalogs. The system handles 250+ possible metadata attributes through AI-powered dynamic discovery, scope detection, and override logic.</p>
+<h2>Architecture</h2>
+<h3>Core Components</h3>
+<ol>
+<li><strong>Dynamic Metadata Extractor</strong> - AI-powered extraction of metadata from text chunks</li>
+<li><strong>Metadata Scope Detector</strong> - Classifies metadata as product-specific vs catalog-general</li>
+<li><strong>Metadata Application Service</strong> - Applies metadata to products with override logic</li>
+<li><strong>Metadata API</strong> - RESTful endpoints for metadata management</li>
+</ol>
+<h3>Key Features</h3>
+<ul>
+<li><strong>Dynamic Discovery</strong>: AI discovers any metadata attributes present in PDFs</li>
+<li><strong>Scope Detection</strong>: Automatically classifies metadata scope (product-specific, catalog-general, category-specific)</li>
+<li><strong>Implicit Detection</strong>: Identifies catalog-general metadata even when not explicitly stated</li>
+<li><strong>Override Logic</strong>: Product-specific metadata can override catalog-general metadata</li>
+<li><strong>Relevancy Scoring</strong>: All metadata relationships have confidence scores (0.0-1.0)</li>
+</ul>
+<h2>Metadata Scopes</h2>
+<h3>1. Product-Specific</h3>
+<p>Metadata that mentions a specific product name and applies only to that product.</p>
+<p><strong>Example:</strong></p>
+<pre><code>Text: &quot;NOVA tile has R11 slip resistance&quot;
+Scope: product_specific
+Applies To: [&quot;NOVA&quot;]
+Relevance: 0.95 (HIGH)
+</code></pre>
+<h3>2. Catalog-General (Explicit)</h3>
+<p>Metadata that explicitly states it applies to all products.</p>
+<p><strong>Example:</strong></p>
+<pre><code>Text: &quot;All tiles in this catalog are made in Spain&quot;
+Scope: catalog_general_explicit
+Applies To: &quot;all&quot;
+Relevance: 0.5 (MEDIUM)
+</code></pre>
+<h3>3. Catalog-General (Implicit)</h3>
+<p>Metadata mentioned once without product context, implicitly applying to all products.</p>
+<p><strong>Example:</strong></p>
+<pre><code>Text: &quot;Available in 15×38&quot;
+Scope: catalog_general_implicit
+Applies To: &quot;all&quot;
+Relevance: 0.5 (MEDIUM)
+</code></pre>
+<p><strong>Detection Patterns:</strong></p>
+<ul>
+<li>&quot;Available in [dimensions]&quot;</li>
+<li>&quot;Comes in [dimensions]&quot;</li>
+<li>&quot;Factory: [name]&quot;</li>
+<li>&quot;Made in [country]&quot;</li>
+<li>&quot;Dimensions: [size]&quot;</li>
+</ul>
+<h3>4. Category-Specific</h3>
+<p>Metadata that applies to a specific product category.</p>
+<p><strong>Example:</strong></p>
+<pre><code>Text: &quot;All matte tiles have R11 slip resistance&quot;
+Scope: category_specific
+Applies To: [&quot;matte_tiles&quot;]
+Relevance: 0.7 (MEDIUM-HIGH)
+</code></pre>
+<h2>Processing Flow</h2>
+<h3>Stage 1: Chunk Creation</h3>
+<p>PDF content is split into semantic chunks during document processing.</p>
+<pre><code>PDF → PyMuPDF4LLM → Markdown → Semantic Chunking → Document Chunks
+</code></pre>
+<h3>Stage 2: Scope Detection</h3>
+<p>Each chunk is analyzed to determine its metadata scope.</p>
+<pre><code class="language-python"># For each chunk
+scope_result = await scope_detector.detect_scope(
+    chunk_content=chunk.text,
+    product_names=[&quot;NOVA&quot;, &quot;HARMONY&quot;, &quot;ESSENCE&quot;],
+    document_context=&quot;Tile catalog&quot;
+)
+
+# Returns:
+{
+    &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+    &quot;confidence&quot;: 0.85,
+    &quot;applies_to&quot;: &quot;all&quot;,
+    &quot;extracted_metadata&quot;: {&quot;dimensions&quot;: &quot;15×38&quot;},
+    &quot;is_override&quot;: False
+}
+</code></pre>
+<h3>Stage 3: Metadata Application</h3>
+<p>Metadata is applied to products in a specific order to handle overrides correctly.</p>
+<pre><code class="language-python"># Processing Order (CRITICAL!)
+# STEP 1: Catalog-general FIRST (implicit + explicit)
+apply_catalog_general_metadata()
+
+# STEP 2: Category-specific
+apply_category_specific_metadata()
+
+# STEP 3: Product-specific LAST (allows overrides)
+apply_product_specific_metadata()
+</code></pre>
+<h3>Stage 4: Override Tracking</h3>
+<p>When product-specific metadata overrides catalog-general metadata, the system tracks it.</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;HARMONY&quot;,
+  &quot;metadata&quot;: {
+    &quot;dimensions&quot;: &quot;20×40&quot;,
+    &quot;slip_resistance&quot;: &quot;R12&quot;,
+    &quot;country_of_origin&quot;: &quot;Spain&quot;,
+    &quot;_overrides&quot;: [&quot;dimensions&quot;]
+  }
+}
+</code></pre>
+<h2>Real-World Example</h2>
+<h3>Input: Tile Catalog PDF</h3>
+<pre><code>Page 1: General Information
+&quot;Available in 15×38&quot;
+&quot;Made in Spain&quot;
+&quot;Factory: Castellón Ceramics&quot;
+
+Page 12: NOVA Product
+&quot;NOVA tile - R11 slip resistance&quot;
+&quot;Matte finish&quot;
+[No dimensions mentioned]
+
+Page 15: HARMONY Product
+&quot;HARMONY tile - R12 slip resistance&quot;
+&quot;Glossy finish&quot;
+&quot;Dimensions: 20×40&quot;
+
+Page 18: ESSENCE Product
+&quot;ESSENCE tile - R10 slip resistance&quot;
+[No dimensions mentioned]
+</code></pre>
+<h3>Output: Product Metadata</h3>
+<pre><code class="language-json">// NOVA - Inherits catalog-general dimensions
+{
+  &quot;name&quot;: &quot;NOVA&quot;,
+  &quot;metadata&quot;: {
+    &quot;dimensions&quot;: &quot;15×38&quot;,
+    &quot;slip_resistance&quot;: &quot;R11&quot;,
+    &quot;finish&quot;: &quot;matte&quot;,
+    &quot;country_of_origin&quot;: &quot;Spain&quot;,
+    &quot;factory_name&quot;: &quot;Castellón Ceramics&quot;
+  }
+}
+
+// HARMONY - Overrides catalog-general dimensions
+{
+  &quot;name&quot;: &quot;HARMONY&quot;,
+  &quot;metadata&quot;: {
+    &quot;dimensions&quot;: &quot;20×40&quot;,
+    &quot;slip_resistance&quot;: &quot;R12&quot;,
+    &quot;finish&quot;: &quot;glossy&quot;,
+    &quot;country_of_origin&quot;: &quot;Spain&quot;,
+    &quot;factory_name&quot;: &quot;Castellón Ceramics&quot;,
+    &quot;_overrides&quot;: [&quot;dimensions&quot;]
+  }
+}
+
+// ESSENCE - Inherits catalog-general dimensions
+{
+  &quot;name&quot;: &quot;ESSENCE&quot;,
+  &quot;metadata&quot;: {
+    &quot;dimensions&quot;: &quot;15×38&quot;,
+    &quot;slip_resistance&quot;: &quot;R10&quot;,
+    &quot;country_of_origin&quot;: &quot;Spain&quot;,
+    &quot;factory_name&quot;: &quot;Castellón Ceramics&quot;
+  }
+}
+</code></pre>
+<h2>Critical Metadata Fields</h2>
+<p>Three metadata fields are always required and extracted:</p>
+<ol>
+<li><strong>material_category</strong> - Auto-detected from keywords (tile, porcelain, etc.) or manually set</li>
+<li><strong>factory_name</strong> - Extracted from PDF or manually set</li>
+<li><strong>factory_group_name</strong> - Extracted from PDF or manually set</li>
+</ol>
+<p>These fields are validated during PDF processing and must be present for successful processing.</p>
+<h2>API Endpoints</h2>
+<h3>POST /api/rag/metadata/detect-scope</h3>
+<p>Detect metadata scope for a text chunk.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;chunk_content&quot;: &quot;Available in 15×38&quot;,
+  &quot;product_names&quot;: [&quot;NOVA&quot;, &quot;HARMONY&quot;, &quot;ESSENCE&quot;],
+  &quot;document_context&quot;: &quot;Tile catalog&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;scope_result&quot;: {
+    &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+    &quot;confidence&quot;: 0.85,
+    &quot;reasoning&quot;: &quot;Dimensions mentioned without product name&quot;,
+    &quot;applies_to&quot;: &quot;all&quot;,
+    &quot;extracted_metadata&quot;: {&quot;dimensions&quot;: &quot;15×38&quot;},
+    &quot;is_override&quot;: false
+  },
+  &quot;processing_time&quot;: 0.45
+}
+</code></pre>
+<h3>POST /api/rag/metadata/apply-to-products</h3>
+<p>Apply metadata to products with scope-aware override logic.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;document_id&quot;: &quot;69cba085-9c2d-405c-aff2-8a20caf0b568&quot;,
+  &quot;chunks_with_scope&quot;: [
+    {
+      &quot;chunk_id&quot;: &quot;chunk-123&quot;,
+      &quot;content&quot;: &quot;Available in 15×38&quot;,
+      &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+      &quot;applies_to&quot;: &quot;all&quot;,
+      &quot;extracted_metadata&quot;: {&quot;dimensions&quot;: &quot;15×38&quot;},
+      &quot;is_override&quot;: false
+    }
+  ]
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;products_updated&quot;: 3,
+  &quot;overrides_detected&quot;: 1,
+  &quot;metadata_applied&quot;: {
+    &quot;NOVA&quot;: {&quot;dimensions&quot;: &quot;15×38&quot;},
+    &quot;HARMONY&quot;: {&quot;dimensions&quot;: &quot;20×40&quot;},
+    &quot;ESSENCE&quot;: {&quot;dimensions&quot;: &quot;15×38&quot;}
+  },
+  &quot;processing_time&quot;: 1.2
+}
+</code></pre>
+<h3>GET /api/rag/metadata/list</h3>
+<p>List metadata with filtering and pagination.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> - Filter by document ID</li>
+<li><code>product_id</code> - Filter by product ID</li>
+<li><code>scope</code> - Filter by scope type</li>
+<li><code>metadata_key</code> - Filter by metadata key</li>
+<li><code>limit</code> - Maximum results (default: 100)</li>
+<li><code>offset</code> - Offset for pagination (default: 0)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;total_count&quot;: 45,
+  &quot;items&quot;: [
+    {
+      &quot;product_id&quot;: &quot;prod-123&quot;,
+      &quot;product_name&quot;: &quot;NOVA&quot;,
+      &quot;metadata_key&quot;: &quot;dimensions&quot;,
+      &quot;metadata_value&quot;: &quot;15×38&quot;,
+      &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+      &quot;is_override&quot;: false
+    }
+  ],
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<h3>GET /api/rag/metadata/statistics</h3>
+<p>Get metadata statistics and analytics.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;total_products&quot;: 14,
+  &quot;total_metadata_fields&quot;: 156,
+  &quot;catalog_general_count&quot;: 42,
+  &quot;product_specific_count&quot;: 98,
+  &quot;override_count&quot;: 16,
+  &quot;most_common_fields&quot;: [
+    {&quot;field&quot;: &quot;dimensions&quot;, &quot;count&quot;: 14},
+    {&quot;field&quot;: &quot;slip_resistance&quot;, &quot;count&quot;: 14},
+    {&quot;field&quot;: &quot;finish&quot;, &quot;count&quot;: 12}
+  ]
+}
+</code></pre>
+<h2>Integration with PDF Processing</h2>
+<p>The metadata system is integrated into the PDF processing pipeline at Stage 4 (after product creation):</p>
+<pre><code>Stage 0: Product Discovery (Claude/GPT)
+Stage 1: PDF Extraction (PyMuPDF4LLM)
+Stage 2: Chunk Creation (Semantic Chunking)
+Stage 3: Product Creation (Vision Analysis)
+Stage 4: Metadata Application ← NEW
+Stage 5: Image Processing
+Stage 6: Embedding Generation
+</code></pre>
+<h2>Database Schema</h2>
+<h3>Products Table</h3>
+<pre><code class="language-sql">CREATE TABLE products (
+  id UUID PRIMARY KEY,
+  workspace_id UUID,
+  name VARCHAR(255),
+  metadata JSONB,  -- All metadata stored here
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+</code></pre>
+<h3>Metadata Structure</h3>
+<pre><code class="language-json">{
+  &quot;dimensions&quot;: &quot;15×38&quot;,
+  &quot;slip_resistance&quot;: &quot;R11&quot;,
+  &quot;finish&quot;: &quot;matte&quot;,
+  &quot;country_of_origin&quot;: &quot;Spain&quot;,
+  &quot;factory_name&quot;: &quot;Castellón Ceramics&quot;,
+  &quot;_overrides&quot;: [&quot;dimensions&quot;],
+  &quot;_scope&quot;: {
+    &quot;dimensions&quot;: &quot;catalog_general_implicit&quot;,
+    &quot;slip_resistance&quot;: &quot;product_specific&quot;
+  }
+}
+</code></pre>
+<h2>Best Practices</h2>
+<ol>
+<li><strong>Always process catalog-general metadata first</strong> - This ensures proper inheritance</li>
+<li><strong>Track overrides</strong> - Use <code>_overrides</code> array to know which fields were overridden</li>
+<li><strong>Use confidence scores</strong> - Filter by confidence &gt;= 0.7 for high-quality metadata</li>
+<li><strong>Validate critical fields</strong> - Ensure material_category, factory_name, factory_group_name are present</li>
+<li><strong>Review implicit detections</strong> - Catalog-general implicit metadata should be reviewed for accuracy</li>
+</ol>
+<h2>Future Enhancements</h2>
+<ul>
+<li><strong>Admin UI for metadata review</strong> - Visual interface to review and edit metadata</li>
+<li><strong>Metadata templates</strong> - Pre-defined templates for common catalog types</li>
+<li><strong>Batch metadata updates</strong> - Update metadata across multiple products</li>
+<li><strong>Metadata versioning</strong> - Track changes to metadata over time</li>
+<li><strong>Custom extraction rules</strong> - Allow admins to define custom extraction patterns</li>
+</ul>
+
+</div></body></html>
