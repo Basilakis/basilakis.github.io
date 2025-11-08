@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Supabase Types Automation</h1>
+<h2>Overview</h2>
+<p>Automated TypeScript type generation from Supabase database schema to ensure type safety across the platform.</p>
+<h2>🎯 Features</h2>
+<ul>
+<li><strong>Automated Type Generation</strong>: Generate TypeScript types from Supabase database schema</li>
+<li><strong>GitHub Actions Integration</strong>: Automatic updates on database migrations</li>
+<li><strong>Scheduled Updates</strong>: Weekly type regeneration to catch manual schema changes</li>
+<li><strong>Type Validation</strong>: Script to verify types are up-to-date</li>
+<li><strong>Manual Triggers</strong>: Generate types on-demand when needed</li>
+</ul>
+<hr>
+<h2>📋 Available Commands</h2>
+<h3>Generate Types from Remote Database</h3>
+<pre><code class="language-bash">npm run types:generate
+</code></pre>
+<p>Generates TypeScript types from the production Supabase database.</p>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li><code>SUPABASE_ACCESS_TOKEN</code> environment variable set</li>
+<li>Supabase CLI installed (<code>npm install</code>)</li>
+</ul>
+<h3>Generate Types from Local Database</h3>
+<pre><code class="language-bash">npm run types:generate:local
+</code></pre>
+<p>Generates TypeScript types from local Supabase instance.</p>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Local Supabase running (<code>supabase start</code>)</li>
+<li>Supabase CLI installed</li>
+</ul>
+<h3>Check Types Status</h3>
+<pre><code class="language-bash">npm run types:check
+</code></pre>
+<p>Verifies that Supabase types file exists and contains expected type definitions.</p>
+<p><strong>Checks:</strong></p>
+<ul>
+<li>File exists and is readable</li>
+<li>File age (warns if &gt;7 days old)</li>
+<li>Required type definitions present</li>
+<li>Table count statistics</li>
+</ul>
+<hr>
+<h2>🤖 Automated Updates</h2>
+<h3>GitHub Actions Workflow</h3>
+<p>The <code>.github/workflows/update-supabase-types.yml</code> workflow automatically updates types:</p>
+<h4>Triggers</h4>
+<ol>
+<li><strong>Manual Trigger</strong>: Run workflow manually from GitHub Actions tab</li>
+<li><strong>Database Migrations</strong>: Automatically runs when migrations are pushed</li>
+<li><strong>Weekly Schedule</strong>: Runs every Monday at 9 AM UTC</li>
+</ol>
+<h4>Workflow Steps</h4>
+<ol>
+<li>Checkout repository</li>
+<li>Install dependencies</li>
+<li>Setup Supabase CLI</li>
+<li>Generate types from remote database</li>
+<li>Check for changes</li>
+<li>Commit and push if changed</li>
+<li>Create PR (for scheduled runs)</li>
+</ol>
+<h4>Required Secrets</h4>
+<p>Configure these in GitHub repository settings:</p>
+<ul>
+<li><code>SUPABASE_PROJECT_ID</code>: Your Supabase project ID (e.g., <code>bgbavxtjlbvgplozizxu</code>)</li>
+<li><code>SUPABASE_ACCESS_TOKEN</code>: Supabase access token with read permissions</li>
+</ul>
+<hr>
+<h2>🔧 Setup Instructions</h2>
+<h3>1. Install Supabase CLI</h3>
+<p>The Supabase CLI is included as a dev dependency:</p>
+<pre><code class="language-bash">npm install
+</code></pre>
+<h3>2. Configure Environment Variables</h3>
+<h4>Local Development</h4>
+<p>Create <code>.env.local</code> file:</p>
+<pre><code class="language-bash">SUPABASE_ACCESS_TOKEN=your-access-token-here
+</code></pre>
+<h4>GitHub Actions</h4>
+<p>Add secrets to repository:</p>
+<ol>
+<li>Go to repository <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong></li>
+<li>Add <code>SUPABASE_PROJECT_ID</code></li>
+<li>Add <code>SUPABASE_ACCESS_TOKEN</code></li>
+</ol>
+<h3>3. Generate Access Token</h3>
+<ol>
+<li>Go to <a href="https://supabase.com/dashboard">Supabase Dashboard</a></li>
+<li>Navigate to <strong>Settings</strong> → <strong>API</strong></li>
+<li>Copy <strong>Project API keys</strong> → <strong>service_role</strong> key</li>
+<li>Or create a new access token in <strong>Account</strong> → <strong>Access Tokens</strong></li>
+</ol>
+<hr>
+<h2>📝 Usage Examples</h2>
+<h3>Manual Type Generation</h3>
+<pre><code class="language-bash"># Generate from remote database
+npm run types:generate
+
+# Generate from local database (if running locally)
+npm run types:generate:local
+
+# Check if types are up-to-date
+npm run types:check
+</code></pre>
+<h3>Verify Types After Generation</h3>
+<pre><code class="language-bash">npm run types:check
+</code></pre>
+<p>Expected output:</p>
+<pre><code>================================================================================
+🔍 Checking Supabase Types
+================================================================================
+
+✅ Types file exists
+   Path: /path/to/src/integrations/supabase/types.ts
+   Size: 45.23 KB
+   Last modified: 2025-11-08T12:00:00.000Z
+
+✅ Types file is recent (0 days old)
+
+📋 Type Definitions Check:
+   ✅ Database type found
+   ✅ Tables type found
+   ✅ TablesInsert type found
+   ✅ TablesUpdate type found
+   ✅ Json type found
+
+📊 Database Statistics:
+   Tables defined: 52
+
+================================================================================
+✅ TYPES CHECK PASSED
+================================================================================
+</code></pre>
+<h3>Trigger GitHub Actions Workflow</h3>
+<ol>
+<li>Go to <strong>Actions</strong> tab in GitHub</li>
+<li>Select <strong>Update Supabase Types</strong> workflow</li>
+<li>Click <strong>Run workflow</strong></li>
+<li>Select branch (usually <code>main</code>)</li>
+<li>Click <strong>Run workflow</strong> button</li>
+</ol>
+<hr>
+<h2>🔄 Workflow Integration</h2>
+<h3>Pre-commit Hook (Optional)</h3>
+<p>Add to <code>.husky/pre-commit</code>:</p>
+<pre><code class="language-bash">#!/bin/sh
+. &quot;$(dirname &quot;$0&quot;)/_/husky.sh&quot;
+
+# Check if types are up-to-date
+npm run types:check
+</code></pre>
+<h3>CI/CD Integration</h3>
+<p>Add to <code>.github/workflows/deploy.yml</code>:</p>
+<pre><code class="language-yaml">- name: Check Supabase types
+  run: npm run types:check
+</code></pre>
+<hr>
+<h2>📊 Type File Structure</h2>
+<p>The generated <code>src/integrations/supabase/types.ts</code> file contains:</p>
+<pre><code class="language-typescript">export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      // All database tables with Row, Insert, Update types
+      documents: {
+        Row: { id: string; title: string; ... }
+        Insert: { id?: string; title: string; ... }
+        Update: { id?: string; title?: string; ... }
+      }
+      // ... more tables
+    }
+    Views: {
+      // Database views
+    }
+    Functions: {
+      // Database functions
+    }
+    Enums: {
+      // Database enums
+    }
+  }
+}
+
+// Helper types
+export type Tables&lt;T extends keyof Database[&#39;public&#39;][&#39;Tables&#39;]&gt; = Database[&#39;public&#39;][&#39;Tables&#39;][T][&#39;Row&#39;]
+export type TablesInsert&lt;T extends keyof Database[&#39;public&#39;][&#39;Tables&#39;]&gt; = Database[&#39;public&#39;][&#39;Tables&#39;][T][&#39;Insert&#39;]
+export type TablesUpdate&lt;T extends keyof Database[&#39;public&#39;][&#39;Tables&#39;]&gt; = Database[&#39;public&#39;][&#39;Tables&#39;][T][&#39;Update&#39;]
+</code></pre>
+<hr>
+<h2>🛠️ Troubleshooting</h2>
+<h3>Types Not Generating</h3>
+<p><strong>Problem</strong>: <code>npm run types:generate</code> fails</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check <code>SUPABASE_ACCESS_TOKEN</code> is set</li>
+<li>Verify Supabase CLI is installed: <code>npx supabase --version</code></li>
+<li>Check project ID is correct: <code>bgbavxtjlbvgplozizxu</code></li>
+<li>Verify network connection to Supabase</li>
+</ol>
+<h3>Types Out of Date</h3>
+<p><strong>Problem</strong>: Types don&#39;t match database schema</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Run <code>npm run types:generate</code> manually</li>
+<li>Check GitHub Actions workflow ran successfully</li>
+<li>Verify database migrations were applied</li>
+<li>Check for manual schema changes in Supabase dashboard</li>
+</ol>
+<h3>GitHub Actions Failing</h3>
+<p><strong>Problem</strong>: Workflow fails to update types</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check secrets are configured correctly</li>
+<li>Verify <code>SUPABASE_ACCESS_TOKEN</code> has read permissions</li>
+<li>Check workflow logs for specific errors</li>
+<li>Ensure repository has write permissions for GitHub Actions</li>
+</ol>
+<hr>
+<h2>📚 Best Practices</h2>
+<ol>
+<li><p><strong>Always regenerate types after schema changes</strong></p>
+<pre><code class="language-bash">npm run types:generate
+</code></pre>
+</li>
+<li><p><strong>Check types before committing</strong></p>
+<pre><code class="language-bash">npm run types:check
+</code></pre>
+</li>
+<li><p><strong>Review automated PRs carefully</strong></p>
+<ul>
+<li>Check for breaking changes</li>
+<li>Verify table/column additions/removals</li>
+<li>Test locally if needed</li>
+</ul>
+</li>
+<li><p><strong>Keep types in sync</strong></p>
+<ul>
+<li>Run weekly automated updates</li>
+<li>Regenerate after migrations</li>
+<li>Monitor GitHub Actions workflow</li>
+</ul>
+</li>
+<li><p><strong>Use generated types in code</strong></p>
+<pre><code class="language-typescript">import { Tables, TablesInsert } from &#39;@/integrations/supabase/types&#39;
+
+type Document = Tables&lt;&#39;documents&#39;&gt;
+type DocumentInsert = TablesInsert&lt;&#39;documents&#39;&gt;
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2>🔗 Related Documentation</h2>
+<ul>
+<li><a href="https://supabase.com/docs/reference/cli">Supabase CLI Documentation</a></li>
+<li><a href="https://supabase.com/docs/guides/api/rest/generating-types">Supabase TypeScript Support</a></li>
+<li><a href="https://docs.github.com/en/actions">GitHub Actions Documentation</a></li>
+</ul>
+<hr>
+<h2>✅ Checklist</h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Supabase CLI installed as dev dependency</li>
+<li><input checked="" disabled="" type="checkbox"> npm scripts configured (<code>types:generate</code>, <code>types:check</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> GitHub Actions workflow created</li>
+<li><input checked="" disabled="" type="checkbox"> Type check script implemented</li>
+<li><input checked="" disabled="" type="checkbox"> Documentation complete</li>
+<li><input disabled="" type="checkbox"> GitHub secrets configured (manual step)</li>
+<li><input disabled="" type="checkbox"> Test type generation locally</li>
+<li><input disabled="" type="checkbox"> Test GitHub Actions workflow</li>
+</ul>
+
+</div></body></html>
