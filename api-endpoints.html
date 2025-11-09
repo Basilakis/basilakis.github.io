@@ -24,58 +24,160 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>MIVAA API Endpoints Reference</h1>
-<p><strong>Last Updated:</strong> 2025-11-02
-<strong>Total Endpoints:</strong> 113
-<strong>Status:</strong> ✅ Production-Ready</p>
-<p>Complete reference of all 113 API endpoints across 14 categories with detailed usage information, database operations, and integration points.</p>
-<p><strong>Recent Updates:</strong></p>
+<p><strong>Last Updated:</strong> 2025-11-09
+<strong>Total Endpoints:</strong> 115 (Consolidated from 113 + Duplicate Detection)
+<strong>Status:</strong> ✅ Production-Ready - API Consolidation Complete + PDF Extraction Consolidation + Duplicate Detection</p>
+<p>Complete reference of all consolidated API endpoints with detailed usage information, database operations, and integration points.</p>
+<p><strong>Recent Updates (API Consolidation + PDF Extraction Consolidation + Duplicate Detection):</strong></p>
 <ul>
-<li>✅ Added 5 new Document Entities endpoints for certificates, logos, specifications</li>
-<li>✅ Updated Products table to use metadata JSONB field (Products + Metadata = Inseparable)</li>
-<li>✅ Removed 4 test/legacy endpoints from Documents routes</li>
-<li>✅ All endpoints are actively used in production</li>
+<li>✅ <strong>DUPLICATE DETECTION:</strong> 7 new endpoints for duplicate detection and product merging (factory-based only)</li>
+<li>✅ <strong>CONSOLIDATED PDF EXTRACTION:</strong> <code>/api/pdf/extract/*</code> endpoints removed - use <code>/api/rag/documents/upload</code> with <code>processing_mode=&quot;quick&quot;</code></li>
+<li>✅ <strong>CONSOLIDATED UPLOAD:</strong> Single <code>/api/rag/documents/upload</code> endpoint replaces 3 separate upload endpoints</li>
+<li>✅ <strong>CONSOLIDATED SEARCH:</strong> Single <code>/api/rag/search</code> endpoint with strategy parameter replaces 8+ search endpoints</li>
+<li>✅ <strong>CONSOLIDATED HEALTH:</strong> Single <code>/health</code> endpoint replaces 10+ individual health checks</li>
+<li>✅ <strong>METADATA MANAGEMENT:</strong> 4 new endpoints for scope detection, application, listing, and statistics</li>
+<li>✅ <strong>REMOVED:</strong> All deprecated endpoints (<code>/process</code>, <code>/process-url</code>, <code>/unified-search</code>)</li>
+<li>✅ <strong>REMOVED:</strong> All test endpoints (4 from documents, 1 from main)</li>
+<li>✅ <strong>REMOVED:</strong> All legacy <code>/api/documents/*</code> endpoints (18 total) - replaced by <code>/api/rag/*</code></li>
+<li>✅ <strong>REMOVED:</strong> All <code>/api/pdf/extract/*</code> endpoints (3 total) - replaced by <code>/api/rag/documents/upload</code></li>
+<li>✅ <strong>DATABASE CLEANUP:</strong> Removed 12 legacy tables (style analysis, visual search, property analysis)</li>
+</ul>
+<p><strong>Total API Endpoints:</strong> 115 endpoints across 15 categories</p>
+<ul>
+<li>✅ <strong>FRONTEND UPDATED:</strong> All API clients updated to use new consolidated endpoints</li>
+<li>✅ <strong>FEATURES PRESERVED:</strong> Prompt enhancement, category extraction, all processing modes intact</li>
+<li>✅ <strong>METADATA SYSTEM:</strong> Dynamic metadata extraction with scope detection and override logic</li>
+<li>✅ <strong>PDF EXTRACTION:</strong> Unified through RAG pipeline with optional quick mode</li>
+<li>✅ <strong>DUPLICATE DETECTION:</strong> Factory-based duplicate detection and product merging (ready for integration)</li>
+</ul>
+<hr>
+<h2>⚠️ Important: Legacy Endpoints Removed</h2>
+<p><strong>All <code>/api/documents/*</code> endpoints have been removed</strong> (except <code>/api/document-entities/*</code> which are valid).</p>
+<p><strong>Removed Endpoints (Use <code>/api/rag/*</code> instead):</strong></p>
+<ul>
+<li><code>POST /api/documents/{document_id}/query</code> → Use <code>POST /api/rag/query</code></li>
+<li><code>GET /api/documents/{document_id}/related</code> → Use <code>GET /api/rag/search?strategy=semantic</code></li>
+<li><code>POST /api/documents/{document_id}/summarize</code> → Not implemented</li>
+<li><code>POST /api/documents/{document_id}/extract-entities</code> → Not implemented</li>
+<li><code>POST /api/documents/compare</code> → Not implemented</li>
+<li><code>POST /api/documents/process</code> → Use <code>POST /api/rag/documents/upload</code></li>
+<li><code>POST /api/documents/process-url</code> → Use <code>POST /api/rag/documents/upload</code> with URL</li>
+<li><code>POST /api/documents/analyze</code> → Use <code>POST /api/rag/documents/upload</code></li>
+<li><code>GET /api/documents/documents</code> → Use <code>GET /api/rag/documents</code></li>
+<li><code>GET /api/documents/documents/{id}</code> → Use <code>GET /api/rag/documents/{id}</code></li>
+<li><code>GET /api/documents/documents/{id}/content</code> → Use <code>GET /api/rag/documents/documents/{id}/content</code></li>
+<li><code>DELETE /api/documents/documents/{id}</code> → Use <code>DELETE /api/rag/documents/{id}</code></li>
 </ul>
 <hr>
 <h2>📋 Table of Contents</h2>
+<p><strong>✨ CONSOLIDATED ENDPOINTS (One Endpoint, One Purpose, No Duplicates)</strong></p>
 <ol>
-<li><a href="#1-rag-routes-25-endpoints">RAG Routes</a> - 25 endpoints</li>
-<li><a href="#2-admin-routes-18-endpoints">Admin Routes</a> - 18 endpoints</li>
-<li><a href="#3-search-routes-18-endpoints">Search Routes</a> - 18 endpoints</li>
-<li><a href="#4-documents-routes-11-endpoints">Documents Routes</a> - 11 endpoints</li>
-<li><a href="#5-ai-services-routes-10-endpoints">AI Services Routes</a> - 10 endpoints</li>
-<li><a href="#6-images-routes-5-endpoints">Images Routes</a> - 5 endpoints</li>
-<li><a href="#7-document-entities-routes-5-endpoints">Document Entities Routes</a> - 5 endpoints ✨ NEW</li>
-<li><a href="#8-pdf-routes-4-endpoints">PDF Routes</a> - 4 endpoints</li>
-<li><a href="#9-products-routes-3-endpoints">Products Routes</a> - 3 endpoints</li>
-<li><a href="#10-embeddings-routes-3-endpoints">Embeddings Routes</a> - 3 endpoints</li>
-<li><a href="#11-together-ai-routes-3-endpoints">Together AI Routes</a> - 3 endpoints</li>
-<li><a href="#12-anthropic-routes-3-endpoints">Anthropic Routes</a> - 3 endpoints</li>
-<li><a href="#13-monitoring-routes-3-endpoints">Monitoring Routes</a> - 3 endpoints</li>
-<li><a href="#14-ai-metrics-routes-2-endpoints">AI Metrics Routes</a> - 2 endpoints</li>
+<li><a href="#1-core-endpoints">Core Endpoints</a> - Health, Status</li>
+<li><a href="#2-rag-routes">RAG Routes</a> - Document Upload, Search, Query (CONSOLIDATED)</li>
+<li><a href="#3-admin-routes">Admin Routes</a> - Admin management</li>
+<li><a href="#3-search-routes">Search Routes</a> - Semantic, Vector, Hybrid Search (CONSOLIDATED)</li>
+<li><a href="#7-document-entities-routes">Document Entities Routes</a> - Certificates, Logos, Specifications</li>
+<li><a href="#9-products-routes">Products Routes</a> - Product management</li>
+<li><a href="#6-images-routes">Images Routes</a> - Image processing</li>
+<li><a href="#10-embeddings-routes">Embeddings Routes</a> - Embedding generation</li>
+<li><a href="#11-together-ai-routes">Together AI Routes</a> - TogetherAI integration</li>
+<li><a href="#12-anthropic-routes">Anthropic Routes</a> - Anthropic integration</li>
+<li><a href="#13-monitoring-routes">Monitoring Routes</a> - System monitoring</li>
+<li><a href="#14-ai-metrics-routes">AI Metrics Routes</a> - AI performance metrics</li>
+<li><a href="#15-duplicate-detection-routes">Duplicate Detection Routes</a> - Duplicate detection and product merging</li>
 </ol>
 <hr>
-<h2>1. RAG Routes (25 endpoints)</h2>
+<h2>1. Core Endpoints</h2>
+<h3>1.1 GET /health</h3>
+<p><strong>Purpose:</strong> Unified health check for all MIVAA services
+<strong>Replaces:</strong> 10+ individual health check endpoints (<code>/api/pdf/health</code>, <code>/api/rag/health</code>, <code>/api/search/health</code>, etc.)</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">GET /health
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;timestamp&quot;: &quot;2025-11-02T10:00:00Z&quot;,
+  &quot;services&quot;: {
+    &quot;database&quot;: {&quot;status&quot;: &quot;healthy&quot;, &quot;response_time_ms&quot;: 5},
+    &quot;storage&quot;: {&quot;status&quot;: &quot;healthy&quot;, &quot;response_time_ms&quot;: 10},
+    &quot;ai_models&quot;: {
+      &quot;claude&quot;: {&quot;status&quot;: &quot;healthy&quot;, &quot;response_time_ms&quot;: 150},
+      &quot;gpt&quot;: {&quot;status&quot;: &quot;healthy&quot;, &quot;response_time_ms&quot;: 120},
+      &quot;llama&quot;: {&quot;status&quot;: &quot;healthy&quot;, &quot;response_time_ms&quot;: 200}
+    },
+    &quot;llamaindex&quot;: {&quot;status&quot;: &quot;healthy&quot;, &quot;response_time_ms&quot;: 8}
+  },
+  &quot;version&quot;: &quot;1.0.0&quot;
+}
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Single request instead of 10+ requests</li>
+<li>✅ Complete system status overview</li>
+<li>✅ Individual service health details</li>
+<li>✅ Response time metrics for each service</li>
+</ul>
+<hr>
+<h2>2. RAG Routes (CONSOLIDATED)</h2>
 <p><strong>Base Path:</strong> <code>/api/rag</code> or <code>/api/v1/rag</code>
 <strong>Purpose:</strong> Core RAG (Retrieval-Augmented Generation) functionality for document processing, querying, and management
-<strong>Used In:</strong> Main PDF upload flow, Knowledge Base, Search functionality</p>
-<h3>1.1 POST /documents/upload-with-discovery</h3>
-<p><strong>Purpose:</strong> Upload PDF with intelligent product discovery and focused extraction
-<strong>Used In:</strong> Main PDF upload modal, Product catalog processing
-<strong>Flow:</strong> User uploads PDF → Product discovery → Focused extraction → Chunking → Image processing → Product creation</p>
+<strong>Philosophy:</strong> One endpoint per function with parameters for different modes/strategies</p>
+<h3>2.1 POST /api/rag/documents/upload</h3>
+<p><strong>Purpose:</strong> CONSOLIDATED upload endpoint for all document processing scenarios
+<strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/documents/process</code> (removed)</li>
+<li><code>/api/documents/process-url</code> (removed)</li>
+<li><code>/api/documents/upload</code> (removed)</li>
+<li><code>/api/documents/{document_id}/query</code> (removed)</li>
+<li><code>/api/documents/{document_id}/related</code> (removed)</li>
+<li><code>/api/documents/{document_id}/summarize</code> (removed)</li>
+<li><code>/api/documents/{document_id}/extract-entities</code> (removed)</li>
+<li><code>/api/documents/compare</code> (removed)</li>
+</ul>
+<p><strong>Used In:</strong> Main PDF upload modal, Product catalog processing, Simple document upload
+<strong>Flow:</strong> User uploads PDF → AI discovery → Category extraction → Chunking → Image processing → Product creation</p>
 <p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/documents/upload-with-discovery
+<pre><code class="language-http">POST /api/rag/documents/upload
 Content-Type: multipart/form-data
 
-Parameters:
-- file: PDF file (required)
+Parameters (Form Data):
+# File Upload (choose one)
+- file: PDF file (for file upload)
+- file_url: URL to PDF (for URL-based upload)
+
+# Processing Mode (choose one)
+- processing_mode: &quot;quick&quot; | &quot;standard&quot; | &quot;deep&quot; (default: &quot;standard&quot;)
+  * quick: Extract only (no embeddings, no AI analysis)
+  * standard: Full RAG processing (embeddings + basic AI)
+  * deep: Complete analysis (embeddings + advanced AI + validation)
+
+# Category Extraction (choose one or more)
+- categories: &quot;products&quot; | &quot;certificates&quot; | &quot;logos&quot; | &quot;specifications&quot; | &quot;all&quot; | &quot;extract_only&quot;
+  * products: Extract product information
+  * certificates: Extract certificates (async)
+  * logos: Extract logos (async)
+  * specifications: Extract specifications (async)
+  * all: Extract all categories
+  * extract_only: No category extraction, just chunks
+
+# AI Model Selection
+- discovery_model: &quot;claude&quot; | &quot;gpt&quot; | &quot;haiku&quot; (default: &quot;claude&quot;)
+
+# Prompt Enhancement System (PRESERVED)
+- agent_prompt: Custom prompt for AI processing (optional)
+- enable_prompt_enhancement: true | false (default: true)
+
+# Document Metadata
 - title: Document title (optional)
 - description: Document description (optional)
 - tags: Comma-separated tags (optional)
-- chunk_size: Chunk size (default: 2048)
-- chunk_overlap: Chunk overlap (default: 200)
-- enable_product_discovery: Enable AI product discovery (default: true)
-- focused_extraction: Process only product pages (default: true)
-- discovery_model: AI model for discovery - &quot;claude&quot; or &quot;gpt&quot; (default: &quot;claude&quot;)
+- workspace_id: Workspace ID (default: system workspace)
+
+# Chunking Configuration
+- chunk_size: Chunk size in characters (default: 2048)
+- chunk_overlap: Overlap between chunks (default: 200)
 </code></pre>
 <p><strong>Response:</strong></p>
 <pre><code class="language-json">{
@@ -110,16 +212,16 @@ Parameters:
 <p><strong>Frontend Integration:</strong></p>
 <ul>
 <li>Used in: <code>PDFUploadModal.tsx</code></li>
-<li>Polls: <code>GET /documents/job/{job_id}</code> for progress</li>
+<li>Polls: <code>GET /api/rag/documents/job/{job_id}</code> for progress</li>
 <li>Displays: Real-time progress with stage indicators</li>
 </ul>
 <hr>
-<h3>1.2 POST /documents/upload-async</h3>
-<p><strong>Purpose:</strong> Upload PDF with standard async processing (no product discovery)
-<strong>Used In:</strong> Simple document upload without product extraction
-<strong>Flow:</strong> User uploads PDF → Chunking → Embeddings → Complete</p>
+<h3>2.2 GET /api/rag/documents/job/{job_id}</h3>
+<p><strong>Purpose:</strong> Get job status and metadata for async processing
+<strong>Used In:</strong> Progress tracking, completion detection, error handling
+<strong>Flow:</strong> Frontend polls this endpoint every 2 seconds during processing</p>
 <p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/documents/upload-async
+<pre><code class="language-http">GET /api/rag/documents/job/{job_id}
 Content-Type: multipart/form-data
 
 Parameters:
@@ -893,87 +995,503 @@ Parameters:
 <p><strong>Database Operations:</strong> UPDATE document_images, document_chunks
 <strong>Frontend Integration:</strong> ImageViewer.tsx (reprocess button)</p>
 <hr>
-<h2>3. Search Routes (18 endpoints)</h2>
-<p><strong>Base Path:</strong> <code>/api/search</code>
-<strong>Purpose:</strong> Search and query functionality across documents
-<strong>Used In:</strong> Search interface, knowledge base, document discovery</p>
-<p><strong>Extract Tables</strong></p>
-<pre><code class="language-http">POST /api/v1/extract/tables
-Content-Type: multipart/form-data
-
-Response: { tables: [{ page, content, format }] }
-</code></pre>
-<p><strong>Extract Images</strong></p>
-<pre><code class="language-http">POST /api/v1/extract/images
-Content-Type: multipart/form-data
-
-Response: { images: [{ page, filename, base64, metadata }] }
-</code></pre>
-<p><strong>Get Job Status</strong></p>
-<pre><code class="language-http">GET /api/v1/documents/job/{job_id}
-
-Response: { status, progress, current_stage, checkpoint, error }
-</code></pre>
-<p><strong>Stream Job Progress</strong></p>
-<pre><code class="language-http">GET /api/v1/documents/job/{job_id}/progress/stream
-
-Response: Server-Sent Events with real-time progress
-</code></pre>
-<hr>
-<h3>2. Document Management (13 endpoints)</h3>
-<p><strong>Process Document</strong></p>
-<pre><code class="language-http">POST /api/documents/process
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file
-- extract_text: boolean
-- extract_images: boolean
-- extract_tables: boolean
-- extract_metadata: boolean
-- page_range: Optional &quot;1-5&quot; or &quot;1,3,5&quot;
-- async_processing: boolean
-
-Response: { success, message, job_id, async_processing }
-</code></pre>
-<p><strong>Process from URL</strong></p>
-<pre><code class="language-http">POST /api/documents/process-url
+<h3>2.19 POST /api/rag/metadata/detect-scope</h3>
+<p><strong>Purpose:</strong> Detect metadata scope for text chunks (product-specific vs catalog-general)
+<strong>Used In:</strong> PDF processing pipeline, metadata classification
+<strong>Flow:</strong> Analyze chunk → Classify scope → Return scope with confidence</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /api/rag/metadata/detect-scope
 Content-Type: application/json
 
-Body: { url, async_processing }
-Response: { success, message, job_id }
+Body:
+{
+  &quot;chunk_content&quot;: &quot;Available in 15×38 dimensions&quot;,
+  &quot;product_names&quot;: [&quot;NOVA&quot;, &quot;HARMONY&quot;, &quot;ESSENCE&quot;],
+  &quot;document_context&quot;: &quot;Tile catalog with multiple products&quot;
+}
 </code></pre>
-<p><strong>Analyze Document</strong></p>
-<pre><code class="language-http">POST /api/documents/analyze
-Content-Type: multipart/form-data
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+    &quot;confidence&quot;: 0.92,
+    &quot;reasoning&quot;: &quot;Dimensions mentioned without specific product reference&quot;,
+    &quot;applies_to&quot;: [&quot;NOVA&quot;, &quot;HARMONY&quot;, &quot;ESSENCE&quot;],
+    &quot;extracted_metadata&quot;: {
+      &quot;dimensions&quot;: &quot;15×38&quot;
+    },
+    &quot;is_override&quot;: false
+  }
+}
+</code></pre>
+<p><strong>Scope Types:</strong></p>
+<ul>
+<li><code>product_specific</code> - Mentions specific product name</li>
+<li><code>catalog_general_explicit</code> - Explicitly says &quot;all products&quot;</li>
+<li><code>catalog_general_implicit</code> - Metadata mentioned without product context</li>
+<li><code>category_specific</code> - Applies to product category</li>
+</ul>
+<p><strong>Database Operations:</strong> None (AI-powered classification)
+<strong>Frontend Integration:</strong> Admin metadata management, PDF processing monitoring</p>
+<hr>
+<h3>2.20 POST /api/rag/metadata/apply-to-products</h3>
+<p><strong>Purpose:</strong> Apply metadata to products with scope-aware override logic
+<strong>Used In:</strong> PDF processing pipeline (Stage 4), metadata management
+<strong>Flow:</strong> Detect scope → Apply in order → Track overrides → Update database</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /api/rag/metadata/apply-to-products
+Content-Type: application/json
 
-Response: { structure, metadata, content_type }
+Body:
+{
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;chunks_with_scope&quot;: [
+    {
+      &quot;chunk_id&quot;: &quot;uuid&quot;,
+      &quot;content&quot;: &quot;Available in 15×38&quot;,
+      &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+      &quot;metadata&quot;: {&quot;dimensions&quot;: &quot;15×38&quot;},
+      &quot;applies_to&quot;: [&quot;NOVA&quot;, &quot;HARMONY&quot;, &quot;ESSENCE&quot;]
+    },
+    {
+      &quot;chunk_id&quot;: &quot;uuid&quot;,
+      &quot;content&quot;: &quot;HARMONY dimensions: 20×40&quot;,
+      &quot;scope&quot;: &quot;product_specific&quot;,
+      &quot;metadata&quot;: {&quot;dimensions&quot;: &quot;20×40&quot;},
+      &quot;applies_to&quot;: [&quot;HARMONY&quot;]
+    }
+  ]
+}
 </code></pre>
-<p><strong>List Documents</strong></p>
-<pre><code class="language-http">GET /api/documents/documents
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;products_updated&quot;: 3,
+    &quot;metadata_fields_applied&quot;: 5,
+    &quot;overrides_tracked&quot;: 1,
+    &quot;catalog_general_count&quot;: 1,
+    &quot;product_specific_count&quot;: 1,
+    &quot;processing_time_ms&quot;: 245
+  }
+}
+</code></pre>
+<p><strong>Processing Order:</strong></p>
+<ol>
+<li>Catalog-general (explicit) - Lowest priority</li>
+<li>Catalog-general (implicit) - Low priority</li>
+<li>Category-specific - Medium priority</li>
+<li>Product-specific - Highest priority (can override)</li>
+</ol>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>UPDATE products SET metadata = metadata || new_metadata</li>
+<li>Track overrides in <code>_overrides</code> array</li>
+</ul>
+<p><strong>Frontend Integration:</strong> PDF processing pipeline, admin metadata management</p>
+<hr>
+<h3>2.21 GET /api/rag/metadata/list</h3>
+<p><strong>Purpose:</strong> List metadata with filtering and pagination
+<strong>Used In:</strong> Admin metadata viewer, metadata analytics
+<strong>Flow:</strong> Query database → Filter → Paginate → Return results</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">GET /api/rag/metadata/list?document_id=uuid&amp;scope=catalog_general_implicit&amp;limit=50&amp;offset=0
+</code></pre>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> (optional) - Filter by document</li>
+<li><code>product_id</code> (optional) - Filter by product</li>
+<li><code>scope</code> (optional) - Filter by scope type</li>
+<li><code>metadata_key</code> (optional) - Filter by specific metadata field</li>
+<li><code>limit</code> (optional) - Results per page (default: 50)</li>
+<li><code>offset</code> (optional) - Pagination offset (default: 0)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;product_id&quot;: &quot;uuid&quot;,
+        &quot;product_name&quot;: &quot;NOVA&quot;,
+        &quot;metadata_key&quot;: &quot;dimensions&quot;,
+        &quot;metadata_value&quot;: &quot;15×38&quot;,
+        &quot;scope&quot;: &quot;catalog_general_implicit&quot;,
+        &quot;source_chunk_id&quot;: &quot;uuid&quot;,
+        &quot;is_override&quot;: false,
+        &quot;created_at&quot;: &quot;2025-11-03T10:00:00Z&quot;
+      }
+    ],
+    &quot;total&quot;: 125,
+    &quot;limit&quot;: 50,
+    &quot;offset&quot;: 0
+  }
+}
+</code></pre>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM products WHERE document_id = ?</li>
+<li>JOIN with document_chunks for source tracking</li>
+</ul>
+<p><strong>Frontend Integration:</strong> Admin metadata management page, metadata analytics dashboard</p>
+<hr>
+<h3>2.22 GET /api/rag/metadata/statistics</h3>
+<p><strong>Purpose:</strong> Get metadata statistics and analytics
+<strong>Used In:</strong> Admin dashboard, metadata analytics
+<strong>Flow:</strong> Aggregate metadata → Calculate stats → Return summary</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">GET /api/rag/metadata/statistics?document_id=uuid
+</code></pre>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> (optional) - Filter by document</li>
+<li><code>product_id</code> (optional) - Filter by product</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;total_products&quot;: 14,
+    &quot;total_metadata_fields&quot;: 156,
+    &quot;catalog_general_count&quot;: 45,
+    &quot;product_specific_count&quot;: 98,
+    &quot;category_specific_count&quot;: 13,
+    &quot;override_count&quot;: 8,
+    &quot;most_common_fields&quot;: [
+      {&quot;field&quot;: &quot;dimensions&quot;, &quot;count&quot;: 14},
+      {&quot;field&quot;: &quot;material_category&quot;, &quot;count&quot;: 14},
+      {&quot;field&quot;: &quot;factory_name&quot;, &quot;count&quot;: 14},
+      {&quot;field&quot;: &quot;slip_resistance&quot;, &quot;count&quot;: 12},
+      {&quot;field&quot;: &quot;finish&quot;, &quot;count&quot;: 10}
+    ],
+    &quot;scope_distribution&quot;: {
+      &quot;catalog_general_implicit&quot;: 45,
+      &quot;catalog_general_explicit&quot;: 12,
+      &quot;product_specific&quot;: 98,
+      &quot;category_specific&quot;: 13
+    }
+  }
+}
+</code></pre>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT COUNT(*) FROM products</li>
+<li>Aggregate metadata fields across products</li>
+<li>Calculate scope distribution</li>
+</ul>
+<p><strong>Frontend Integration:</strong> Admin dashboard, metadata analytics page</p>
+<hr>
+<h2>3. Search Routes (CONSOLIDATED)</h2>
+<p><strong>Base Path:</strong> <code>/api/rag</code>
+<strong>Purpose:</strong> Unified search and query functionality across documents
+<strong>Philosophy:</strong> Single search endpoint with strategy parameter instead of multiple separate endpoints</p>
+<h3>3.1 POST /search</h3>
+<p><strong>Purpose:</strong> CONSOLIDATED search endpoint for all 6 search strategies ✅
+<strong>Status:</strong> All strategies implemented (100% complete)
+<strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/search/semantic</code> (deprecated)</li>
+<li><code>/api/search/similarity</code> (deprecated)</li>
+<li><code>/api/search/multimodal</code> (deprecated)</li>
+<li><code>/api/unified-search</code> (deprecated)</li>
+<li><code>/api/search/materials/visual</code> (deprecated)</li>
+</ul>
+<p><strong>Available Strategies:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Status</th>
+<th>Use Case</th>
+<th>Performance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>semantic</code></td>
+<td>✅</td>
+<td>Natural language queries</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td><code>vector</code></td>
+<td>✅</td>
+<td>Exact similarity matching</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td><code>multi_vector</code></td>
+<td>✅</td>
+<td>Text + visual understanding</td>
+<td>&lt;200ms</td>
+</tr>
+<tr>
+<td><code>hybrid</code></td>
+<td>✅</td>
+<td>Technical terms + semantics</td>
+<td>&lt;180ms</td>
+</tr>
+<tr>
+<td><code>material</code></td>
+<td>✅</td>
+<td>Property-based filtering</td>
+<td>&lt;50ms</td>
+</tr>
+<tr>
+<td><code>image</code></td>
+<td>✅</td>
+<td>Visual similarity</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>✅</td>
+<td>All strategies combined</td>
+<td>&lt;800ms</td>
+</tr>
+</tbody></table>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /api/rag/search?strategy={strategy}
+Content-Type: application/json
 
 Query Parameters:
-- workspace_id: Filter by workspace
-- limit: Results per page (default: 20)
-- offset: Pagination offset
+- strategy: &quot;semantic&quot; | &quot;vector&quot; | &quot;multi_vector&quot; | &quot;hybrid&quot; | &quot;material&quot; | &quot;image&quot; | &quot;all&quot;
+  * semantic: Natural language understanding with MMR diversity
+  * vector: Pure vector similarity (no diversity)
+  * multi_vector: Combines 3 embeddings (text 40%, visual 30%, multimodal 30%)
+  * hybrid: Semantic (70%) + keyword matching (30%)
+  * material: JSONB property filtering
+  * image: Visual similarity using CLIP embeddings
+  * all: Runs all 6 strategies in parallel (recommended)
 
-Response: { documents: [...], total_count }
-</code></pre>
-<p><strong>Get Document</strong></p>
-<pre><code class="language-http">GET /api/documents/documents/{id}
+Body:
+{
+  &quot;query&quot;: &quot;search query text&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;top_k&quot;: 10,
+  &quot;similarity_threshold&quot;: 0.6,
 
-Response: { id, filename, content_type, metadata, created_at }
-</code></pre>
-<p><strong>Get Document Content</strong></p>
-<pre><code class="language-http">GET /api/documents/documents/{id}/content
+  // Multi-vector weights (optional)
+  &quot;text_weight&quot;: 0.4,
+  &quot;visual_weight&quot;: 0.3,
+  &quot;multimodal_weight&quot;: 0.3,
 
-Response: { content, format, page_count }
-</code></pre>
-<p><strong>Delete Document</strong></p>
-<pre><code class="language-http">DELETE /api/documents/documents/{id}
+  // Hybrid weights (optional)
+  &quot;semantic_weight&quot;: 0.7,
+  &quot;keyword_weight&quot;: 0.3,
 
-Response: { success, message }
+  // Material filters (for material strategy)
+  &quot;material_filters&quot;: {
+    &quot;material_type&quot;: &quot;Porcelain&quot;,
+    &quot;slip_resistance&quot;: &quot;R11&quot;,
+    &quot;finish&quot;: &quot;matte&quot;
+  },
+
+  // Image search (for image strategy)
+  &quot;image_url&quot;: &quot;https://example.com/tile.jpg&quot;,
+  &quot;image_base64&quot;: &quot;data:image/jpeg;base64,...&quot;
+}
 </code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;search query&quot;,
+  &quot;enhanced_query&quot;: &quot;enhanced query if prompts applied&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Product Name&quot;,
+      &quot;description&quot;: &quot;Product description&quot;,
+      &quot;relevance_score&quot;: 0.88,
+      &quot;metadata&quot;: {
+        &quot;material_type&quot;: &quot;Porcelain&quot;,
+        &quot;dimensions&quot;: &quot;60x60&quot;,
+        &quot;slip_resistance&quot;: &quot;R11&quot;
+      },
+
+      // For multi_vector strategy
+      &quot;score_breakdown&quot;: {
+        &quot;text_score&quot;: 0.85,
+        &quot;visual_score&quot;: 0.90,
+        &quot;multimodal_score&quot;: 0.89
+      },
+
+      // For all strategy
+      &quot;found_in_strategies&quot;: [&quot;semantic&quot;, &quot;multi_vector&quot;, &quot;hybrid&quot;],
+      &quot;strategy_scores&quot;: {
+        &quot;semantic&quot;: 0.85,
+        &quot;multi_vector&quot;: 0.90,
+        &quot;hybrid&quot;: 0.89
+      }
+    }
+  ],
+  &quot;total_results&quot;: 15,
+  &quot;search_type&quot;: &quot;all&quot;,
+  &quot;processing_time&quot;: 0.45,
+
+  // For all strategy
+  &quot;strategies_executed&quot;: [&quot;semantic&quot;, &quot;vector&quot;, &quot;multi_vector&quot;, &quot;hybrid&quot;],
+  &quot;strategies_count&quot;: 4
+}
+</code></pre>
+<p><strong>Usage Examples:</strong></p>
+<p><strong>1. Semantic Search (Natural Language):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=semantic&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;modern minimalist tiles for bathroom&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<p><strong>2. Multi-Vector Search (Text + Visual):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=multi_vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;geometric patterns in neutral colors&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;text_weight&quot;: 0.4,
+    &quot;visual_weight&quot;: 0.3,
+    &quot;multimodal_weight&quot;: 0.3
+  }&#39;
+</code></pre>
+<p><strong>3. Hybrid Search (Semantic + Keyword):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=hybrid&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;R11 slip resistance porcelain&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;semantic_weight&quot;: 0.7,
+    &quot;keyword_weight&quot;: 0.3
+  }&#39;
+</code></pre>
+<p><strong>4. Material Property Search:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=material&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 50,
+    &quot;material_filters&quot;: {
+      &quot;material_type&quot;: &quot;Porcelain&quot;,
+      &quot;slip_resistance&quot;: &quot;R11&quot;,
+      &quot;finish&quot;: &quot;matte&quot;
+    }
+  }&#39;
+</code></pre>
+<p><strong>5. Image Search (Visual Similarity):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=image&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;image_url&quot;: &quot;https://example.com/tile-sample.jpg&quot;
+  }&#39;
+</code></pre>
+<p><strong>6. All Strategies Combined (Recommended):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=all&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;modern geometric tiles&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM products with vector similarity (pgvector)</li>
+<li>PostgreSQL full-text search (for hybrid strategy)</li>
+<li>JSONB property filtering (for material strategy)</li>
+<li>CLIP embedding generation (for image strategy)</li>
+</ul>
+<p><strong>Frontend Integration:</strong> SearchPage.tsx, KnowledgeBase.tsx, ProductDiscovery.tsx</p>
+<p><strong>Related Documentation:</strong> <a href="./search-strategies.md">Search Strategies Guide</a></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM document_chunks (for text search)</li>
+<li>SELECT FROM document_images (for image search)</li>
+<li>SELECT FROM products (for material search)</li>
+<li>Uses pgvector for similarity search</li>
+</ul>
+<p><strong>Frontend Integration:</strong></p>
+<ul>
+<li>Used in: <code>SearchInterface.tsx</code>, <code>KnowledgeBase.tsx</code></li>
+<li>API Client: <code>mivaaApiClient.searchSemantic()</code>, <code>mivaaApiClient.searchVector()</code>, etc.</li>
+</ul>
+<hr>
+<h3>3.2 POST /query</h3>
+<p><strong>Purpose:</strong> CONSOLIDATED query endpoint with auto-detecting modality
+<strong>Replaces:</strong> Multiple query endpoints with different modalities</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /api/rag/query
+Content-Type: application/json
+
+{
+  &quot;query&quot;: &quot;What are the dimensions of Nova?&quot;,
+  &quot;modality&quot;: &quot;auto&quot;,  // &quot;auto&quot; | &quot;text&quot; | &quot;image&quot; | &quot;multimodal&quot;
+  &quot;limit&quot;: 10,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;answer&quot;: &quot;Nova has dimensions of 120cm x 80cm x 2cm&quot;,
+  &quot;sources&quot;: [
+    {
+      &quot;chunk_id&quot;: &quot;uuid&quot;,
+      &quot;content&quot;: &quot;Nova dimensions: 120cm x 80cm x 2cm&quot;,
+      &quot;relevance_score&quot;: 0.98
+    }
+  ],
+  &quot;modality_detected&quot;: &quot;text&quot;,
+  &quot;processing_time_ms&quot;: 150
+}
+</code></pre>
+<hr>
+<h3>PDF Extraction - DEPRECATED ⚠️ (REMOVED)</h3>
+<p><strong>All <code>/api/pdf/extract/*</code> endpoints have been removed as of November 7, 2025.</strong></p>
+<p><strong>Removed Endpoints:</strong></p>
+<ul>
+<li><code>POST /api/pdf/extract/markdown</code> ❌ DELETED</li>
+<li><code>POST /api/pdf/extract/tables</code> ❌ DELETED</li>
+<li><code>POST /api/pdf/extract/images</code> ❌ DELETED</li>
+</ul>
+<p><strong>Replacement:</strong> Use <code>POST /api/rag/documents/upload</code> with <code>processing_mode=&quot;quick&quot;</code></p>
+<p>The RAG endpoint provides identical functionality using the same PyMuPDF4LLM library:</p>
+<pre><code class="language-http">POST /api/rag/documents/upload
+Content-Type: multipart/form-data
+
+Body:
+{
+  &quot;file&quot;: &lt;PDF file&gt;,
+  &quot;processing_mode&quot;: &quot;quick&quot;,  // Fast extraction without RAG
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+
+Response: { markdown, tables, images, status }
+</code></pre>
+<p><strong>Benefits of consolidation:</strong></p>
+<ul>
+<li>✅ Single endpoint for all extraction needs</li>
+<li>✅ Optional RAG pipeline for enhanced processing</li>
+<li>✅ Unified job tracking and progress monitoring</li>
+<li>✅ Consistent error handling and response format</li>
+</ul>
+<hr>
+<h3>2. Document Management - DEPRECATED ⚠️</h3>
+<p><strong>All <code>/api/documents/*</code> endpoints have been removed. Use <code>/api/rag/*</code> endpoints instead.</strong></p>
+<p>See Section 2 (RAG System) for current endpoints:</p>
+<ul>
+<li>Upload: <code>POST /api/rag/documents/upload</code></li>
+<li>List: <code>GET /api/rag/documents</code></li>
+<li>Get: <code>GET /api/rag/documents/{id}</code></li>
+<li>Delete: <code>DELETE /api/rag/documents/{id}</code></li>
+<li>Query: <code>POST /api/rag/query</code></li>
+<li>Search: <code>GET /api/rag/search</code></li>
+</ul>
 <hr>
 <h3>3. Search APIs (8 endpoints)</h3>
 <p><strong>Semantic Search</strong></p>
@@ -1493,8 +2011,137 @@ Query Parameters:
 <li><strong>Enterprise</strong>: Unlimited</li>
 </ul>
 <hr>
-<p><strong>Total Endpoints</strong>: 113
-<strong>Last Updated</strong>: November 2, 2025
+<h2>15. Duplicate Detection Routes</h2>
+<p><strong>Purpose:</strong> Detect and merge duplicate products from the same factory/manufacturer</p>
+<p><strong>CRITICAL RULE:</strong> Duplicates are ONLY detected when products have the same factory/manufacturer in metadata. Visual similarity alone does NOT constitute a duplicate.</p>
+<h3>15.1 POST /api/duplicates/detect</h3>
+<p><strong>Purpose:</strong> Detect potential duplicates for a specific product</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;product_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;similarity_threshold&quot;: 0.60
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;product_id&quot;: &quot;uuid&quot;,
+  &quot;duplicates_found&quot;: 3,
+  &quot;duplicates&quot;: [
+    {
+      &quot;product_id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Product Name&quot;,
+      &quot;factory&quot;: &quot;Factory Name&quot;,
+      &quot;overall_similarity&quot;: 0.92,
+      &quot;confidence_level&quot;: &quot;high&quot;
+    }
+  ]
+}
+</code></pre>
+<hr>
+<h3>15.2 POST /api/duplicates/batch-detect</h3>
+<p><strong>Purpose:</strong> Scan entire workspace for duplicate products</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;similarity_threshold&quot;: 0.75,
+  &quot;limit&quot;: 1000
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;duplicate_pairs_found&quot;: 15,
+  &quot;duplicate_pairs&quot;: [...]
+}
+</code></pre>
+<hr>
+<h3>15.3 GET /api/duplicates/cached</h3>
+<p><strong>Purpose:</strong> Get cached duplicate detections</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required)</li>
+<li><code>status</code> (optional): &#39;pending&#39;, &#39;reviewed&#39;, &#39;merged&#39;, &#39;dismissed&#39;</li>
+<li><code>min_similarity</code> (optional): default 0.60</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;cached_duplicates&quot;: 42,
+  &quot;duplicates&quot;: [...]
+}
+</code></pre>
+<hr>
+<h3>15.4 POST /api/duplicates/update-status</h3>
+<p><strong>Purpose:</strong> Update duplicate detection status</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;cache_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;reviewed&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Valid Statuses:</strong> &#39;pending&#39;, &#39;reviewed&#39;, &#39;merged&#39;, &#39;dismissed&#39;</p>
+<hr>
+<h3>15.5 POST /api/duplicates/merge</h3>
+<p><strong>Purpose:</strong> Merge duplicate products into a single product</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;target_product_id&quot;: &quot;uuid&quot;,
+  &quot;source_product_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;,
+  &quot;merge_strategy&quot;: &quot;manual&quot;,
+  &quot;merge_reason&quot;: &quot;Duplicate from same factory&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;history_id&quot;: &quot;uuid&quot;,
+  &quot;target_product&quot;: {...},
+  &quot;merged_count&quot;: 2,
+  &quot;message&quot;: &quot;Successfully merged 2 products&quot;
+}
+</code></pre>
+<hr>
+<h3>15.6 POST /api/duplicates/undo-merge</h3>
+<p><strong>Purpose:</strong> Undo a product merge operation</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;history_id&quot;: &quot;uuid&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Merge successfully undone&quot;,
+  &quot;restored_products&quot;: 2
+}
+</code></pre>
+<hr>
+<h3>15.7 GET /api/duplicates/merge-history</h3>
+<p><strong>Purpose:</strong> Get merge history for a workspace</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required)</li>
+<li><code>limit</code> (optional): default 50</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;merge_count&quot;: 12,
+  &quot;merges&quot;: [...]
+}
+</code></pre>
+<hr>
+<p><strong>Total Endpoints</strong>: 115
+<strong>Last Updated</strong>: November 9, 2025
 <strong>API Version</strong>: v1</p>
 
 </div></body></html>
