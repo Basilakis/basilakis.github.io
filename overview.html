@@ -55,7 +55,7 @@
 <p><strong>Backend</strong>:</p>
 <ul>
 <li>MIVAA API: FastAPI + Python 3.11</li>
-<li>113 REST API endpoints (14 categories)</li>
+<li>108 REST API endpoints (14 categories) - Consolidated from 113</li>
 <li>Docker containerized</li>
 <li>Self-hosted on dedicated server</li>
 </ul>
@@ -384,22 +384,29 @@ Real-time updates → Frontend displays results
 <p><strong>Knowledge Base Management</strong>: View/edit chunks, images, products<br><strong>PDF Processing Monitor</strong>: Real-time job tracking<br><strong>AI Metrics Dashboard</strong>: Model usage and cost tracking<br><strong>Quality Dashboard</strong>: Chunk quality and embedding stability<br><strong>System Performance</strong>: Response times, error rates, uptime<br><strong>User Management</strong>: Workspace members and permissions<br><strong>Async Job Queue Monitor</strong>: Background job status and recovery</p>
 <hr>
 <h2>API Ecosystem</h2>
-<h3>74+ REST API Endpoints</h3>
-<p><strong>Categories</strong>:</p>
+<h3>108 REST API Endpoints (Consolidated from 113)</h3>
+<p><strong>Categories</strong> (14 total):</p>
 <ol>
-<li>RAG &amp; Document Processing (15 endpoints)</li>
-<li>Search APIs (6 endpoints)</li>
-<li>Embedding APIs (5 endpoints)</li>
-<li>Products API (8 endpoints)</li>
-<li>Images API (6 endpoints)</li>
-<li>AI Services (7 endpoints)</li>
-<li>Background Jobs (5 endpoints)</li>
-<li>Admin &amp; Monitoring (12 endpoints)</li>
-<li>Document Management (13 endpoints)</li>
-<li>Anthropic APIs (3 endpoints)</li>
-<li>Together AI APIs (3 endpoints)</li>
-<li>Health &amp; Monitoring (4 endpoints)</li>
+<li>RAG &amp; Document Processing (27 endpoints - includes metadata management, PDF extraction consolidated)</li>
+<li>Search APIs (6 endpoints - semantic, vector, hybrid, visual, material, multi-vector)</li>
+<li>Admin Routes (18 endpoints - job management, system monitoring, metadata management)</li>
+<li>Document Entities (5 endpoints - certificates, logos, specifications)</li>
+<li>Products API (3 endpoints - product management)</li>
+<li>Images API (5 endpoints - image analysis and processing)</li>
+<li>Embeddings APIs (3 endpoints - embedding generation)</li>
+<li>AI Services (10 endpoints - AI model integration)</li>
+<li>Background Jobs (7 endpoints - async job tracking)</li>
+<li>Anthropic APIs (3 endpoints - Claude integration)</li>
+<li>Together AI APIs (3 endpoints - Llama integration)</li>
+<li>Monitoring Routes (3 endpoints - health checks, metrics)</li>
+<li>AI Metrics Routes (2 endpoints - AI performance tracking)</li>
 </ol>
+<p><strong>Consolidation Summary</strong>:</p>
+<ul>
+<li>✅ PDF Extraction: <code>/api/pdf/extract/*</code> (3 endpoints) → <code>/api/rag/documents/upload</code> with <code>processing_mode=&quot;quick&quot;</code></li>
+<li>✅ Document Management: <code>/api/documents/*</code> (18 endpoints) → <code>/api/rag/*</code> (27 endpoints)</li>
+<li>✅ Health Checks: 10+ individual endpoints → Single <code>/health</code> endpoint</li>
+</ul>
 <p><strong>Documentation</strong>:</p>
 <ul>
 <li>Swagger UI: <code>https://v1api.materialshub.gr/docs</code></li>
