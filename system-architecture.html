@@ -43,12 +43,13 @@
 │ API TIER (MIVAA - FastAPI)                                  │
 │ Python 3.11 + FastAPI + Uvicorn                            │
 │ Deployed: v1api.materialshub.gr                            │
-│ - 74+ REST API endpoints                                    │
+│ - 115 REST API endpoints (15 categories)                   │
 │ - 14-stage PDF processing pipeline                          │
 │ - RAG system (LlamaIndex)                                   │
 │ - Search APIs (Semantic, Vector, Hybrid)                   │
 │ - AI Services (Claude, GPT, Llama, CLIP)                   │
-│ - Product Management                                        │
+│ - Product Management + Metadata Management                 │
+│ - Duplicate Detection &amp; Merging (factory-based)            │
 │ - Admin &amp; Monitoring                                        │
 │ - Background job processing                                 │
 └─────────────────────────────────────────────────────────────┘
@@ -187,77 +188,108 @@ FOR SELECT
 USING (workspace_id = auth.uid());
 </code></pre>
 <hr>
-<h2>🚀 API Endpoints (74+)</h2>
-<h3>9 Categories</h3>
+<h2>🚀 API Endpoints (108 - Consolidated from 113)</h2>
+<h3>14 Categories</h3>
 <ol>
-<li><p><strong>PDF Processing</strong> (12 endpoints)</p>
+<li><p><strong>RAG &amp; Document Processing</strong> (27 endpoints)</p>
 <ul>
-<li>Upload, extract, process PDFs</li>
+<li>Upload, extract, process PDFs (consolidated from <code>/api/pdf/extract/*</code>)</li>
 <li>Job status tracking</li>
 <li>Progress streaming</li>
+<li>Metadata management (scope detection, application, listing, statistics)</li>
+<li>Document upload, query, chat</li>
+<li>Search with multiple strategies</li>
 </ul>
 </li>
-<li><p><strong>Document Management</strong> (13 endpoints)</p>
-<ul>
-<li>CRUD operations</li>
-<li>Batch processing</li>
-<li>Content retrieval</li>
-</ul>
-</li>
-<li><p><strong>Search APIs</strong> (8 endpoints)</p>
+<li><p><strong>Search APIs</strong> (6 endpoints)</p>
 <ul>
 <li>Semantic search</li>
 <li>Vector search</li>
 <li>Hybrid search</li>
 <li>Visual search</li>
+<li>Material search</li>
+<li>Multi-vector search</li>
 </ul>
 </li>
-<li><p><strong>Image Analysis</strong> (5 endpoints)</p>
+<li><p><strong>Admin Routes</strong> (18 endpoints)</p>
+<ul>
+<li>Job management and monitoring</li>
+<li>System health and metrics</li>
+<li>Data backup and cleanup</li>
+<li>Metadata management</li>
+</ul>
+</li>
+<li><p><strong>Document Entities</strong> (5 endpoints)</p>
+<ul>
+<li>Certificates management</li>
+<li>Logos management</li>
+<li>Specifications management</li>
+<li>Entity relationships</li>
+</ul>
+</li>
+<li><p><strong>Products</strong> (3 endpoints)</p>
+<ul>
+<li>Product management</li>
+<li>Product relationships</li>
+</ul>
+</li>
+<li><p><strong>Images</strong> (5 endpoints)</p>
 <ul>
 <li>Image analysis</li>
 <li>Batch processing</li>
 <li>Similarity search</li>
+<li>OCR processing</li>
 </ul>
 </li>
-<li><p><strong>RAG System</strong> (7 endpoints)</p>
-<ul>
-<li>Document upload</li>
-<li>Query interface</li>
-<li>Chat functionality</li>
-<li>Statistics</li>
-</ul>
-</li>
-<li><p><strong>Embeddings</strong> (3 endpoints)</p>
-<ul>
-<li>Text embeddings</li>
-<li>Batch embeddings</li>
-<li>CLIP embeddings</li>
-</ul>
-</li>
-<li><p><strong>Products</strong> (6 endpoints)</p>
-<ul>
-<li>CRUD operations</li>
-<li>Similarity search</li>
-<li>Listing</li>
-</ul>
-</li>
-<li><p><strong>Admin &amp; Monitoring</strong> (8 endpoints)</p>
-<ul>
-<li>Job monitoring</li>
-<li>Progress tracking</li>
-<li>Health checks</li>
-<li>Metrics</li>
-</ul>
-</li>
-<li><p><strong>AI Services</strong> (11 endpoints)</p>
+<li><p><strong>AI Services</strong> (10 endpoints)</p>
 <ul>
 <li>Classification</li>
 <li>Boundary detection</li>
 <li>Validation</li>
 <li>Enrichment</li>
+<li>Product discovery</li>
+</ul>
+</li>
+<li><p><strong>Background Jobs</strong> (7 endpoints)</p>
+<ul>
+<li>Job creation</li>
+<li>Status tracking</li>
+<li>Progress updates</li>
+<li>Statistics</li>
+</ul>
+</li>
+<li><p><strong>Anthropic APIs</strong> (3 endpoints)</p>
+<ul>
+<li>Claude integration</li>
+<li>Vision analysis</li>
+</ul>
+</li>
+<li><p><strong>Together AI APIs</strong> (3 endpoints)</p>
+<ul>
+<li>Llama integration</li>
+<li>Vision analysis</li>
+</ul>
+</li>
+<li><p><strong>Monitoring Routes</strong> (3 endpoints)</p>
+<ul>
+<li>System health</li>
+<li>Service status</li>
+<li>Performance metrics</li>
+</ul>
+</li>
+<li><p><strong>AI Metrics Routes</strong> (2 endpoints)</p>
+<ul>
+<li>Model performance</li>
+<li>Usage statistics</li>
 </ul>
 </li>
 </ol>
+<p><strong>Consolidation Notes:</strong></p>
+<ul>
+<li>✅ PDF Extraction endpoints (<code>/api/pdf/extract/*</code>) consolidated into <code>/api/rag/documents/upload</code></li>
+<li>✅ All extraction functionality available via RAG pipeline with <code>processing_mode=&quot;quick&quot;</code></li>
+<li>✅ Internal utilities preserved in <code>app/core/extractor.py</code></li>
+</ul>
 <hr>
 <h2>🤖 AI Integration</h2>
 <h3>12 AI Models</h3>
@@ -431,13 +463,14 @@ USING (workspace_id = auth.uid());
 <h2>📈 Production Metrics</h2>
 <ul>
 <li><strong>Uptime</strong>: 99.5%+</li>
-<li><strong>API Endpoints</strong>: 74+</li>
+<li><strong>API Endpoints</strong>: 110 (15 categories)</li>
 <li><strong>Processing Speed</strong>: 1-15 minutes per PDF</li>
 <li><strong>Accuracy</strong>: 95%+ product detection</li>
 <li><strong>Scalability</strong>: 5,000+ concurrent users</li>
 <li><strong>Data Volume</strong>: 100,000+ products indexed</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+<p><strong>Last Updated</strong>: November 3, 2025
+<strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
 
 </div></body></html>
