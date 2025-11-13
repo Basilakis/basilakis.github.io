@@ -256,42 +256,55 @@ RAG Search:
   Return: Chunks with category=&quot;product&quot; matching &quot;Nova&quot;
 </code></pre>
 <hr>
-<h2>Action Items</h2>
-<h3>Immediate (Before Continuing):</h3>
-<ol>
-<li>✅ Update discovery service documentation (DONE)</li>
-<li>⏳ Seed default prompts to database</li>
-<li>⏳ Create certificates/logos/specifications tables</li>
-<li>⏳ Add factory/manufacturer fields to dataclasses</li>
-<li>⏳ Create relationship tables</li>
-<li>⏳ Add RAG search endpoint (no PDF required)</li>
-</ol>
-<h3>Next Phase:</h3>
-<ol start="7">
-<li>Update chunking stage to use category tags</li>
-<li>Update embedding generation to handle all categories</li>
-<li>Create entity records (products, certificates, logos, specifications)</li>
-<li>Link entities to chunks via relationship tables</li>
-</ol>
+<h2>Implementation Requirements</h2>
+<h3>Database Schema</h3>
+<p>The following database components are required for full category extraction functionality:</p>
+<p><strong>Completed Components:</strong></p>
+<ul>
+<li>Discovery service documentation</li>
+<li>extraction_prompts tables for admin-configurable prompts</li>
+</ul>
+<p><strong>Required Components:</strong></p>
+<ul>
+<li>Database tables for certificates, logos, and specifications</li>
+<li>Factory/manufacturer fields in dataclasses</li>
+<li>Relationship tables linking entities to products</li>
+<li>RAG search endpoint for queries without PDF upload</li>
+</ul>
+<h3>Processing Pipeline Enhancements</h3>
+<p>The chunking and embedding stages require updates to support category-based extraction:</p>
+<ul>
+<li>Chunking stage must use category tags for proper content classification</li>
+<li>Embedding generation must handle all content categories (products, certificates, logos, specifications)</li>
+<li>Entity records must be created for all discovered content types</li>
+<li>Relationship linking between entities and chunks must be established</li>
+</ul>
 <hr>
 <h2>Summary</h2>
-<p><strong>Key Insights:</strong></p>
+<h3>Key Architectural Decisions</h3>
+<p><strong>Confidence Scoring:</strong></p>
 <ul>
-<li>✅ Confidence scores are set correctly (0.0 is just default)</li>
-<li>❌ Certificates/logos/specs need factory/manufacturer fields</li>
-<li>❌ Certificates/logos/specs need product relationships</li>
-<li>❌ Prompt templates are NEW, not currently used</li>
-<li>❌ Need RAG search endpoint for queries without PDF</li>
-<li>✅ extraction_prompts tables exist</li>
-<li>❌ certificates/logos/specifications tables don&#39;t exist yet</li>
-<li>✅ <strong>CHUNKS-FIRST</strong> approach is correct - everything stored as semantic chunks, not metafields</li>
+<li>Default confidence scores (0.0) are placeholder values in dataclass definitions</li>
+<li>Actual confidence scores are set during AI parsing (typically 0.8-0.98)</li>
 </ul>
-<p><strong>Next Steps:</strong></p>
-<ol>
-<li>Create missing database tables</li>
-<li>Seed default prompts</li>
-<li>Add RAG search capability</li>
-<li>Continue with Phase 3 (Processing Pipeline)</li>
-</ol>
+<p><strong>Entity Relationships:</strong></p>
+<ul>
+<li>Certificates, logos, and specifications require factory/manufacturer identification</li>
+<li>Product relationships must be established for all entity types</li>
+<li>Prompt templates are stored in database for admin customization</li>
+</ul>
+<p><strong>Search Capabilities:</strong></p>
+<ul>
+<li>RAG search endpoint enables queries without PDF upload</li>
+<li>Existing chunks and embeddings can be searched directly</li>
+<li>Category filtering allows targeted content retrieval</li>
+</ul>
+<p><strong>Storage Architecture:</strong></p>
+<ul>
+<li>CHUNKS-FIRST approach: All content stored as semantic chunks</li>
+<li>Metadata stored within chunks, not in separate metafield tables</li>
+<li>Category tags enable content classification and filtering</li>
+<li>Embeddings support semantic search across all content types</li>
+</ul>
 
 </div></body></html>
