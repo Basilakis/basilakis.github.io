@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>MIVAA Search Strategies Guide</h1>
+<p><strong>Last Updated:</strong> 2025-11-08<br><strong>Status:</strong> ✅ All 6 Strategies Implemented (100% Complete)<br><strong>Endpoint:</strong> <code>/api/rag/search</code></p>
+<p>Complete guide to MIVAA&#39;s unified multi-strategy search system that combines semantic understanding, vector similarity, visual recognition, and property filtering for comprehensive product discovery.</p>
+<hr>
+<h2>📊 Overview</h2>
+<p>MIVAA implements <strong>6 distinct search strategies</strong> that can be used individually or combined for comprehensive results:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Status</th>
+<th>Use Case</th>
+<th>Performance Target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Semantic Search</strong></td>
+<td>✅</td>
+<td>Natural language queries</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td><strong>Vector Search</strong></td>
+<td>✅</td>
+<td>Exact similarity matching</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td><strong>Multi-Vector Search</strong></td>
+<td>✅</td>
+<td>Text + visual understanding</td>
+<td>&lt;200ms</td>
+</tr>
+<tr>
+<td><strong>Hybrid Search</strong></td>
+<td>✅</td>
+<td>Technical terms + semantics</td>
+<td>&lt;180ms</td>
+</tr>
+<tr>
+<td><strong>Material Search</strong></td>
+<td>✅</td>
+<td>Property-based filtering</td>
+<td>&lt;50ms</td>
+</tr>
+<tr>
+<td><strong>Image Search</strong></td>
+<td>✅</td>
+<td>Visual similarity</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td><strong>All Strategies</strong></td>
+<td>✅</td>
+<td>Comprehensive search</td>
+<td>&lt;800ms</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🎯 Search Strategies</h2>
+<h3>1. Semantic Search ✅</h3>
+<p><strong>Natural language understanding with diversity</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>semantic_search_with_mmr()</code></li>
+<li><strong>Algorithm:</strong> MMR (Maximal Marginal Relevance) with λ=0.5</li>
+<li><strong>Embedding:</strong> text_embedding_1536 (OpenAI)</li>
+<li><strong>Best For:</strong> Conversational queries, conceptual search</li>
+<li><strong>Example:</strong> &quot;modern minimalist tiles for bathroom&quot;</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Converts query to 1536-dimensional embedding</li>
+<li>Finds semantically similar products using cosine similarity</li>
+<li>Applies MMR to balance relevance (50%) and diversity (50%)</li>
+<li>Returns varied results that match intent</li>
+</ol>
+<p><strong>Request:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=semantic&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;modern minimalist tiles for bathroom&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<hr>
+<h3>2. Vector Search ✅</h3>
+<p><strong>Pure similarity matching without diversity</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>semantic_search_with_mmr()</code></li>
+<li><strong>Algorithm:</strong> MMR with λ=1.0 (pure similarity)</li>
+<li><strong>Embedding:</strong> text_embedding_1536 (OpenAI)</li>
+<li><strong>Best For:</strong> Finding most similar products, precise matching</li>
+<li><strong>Example:</strong> &quot;60x60 porcelain tiles&quot;</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Converts query to embedding</li>
+<li>Returns top-k most similar products by cosine distance</li>
+<li>No diversity filtering - pure relevance ranking</li>
+</ol>
+<p><strong>Request:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;60x60 porcelain tiles&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<hr>
+<h3>3. Multi-Vector Search ✅</h3>
+<p><strong>Combines text, visual, and multimodal embeddings</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>multi_vector_search()</code></li>
+<li><strong>Embeddings Combined:</strong><ul>
+<li>text_embedding_1536 (40% weight)</li>
+<li>visual_clip_embedding_512 (30% weight)</li>
+<li>multimodal_fusion_embedding_2048 (30% weight)</li>
+</ul>
+</li>
+<li><strong>Best For:</strong> Complex queries requiring text + visual understanding</li>
+<li><strong>Example:</strong> &quot;geometric patterns in neutral colors&quot;</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Generates text embedding from query</li>
+<li>Queries all 3 embedding columns in parallel</li>
+<li>Calculates weighted cosine similarity for each</li>
+<li>Combines scores: <code>final_score = (text * 0.4) + (visual * 0.3) + (multimodal * 0.3)</code></li>
+<li>Returns results with score breakdown</li>
+</ol>
+<p><strong>Request:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=multi_vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;geometric patterns in neutral colors&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;text_weight&quot;: 0.4,
+    &quot;visual_weight&quot;: 0.3,
+    &quot;multimodal_weight&quot;: 0.3
+  }&#39;
+</code></pre>
+<p><strong>Response Includes:</strong></p>
+<pre><code class="language-json">{
+  &quot;results&quot;: [{
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Product Name&quot;,
+    &quot;relevance_score&quot;: 0.85,
+    &quot;score_breakdown&quot;: {
+      &quot;text_score&quot;: 0.82,
+      &quot;visual_score&quot;: 0.88,
+      &quot;multimodal_score&quot;: 0.86
+    }
+  }]
+}
+</code></pre>
+<hr>
+<h3>4. Hybrid Search ✅</h3>
+<p><strong>Combines semantic understanding with keyword matching</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>hybrid_search()</code></li>
+<li><strong>Combines:</strong><ul>
+<li>Semantic search (70% weight)</li>
+<li>PostgreSQL full-text search (30% weight)</li>
+</ul>
+</li>
+<li><strong>Best For:</strong> Queries with specific technical terms</li>
+<li><strong>Example:</strong> &quot;R11 slip resistance porcelain&quot;</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Runs semantic search for conceptual matching</li>
+<li>Runs PostgreSQL full-text search for keyword matching</li>
+<li>Merges results with weighted scoring</li>
+<li>Deduplicates and ranks by combined score</li>
+</ol>
+<p><strong>Database Components:</strong></p>
+<ul>
+<li><code>search_vector</code> tsvector column on products table</li>
+<li>GIN index for performance</li>
+<li>Automatic trigger to update on insert/update</li>
+<li><code>search_products_fulltext()</code> RPC function</li>
+</ul>
+<p><strong>Request:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=hybrid&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;R11 slip resistance porcelain&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;semantic_weight&quot;: 0.7,
+    &quot;keyword_weight&quot;: 0.3
+  }&#39;
+</code></pre>
+<hr>
+<h3>5. Material Search ✅</h3>
+<p><strong>Property-based filtering using JSONB metadata</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>material_property_search()</code></li>
+<li><strong>Database:</strong> PostgreSQL JSONB operators with GIN index</li>
+<li><strong>Best For:</strong> Filtering by specific material properties</li>
+<li><strong>Example:</strong> Find all R11 slip-resistant porcelain tiles</li>
+</ul>
+<p><strong>Supported Properties:</strong></p>
+<ul>
+<li><code>material_type</code> (e.g., &quot;Porcelain&quot;, &quot;Ceramic&quot;, &quot;Stone&quot;)</li>
+<li><code>dimensions</code> (e.g., &quot;60x60&quot;, &quot;120x60&quot;)</li>
+<li><code>slip_resistance</code> (e.g., &quot;R9&quot;, &quot;R10&quot;, &quot;R11&quot;)</li>
+<li><code>fire_rating</code> (e.g., &quot;A1&quot;, &quot;A2&quot;)</li>
+<li><code>thickness</code> (e.g., &quot;9mm&quot;, &quot;10mm&quot;)</li>
+<li><code>finish</code> (e.g., &quot;matte&quot;, &quot;glossy&quot;, &quot;textured&quot;)</li>
+<li><code>colors</code> (array of color names)</li>
+<li>Any custom metadata fields</li>
+</ul>
+<p><strong>Request:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=material&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 50,
+    &quot;material_filters&quot;: {
+      &quot;material_type&quot;: &quot;Porcelain&quot;,
+      &quot;slip_resistance&quot;: &quot;R11&quot;,
+      &quot;finish&quot;: &quot;matte&quot;
+    }
+  }&#39;
+</code></pre>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Builds PostgreSQL query with JSONB operators</li>
+<li>Uses <code>@&gt;</code> for containment, <code>-&gt;&gt;</code> for exact matches</li>
+<li>Supports AND logic (all filters must match)</li>
+<li>Returns all matching products</li>
+</ol>
+<hr>
+<h3>6. Image Search ✅</h3>
+<p><strong>Visual similarity using CLIP embeddings</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>image_similarity_search()</code></li>
+<li><strong>Embedding:</strong> visual_clip_embedding_512 (CLIP)</li>
+<li><strong>Input:</strong> Image URL or base64 encoded image</li>
+<li><strong>Best For:</strong> Finding visually similar products</li>
+<li><strong>Example:</strong> Upload photo of tile pattern</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Accepts image via URL or base64</li>
+<li>Generates CLIP embedding (512 dimensions)</li>
+<li>Queries visual_clip_embedding_512 column</li>
+<li>Returns products sorted by visual similarity</li>
+</ol>
+<p><strong>Request (URL):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=image&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;image_url&quot;: &quot;https://example.com/tile-sample.jpg&quot;
+  }&#39;
+</code></pre>
+<p><strong>Request (Base64):</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=image&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;image_base64&quot;: &quot;data:image/jpeg;base64,/9j/4AAQ...&quot;
+  }&#39;
+</code></pre>
+<hr>
+<h3>7. All Strategies Combined ✅</h3>
+<p><strong>Runs all 6 strategies in parallel and merges results</strong></p>
+<ul>
+<li><strong>Method:</strong> <code>search_all_strategies()</code></li>
+<li><strong>Execution:</strong> Parallel using asyncio.gather</li>
+<li><strong>Ranking:</strong> Weighted by score (70%) + strategy count (30%)</li>
+<li><strong>Best For:</strong> Comprehensive search across all modalities</li>
+<li><strong>Performance:</strong> &lt;800ms for all strategies</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>Runs all 6 strategies in parallel</li>
+<li>Collects results from each strategy</li>
+<li>Merges and deduplicates by product ID</li>
+<li>Calculates combined score:<ul>
+<li>Average score across strategies (70%)</li>
+<li>Boost for products found in multiple strategies (30%)</li>
+</ul>
+</li>
+<li>Returns top-k results sorted by combined score</li>
+</ol>
+<p><strong>Request:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;http://localhost:8000/api/rag/search?strategy=all&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;modern geometric tiles&quot;,
+    &quot;workspace_id&quot;: &quot;uuid&quot;,
+    &quot;top_k&quot;: 10,
+    &quot;text_weight&quot;: 0.4,
+    &quot;visual_weight&quot;: 0.3,
+    &quot;multimodal_weight&quot;: 0.3,
+    &quot;semantic_weight&quot;: 0.7,
+    &quot;keyword_weight&quot;: 0.3
+  }&#39;
+</code></pre>
+<p><strong>Response Includes:</strong></p>
+<pre><code class="language-json">{
+  &quot;results&quot;: [{
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Product Name&quot;,
+    &quot;relevance_score&quot;: 0.88,
+    &quot;found_in_strategies&quot;: [&quot;semantic&quot;, &quot;multi_vector&quot;, &quot;hybrid&quot;],
+    &quot;strategy_scores&quot;: {
+      &quot;semantic&quot;: 0.85,
+      &quot;multi_vector&quot;: 0.90,
+      &quot;hybrid&quot;: 0.89
+    }
+  }],
+  &quot;strategies_executed&quot;: [&quot;semantic&quot;, &quot;vector&quot;, &quot;multi_vector&quot;, &quot;hybrid&quot;],
+  &quot;strategies_count&quot;: 4
+}
+</code></pre>
+<hr>
+<h2>🗄️ Database Schema</h2>
+<h3>Products Table Embeddings</h3>
+<pre><code class="language-sql">CREATE TABLE products (
+  id UUID PRIMARY KEY,
+  workspace_id UUID NOT NULL,
+  name TEXT,
+  description TEXT,
+  long_description TEXT,
+  metadata JSONB,
+  
+  -- Embeddings for search
+  text_embedding_1536 vector(1536),      -- OpenAI text embedding
+  visual_clip_embedding_512 vector(512), -- CLIP visual embedding
+  multimodal_fusion_embedding_2048 vector(2048), -- Multimodal fusion
+  
+  -- Full-text search
+  search_vector tsvector,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_products_text_embedding ON products 
+  USING ivfflat (text_embedding_1536 vector_cosine_ops);
+
+CREATE INDEX idx_products_visual_embedding ON products 
+  USING ivfflat (visual_clip_embedding_512 vector_cosine_ops);
+
+CREATE INDEX idx_products_metadata ON products USING gin(metadata);
+
+CREATE INDEX products_search_vector_idx ON products USING gin(search_vector);
+</code></pre>
+<h3>Full-Text Search Function</h3>
+<pre><code class="language-sql">CREATE FUNCTION search_products_fulltext(
+  search_query TEXT,
+  workspace_id_param UUID,
+  limit_param INTEGER DEFAULT 10
+)
+RETURNS TABLE (id UUID, name TEXT, description TEXT, metadata JSONB, rank REAL)
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    p.id, p.name, p.description, p.metadata,
+    ts_rank(p.search_vector, plainto_tsquery(&#39;english&#39;, search_query))::REAL as rank
+  FROM products p
+  WHERE 
+    p.workspace_id = workspace_id_param
+    AND p.search_vector @@ plainto_tsquery(&#39;english&#39;, search_query)
+  ORDER BY rank DESC
+  LIMIT limit_param;
+END;
+$$ LANGUAGE plpgsql;
+</code></pre>
+<hr>
+<h2>🧪 Testing</h2>
+<h3>Test Script</h3>
+<p>Run comprehensive tests for all strategies:</p>
+<pre><code class="language-bash">cd scripts/testing
+node test_all_search_strategies.js
+</code></pre>
+<h3>Test Coverage</h3>
+<ul>
+<li>✅ Semantic search with natural language</li>
+<li>✅ Vector search with precise queries</li>
+<li>✅ Multi-vector with configurable weights</li>
+<li>✅ Hybrid search with technical terms</li>
+<li>✅ Material search with JSONB filters</li>
+<li>✅ Image search with URL/base64</li>
+<li>✅ All strategies combined</li>
+<li>✅ Performance benchmarks</li>
+<li>✅ Error handling</li>
+</ul>
+<hr>
+<h2>📈 Performance Metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Target</th>
+<th>Typical</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Semantic</td>
+<td>&lt;150ms</td>
+<td>~80ms</td>
+<td>With MMR diversity</td>
+</tr>
+<tr>
+<td>Vector</td>
+<td>&lt;100ms</td>
+<td>~50ms</td>
+<td>Pure similarity</td>
+</tr>
+<tr>
+<td>Multi-Vector</td>
+<td>&lt;200ms</td>
+<td>~120ms</td>
+<td>3 parallel queries</td>
+</tr>
+<tr>
+<td>Hybrid</td>
+<td>&lt;180ms</td>
+<td>~100ms</td>
+<td>Semantic + keyword</td>
+</tr>
+<tr>
+<td>Material</td>
+<td>&lt;50ms</td>
+<td>~20ms</td>
+<td>JSONB indexed</td>
+</tr>
+<tr>
+<td>Image</td>
+<td>&lt;150ms</td>
+<td>~90ms</td>
+<td>CLIP embedding</td>
+</tr>
+<tr>
+<td>All</td>
+<td>&lt;800ms</td>
+<td>~400ms</td>
+<td>6 parallel strategies</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔧 Configuration</h2>
+<h3>Default Weights</h3>
+<p><strong>Multi-Vector Search:</strong></p>
+<ul>
+<li>Text: 0.4 (40%)</li>
+<li>Visual: 0.3 (30%)</li>
+<li>Multimodal: 0.3 (30%)</li>
+</ul>
+<p><strong>Hybrid Search:</strong></p>
+<ul>
+<li>Semantic: 0.7 (70%)</li>
+<li>Keyword: 0.3 (30%)</li>
+</ul>
+<p><strong>All Strategies Ranking:</strong></p>
+<ul>
+<li>Average Score: 0.7 (70%)</li>
+<li>Strategy Count Boost: 0.3 (30%)</li>
+</ul>
+<h3>Customization</h3>
+<p>All weights are configurable via API parameters. Adjust based on your use case:</p>
+<ul>
+<li><strong>Text-heavy queries:</strong> Increase text_weight</li>
+<li><strong>Visual-heavy queries:</strong> Increase visual_weight</li>
+<li><strong>Technical queries:</strong> Increase keyword_weight</li>
+<li><strong>Conceptual queries:</strong> Increase semantic_weight</li>
+</ul>
+<hr>
+<h2>🚀 Best Practices</h2>
+<ol>
+<li><strong>Use &quot;all&quot; strategy for comprehensive results</strong> - Recommended for most use cases</li>
+<li><strong>Use specific strategies for targeted searches</strong> - When you know the query type</li>
+<li><strong>Adjust weights based on query type</strong> - Customize for better results</li>
+<li><strong>Combine with filters</strong> - Use material_filters with any strategy</li>
+<li><strong>Monitor performance</strong> - Track response times and adjust as needed</li>
+</ol>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><a href="./api-endpoints.md">API Endpoints Reference</a></li>
+<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
+<li><a href="./system-architecture.md">System Architecture</a></li>
+<li><a href="./features-guide.md">Features Guide</a></li>
+</ul>
+
+</div></body></html>
