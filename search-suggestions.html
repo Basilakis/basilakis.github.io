@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Intelligent Search Suggestions &amp; Auto-Complete</h1>
+<p><strong>Feature #49</strong> - Comprehensive search suggestions system with auto-complete, trending searches, personalization, typo correction, query expansion, and analytics tracking.</p>
+<h2>Overview</h2>
+<p>The MIVAA platform now includes an intelligent search suggestions system that enhances the user search experience through:</p>
+<ul>
+<li><strong>Auto-Complete</strong>: Real-time suggestions as users type</li>
+<li><strong>Trending Searches</strong>: Display of currently popular search queries</li>
+<li><strong>Typo Correction</strong>: Automatic detection and correction of spelling errors</li>
+<li><strong>Query Expansion</strong>: Synonym expansion and related term suggestions</li>
+<li><strong>Personalization</strong>: User-specific suggestions based on search history</li>
+<li><strong>Analytics Tracking</strong>: Comprehensive tracking of suggestion effectiveness</li>
+</ul>
+<h2>Architecture</h2>
+<h3>Database Schema</h3>
+<p>Four new tables support the search suggestions system:</p>
+<h4>1. search_suggestions</h4>
+<p>Stores auto-complete suggestions with popularity metrics.</p>
+<pre><code class="language-sql">CREATE TABLE search_suggestions (
+  id UUID PRIMARY KEY,
+  suggestion_text TEXT NOT NULL,
+  suggestion_type VARCHAR(50) NOT NULL,  -- product, material, category, property, trending, recent
+  category VARCHAR(100),
+  popularity_score NUMERIC DEFAULT 0,
+  click_count INTEGER DEFAULT 0,
+  impression_count INTEGER DEFAULT 0,
+  ctr NUMERIC GENERATED ALWAYS AS (
+    CASE WHEN impression_count &gt; 0 
+    THEN click_count::NUMERIC / impression_count 
+    ELSE 0 END
+  ) STORED,
+  metadata JSONB DEFAULT &#39;{}&#39;::jsonb,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ
+);
+</code></pre>
+<h4>2. search_query_corrections</h4>
+<p>Tracks typo corrections and their effectiveness.</p>
+<pre><code class="language-sql">CREATE TABLE search_query_corrections (
+  id UUID PRIMARY KEY,
+  original_query TEXT NOT NULL,
+  corrected_query TEXT NOT NULL,
+  correction_type VARCHAR(50) NOT NULL,  -- spelling, synonym, expansion, abbreviation
+  confidence_score NUMERIC DEFAULT 0.8,
+  auto_applied_count INTEGER DEFAULT 0,
+  user_accepted_count INTEGER DEFAULT 0,
+  user_rejected_count INTEGER DEFAULT 0,
+  acceptance_rate NUMERIC GENERATED ALWAYS AS (
+    CASE WHEN (user_accepted_count + user_rejected_count) &gt; 0
+    THEN user_accepted_count::NUMERIC / (user_accepted_count + user_rejected_count)
+    ELSE 0 END
+  ) STORED,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(original_query, corrected_query)
+);
+</code></pre>
+<h4>3. trending_searches</h4>
+<p>Tracks trending queries over time windows.</p>
+<pre><code class="language-sql">CREATE TABLE trending_searches (
+  id UUID PRIMARY KEY,
+  query_text TEXT NOT NULL,
+  search_count INTEGER DEFAULT 1,
+  unique_users_count INTEGER DEFAULT 1,
+  time_window VARCHAR(20) NOT NULL,  -- hourly, daily, weekly, monthly
+  trend_score NUMERIC DEFAULT 0,
+  growth_rate NUMERIC DEFAULT 0,
+  category VARCHAR(100),
+  metadata JSONB DEFAULT &#39;{}&#39;::jsonb,
+  window_start TIMESTAMPTZ NOT NULL,
+  window_end TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(query_text, time_window, window_start)
+);
+</code></pre>
+<h4>4. search_suggestion_clicks</h4>
+<p>Tracks user interactions with suggestions.</p>
+<pre><code class="language-sql">CREATE TABLE search_suggestion_clicks (
+  id UUID PRIMARY KEY,
+  suggestion_id UUID REFERENCES search_suggestions(id) ON DELETE CASCADE,
+  user_id UUID,
+  session_id TEXT,
+  original_query TEXT,
+  suggestion_position INTEGER,
+  action_type VARCHAR(50) NOT NULL,  -- clicked, dismissed, ignored, accepted
+  result_count INTEGER,
+  user_satisfied BOOLEAN,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h3>Database Functions</h3>
+<h4>update_suggestion_metrics()</h4>
+<p>Trigger function that automatically updates click counts and impression counts when users interact with suggestions.</p>
+<h4>calculate_trending_searches(p_time_window, p_limit)</h4>
+<p>Calculates trending searches based on current vs previous period, returns trend scores and growth rates.</p>
+<h4>get_popular_searches(p_query_filter, p_limit, p_days)</h4>
+<p>Retrieves popular search queries with filtering options.</p>
+<h2>API Endpoints</h2>
+<p>All endpoints are available under <code>/api/search/</code> prefix.</p>
+<h3>1. Auto-Complete Suggestions</h3>
+<p><strong>POST</strong> <code>/api/search/autocomplete</code></p>
+<p>Get intelligent auto-complete suggestions as user types.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;fire res&quot;,
+  &quot;limit&quot;: 10,
+  &quot;user_id&quot;: &quot;user-123&quot;,
+  &quot;session_id&quot;: &quot;session-456&quot;,
+  &quot;include_trending&quot;: true,
+  &quot;include_recent&quot;: true,
+  &quot;include_popular&quot;: true,
+  &quot;categories&quot;: [&quot;ceramic&quot;, &quot;tiles&quot;]
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;query&quot;: &quot;fire res&quot;,
+  &quot;suggestions&quot;: [
+    {
+      &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+      &quot;suggestion_text&quot;: &quot;fire resistant tiles&quot;,
+      &quot;suggestion_type&quot;: &quot;trending&quot;,
+      &quot;category&quot;: &quot;ceramic&quot;,
+      &quot;popularity_score&quot;: 0.85,
+      &quot;click_count&quot;: 142,
+      &quot;impression_count&quot;: 1250,
+      &quot;ctr&quot;: 0.1136,
+      &quot;metadata&quot;: {&quot;related_terms&quot;: [&quot;fireproof&quot;, &quot;heat resistant&quot;]},
+      &quot;confidence&quot;: 0.92
+    }
+  ],
+  &quot;total_suggestions&quot;: 8,
+  &quot;processing_time_ms&quot;: 45,
+  &quot;metadata&quot;: {
+    &quot;sources&quot;: [&quot;database&quot;, &quot;trending&quot;, &quot;products&quot;],
+    &quot;query_length&quot;: 8
+  }
+}
+</code></pre>
+<h3>2. Trending Searches</h3>
+<p><strong>GET</strong> <code>/api/search/trending</code></p>
+<p>Get currently trending search queries.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>time_window</code>: hourly, daily, weekly, monthly (default: daily)</li>
+<li><code>limit</code>: Maximum results (default: 20, max: 100)</li>
+<li><code>category</code>: Filter by category (optional)</li>
+<li><code>min_search_count</code>: Minimum search count threshold (default: 2)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;trending_searches&quot;: [
+    {
+      &quot;query_text&quot;: &quot;marble flooring&quot;,
+      &quot;search_count&quot;: 156,
+      &quot;unique_users_count&quot;: 89,
+      &quot;trend_score&quot;: 87.5,
+      &quot;growth_rate&quot;: 45.2,
+      &quot;time_window&quot;: &quot;daily&quot;,
+      &quot;category&quot;: &quot;flooring&quot;
+    }
+  ],
+  &quot;total_results&quot;: 15,
+  &quot;time_window&quot;: &quot;daily&quot;,
+  &quot;window_start&quot;: &quot;2025-01-08T00:00:00Z&quot;,
+  &quot;window_end&quot;: &quot;2025-01-09T00:00:00Z&quot;
+}
+</code></pre>
+<h3>3. Typo Correction</h3>
+<p><strong>POST</strong> <code>/api/search/typo-correction</code></p>
+<p>Detect typos and suggest corrections.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;waterprf tiles&quot;,
+  &quot;auto_apply_threshold&quot;: 0.9,
+  &quot;max_suggestions&quot;: 3
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;original_query&quot;: &quot;waterprf tiles&quot;,
+  &quot;has_corrections&quot;: true,
+  &quot;corrections&quot;: [
+    {
+      &quot;original_query&quot;: &quot;waterprf tiles&quot;,
+      &quot;corrected_query&quot;: &quot;waterproof tiles&quot;,
+      &quot;correction_type&quot;: &quot;spelling&quot;,
+      &quot;confidence_score&quot;: 0.95,
+      &quot;auto_applied&quot;: true,
+      &quot;acceptance_rate&quot;: 0.87
+    }
+  ],
+  &quot;recommended_correction&quot;: {
+    &quot;original_query&quot;: &quot;waterprf tiles&quot;,
+    &quot;corrected_query&quot;: &quot;waterproof tiles&quot;,
+    &quot;correction_type&quot;: &quot;spelling&quot;,
+    &quot;confidence_score&quot;: 0.95,
+    &quot;auto_applied&quot;: true,
+    &quot;acceptance_rate&quot;: 0.87
+  }
+}
+</code></pre>
+<h3>4. Query Expansion</h3>
+<p><strong>POST</strong> <code>/api/search/query-expansion</code></p>
+<p>Expand query with synonyms and related terms.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;fire resistant&quot;,
+  &quot;max_synonyms_per_term&quot;: 3,
+  &quot;max_related_concepts&quot;: 5,
+  &quot;use_ai&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;expanded_query&quot;: {
+    &quot;original_query&quot;: &quot;fire resistant&quot;,
+    &quot;expanded_terms&quot;: [&quot;flame&quot;, &quot;heat&quot;, &quot;thermal&quot;, &quot;proof&quot;, &quot;repellent&quot;],
+    &quot;synonyms&quot;: {
+      &quot;fire&quot;: [&quot;flame&quot;, &quot;heat&quot;, &quot;thermal&quot;],
+      &quot;resistant&quot;: [&quot;proof&quot;, &quot;repellent&quot;, &quot;protective&quot;]
+    },
+    &quot;related_concepts&quot;: [&quot;fireproof tiles&quot;, &quot;heat resistant materials&quot;, &quot;fire safety&quot;],
+    &quot;confidence_score&quot;: 0.85
+  },
+  &quot;suggested_searches&quot;: [
+    &quot;fire resistant flame&quot;,
+    &quot;fire resistant heat&quot;,
+    &quot;fire resistant thermal&quot;
+  ],
+  &quot;processing_time_ms&quot;: 78
+}
+</code></pre>
+<h3>5. Track Suggestion Click</h3>
+<p><strong>POST</strong> <code>/api/search/track-click</code></p>
+<p>Track when user clicks on a suggestion for analytics.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;suggestion_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+  &quot;user_id&quot;: &quot;user-123&quot;,
+  &quot;session_id&quot;: &quot;session-456&quot;,
+  &quot;original_query&quot;: &quot;fire res&quot;,
+  &quot;suggestion_position&quot;: 0,
+  &quot;action_type&quot;: &quot;clicked&quot;,
+  &quot;result_count&quot;: 42,
+  &quot;user_satisfied&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Click tracked successfully&quot;
+}
+</code></pre>
+<h2>Frontend Integration</h2>
+<h3>SearchSuggestionsService</h3>
+<p>TypeScript service for interacting with search suggestions API:</p>
+<pre><code class="language-typescript">import { getSearchSuggestionsService } from &#39;@/services/searchSuggestionsService&#39;;
+
+const service = getSearchSuggestionsService();
+
+// Get auto-complete suggestions
+const response = await service.getAutoCompleteSuggestions({
+  query: &#39;fire res&#39;,
+  limit: 10,
+  include_trending: true,
+  include_recent: true,
+  include_popular: true
+});
+
+// Get trending searches
+const trending = await service.getTrendingSearches(&#39;daily&#39;, 20);
+
+// Check typo correction
+const correction = await service.checkTypoCorrection(&#39;waterprf&#39;, 0.9, 3);
+
+// Expand query
+const expanded = await service.expandQuery(&#39;fire resistant&#39;, 3, 5, true);
+
+// Track suggestion click
+await service.trackSuggestionClick(
+  suggestionId,
+  originalQuery,
+  position,
+  &#39;clicked&#39;,
+  userId
+);
+</code></pre>
+<h3>SemanticSearchInput Component</h3>
+<p>Enhanced search input component with auto-complete and typo correction:</p>
+<ul>
+<li>Real-time auto-complete suggestions as user types</li>
+<li>Typo correction banner with &quot;Did you mean?&quot; suggestions</li>
+<li>Trending searches display</li>
+<li>Click tracking for analytics</li>
+<li>Keyboard navigation support</li>
+</ul>
+<h2>Usage Examples</h2>
+<h3>Example 1: Basic Auto-Complete</h3>
+<p>User types &quot;fire res&quot; → System suggests:</p>
+<ul>
+<li>&quot;fire resistant tiles&quot;</li>
+<li>&quot;fire resistant materials&quot;</li>
+<li>&quot;fire resistant coating&quot;</li>
+</ul>
+<h3>Example 2: Typo Correction</h3>
+<p>User types &quot;waterprf&quot; → System shows banner:
+&quot;Did you mean: waterproof?&quot;</p>
+<h3>Example 3: Trending Searches</h3>
+<p>Display top 10 trending searches on search page:</p>
+<ul>
+<li>&quot;marble flooring&quot; (↑ 45%)</li>
+<li>&quot;ceramic tiles&quot; (↑ 32%)</li>
+<li>&quot;wood panels&quot; (↑ 28%)</li>
+</ul>
+<h2>Performance Considerations</h2>
+<ul>
+<li>Auto-complete debounced to 300ms to reduce API calls</li>
+<li>Suggestions cached on frontend for 5 minutes</li>
+<li>Database indexes on frequently queried columns</li>
+<li>Computed columns for CTR and acceptance rates</li>
+<li>Trigger-based metric updates for real-time statistics</li>
+</ul>
+<h2>Future Enhancements</h2>
+<ul>
+<li>AI-powered semantic expansion using Claude/GPT-5</li>
+<li>Personalized suggestions based on user preferences</li>
+<li>Multi-language support for international users</li>
+<li>Voice search integration</li>
+<li>Image-based search suggestions</li>
+<li>Category-specific suggestion models</li>
+</ul>
+
+</div></body></html>

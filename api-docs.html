@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>MIVAA API Documentation</h1>
+<p><strong>Version:</strong> 2.3.0<br><strong>Last Updated:</strong> 2025-11-17<br><strong>Base URL:</strong> <code>https://v1api.materialshub.gr</code></p>
+<hr>
+<h2>📚 Interactive Documentation</h2>
+<ul>
+<li><strong>Swagger UI</strong>: <a href="https://v1api.materialshub.gr/docs">https://v1api.materialshub.gr/docs</a></li>
+<li><strong>ReDoc</strong>: <a href="https://v1api.materialshub.gr/redoc">https://v1api.materialshub.gr/redoc</a></li>
+<li><strong>OpenAPI Schema</strong>: <a href="https://v1api.materialshub.gr/openapi.json">https://v1api.materialshub.gr/openapi.json</a></li>
+</ul>
+<hr>
+<h2>🎯 Latest Enhancement: Multi-Vector Search (v2.3.0)</h2>
+<h3>Overview</h3>
+<p>The multi-vector search has been <strong>significantly enhanced</strong> to be the single comprehensive search solution for the MIVAA platform.</p>
+<h3>What&#39;s New</h3>
+<p>✅ <strong>6 Specialized CLIP Embeddings</strong> (previously 3)</p>
+<ul>
+<li>text_embedding_1536 (20%) - Semantic understanding</li>
+<li>visual_clip_embedding_512 (20%) - Visual similarity</li>
+<li>color_clip_embedding_512 (15%) - Color palette matching</li>
+<li>texture_clip_embedding_512 (15%) - Texture pattern matching</li>
+<li>style_clip_embedding_512 (15%) - Design style matching</li>
+<li>material_clip_embedding_512 (15%) - Material type matching</li>
+</ul>
+<p>✅ <strong>JSONB Metadata Filtering</strong></p>
+<ul>
+<li>Filter by material properties (finish, dimensions, etc.)</li>
+<li>Supports exact match, IN clauses, and array containment</li>
+<li>Merges seamlessly with query understanding</li>
+</ul>
+<p>✅ <strong>Query Understanding (ENABLED BY DEFAULT)</strong></p>
+<ul>
+<li>GPT-4o-mini parses natural language queries</li>
+<li>Auto-extracts: material_type, properties, finish, colors, application, style, dimensions</li>
+<li>Cost: $0.0001 per query (negligible)</li>
+<li>Can be disabled with <code>enable_query_understanding=false</code></li>
+</ul>
+<h3>Performance</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Response Time</strong></td>
+<td>250-350ms (with query understanding), 200-300ms (without)</td>
+</tr>
+<tr>
+<td><strong>Accuracy Improvement</strong></td>
+<td>30-40% for complex queries</td>
+</tr>
+<tr>
+<td><strong>Cost</strong></td>
+<td>$0.0001 per query</td>
+</tr>
+<tr>
+<td><strong>Recommended For</strong></td>
+<td>95% of all queries</td>
+</tr>
+</tbody></table>
+<h3>Example Usage</h3>
+<h4>Basic Multi-Vector Search</h4>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=multi_vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_JWT_TOKEN&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;modern ceramic tiles&quot;,
+    &quot;workspace_id&quot;: &quot;your-workspace-id&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<h4>With Manual Filters</h4>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=multi_vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_JWT_TOKEN&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;ceramic tiles&quot;,
+    &quot;workspace_id&quot;: &quot;your-workspace-id&quot;,
+    &quot;material_filters&quot;: {
+      &quot;finish&quot;: &quot;matte&quot;,
+      &quot;properties&quot;: [&quot;waterproof&quot;, &quot;outdoor&quot;]
+    },
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<h4>With Query Understanding (DEFAULT)</h4>
+<pre><code class="language-bash"># Query understanding is ENABLED BY DEFAULT
+curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=multi_vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_JWT_TOKEN&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;waterproof ceramic tiles for outdoor patio, matte finish, light beige&quot;,
+    &quot;workspace_id&quot;: &quot;your-workspace-id&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<p><strong>What happens:</strong></p>
+<ol>
+<li>GPT-4o-mini parses the query</li>
+<li>Extracts filters:<ul>
+<li>material_type: &quot;ceramic tiles&quot;</li>
+<li>properties: [&quot;waterproof&quot;, &quot;outdoor&quot;]</li>
+<li>finish: &quot;matte&quot;</li>
+<li>colors: [&quot;light beige&quot;]</li>
+<li>application: &quot;patio&quot;</li>
+</ul>
+</li>
+<li>Multi-vector search executes with 6 embeddings + filters</li>
+<li>Returns highly accurate, filtered results</li>
+</ol>
+<h4>Disable Query Understanding (If Needed)</h4>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=multi_vector&amp;enable_query_understanding=false&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_JWT_TOKEN&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;tiles&quot;,
+    &quot;workspace_id&quot;: &quot;your-workspace-id&quot;,
+    &quot;top_k&quot;: 10
+  }&#39;
+</code></pre>
+<hr>
+<h2>🔍 Search Strategies</h2>
+<h3>Multi-Vector Search (⭐ RECOMMENDED DEFAULT)</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/rag/search?strategy=multi_vector</code></p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>6 specialized CLIP embeddings with intelligent weighting</li>
+<li>JSONB metadata filtering</li>
+<li>Query understanding (enabled by default)</li>
+<li>Best accuracy and performance for general queries</li>
+</ul>
+<p><strong>When to use:</strong> 95% of all queries</p>
+<p><strong>Performance:</strong> ~250-350ms (with query understanding), ~200-300ms (without)</p>
+<hr>
+<h3>Other Strategies</h3>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Use Case</th>
+<th>Performance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>semantic</code></td>
+<td>Fast text-only search</td>
+<td>~80ms</td>
+</tr>
+<tr>
+<td><code>vector</code></td>
+<td>Pure similarity matching</td>
+<td>~100ms</td>
+</tr>
+<tr>
+<td><code>hybrid</code></td>
+<td>Semantic + keyword</td>
+<td>~120ms</td>
+</tr>
+<tr>
+<td><code>material</code></td>
+<td>Property filtering only</td>
+<td>~50ms</td>
+</tr>
+<tr>
+<td><code>image</code></td>
+<td>Visual similarity</td>
+<td>~150ms</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>Color-specific search</td>
+<td>~100ms</td>
+</tr>
+<tr>
+<td><code>texture</code></td>
+<td>Texture-specific search</td>
+<td>~100ms</td>
+</tr>
+<tr>
+<td><code>style</code></td>
+<td>Style-specific search</td>
+<td>~100ms</td>
+</tr>
+<tr>
+<td><code>material_type</code></td>
+<td>Material type search</td>
+<td>~100ms</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>⚠️ DEPRECATED - Use <code>multi_vector</code></td>
+<td>~800ms</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔐 Authentication</h2>
+<p>All API endpoints require JWT authentication:</p>
+<pre><code class="language-bash">Authorization: Bearer YOUR_JWT_TOKEN
+</code></pre>
+<p>Get your token from:</p>
+<ol>
+<li>Frontend application (automatic)</li>
+<li>Supabase authentication</li>
+<li><code>/auth/login</code> endpoint</li>
+</ol>
+<hr>
+<h2>📊 Response Format</h2>
+<h3>Success Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;results&quot;: [...],
+  &quot;total_results&quot;: 10,
+  &quot;processing_time&quot;: 0.25,
+  &quot;weights&quot;: {
+    &quot;text&quot;: 0.2,
+    &quot;visual&quot;: 0.2,
+    &quot;color&quot;: 0.15,
+    &quot;texture&quot;: 0.15,
+    &quot;style&quot;: 0.15,
+    &quot;material&quot;: 0.15
+  },
+  &quot;material_filters_applied&quot;: {...},
+  &quot;query&quot;: &quot;...&quot;,
+  &quot;search_type&quot;: &quot;multi_vector_enhanced&quot;
+}
+</code></pre>
+<h3>Error Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: &quot;Error message&quot;,
+  &quot;detail&quot;: &quot;Detailed error information&quot;
+}
+</code></pre>
+<hr>
+<h2>🚀 Getting Started</h2>
+<ol>
+<li><p><strong>Get API Access</strong></p>
+<ul>
+<li>Sign up at <a href="https://materialshub.gr">materialshub.gr</a></li>
+<li>Get your JWT token from the dashboard</li>
+</ul>
+</li>
+<li><p><strong>Make Your First Request</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://v1api.materialshub.gr/api/rag/search?strategy=multi_vector&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_JWT_TOKEN&quot; \
+  -d &#39;{&quot;query&quot;: &quot;modern tiles&quot;, &quot;workspace_id&quot;: &quot;your-workspace-id&quot;}&#39;
+</code></pre>
+</li>
+<li><p><strong>Explore Interactive Docs</strong></p>
+<ul>
+<li>Visit <a href="https://v1api.materialshub.gr/docs">https://v1api.materialshub.gr/docs</a></li>
+<li>Try out endpoints directly in the browser</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>📖 Additional Resources</h2>
+<ul>
+<li><strong>Search Strategies Guide</strong>: <a href="./search-strategies.md">docs/search-strategies.md</a></li>
+<li><strong>Multi-Vector Enhancement Summary</strong>: <a href="./multi-vector-enhancement-summary.md">docs/multi-vector-enhancement-summary.md</a></li>
+<li><strong>Platform Overview</strong>: <a href="./README.md">docs/README.md</a></li>
+<li><strong>Deployment Guide</strong>: <a href="./deployment-guide.md">docs/deployment-guide.md</a></li>
+</ul>
+<hr>
+<p><strong>Questions?</strong> Contact support or check the interactive documentation at <code>/docs</code>.</p>
+
+</div></body></html>
