@@ -54,9 +54,29 @@
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 3: Semantic Chunking (40-50%)                             │
-│ Tool: Anthropic Semantic Chunking                              │
-│ Output: 229+ semantic chunks (Harmony PDF example)             │
+│ STAGE 3: Enhanced Semantic Chunking (40-50%)                    │
+│ Tool: UnifiedChunkingService with 5 enhancements               │
+│ Output: High-quality semantic chunks with relationships        │
+│                                                                 │
+│ ✅ Enhancement 1: Product Boundary Detection                    │
+│    - Splits chunks at product boundaries                       │
+│    - Each chunk = ONE product only                             │
+│                                                                 │
+│ ✅ Enhancement 2: Semantic Chunking                             │
+│    - Chunks end at natural boundaries (paragraphs, sentences)  │
+│    - Better semantic completeness                              │
+│                                                                 │
+│ ✅ Enhancement 3: Context Enrichment                            │
+│    - Adds product_id and product_name to metadata              │
+│    - Enables better search filtering                           │
+│                                                                 │
+│ ✅ Enhancement 4: Metadata-First Architecture                   │
+│    - Excludes product metadata pages from chunking             │
+│    - Zero duplication between chunks and metadata              │
+│                                                                 │
+│ ✅ Enhancement 5: Chunk Relationships                           │
+│    - Creates semantic relationships between chunks             │
+│    - Enables &quot;show me everything about X&quot; queries              │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -79,7 +99,7 @@
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 7-10: Multi-Vector Embeddings (80-91%)                    │
-│ Models: OpenAI CLIP (5 types)                                  │
+│ Models: Google SigLIP ViT-SO400M (5 types)                     │
 │ Output: Visual, color, texture, application embeddings         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -365,13 +385,14 @@
 </ul>
 <hr>
 <h3>Stages 7-10: Multi-Vector Embeddings (80-91%)</h3>
-<p><strong>Model</strong>: OpenAI CLIP</p>
+<p><strong>Model</strong>: Google SigLIP ViT-SO400M-14-384 (+19-29% accuracy improvement over CLIP)</p>
 <p><strong>5 Embedding Types</strong>:</p>
 <ol>
 <li><p><strong>Visual Embeddings</strong> (512D)</p>
 <ul>
 <li>Overall visual appearance</li>
 <li>Enables visual similarity search</li>
+<li>Superior accuracy on material images</li>
 </ul>
 </li>
 <li><p><strong>Large Visual Embeddings</strong> (1536D)</p>
