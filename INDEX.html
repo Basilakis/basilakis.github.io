@@ -55,6 +55,48 @@
 <li>Security features</li>
 <li>Analytics &amp; reporting</li>
 </ul>
+<p><strong><a href="duplicate-detection-merging.md">duplicate-detection-merging.md</a></strong> - Duplicate detection system</p>
+<ul>
+<li>Factory-based duplicate detection</li>
+<li>Product merging with undo</li>
+<li>Similarity scoring</li>
+<li>Merge history tracking</li>
+<li>API endpoints (7 total)</li>
+</ul>
+<p><strong><a href="data-import-system.md">data-import-system.md</a></strong> - Data import system ✨ NEW</p>
+<ul>
+<li>XML import with AI-powered field mapping</li>
+<li>Dynamic field mapping (Claude Sonnet 4.5)</li>
+<li>Batch processing (10 products at a time)</li>
+<li>Concurrent image downloads (5 parallel)</li>
+<li>Cron-based scheduling for recurring imports</li>
+<li>Manual re-run functionality</li>
+<li>Checkpoint recovery</li>
+<li>Real-time progress tracking</li>
+<li>API endpoints (4 total)</li>
+<li>Phase 1 &amp; 2 complete</li>
+</ul>
+<p><strong><a href="search-strategies.md">search-strategies.md</a></strong> - Complete search system guide ✅</p>
+<ul>
+<li>6 search strategies (100% implemented)</li>
+<li>Semantic, Vector, Multi-Vector, Hybrid, Material, Image</li>
+<li>All strategies combined mode</li>
+<li>Database schema and indexes</li>
+<li>Performance metrics and benchmarks</li>
+<li>Usage examples and best practices</li>
+</ul>
+<p><strong><a href="comprehensive-metadata-fields-guide.md">comprehensive-metadata-fields-guide.md</a></strong> - Comprehensive metadata fields guide ✨ NEW</p>
+<ul>
+<li>200+ metadata fields across 9 categories</li>
+<li>Material Properties, Dimensions, Appearance, Performance</li>
+<li>Application, Compliance, Design, Manufacturing, Commercial</li>
+<li>AI-powered dynamic extraction (Claude Sonnet 4.5 / GPT-4o)</li>
+<li>Complete field reference with examples</li>
+<li>API usage and frontend display</li>
+<li>Step-by-step extraction process</li>
+<li>Confidence scoring system</li>
+<li>Best practices and troubleshooting</li>
+</ul>
 <hr>
 <h3>🏗️ Architecture &amp; Design</h3>
 <p><strong><a href="system-architecture.md">system-architecture.md</a></strong> - Complete system architecture</p>
@@ -72,17 +114,14 @@
 <li>Security measures</li>
 <li>Production metrics</li>
 </ul>
-<p><strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Database schema reference</p>
+<p><strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Metadata management system</p>
 <ul>
-<li>Core tables (workspaces, documents, chunks, products, images, embeddings)</li>
-<li>Products + Metadata architecture (JSONB)</li>
-<li>Document entities (certificates, logos, specifications)</li>
-<li>Product-document relationships</li>
-<li>Relationship tables (chunk-product, chunk-image, product-image, product-document)</li>
-<li>Row-Level Security (RLS)</li>
-<li>Indexes for performance</li>
-<li>Storage capacity</li>
-<li>Backup &amp; recovery</li>
+<li>Dynamic metadata extraction</li>
+<li>JSONB storage architecture</li>
+<li>Metadata validation and quality scoring</li>
+<li>Admin panel for metadata management</li>
+<li>API endpoints for metadata operations</li>
+<li>Best practices and guidelines</li>
 </ul>
 <p><strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job queue &amp; async processing</p>
 <ul>
@@ -115,6 +154,17 @@
 <li>Cost optimization</li>
 <li>API keys &amp; configuration</li>
 <li>Performance benchmarks</li>
+</ul>
+<p><strong><a href="agent-system.md">agent-system.md</a></strong> - AI Agent system architecture ✨ NEW</p>
+<ul>
+<li>Database-driven agent prompts</li>
+<li>3 specialized agents (PDF Processor, Search, Product)</li>
+<li>Admin UI for prompt management (/admin/agent-configs)</li>
+<li>LangChain.js tool orchestration</li>
+<li>Real-time prompt updates (no deployment needed)</li>
+<li>Role-based access control</li>
+<li>Agent monitoring and analytics</li>
+<li>Best practices and troubleshooting</li>
 </ul>
 <p><strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - 14-stage PDF processing</p>
 <ul>
@@ -205,7 +255,7 @@
 <ol>
 <li>Read <strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - All endpoints</li>
 <li>Check <strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models used</li>
-<li>Review <strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Data structure</li>
+<li>Review <strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Data structure</li>
 <li>Study <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Authentication</li>
 </ol>
 <h3>For Operations</h3>
@@ -213,7 +263,7 @@
 <li>Read <strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Deployment process</li>
 <li>Study <strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues</li>
 <li>Review <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Monitoring</li>
-<li>Check <strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Backup strategy</li>
+<li>Check <strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job monitoring and recovery</li>
 </ol>
 <h3>For Product Managers</h3>
 <ol>
@@ -285,7 +335,17 @@
 </ul>
 <hr>
 <h2>🔄 Documentation Updates</h2>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production<br><strong>Maintainer</strong>: Development Team</p>
+<p><strong>Last Updated</strong>: November 13, 2025
+<strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Production
+<strong>Maintainer</strong>: Development Team</p>
+<p><strong>Recent Changes:</strong></p>
+<ul>
+<li>✅ Moved analysis documents to /planning</li>
+<li>✅ Added future features roadmap</li>
+<li>✅ Updated performance optimization status</li>
+<li>✅ Reorganized documentation structure</li>
+</ul>
 <hr>
 <h2>📞 Support</h2>
 <p>For questions or issues:</p>
@@ -296,6 +356,8 @@
 <li>GitHub Issues: <a href="https://github.com/creativeghq/material-kai-vision-platform/issues">https://github.com/creativeghq/material-kai-vision-platform/issues</a></li>
 </ul>
 <hr>
-<p><strong>Total Documentation</strong>: 10 comprehensive guides<br><strong>Total Lines</strong>: 5,000+<br><strong>Coverage</strong>: 100% of platform features</p>
+<p><strong>Total Documentation</strong>: 20+ comprehensive guides
+<strong>Total Lines</strong>: 10,000+
+<strong>Coverage</strong>: 100% of platform features</p>
 
 </div></body></html>

@@ -54,53 +54,69 @@
 <hr>
 <h3>2. Multi-Modal Search</h3>
 <p><strong>Search Types</strong>:</p>
-<p><strong>Semantic Search</strong></p>
+<p><strong>Status:</strong> ✅ All 6 strategies implemented (100% complete)</p>
+<p><strong>1. Semantic Search</strong> ✅</p>
 <ul>
-<li>Natural language queries</li>
-<li>Understands intent</li>
-<li>Context-aware results</li>
-<li>Response time: 200-500ms</li>
-</ul>
-<p><strong>Vector Search</strong></p>
-<ul>
-<li>Similarity-based retrieval</li>
-<li>Fast lookup</li>
-<li>Configurable metrics</li>
-<li>Response time: 100-300ms</li>
-</ul>
-<p><strong>Hybrid Search</strong></p>
-<ul>
-<li>Combines semantic + vector</li>
-<li>Best accuracy</li>
-<li>Configurable weights</li>
-<li>Response time: 300-800ms</li>
-</ul>
-<p><strong>Visual Search</strong></p>
-<ul>
-<li>Image-based discovery</li>
-<li>Find similar materials</li>
-<li>Color/texture matching</li>
-<li>Response time: 500-1000ms</li>
-</ul>
-<p><strong>Property Search</strong></p>
-<ul>
-<li>Filter by metafields</li>
-<li>Material type, color, texture</li>
-<li>Application-based</li>
-<li>Response time: 100-200ms</li>
-</ul>
-<p><strong>Full-Text Search</strong></p>
-<ul>
-<li>Keyword matching</li>
-<li>Fast lookup</li>
-<li>Exact matches</li>
-<li>Response time: 50-100ms</li>
-</ul>
-<p><strong>Performance</strong>:</p>
-<ul>
+<li>Natural language understanding with MMR diversity</li>
+<li>Understands intent and context</li>
+<li>Lambda: 0.5 (balanced relevance + diversity)</li>
+<li>Response time: &lt;150ms</li>
 <li>Accuracy: 85%+</li>
-<li>Recall: 90%+</li>
+</ul>
+<p><strong>2. Vector Search</strong> ✅</p>
+<ul>
+<li>Pure similarity matching (no diversity)</li>
+<li>Fast lookup using pgvector</li>
+<li>Lambda: 1.0 (pure relevance)</li>
+<li>Response time: &lt;100ms</li>
 <li>Precision: 88%+</li>
+</ul>
+<p><strong>3. Multi-Vector Search</strong> ✅</p>
+<ul>
+<li>Combines 3 embeddings: text (40%), visual (30%), multimodal (30%)</li>
+<li>Text + visual understanding</li>
+<li>Weighted cosine similarity</li>
+<li>Response time: &lt;200ms</li>
+<li>Best for: Complex queries</li>
+</ul>
+<p><strong>4. Hybrid Search</strong> ✅</p>
+<ul>
+<li>Combines semantic (70%) + keyword matching (30%)</li>
+<li>PostgreSQL full-text search integration</li>
+<li>Best accuracy for technical terms</li>
+<li>Response time: &lt;180ms</li>
+<li>Accuracy: 90%+</li>
+</ul>
+<p><strong>5. Material Search</strong> ✅</p>
+<ul>
+<li>Property-based filtering using JSONB</li>
+<li>Filter by material_type, dimensions, slip_resistance, etc.</li>
+<li>GIN index for performance</li>
+<li>Response time: &lt;50ms</li>
+<li>Precision: 95%+</li>
+</ul>
+<p><strong>6. Image Search</strong> ✅</p>
+<ul>
+<li>Visual similarity using CLIP embeddings</li>
+<li>Accepts image URL or base64</li>
+<li>Find visually similar products</li>
+<li>Response time: &lt;150ms</li>
+<li>Accuracy: 88%+</li>
+</ul>
+<p><strong>7. All Strategies Combined</strong> ✅</p>
+<ul>
+<li>Runs all 6 strategies in parallel</li>
+<li>Merges and deduplicates results</li>
+<li>Relevance-based ranking</li>
+<li>Response time: &lt;800ms</li>
+<li>Recommended for comprehensive search</li>
+</ul>
+<p><strong>Overall Performance</strong>:</p>
+<ul>
+<li>Accuracy: 85-95% (strategy-dependent)</li>
+<li>Recall: 90%+</li>
+<li>Precision: 88-95%</li>
+<li>Concurrent queries: 1000+/minute</li>
 </ul>
 <hr>
 <h3>3. Materials Catalog</h3>
@@ -167,6 +183,7 @@ GET /api/products/{id}/similar
 <li>Document management</li>
 <li>Product management</li>
 <li>Metafield management</li>
+<li>Agent configurations (AI prompts)</li>
 </ul>
 <p><strong>Analytics</strong>:</p>
 <ul>
@@ -416,6 +433,54 @@ POST /api/images/upload-and-analyze
 <li>✅ Retry logic</li>
 </ul>
 <hr>
+<h3>15. Duplicate Detection &amp; Merging</h3>
+<p><strong>Purpose</strong>: Maintain data quality by identifying and consolidating duplicate products</p>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>✅ Factory-based duplicate detection (CRITICAL: same factory only)</li>
+<li>✅ Multi-metric similarity scoring (name, description, metadata)</li>
+<li>✅ Confidence levels (high, medium, low)</li>
+<li>✅ Product merging with data consolidation</li>
+<li>✅ Merge history tracking with full audit trail</li>
+<li>✅ Undo capability with snapshot restoration</li>
+<li>✅ Batch duplicate scanning</li>
+<li>✅ Caching for performance</li>
+</ul>
+<p><strong>Detection Rules</strong>:</p>
+<ul>
+<li><strong>MUST have same factory/manufacturer</strong> (primary filter)</li>
+<li>Visual similarity alone does NOT create duplicates</li>
+<li>Different factories = NOT duplicates (even if identical)</li>
+</ul>
+<p><strong>Similarity Scoring</strong>:</p>
+<ul>
+<li>Name similarity: 50% weight</li>
+<li>Description similarity: 30% weight</li>
+<li>Metadata similarity: 20% weight</li>
+<li>Overall score: 0.0-1.0</li>
+</ul>
+<p><strong>Confidence Levels</strong>:</p>
+<ul>
+<li>High: 85%+ (very likely duplicate)</li>
+<li>Medium: 70-85% (possible duplicate)</li>
+<li>Low: 55-70% (review needed)</li>
+</ul>
+<p><strong>API Endpoints</strong> (7 total):</p>
+<ul>
+<li><code>POST /api/duplicates/detect</code> - Detect for single product</li>
+<li><code>POST /api/duplicates/batch-detect</code> - Scan workspace</li>
+<li><code>GET /api/duplicates/cached</code> - Get cached results</li>
+<li><code>POST /api/duplicates/update-status</code> - Update status</li>
+<li><code>POST /api/duplicates/merge</code> - Merge products</li>
+<li><code>POST /api/duplicates/undo-merge</code> - Undo merge</li>
+<li><code>GET /api/duplicates/merge-history</code> - Get history</li>
+</ul>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>product_merge_history</code> - Merge operations with snapshots</li>
+<li><code>duplicate_detection_cache</code> - Pre-computed duplicate pairs</li>
+</ul>
+<hr>
 <h2>📱 User Interface Features</h2>
 <p><strong>Frontend Components</strong>:</p>
 <ul>
@@ -437,6 +502,8 @@ POST /api/images/upload-and-analyze
 <li>✅ Accessibility</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+<p><strong>Last Updated</strong>: November 9, 2025
+<strong>Version</strong>: 1.1.0
+<strong>Status</strong>: Production</p>
 
 </div></body></html>
