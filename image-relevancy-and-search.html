@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Image Relevancy &amp; Search System</h1>
+<p><strong>Last Updated:</strong> 2025-01-15<br><strong>Version:</strong> 2.0.0<br><strong>Status:</strong> ✅ Production</p>
+<hr>
+<h2>Overview</h2>
+<p>The MIVAA Image Relevancy System uses <strong>multi-vector embeddings</strong> and <strong>AI-powered analysis</strong> to link images to products, chunks, and enable intelligent image search. This system powers:</p>
+<ol>
+<li><strong>Image-to-Product Linking</strong> - Automatically connect images to products they depict</li>
+<li><strong>Image-to-Chunk Linking</strong> - Connect images to text chunks that reference them</li>
+<li><strong>Image Similarity Search</strong> - Find similar materials from uploaded images</li>
+<li><strong>Material Recognition</strong> - Identify materials from images and return similar products</li>
+</ol>
+<hr>
+<h2>🎯 Core Components</h2>
+<h3>1. Multi-Vector Image Embeddings</h3>
+<p>Every image gets <strong>5 specialized embeddings</strong> for different search types:</p>
+<table>
+<thead>
+<tr>
+<th>Embedding Type</th>
+<th>Model</th>
+<th>Dimension</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Visual SigLIP</strong></td>
+<td>Google SigLIP SO400M</td>
+<td>512</td>
+<td>General visual similarity (+19-29% accuracy)</td>
+</tr>
+<tr>
+<td><strong>Color</strong></td>
+<td>SigLIP (color-focused)</td>
+<td>512</td>
+<td>Color-based search</td>
+</tr>
+<tr>
+<td><strong>Texture</strong></td>
+<td>SigLIP (texture-focused)</td>
+<td>512</td>
+<td>Texture pattern matching</td>
+</tr>
+<tr>
+<td><strong>Application</strong></td>
+<td>SigLIP (use-case)</td>
+<td>512</td>
+<td>Use-case similarity</td>
+</tr>
+<tr>
+<td><strong>Material</strong></td>
+<td>SigLIP (material-focused)</td>
+<td>512</td>
+<td>Material type matching</td>
+</tr>
+</tbody></table>
+<p><strong>Storage</strong>: All embeddings stored in two locations:</p>
+<ol>
+<li><strong><code>embeddings</code> table</strong> - For tracking, analytics, JOINs, cross-entity queries<ul>
+<li><code>entity_id</code> (image_id), <code>entity_type</code> (&quot;image&quot;)</li>
+<li><code>embedding_type</code> (&quot;visual_512&quot;, &quot;color_512&quot;, &quot;texture_512&quot;, &quot;style_512&quot;, &quot;material_512&quot;)</li>
+<li><code>embedding</code> (vector), <code>dimension</code>, <code>model</code>, <code>workspace_id</code></li>
+</ul>
+</li>
+<li><strong>VECS collections</strong> - For fast vector similarity search with HNSW indexing<ul>
+<li><code>image_clip_embeddings</code> (visual)</li>
+<li><code>image_color_embeddings</code> (color)</li>
+<li><code>image_texture_embeddings</code> (texture)</li>
+<li><code>image_style_embeddings</code> (style)</li>
+<li><code>image_material_embeddings</code> (material)</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>2. AI Image Analysis</h3>
+<p><strong>Two-Stage Analysis Pipeline</strong>:</p>
+<h4>Stage 1: Llama 4 Scout 17B Vision (Primary)</h4>
+<ul>
+<li><strong>Model</strong>: <code>meta-llama/Llama-4-Scout-17B-16E-Instruct</code></li>
+<li><strong>Purpose</strong>: Fast, accurate material detection</li>
+<li><strong>Output</strong>: Material type, colors, textures, quality score (0-1)</li>
+<li><strong>Storage</strong>: <code>llama_analysis</code> JSONB column</li>
+</ul>
+<h4>Stage 2: Claude Validation (Optional)</h4>
+<ul>
+<li><strong>Model</strong>: Claude Sonnet 4.5</li>
+<li><strong>Purpose</strong>: Validate low-quality Llama results</li>
+<li><strong>Trigger</strong>: Quality score &lt; 0.7</li>
+<li><strong>Output</strong>: Enhanced analysis with corrections</li>
+<li><strong>Storage</strong>: <code>claude_validation</code> JSONB column</li>
+</ul>
+<hr>
+<h2>🔗 Image Relevancy Linking</h2>
+<h3>1. Image → Product Relationships</h3>
+<p><strong>Table</strong>: <code>product_image_relationships</code></p>
+<p><strong>Relevance Algorithm</strong>:</p>
+<pre><code>relevance_score = (page_overlap × 0.4) + (visual_similarity × 0.4) + (detection_confidence × 0.2)
+</code></pre>
+<p><strong>Components</strong>:</p>
+<ul>
+<li><strong>Page Overlap (40%)</strong>: Same page = 0.4, adjacent = 0.2, else 0.0</li>
+<li><strong>Visual Similarity (40%)</strong>: From AI detection (default 0.3)</li>
+<li><strong>Detection Confidence (20%)</strong>: AI confidence score (default 0.2)</li>
+</ul>
+<p><strong>Relationship Types</strong>:</p>
+<ul>
+<li><code>depicts</code> - Image directly shows the product (score &gt; 0.7)</li>
+<li><code>illustrates</code> - Image illustrates product features (score 0.5-0.7)</li>
+<li><code>variant</code> - Image shows a product variant (score 0.4-0.6)</li>
+<li><code>related</code> - Image is related to the product (score &lt; 0.5)</li>
+</ul>
+<p><strong>Implementation</strong>: <code>entity_linking_service.py</code> → <code>link_images_to_products()</code></p>
+<hr>
+<h3>2. Image → Chunk Relationships</h3>
+<p><strong>Table</strong>: <code>chunk_image_relationships</code></p>
+<p><strong>Relevance Algorithm</strong>:</p>
+<pre><code>relevance_score = 1.0 if same_page else 0.5 if adjacent_page else 0.0
+</code></pre>
+<p><strong>Relationship Types</strong>:</p>
+<ul>
+<li><code>page_proximity</code> - Image and chunk on same/adjacent pages</li>
+</ul>
+<p><strong>Implementation</strong>: <code>entity_linking_service.py</code> → <code>link_images_to_chunks()</code></p>
+<hr>
+<h2>🔍 Image Search Workflows</h2>
+<h3>Workflow 1: User Uploads Image from Agency</h3>
+<p><strong>Use Case</strong>: Designer uploads material photo, wants similar materials</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li><strong>Upload Image</strong> → Supabase Storage (<code>material-images</code> bucket)</li>
+<li><strong>Generate Embeddings</strong> → Call <code>/api/search/material-embeddings</code><ul>
+<li>Generates all 5 CLIP embeddings</li>
+<li>Returns embedding vectors</li>
+</ul>
+</li>
+<li><strong>Search Similar Images</strong> → Call <code>/api/images/search-similar</code><ul>
+<li>Uses VECS service for vector similarity search</li>
+<li>Searches <code>image_clip_embeddings</code> collection</li>
+<li>Returns top K similar images (default: 10)</li>
+</ul>
+</li>
+<li><strong>Get Products</strong> → For each similar image:<ul>
+<li>Query <code>product_image_relationships</code> table</li>
+<li>Get products with <code>relevance_score &gt; 0.5</code></li>
+<li>Return product details with images</li>
+</ul>
+</li>
+</ol>
+<p><strong>API Endpoints</strong>:</p>
+<pre><code class="language-typescript">// Step 1: Generate embeddings
+POST /api/search/material-embeddings
+Body: { image_url: string, material_properties: {...} }
+Response: { embeddings: { visual: [...], color: [...], ... } }
+
+// Step 2: Search similar images
+POST /api/images/search-similar
+Body: { query_embedding: [...], limit: 10 }
+Response: { images: [...], similarity_scores: [...] }
+
+// Step 3: Get products for images
+GET /api/products?image_ids=id1,id2,id3
+Response: { products: [...] }
+</code></pre>
+<hr>
+<h3>Workflow 2: 3D Generation Returns Material Image</h3>
+<p><strong>Use Case</strong>: 3D generation service returns rendered material, need to identify it</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li><strong>Receive 3D Image</strong> → From Mastra 3D Generation service</li>
+<li><strong>Material Recognition</strong> → Call <code>/api/images/analyze-material</code><ul>
+<li>Uses Llama 4 Scout 17B Vision</li>
+<li>Extracts: material_type, colors, textures, finish</li>
+</ul>
+</li>
+<li><strong>Generate Embeddings</strong> → Automatic during analysis<ul>
+<li>All 5 CLIP embeddings generated</li>
+<li>Stored in temporary record</li>
+</ul>
+</li>
+<li><strong>Search Database</strong> → Vector similarity search<ul>
+<li>Query VECS collections for fast similarity search</li>
+<li>Use <code>image_clip_embeddings</code> collection with cosine similarity</li>
+<li>Filter by material_type if detected (from embeddings table metadata)</li>
+</ul>
+</li>
+<li><strong>Return Matches</strong> → Top similar materials<ul>
+<li>Include product details</li>
+<li>Include relevance scores</li>
+<li>Include image URLs</li>
+</ul>
+</li>
+</ol>
+<p><strong>API Endpoints</strong>:</p>
+<pre><code class="language-typescript">// Combined endpoint for 3D workflow
+POST /api/images/identify-material
+Body: { image_url: string, context: { source: &#39;3d_generation&#39; } }
+Response: {
+  material_type: string,
+  similar_products: [...],
+  confidence: number,
+  embeddings: {...}
+}
+</code></pre>
+<hr>
+<h2>📊 Database Schema</h2>
+<h3>document_images Table</h3>
+<pre><code class="language-sql">CREATE TABLE document_images (
+  id UUID PRIMARY KEY,
+  document_id UUID REFERENCES documents(id),
+  workspace_id UUID REFERENCES workspaces(id),
+  image_url TEXT NOT NULL,  -- Supabase Storage URL
+  storage_path TEXT,         -- Storage bucket path
+  page_number INTEGER,
+  
+  -- AI Analysis
+  llama_analysis JSONB,      -- Llama 4 Scout analysis
+  claude_validation JSONB,   -- Claude validation (optional)
+
+  -- Note: Multi-Vector Embeddings are now stored in:
+  -- 1. embeddings table (for tracking/analytics/JOINs)
+  -- 2. VECS collections (for fast similarity search)
+  -- Embedding columns removed from document_images to eliminate redundancy
+
+  -- Metadata
+  metadata JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+</code></pre>
+<h3>product_image_relationships Table</h3>
+<pre><code class="language-sql">CREATE TABLE product_image_relationships (
+  id UUID PRIMARY KEY,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  image_id UUID REFERENCES document_images(id) ON DELETE CASCADE,
+  relationship_type VARCHAR(50),  -- &#39;depicts&#39;, &#39;illustrates&#39;, &#39;variant&#39;, &#39;related&#39;
+  relevance_score FLOAT CHECK (relevance_score &gt;= 0 AND relevance_score &lt;= 1),
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(product_id, image_id)
+);
+
+CREATE INDEX idx_product_image_relevance ON product_image_relationships(relevance_score DESC);
+</code></pre>
+<hr>
+<h2>🚀 Performance Optimization</h2>
+<h3>VECS Vector Search</h3>
+<ul>
+<li><strong>Library</strong>: Supabase VECS (pgvector wrapper)</li>
+<li><strong>Index</strong>: IVFFlat index on all embedding columns</li>
+<li><strong>Query Time</strong>: &lt; 100ms for 10K images</li>
+<li><strong>Similarity Metric</strong>: Cosine similarity (1 - distance)</li>
+</ul>
+<h3>Caching Strategy</h3>
+<ul>
+<li><strong>Embedding Cache</strong>: 1 hour TTL</li>
+<li><strong>Search Results</strong>: 15 minutes TTL</li>
+<li><strong>Product Images</strong>: CDN cached (24 hours)</li>
+</ul>
+<hr>
+<h2>🔧 Troubleshooting</h2>
+<h3>Images Not Showing in Frontend</h3>
+<p><strong>Common Issues</strong>:</p>
+<ol>
+<li><strong>Missing <code>image_url</code></strong> → Check <code>document_images.image_url</code> is populated</li>
+<li><strong>Storage Path Wrong</strong> → Verify <code>storage_path</code> points to correct bucket</li>
+<li><strong>No Relationships</strong> → Run entity linking: <code>entity_linking_service.link_images_to_products()</code></li>
+<li><strong>Empty Embeddings</strong> → Check background job processed images</li>
+</ol>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-sql">-- Check image URLs
+SELECT id, image_url, storage_path FROM document_images WHERE document_id = &#39;your-doc-id&#39;;
+
+-- Check relationships
+SELECT * FROM product_image_relationships WHERE product_id = &#39;your-product-id&#39;;
+
+-- Check embeddings
+SELECT id, 
+  visual_clip_embedding_512 IS NOT NULL as has_visual,
+  color_clip_embedding_512 IS NOT NULL as has_color
+FROM document_images WHERE document_id = &#39;your-doc-id&#39;;
+</code></pre>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><a href="./relevancy-system.md">Relevancy System</a> - Overall relevancy architecture</li>
+<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a> - Image extraction process</li>
+<li><a href="./search-strategies.md">Search Strategies</a> - Search implementation details</li>
+</ul>
+
+</div></body></html>
