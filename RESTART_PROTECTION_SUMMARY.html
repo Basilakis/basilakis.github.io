@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>🔒 Restart Protection System - Implementation Summary</h1>
+<h2>📋 What Was Created</h2>
+<h3>1. Safe Restart Script (<code>scripts/safe-restart.sh</code>)</h3>
+<p><strong>Purpose</strong>: Checks for active jobs before allowing service restart</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Checks for active jobs via API</li>
+<li>✅ Blocks restart if jobs are running (unless <code>--force</code>)</li>
+<li>✅ Requires confirmation for force restarts</li>
+<li>✅ Logs restart reason</li>
+<li>✅ Shows job details before blocking</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-bash"># Safe restart (blocks if jobs active)
+bash scripts/safe-restart.sh --reason &quot;Deploy bug fix&quot;
+
+# Force restart (interrupts jobs)
+bash scripts/safe-restart.sh --force --reason &quot;Critical patch&quot;
+</code></pre>
+<hr>
+<h3>2. Block Unsafe Restart Script (<code>scripts/block-unsafe-restart.sh</code>)</h3>
+<p><strong>Purpose</strong>: Prevents direct <code>systemctl restart</code> commands</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Shows error message when direct restart attempted</li>
+<li>✅ Guides user to use safe restart script</li>
+<li>✅ Installed as bash alias to intercept systemctl commands</li>
+</ul>
+<hr>
+<h3>3. Admin Restart API (<code>app/api/admin_restart_routes.py</code>)</h3>
+<p><strong>Purpose</strong>: Authorized service restarts via API with job protection</p>
+<p><strong>Endpoint</strong>: <code>POST /api/admin/restart-service</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Token-based authentication</li>
+<li>✅ Checks for active jobs</li>
+<li>✅ Blocks restart if jobs active (unless force=true)</li>
+<li>✅ Marks interrupted jobs in database</li>
+<li>✅ Logs all restart attempts to Sentry</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-bash">curl -X POST http://localhost:8000/api/admin/restart-service \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;force&quot;: false,
+    &quot;reason&quot;: &quot;Deploy new features&quot;,
+    &quot;admin_token&quot;: &quot;your-token&quot;
+  }&#39;
+</code></pre>
+<hr>
+<h3>4. Documentation (<code>docs/restart-protection-setup.md</code>)</h3>
+<p><strong>Purpose</strong>: Complete installation and usage guide</p>
+<p><strong>Includes</strong>:</p>
+<ul>
+<li>✅ Installation steps</li>
+<li>✅ Bash alias setup</li>
+<li>✅ Admin token configuration</li>
+<li>✅ Usage examples</li>
+<li>✅ Security best practices</li>
+<li>✅ Testing procedures</li>
+</ul>
+<hr>
+<h2>🚀 Installation Steps</h2>
+<h3>Step 1: Make Scripts Executable</h3>
+<pre><code class="language-bash">cd /var/www/mivaa-pdf-extractor
+chmod +x scripts/safe-restart.sh
+chmod +x scripts/block-unsafe-restart.sh
+</code></pre>
+<h3>Step 2: Add Bash Alias</h3>
+<p>Add to <code>/root/.bashrc</code>:</p>
+<pre><code class="language-bash">systemctl() {
+    if [[ &quot;$1&quot; == &quot;restart&quot; &amp;&amp; &quot;$2&quot; == &quot;mivaa-pdf-extractor&quot; ]]; then
+        bash /var/www/mivaa-pdf-extractor/scripts/block-unsafe-restart.sh
+    else
+        command systemctl &quot;$@&quot;
+    fi
+}
+</code></pre>
+<p>Reload:</p>
+<pre><code class="language-bash">source /root/.bashrc
+</code></pre>
+<h3>Step 3: Set Admin Token</h3>
+<p>Generate token:</p>
+<pre><code class="language-bash">openssl rand -hex 32
+</code></pre>
+<p>Add to <code>/etc/systemd/system/mivaa-pdf-extractor.service</code>:</p>
+<pre><code class="language-ini">Environment=ADMIN_RESTART_TOKEN=your-generated-token
+</code></pre>
+<p>Reload systemd:</p>
+<pre><code class="language-bash">sudo systemctl daemon-reload
+sudo systemctl restart mivaa-pdf-extractor
+</code></pre>
+<hr>
+<h2>🎯 How It Works</h2>
+<h3>Scenario 1: No Active Jobs</h3>
+<pre><code>User: systemctl restart mivaa-pdf-extractor
+↓
+Bash Alias: Intercepts command
+↓
+Safe Script: Checks API for active jobs
+↓
+API: Returns 0 active jobs
+↓
+Safe Script: ✅ Restarts service immediately
+</code></pre>
+<h3>Scenario 2: Active Jobs (No Force)</h3>
+<pre><code>User: systemctl restart mivaa-pdf-extractor
+↓
+Bash Alias: Intercepts command
+↓
+Safe Script: Checks API for active jobs
+↓
+API: Returns 1 active job (processing)
+↓
+Safe Script: ❌ BLOCKS restart, shows job details
+↓
+User: Must wait or use --force
+</code></pre>
+<h3>Scenario 3: Active Jobs (Force)</h3>
+<pre><code>User: bash scripts/safe-restart.sh --force --reason &quot;Emergency&quot;
+↓
+Safe Script: Checks API for active jobs
+↓
+API: Returns 1 active job
+↓
+Safe Script: ⚠️ Prompts for confirmation
+↓
+User: Confirms &quot;yes&quot;
+↓
+Safe Script: Marks job as interrupted in DB
+↓
+Safe Script: ✅ Restarts service
+</code></pre>
+<hr>
+<h2>🔐 Security Features</h2>
+<ol>
+<li><strong>Token Authentication</strong>: Admin API requires secret token</li>
+<li><strong>Bash Alias Protection</strong>: Prevents accidental direct restarts</li>
+<li><strong>Audit Logging</strong>: All restart attempts logged to Sentry</li>
+<li><strong>Job Protection</strong>: Active jobs marked as interrupted before restart</li>
+<li><strong>Confirmation Prompts</strong>: Force restarts require explicit confirmation</li>
+</ol>
+<hr>
+<h2>📊 Benefits</h2>
+<p>✅ <strong>Prevents Data Loss</strong>: No more interrupted jobs from accidental restarts<br>✅ <strong>Audit Trail</strong>: All restarts logged with reason<br>✅ <strong>User-Friendly</strong>: Clear error messages and guidance<br>✅ <strong>Flexible</strong>: Force option for emergencies<br>✅ <strong>Automated</strong>: Works with GitHub Actions deployments  </p>
+<hr>
+<h2>🧪 Testing</h2>
+<p>Test the system:</p>
+<pre><code class="language-bash"># 1. Start a test job
+python3 scripts/testing/comprehensive_nova_test.py
+
+# 2. Try to restart (should be blocked)
+systemctl restart mivaa-pdf-extractor
+# Expected: ❌ RESTART BLOCKED!
+
+# 3. Force restart
+bash scripts/safe-restart.sh --force --reason &quot;Testing&quot;
+# Expected: Prompts for confirmation, then restarts
+</code></pre>
+<hr>
+<h2>📝 Next Steps</h2>
+<ol>
+<li><strong>Deploy to server</strong> (commit and push changes)</li>
+<li><strong>Install bash alias</strong> on server</li>
+<li><strong>Generate and set admin token</strong></li>
+<li><strong>Test the protection system</strong></li>
+<li><strong>Update GitHub Actions</strong> to use safe restart</li>
+</ol>
+
+</div></body></html>

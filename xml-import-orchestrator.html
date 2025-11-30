@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>XML Import Orchestrator Edge Function</h1>
+<h2>Overview</h2>
+<p>Edge Function for parsing XML files and orchestrating product imports into Material-KAI platform. This function handles the initial XML parsing, validation, and job creation, then delegates to the Python API for batch processing.</p>
+<h2>Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ LAYER 1: DATA INGESTION (EDGE FUNCTION)                    │
+│ ├─ Parse XML file (Deno XML parser)                        │
+│ ├─ Validate structure                                      │
+│ ├─ Extract product elements                                │
+│ ├─ Create data_import_jobs record                          │
+│ └─ Return job_id to frontend                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ LAYER 2: DATA PROCESSING (PYTHON API)                      │
+│ ├─ Batch process products (10 at a time)                   │
+│ ├─ Download images (5 concurrent)                          │
+│ ├─ Extract metadata (AI-based)                             │
+│ ├─ Normalize to NormalizedProductData                      │
+│ ├─ Queue for product creation                              │
+│ └─ Update job status in real-time                          │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h2>Supported XML Formats</h2>
+<p>The function supports multiple common XML schemas:</p>
+<h3>Format 1: Products</h3>
+<pre><code class="language-xml">&lt;products&gt;
+  &lt;product&gt;
+    &lt;name&gt;Product Name&lt;/name&gt;
+    &lt;factory&gt;Manufacturer Inc&lt;/factory&gt;
+    &lt;category&gt;tiles&lt;/category&gt;
+    &lt;description&gt;Product description&lt;/description&gt;
+    &lt;price&gt;$50&lt;/price&gt;
+    &lt;image&gt;https://example.com/image1.jpg&lt;/image&gt;
+    &lt;image&gt;https://example.com/image2.jpg&lt;/image&gt;
+  &lt;/product&gt;
+&lt;/products&gt;
+</code></pre>
+<h3>Format 2: Items</h3>
+<pre><code class="language-xml">&lt;items&gt;
+  &lt;item&gt;
+    &lt;title&gt;Product Name&lt;/title&gt;
+    &lt;manufacturer&gt;Manufacturer Inc&lt;/manufacturer&gt;
+    &lt;material_type&gt;tiles&lt;/material_type&gt;
+    &lt;desc&gt;Product description&lt;/desc&gt;
+  &lt;/item&gt;
+&lt;/items&gt;
+</code></pre>
+<h3>Format 3: Materials</h3>
+<pre><code class="language-xml">&lt;materials&gt;
+  &lt;material&gt;
+    &lt;name&gt;Product Name&lt;/name&gt;
+    &lt;supplier&gt;Manufacturer Inc&lt;/supplier&gt;
+    &lt;type&gt;tiles&lt;/type&gt;
+  &lt;/material&gt;
+&lt;/materials&gt;
+</code></pre>
+<h2>Required Fields</h2>
+<p>Each product must have:</p>
+<ul>
+<li><strong>name</strong> (or title, product_name)</li>
+<li><strong>factory_name</strong> (or manufacturer, supplier, factory)</li>
+<li><strong>material_category</strong> (or category, material_type, type)</li>
+</ul>
+<h2>Optional Fields</h2>
+<ul>
+<li>description (or desc)</li>
+<li>factory_group_name (or factory_group, group)</li>
+<li>images (image, img, picture tags)</li>
+<li>price</li>
+<li>color/colors</li>
+<li>dimensions/size</li>
+<li>designer</li>
+<li>collection</li>
+<li>finish</li>
+<li>material</li>
+</ul>
+<h2>API Endpoint</h2>
+<pre><code>POST /functions/v1/xml-import-orchestrator
+</code></pre>
+<h2>Request Format</h2>
+<pre><code class="language-typescript">{
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;category&quot;: &quot;materials&quot;,
+  &quot;xml_content&quot;: &quot;base64-encoded-xml-string&quot;,
+  &quot;source_name&quot;: &quot;supplier_catalog.xml&quot; // optional
+}
+</code></pre>
+<h2>Response Format</h2>
+<h3>Success</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+  &quot;message&quot;: &quot;Import job created, processing started&quot;,
+  &quot;total_products&quot;: 50
+}
+</code></pre>
+<h3>Error</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: &quot;Product validation failed: Product 1: Missing factory_name&quot;
+}
+</code></pre>
+<h2>Usage Example</h2>
+<h3>JavaScript/TypeScript</h3>
+<pre><code class="language-typescript">import { supabase } from &#39;@/integrations/supabase/client&#39;;
+
+async function importXMLFile(file: File, workspaceId: string, category: string) {
+  // Read file as text
+  const xmlText = await file.text();
+  
+  // Encode to base64
+  const xmlBase64 = btoa(xmlText);
+  
+  // Call Edge Function
+  const { data, error } = await supabase.functions.invoke(&#39;xml-import-orchestrator&#39;, {
+    body: {
+      workspace_id: workspaceId,
+      category: category,
+      xml_content: xmlBase64,
+      source_name: file.name,
+    },
+  });
+  
+  if (error) {
+    console.error(&#39;Import failed:&#39;, error);
+    return null;
+  }
+  
+  console.log(&#39;Import started:&#39;, data);
+  return data.job_id;
+}
+</code></pre>
+<h3>cURL</h3>
+<pre><code class="language-bash"># Encode XML file to base64
+XML_BASE64=$(base64 -w 0 catalog.xml)
+
+# Call Edge Function
+curl -X POST \
+  &quot;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/xml-import-orchestrator&quot; \
+  -H &quot;Authorization: Bearer YOUR_SUPABASE_ANON_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &quot;{
+    \&quot;workspace_id\&quot;: \&quot;your-workspace-id\&quot;,
+    \&quot;category\&quot;: \&quot;materials\&quot;,
+    \&quot;xml_content\&quot;: \&quot;$XML_BASE64\&quot;,
+    \&quot;source_name\&quot;: \&quot;catalog.xml\&quot;
+  }&quot;
+</code></pre>
+<h2>Job Status Tracking</h2>
+<p>After receiving the job_id, track progress using:</p>
+<pre><code class="language-typescript">// Poll for job status
+const { data: job } = await supabase
+  .from(&#39;data_import_jobs&#39;)
+  .select(&#39;*&#39;)
+  .eq(&#39;id&#39;, jobId)
+  .single();
+
+console.log(&#39;Job status:&#39;, job.status);
+console.log(&#39;Progress:&#39;, `${job.processed_products}/${job.total_products}`);
+</code></pre>
+<h2>Database Tables</h2>
+<h3>data_import_jobs</h3>
+<p>Tracks import job status and progress.</p>
+<pre><code class="language-sql">SELECT 
+  id,
+  status,
+  total_products,
+  processed_products,
+  failed_products,
+  created_at,
+  completed_at
+FROM data_import_jobs
+WHERE workspace_id = &#39;your-workspace-id&#39;
+ORDER BY created_at DESC;
+</code></pre>
+<h3>data_import_history</h3>
+<p>Tracks individual product imports.</p>
+<pre><code class="language-sql">SELECT 
+  id,
+  job_id,
+  product_id,
+  processing_status,
+  source_data,
+  normalized_data
+FROM data_import_history
+WHERE job_id = &#39;your-job-id&#39;;
+</code></pre>
+<h2>Error Handling</h2>
+<p>The function validates:</p>
+<ol>
+<li>Required parameters (workspace_id, category, xml_content)</li>
+<li>Authentication (valid JWT token)</li>
+<li>XML structure (valid XML format)</li>
+<li>Product data (required fields present)</li>
+</ol>
+<p>Common errors:</p>
+<ul>
+<li><code>Missing required parameters</code> - Check request body</li>
+<li><code>Authentication failed</code> - Check authorization header</li>
+<li><code>XML parsing error</code> - Invalid XML format</li>
+<li><code>Product validation failed</code> - Missing required fields</li>
+<li><code>No product elements found</code> - Unsupported XML schema</li>
+</ul>
+<h2>Performance</h2>
+<ul>
+<li><strong>Timeout</strong>: 600 seconds (Edge Function limit)</li>
+<li><strong>Memory</strong>: 128MB (Edge Function limit)</li>
+<li><strong>Recommended file size</strong>: &lt; 10MB</li>
+<li><strong>Recommended product count</strong>: &lt; 1000 products per file</li>
+</ul>
+<p>For larger files, split into multiple smaller files.</p>
+<h2>Environment Variables</h2>
+<p>Required in Supabase Edge Function settings:</p>
+<ul>
+<li><code>SUPABASE_URL</code> - Supabase project URL</li>
+<li><code>SUPABASE_SERVICE_ROLE_KEY</code> - Service role key for database access</li>
+<li><code>PYTHON_API_URL</code> - Python API endpoint (default: <a href="https://v1api.materialshub.gr">https://v1api.materialshub.gr</a>)</li>
+</ul>
+<h2>Next Steps</h2>
+<p>After job creation:</p>
+<ol>
+<li>Python API processes products in batches</li>
+<li>Downloads images from URLs</li>
+<li>Extracts metadata using AI</li>
+<li>Creates product records</li>
+<li>Updates job status to &#39;completed&#39;</li>
+</ol>
+<p>See Python API documentation for details on batch processing.</p>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../../../docs/data-import-hub.md">Data Import Hub Architecture</a></li>
+<li><a href="../../../mivaa-pdf-extractor/docs/import-api.md">Python API Import Endpoints</a></li>
+<li><a href="../../../supabase/migrations/20251110_create_data_import_tables.sql">Database Schema</a></li>
+</ul>
+
+</div></body></html>
