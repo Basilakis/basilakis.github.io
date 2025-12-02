@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Metadata Prototype Validation System</h1>
+<h2>Overview</h2>
+<p>The Metadata Prototype Validation System is a semantic validation system that standardizes AI-extracted material metadata using CLIP text embeddings. It eliminates inconsistent naming, enables fuzzy search, validates AI outputs, and improves search accuracy by comparing extracted values to prototype embeddings and standardizing them to canonical values.</p>
+<h3>Key Features</h3>
+<ul>
+<li>Uses <code>material_properties</code> table as single source of truth</li>
+<li>Integrates with all search endpoints (multi-vector, semantic, material, etc.)</li>
+<li>Enabled by default in multi-vector search (recommended strategy)</li>
+<li>Non-breaking integration with existing DynamicMetadataExtractor</li>
+<li>Semantic matching capabilities (e.g., &quot;shiny&quot; → &quot;glossy&quot;)</li>
+</ul>
+<h3>Search Integration</h3>
+<ul>
+<li><strong>Multi-vector search</strong>: Fuzzy metadata matching + validation scoring (enabled by default)</li>
+<li><strong>Material property search</strong>: Semantic value matching</li>
+<li><strong>All strategies search</strong>: Validated filters passed to all strategies</li>
+<li><strong>Multimodal search</strong>: Metadata validation scoring</li>
+<li><strong>Material visual search</strong>: Prototype-based filtering</li>
+</ul>
+<hr>
+<h2>🎯 Overview</h2>
+<p>The <strong>Metadata Prototype Validation System</strong> enhances MIVAA&#39;s existing dynamic metadata extraction by adding <strong>semantic validation</strong> using CLIP text embeddings. This ensures that Llama Vision&#39;s free-text metadata extractions are standardized to consistent, validated property values.</p>
+<hr>
+<h2>🔄 Dynamic Custom Metadata Integration</h2>
+<h3>How Current System Works (Preserved)</h3>
+<p><strong>DynamicMetadataExtractor</strong> discovers metadata in 3 tiers:</p>
+<ol>
+<li><p><strong>Critical Metadata</strong> (Always extracted):</p>
+<ul>
+<li><code>material_category</code>, <code>factory_name</code>, <code>factory_group_name</code></li>
+<li>Stored directly in <code>products.metadata</code> JSONB</li>
+<li>Required for product classification</li>
+</ul>
+</li>
+<li><p><strong>Discovered Metadata</strong> (200+ dynamic fields):</p>
+<ul>
+<li>AI discovers ANY metadata present in PDF</li>
+<li>Organized into 9 categories:<ul>
+<li><code>material_properties</code>: composition, texture, finish, pattern, weight, density</li>
+<li><code>dimensions</code>: length, width, height, thickness, diameter, size</li>
+<li><code>appearance</code>: color, color_code, gloss_level, sheen, transparency</li>
+<li><code>performance</code>: water_resistance, fire_rating, slip_resistance, wear_rating</li>
+<li><code>application</code>: recommended_use, installation_method, room_type, traffic_level</li>
+<li><code>compliance</code>: certifications, standards, eco_friendly, sustainability_rating</li>
+<li><code>design</code>: designer, studio, collection, series, aesthetic_style</li>
+<li><code>manufacturing</code>: factory, manufacturer, country_of_origin</li>
+<li><code>commercial</code>: pricing, availability, supplier, sku, warranty</li>
+</ul>
+</li>
+<li>Stored in <code>products.metadata</code> JSONB</li>
+<li><strong>NO validation</strong> - free text values accepted as-is</li>
+</ul>
+</li>
+<li><p><strong>Unknown Metadata</strong> (Custom fields):</p>
+<ul>
+<li>AI finds metadata NOT in predefined categories</li>
+<li>Stored in <code>products.metadata</code> with <code>_custom_</code> prefix</li>
+<li>Examples: <code>_custom_installation_time</code>, <code>_custom_warranty_years</code>, <code>_custom_special_coating</code></li>
+<li>Completely dynamic - no schema required</li>
+</ul>
+</li>
+</ol>
+<p><strong>Storage Example</strong>:</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;prod-123&quot;,
+  &quot;name&quot;: &quot;NOVA Ceramic Tile&quot;,
+  &quot;metadata&quot;: {
+    // Critical
+    &quot;material_category&quot;: &quot;ceramic_tile&quot;,
+    &quot;factory_name&quot;: &quot;Castellón Ceramics&quot;,
+
+    // Discovered (predefined categories)
+    &quot;finish&quot;: &quot;shiny&quot;,  // ❌ Inconsistent - should be &quot;glossy&quot;
+    &quot;slip_resistance&quot;: &quot;R11&quot;,
+    &quot;color&quot;: &quot;beige&quot;,
+    &quot;dimensions&quot;: &quot;15×38&quot;,
+
+    // Custom (discovered by AI, not in predefined list)
+    &quot;_custom_installation_time&quot;: &quot;2 hours&quot;,
+    &quot;_custom_warranty_years&quot;: &quot;10&quot;,
+    &quot;_custom_special_coating&quot;: &quot;anti-bacterial&quot;
+  }
+}
+</code></pre>
+<h3>How New System Enhances This (Non-Breaking)</h3>
+<p><strong>MetadataPrototypeValidator</strong> adds validation layer WITHOUT changing storage:</p>
+<ol>
+<li><p><strong>Check if property has prototypes</strong>:</p>
+<pre><code class="language-python"># Query material_properties table
+property = await db.material_properties.get(property_key=&quot;finish&quot;)
+
+if property and property.prototype_descriptions:
+    # Property has prototypes → validate
+    validated_value = await validate_against_prototypes(
+        property_key=&quot;finish&quot;,
+        extracted_value=&quot;shiny&quot;,
+        prototype_embedding=property.text_embedding_512
+    )
+else:
+    # No prototypes → store as-is (custom metadata)
+    validated_value = extracted_value
+</code></pre>
+</li>
+<li><p><strong>Validate against prototypes</strong> (if they exist):</p>
+<pre><code class="language-python"># Generate embedding for extracted value
+value_embedding = await generate_clip_embedding(&quot;shiny&quot;)
+
+# Compare to prototype embedding
+similarity = cosine_similarity(value_embedding, prototype_embedding)
+
+if similarity &gt; 0.80:
+    # High confidence → use prototype value
+    return {
+        &quot;value&quot;: &quot;glossy&quot;,  # Standardized
+        &quot;validated&quot;: True,
+        &quot;confidence&quot;: 0.92,
+        &quot;original_value&quot;: &quot;shiny&quot;
+    }
+else:
+    # Low confidence → keep original
+    return {
+        &quot;value&quot;: &quot;shiny&quot;,
+        &quot;validated&quot;: False,
+        &quot;confidence&quot;: 0.65,
+        &quot;original_value&quot;: &quot;shiny&quot;
+    }
+</code></pre>
+</li>
+<li><p><strong>Track validation metadata</strong>:</p>
+<pre><code class="language-json">{
+  &quot;metadata&quot;: {
+    // Validated properties (standardized)
+    &quot;finish&quot;: &quot;glossy&quot;,  // ✅ Validated: &quot;shiny&quot; → &quot;glossy&quot;
+    &quot;slip_resistance&quot;: &quot;R11&quot;,  // ✅ Validated: exact match
+
+    // Custom properties (no validation)
+    &quot;_custom_installation_time&quot;: &quot;2 hours&quot;,
+    &quot;_custom_warranty_years&quot;: &quot;10&quot;,
+
+    // Validation tracking
+    &quot;_validation&quot;: {
+      &quot;finish&quot;: {
+        &quot;original_value&quot;: &quot;shiny&quot;,
+        &quot;validated_value&quot;: &quot;glossy&quot;,
+        &quot;confidence&quot;: 0.92,
+        &quot;prototype_matched&quot;: true,
+        &quot;timestamp&quot;: &quot;2024-01-15T10:30:00Z&quot;
+      },
+      &quot;slip_resistance&quot;: {
+        &quot;original_value&quot;: &quot;R11&quot;,
+        &quot;validated_value&quot;: &quot;R11&quot;,
+        &quot;confidence&quot;: 1.0,
+        &quot;prototype_matched&quot;: true,
+        &quot;timestamp&quot;: &quot;2024-01-15T10:30:00Z&quot;
+      }
+    }
+  }
+}
+</code></pre>
+</li>
+</ol>
+<p><strong>Key Benefits</strong>:</p>
+<ul>
+<li>✅ Custom metadata still works (no validation required)</li>
+<li>✅ Predefined properties get validated (if prototypes exist)</li>
+<li>✅ Validation is optional - system works without it</li>
+<li>✅ Admin can promote custom properties to validated properties later</li>
+</ul>
+<hr>
+<h2>📊 Identifying New Keywords for Prototypes</h2>
+<h3>Problem Statement</h3>
+<p><strong>Question</strong>: How do we identify when new prototype values should be added?</p>
+<p><strong>Example Scenario</strong>:</p>
+<ul>
+<li>System has prototypes for <code>finish</code>: glossy, matte, satin, textured, brushed</li>
+<li>AI extracts &quot;brushed metal&quot; from 23 different products</li>
+<li>Should &quot;brushed metal&quot; be added as a new prototype value?</li>
+</ul>
+<h3>Solution: Frequency Analysis + Admin Review</h3>
+<h4>Phase 1: Automatic Frequency Tracking</h4>
+<p>Track all extracted values for each property:</p>
+<pre><code class="language-sql">-- New table for tracking metadata value frequency
+CREATE TABLE metadata_value_frequency (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_key VARCHAR(100) NOT NULL,
+    extracted_value VARCHAR(500) NOT NULL,
+    frequency_count INT DEFAULT 1,
+    first_seen_at TIMESTAMP DEFAULT NOW(),
+    last_seen_at TIMESTAMP DEFAULT NOW(),
+    workspace_ids UUID[],  -- Which workspaces use this value
+    product_ids UUID[],    -- Which products have this value
+    validation_status VARCHAR(50) DEFAULT &#39;unvalidated&#39;,  -- &#39;validated&#39;, &#39;unvalidated&#39;, &#39;rejected&#39;
+
+    UNIQUE(property_key, extracted_value)
+);
+
+CREATE INDEX idx_metadata_frequency_property ON metadata_value_frequency(property_key);
+CREATE INDEX idx_metadata_frequency_count ON metadata_value_frequency(frequency_count DESC);
+</code></pre>
+<p><strong>Automatic Updates</strong>:</p>
+<pre><code class="language-python"># After metadata extraction, track frequency
+async def track_metadata_frequency(property_key: str, value: str, product_id: str, workspace_id: str):
+    await db.execute(&quot;&quot;&quot;
+        INSERT INTO metadata_value_frequency (property_key, extracted_value, workspace_ids, product_ids)
+        VALUES ($1, $2, ARRAY[$3], ARRAY[$4])
+        ON CONFLICT (property_key, extracted_value)
+        DO UPDATE SET
+            frequency_count = metadata_value_frequency.frequency_count + 1,
+            last_seen_at = NOW(),
+            workspace_ids = array_append(metadata_value_frequency.workspace_ids, $3),
+            product_ids = array_append(metadata_value_frequency.product_ids, $4)
+    &quot;&quot;&quot;, property_key, value, workspace_id, product_id)
+</code></pre>
+<h4>Phase 2: Admin Review Dashboard</h4>
+<p><strong>Admin Panel</strong> (<code>/admin/metadata-prototypes</code>) shows:</p>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ Metadata Prototype Management                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Property: finish                                                 │
+│ Current Prototypes: 9 values (glossy, matte, satin, ...)       │
+│                                                                  │
+│ Suggested Additions (frequency &gt; 10):                           │
+│                                                                  │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ &quot;brushed metal&quot; (23 occurrences)                         │   │
+│ │ Similarity to existing: brushed (0.78)                   │   │
+│ │ Products: HAR-001, HAR-002, ...                          │   │
+│ │ [Add as New] [Merge with &quot;brushed&quot;] [Ignore]            │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ &quot;semi-gloss&quot; (18 occurrences)                            │   │
+│ │ Similarity to existing: satin (0.87), glossy (0.72)      │   │
+│ │ Products: CER-045, CER-046, ...                          │   │
+│ │ [Add as New] [Merge with &quot;satin&quot;] [Ignore]              │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>API Endpoint</strong>:</p>
+<pre><code class="language-python">@router.get(&quot;/api/admin/metadata-prototypes/suggestions&quot;)
+async def get_prototype_suggestions(
+    property_key: Optional[str] = None,
+    min_frequency: int = 10
+):
+    &quot;&quot;&quot;Get suggested prototype additions based on frequency analysis.&quot;&quot;&quot;
+
+    # Query unvalidated values with high frequency
+    suggestions = await db.execute(&quot;&quot;&quot;
+        SELECT
+            mf.property_key,
+            mf.extracted_value,
+            mf.frequency_count,
+            mf.product_ids,
+            mp.name as property_name,
+            mp.prototype_descriptions
+        FROM metadata_value_frequency mf
+        JOIN material_properties mp ON mp.property_key = mf.property_key
+        WHERE mf.frequency_count &gt;= $1
+          AND mf.validation_status = &#39;unvalidated&#39;
+          AND ($2 IS NULL OR mf.property_key = $2)
+        ORDER BY mf.frequency_count DESC
+    &quot;&quot;&quot;, min_frequency, property_key)
+
+    # For each suggestion, calculate similarity to existing prototypes
+    enriched_suggestions = []
+    for suggestion in suggestions:
+        # Generate embedding for suggested value
+        value_embedding = await generate_clip_embedding(suggestion.extracted_value)
+
+        # Compare to existing prototypes
+        similarities = []
+        for prototype_value in suggestion.prototype_descriptions.keys():
+            prototype_embedding = await generate_clip_embedding(prototype_value)
+            similarity = cosine_similarity(value_embedding, prototype_embedding)
+            similarities.append({
+                &quot;prototype&quot;: prototype_value,
+                &quot;similarity&quot;: similarity
+            })
+
+        enriched_suggestions.append({
+            **suggestion,
+            &quot;similar_prototypes&quot;: sorted(similarities, key=lambda x: x[&quot;similarity&quot;], reverse=True)[:3]
+        })
+
+    return enriched_suggestions
+</code></pre>
+<h4>Phase 3: Admin Actions</h4>
+<p><strong>Action 1: Add as New Prototype</strong></p>
+<pre><code class="language-python">@router.post(&quot;/api/admin/metadata-prototypes/add&quot;)
+async def add_prototype_value(
+    property_key: str,
+    prototype_value: str,
+    variations: List[str]
+):
+    &quot;&quot;&quot;Add new prototype value to property.&quot;&quot;&quot;
+
+    # 1. Update material_properties.prototype_descriptions
+    await db.execute(&quot;&quot;&quot;
+        UPDATE material_properties
+        SET prototype_descriptions = jsonb_set(
+            COALESCE(prototype_descriptions, &#39;{}&#39;::jsonb),
+            ARRAY[$2],
+            to_jsonb($3::text[])
+        ),
+        prototype_updated_at = NOW()
+        WHERE property_key = $1
+    &quot;&quot;&quot;, property_key, prototype_value, variations)
+
+    # 2. Regenerate CLIP embedding for property
+    await regenerate_property_embedding(property_key)
+
+    # 3. Mark value as validated in frequency table
+    await db.execute(&quot;&quot;&quot;
+        UPDATE metadata_value_frequency
+        SET validation_status = &#39;validated&#39;
+        WHERE property_key = $1 AND extracted_value = $2
+    &quot;&quot;&quot;, property_key, prototype_value)
+
+    # 4. Queue re-validation job for affected products
+    product_ids = await db.fetch_val(&quot;&quot;&quot;
+        SELECT product_ids FROM metadata_value_frequency
+        WHERE property_key = $1 AND extracted_value = $2
+    &quot;&quot;&quot;, property_key, prototype_value)
+
+    await queue_revalidation_job(property_key, product_ids)
+
+    return {&quot;success&quot;: True, &quot;products_queued&quot;: len(product_ids)}
+</code></pre>
+<p><strong>Action 2: Merge with Existing</strong></p>
+<pre><code class="language-python">@router.post(&quot;/api/admin/metadata-prototypes/merge&quot;)
+async def merge_with_existing(
+    property_key: str,
+    extracted_value: str,
+    target_prototype: str
+):
+    &quot;&quot;&quot;Merge extracted value with existing prototype.&quot;&quot;&quot;
+
+    # 1. Add extracted_value as variation of target_prototype
+    await db.execute(&quot;&quot;&quot;
+        UPDATE material_properties
+        SET prototype_descriptions = jsonb_set(
+            prototype_descriptions,
+            ARRAY[$2],
+            (
+                SELECT jsonb_agg(elem)
+                FROM jsonb_array_elements_text(prototype_descriptions-&gt;$2) elem
+                UNION
+                SELECT to_jsonb($3::text)
+            )
+        ),
+        prototype_updated_at = NOW()
+        WHERE property_key = $1
+    &quot;&quot;&quot;, property_key, target_prototype, extracted_value)
+
+    # 2. Regenerate embedding
+    await regenerate_property_embedding(property_key)
+
+    # 3. Update all products with extracted_value to use target_prototype
+    await db.execute(&quot;&quot;&quot;
+        UPDATE products
+        SET metadata = jsonb_set(
+            metadata,
+            ARRAY[$1],
+            to_jsonb($2::text)
+        )
+        WHERE metadata-&gt;&gt;$1 = $3
+    &quot;&quot;&quot;, property_key, target_prototype, extracted_value)
+
+    # 4. Mark as validated
+    await db.execute(&quot;&quot;&quot;
+        UPDATE metadata_value_frequency
+        SET validation_status = &#39;validated&#39;
+        WHERE property_key = $1 AND extracted_value = $2
+    &quot;&quot;&quot;, property_key, extracted_value)
+</code></pre>
+<p><strong>Action 3: Ignore</strong></p>
+<pre><code class="language-python">@router.post(&quot;/api/admin/metadata-prototypes/ignore&quot;)
+async def ignore_suggestion(property_key: str, extracted_value: str):
+    &quot;&quot;&quot;Mark suggestion as rejected (won&#39;t show again).&quot;&quot;&quot;
+    await db.execute(&quot;&quot;&quot;
+        UPDATE metadata_value_frequency
+        SET validation_status = &#39;rejected&#39;
+        WHERE property_key = $1 AND extracted_value = $2
+    &quot;&quot;&quot;, property_key, extracted_value)
+</code></pre>
+<hr>
+<h2>🎯 ANSWERS TO KEY QUESTIONS</h2>
+<h3>Question 1: How do we track user search patterns to identify missing prototypes?</h3>
+<p><strong>Answer</strong>: Implemented comprehensive search query tracking system.</p>
+<p><strong>Architecture</strong>:</p>
+<ol>
+<li><p><strong>search_query_tracking</strong> table tracks EVERY search:</p>
+<pre><code class="language-sql">CREATE TABLE search_query_tracking (
+    id UUID PRIMARY KEY,
+    workspace_id UUID NOT NULL,
+    query_text TEXT,
+    query_metadata JSONB,  -- {&quot;finish&quot;: &quot;shiny&quot;, &quot;material_type&quot;: &quot;ceramic&quot;}
+    search_type VARCHAR(50),
+    result_count INT,
+    zero_results BOOLEAN,  -- Flag for zero-result queries
+
+    -- Track what matched vs what didn&#39;t
+    searched_terms TEXT[],   -- [&quot;shiny&quot;, &quot;ceramic&quot;]
+    matched_terms TEXT[],    -- [&quot;ceramic&quot;] (validated)
+    unmatched_terms TEXT[],  -- [&quot;shiny&quot;] (not validated)
+
+    validation_results JSONB,  -- Full validation details
+    response_time_ms INT
+);
+</code></pre>
+</li>
+<li><p><strong>unmatched_term_frequency</strong> table aggregates patterns:</p>
+<pre><code class="language-sql">CREATE TABLE unmatched_term_frequency (
+    id UUID PRIMARY KEY,
+    term TEXT NOT NULL,
+    property_key VARCHAR(100),
+    frequency_count INT,  -- How many times users searched this
+    workspace_ids UUID[],
+
+    -- Similarity to existing prototypes
+    similar_prototypes JSONB,  -- [{&quot;prototype&quot;: &quot;glossy&quot;, &quot;similarity&quot;: 0.78}]
+
+    -- Admin review workflow
+    review_status VARCHAR(50) DEFAULT &#39;pending&#39;
+);
+</code></pre>
+</li>
+</ol>
+<p><strong>How It Works</strong>:</p>
+<pre><code class="language-python"># Automatic tracking in multi_vector_search (enabled by default)
+async def multi_vector_search(...):
+    # ... perform search ...
+
+    # Track query asynchronously
+    tracker = get_search_tracker()
+    await tracker.track_query(
+        workspace_id=workspace_id,
+        query_text=query,
+        query_metadata=material_filters,  # {&quot;finish&quot;: &quot;shiny&quot;}
+        result_count=len(results)
+    )
+
+    # Tracker automatically:
+    # 1. Validates each filter term against prototypes
+    # 2. Identifies unmatched terms
+    # 3. Updates frequency counts
+    # 4. Flags zero-result queries
+</code></pre>
+<p><strong>Admin Dashboard</strong> (<code>/admin/prototype-suggestions</code>):</p>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ Unmatched Terms Requiring Review                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Property: finish                                             │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐  │
+│ │ &quot;shiny&quot; (47 searches, 0 results)                       │  │
+│ │ Similar to: glossy (0.92), polished (0.85)             │  │
+│ │ Workspaces: 12 different workspaces                    │  │
+│ │ [Add as &quot;glossy&quot; variation] [Create new prototype]    │  │
+│ └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐  │
+│ │ &quot;semi-gloss&quot; (23 searches, 0 results)                  │  │
+│ │ Similar to: satin (0.87), glossy (0.72)                │  │
+│ │ [Add as &quot;satin&quot; variation] [Create new prototype]     │  │
+│ └────────────────────────────────────────────────────────┘  │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>✅ Identifies missing prototypes from real user behavior</li>
+<li>✅ Prioritizes by frequency (most-searched terms first)</li>
+<li>✅ Shows semantic similarity to existing prototypes</li>
+<li>✅ Enables data-driven prototype expansion</li>
+</ul>
+<hr>
+<h3>Question 2: Is metadata validation enabled by default in multi-vector search?</h3>
+<p><strong>Answer</strong>: YES - Enabled by default with automatic scoring boost.</p>
+<p><strong>Implementation</strong>:</p>
+<pre><code class="language-python"># In llamaindex_service.py, line 5348
+async def multi_vector_search(...):
+    # ... execute vector search ...
+
+    # ENABLED BY DEFAULT - no flag needed
+    if material_filters and results:
+        validator = get_metadata_validator()
+        await validator.load_prototypes()
+
+        # Enhance each result with validation scoring
+        for result in results:
+            metadata_boost = await self._calculate_metadata_validation_boost(
+                product_metadata=result[&quot;metadata&quot;],
+                query_filters=material_filters,
+                validator=validator
+            )
+
+            # Apply up to 20% score boost
+            result[&quot;score&quot;] = result[&quot;score&quot;] * (1.0 + metadata_boost * 0.2)
+
+        # Re-sort by enhanced scores
+        results.sort(key=lambda x: x[&quot;score&quot;], reverse=True)
+</code></pre>
+<p><strong>Scoring Formula</strong>:</p>
+<pre><code class="language-python"># For each query filter (e.g., {&quot;finish&quot;: &quot;shiny&quot;})
+for filter_key, filter_value in query_filters.items():
+    product_value = product.metadata.get(filter_key)
+
+    if filter_key in validated_properties:
+        # Check if product has validation metadata
+        validation_info = product.metadata.get(&#39;_validation&#39;, {}).get(filter_key)
+
+        if validation_info.get(&#39;prototype_matched&#39;):
+            # Both query and product are validated
+            if product_value == filter_value:
+                score += 1.0  # Exact match
+            else:
+                # Semantic similarity
+                similarity = cosine_similarity(
+                    embedding(filter_value),
+                    embedding(product_value)
+                )
+                if similarity &gt; 0.70:
+                    score += similarity  # Partial match
+        else:
+            # Product not validated → penalty
+            if product_value == filter_value:
+                score += 0.8  # Exact match but unvalidated
+    else:
+        # No prototypes → exact match only
+        if product_value == filter_value:
+            score += 1.0
+
+# Normalize and apply boost
+metadata_boost = score / len(query_filters)
+final_score = original_score * (1.0 + metadata_boost * 0.2)
+</code></pre>
+<p><strong>Example</strong>:</p>
+<p>Query: <code>{&quot;finish&quot;: &quot;shiny&quot;, &quot;slip_resistance&quot;: &quot;R-11&quot;}</code></p>
+<p><strong>Product A</strong> (validated):</p>
+<ul>
+<li><code>finish: &quot;glossy&quot;</code> (validated from &quot;shiny&quot;, confidence 0.92)</li>
+<li><code>slip_resistance: &quot;R11&quot;</code> (validated from &quot;R-11&quot;, confidence 1.0)</li>
+<li><strong>Metadata boost</strong>: (0.92 + 1.0) / 2 = 0.96</li>
+<li><strong>Final score</strong>: 0.85 * 1.192 = <strong>1.013</strong> ✅</li>
+</ul>
+<p><strong>Product B</strong> (unvalidated):</p>
+<ul>
+<li><code>finish: &quot;shiny surface&quot;</code> (not validated)</li>
+<li><code>slip_resistance: &quot;R-11&quot;</code> (not validated)</li>
+<li><strong>Metadata boost</strong>: 0.0</li>
+<li><strong>Final score</strong>: 0.85 * 1.0 = <strong>0.85</strong> ❌</li>
+</ul>
+<p><strong>Result</strong>: Product A ranks 19% higher!</p>
+<p><strong>Configuration</strong>:</p>
+<ul>
+<li>✅ Enabled by default (no flag needed)</li>
+<li>✅ Confidence threshold: 0.80</li>
+<li>✅ Max boost: 20% of original score</li>
+<li>✅ Graceful fallback if validation fails</li>
+</ul>
+<hr>
+<h3>Question 3: How does this work with dynamic property creation?</h3>
+<p><strong>Answer</strong>: Fully integrated - new properties automatically get validation support.</p>
+<p><strong>Flow</strong>:</p>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ 1. AI Discovers New Metadata Field                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ DynamicMetadataExtractor finds:                             │
+│   &quot;installation_time&quot;: &quot;2 hours&quot;                             │
+│                                                              │
+│ This field is NOT in predefined categories                  │
+│ → Classified as &quot;unknown&quot; metadata                          │
+│ → Stored with _custom_ prefix                               │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Auto-Create material_properties Entry                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ _ensure_properties_exist() automatically creates:           │
+│                                                              │
+│ INSERT INTO material_properties (                           │
+│   property_key: &quot;_custom_installation_time&quot;,                │
+│   name: &quot;Installation Time&quot;,                                │
+│   data_type: &quot;string&quot;,                                      │
+│   is_searchable: true,                                      │
+│   is_filterable: true,                                      │
+│   is_ai_extractable: true,                                  │
+│   category: &quot;custom&quot;,                                       │
+│   prototype_descriptions: NULL,  ← No prototypes yet        │
+│   text_embedding_512: NULL                                  │
+│ )                                                            │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Property Stored Without Validation (Initially)           │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ products.metadata = {                                        │
+│   &quot;_custom_installation_time&quot;: &quot;2 hours&quot;,                   │
+│   &quot;_validation&quot;: {}  ← No validation (no prototypes)        │
+│ }                                                            │
+│                                                              │
+│ Search behavior:                                             │
+│ - Exact match only (no semantic matching)                   │
+│ - No validation boost                                       │
+│ - Still searchable and filterable                           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Frequency Tracking Identifies Pattern                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ After 50 products extracted with this field:                │
+│                                                              │
+│ unmatched_term_frequency:                                   │
+│   term: &quot;2 hours&quot; (frequency: 23)                           │
+│   term: &quot;1 hour&quot; (frequency: 15)                            │
+│   term: &quot;3-4 hours&quot; (frequency: 12)                         │
+│   property_key: &quot;_custom_installation_time&quot;                 │
+│                                                              │
+│ Admin sees suggestion:                                       │
+│ &quot;Add prototypes for _custom_installation_time?&quot;             │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. Admin Adds Prototypes                                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Admin creates prototypes:                                    │
+│                                                              │
+│ UPDATE material_properties                                  │
+│ SET prototype_descriptions = {                              │
+│   &quot;quick&quot;: [&quot;1 hour&quot;, &quot;fast&quot;, &quot;quick install&quot;],             │
+│   &quot;standard&quot;: [&quot;2 hours&quot;, &quot;2-3 hours&quot;, &quot;normal&quot;],           │
+│   &quot;extended&quot;: [&quot;3-4 hours&quot;, &quot;4+ hours&quot;, &quot;complex&quot;]          │
+│ }                                                            │
+│ WHERE property_key = &quot;_custom_installation_time&quot;            │
+│                                                              │
+│ System generates 512D CLIP embeddings                       │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 6. Future Extractions Get Validated                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Next PDF extraction:                                         │
+│   AI extracts: &quot;fast installation&quot;                          │
+│   Validator matches: &quot;quick&quot; (confidence 0.89)              │
+│                                                              │
+│ products.metadata = {                                        │
+│   &quot;_custom_installation_time&quot;: &quot;quick&quot;,  ← Standardized!    │
+│   &quot;_validation&quot;: {                                           │
+│     &quot;_custom_installation_time&quot;: {                          │
+│       &quot;original_value&quot;: &quot;fast installation&quot;,                │
+│       &quot;validated_value&quot;: &quot;quick&quot;,                           │
+│       &quot;confidence&quot;: 0.89,                                   │
+│       &quot;prototype_matched&quot;: true                             │
+│     }                                                        │
+│   }                                                          │
+│ }                                                            │
+│                                                              │
+│ Search now supports:                                         │
+│ - Semantic matching (&quot;fast&quot; finds &quot;quick&quot;)                  │
+│ - Validation boost in scoring                               │
+│ - Consistent terminology                                    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Key Points</strong>:</p>
+<ol>
+<li><p><strong>Automatic Property Creation</strong>:</p>
+<ul>
+<li>Every discovered field gets a <code>material_properties</code> entry</li>
+<li>No manual intervention needed</li>
+<li>Enables future prototype addition</li>
+</ul>
+</li>
+<li><p><strong>Graceful Degradation</strong>:</p>
+<ul>
+<li>Properties without prototypes still work (exact match only)</li>
+<li>No validation errors or failures</li>
+<li>System remains functional</li>
+</ul>
+</li>
+<li><p><strong>Progressive Enhancement</strong>:</p>
+<ul>
+<li>Start with no prototypes (exact match)</li>
+<li>Add prototypes when patterns emerge</li>
+<li>Automatically upgrade to semantic matching</li>
+</ul>
+</li>
+<li><p><strong>Data-Driven Workflow</strong>:</p>
+<ul>
+<li>Frequency tracking identifies candidates</li>
+<li>Admin reviews and approves</li>
+<li>System learns from real usage</li>
+</ul>
+</li>
+</ol>
+<p><strong>Example Timeline</strong>:</p>
+<pre><code>Day 1:  AI discovers &quot;_custom_warranty_years&quot;
+        → Auto-created in material_properties (no prototypes)
+        → Stored as-is: &quot;10 years&quot;, &quot;5 years&quot;, &quot;lifetime&quot;
+
+Day 30: Frequency analysis shows:
+        → &quot;10 years&quot; (45 occurrences)
+        → &quot;5 years&quot; (32 occurrences)
+        → &quot;lifetime&quot; (18 occurrences)
+
+Day 31: Admin adds prototypes:
+        → &quot;standard&quot;: [&quot;5 years&quot;, &quot;5-year&quot;, &quot;five years&quot;]
+        → &quot;extended&quot;: [&quot;10 years&quot;, &quot;10-year&quot;, &quot;decade&quot;]
+        → &quot;lifetime&quot;: [&quot;lifetime&quot;, &quot;permanent&quot;, &quot;forever&quot;]
+
+Day 32: New extractions get validated:
+        → &quot;5-year warranty&quot; → &quot;standard&quot; (confidence 0.95)
+        → &quot;decade coverage&quot; → &quot;extended&quot; (confidence 0.88)
+</code></pre>
+<hr>
+<h2>🏗️ Architecture</h2>
+<h3>Integration with Existing System</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│ EXISTING: PDF Processing Pipeline (UNCHANGED)                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Stage 0A: Product Discovery                                        │
+│  └── Discover products with basic metadata                          │
+│                                                                      │
+│  Stage 0B: Metadata Extraction (DynamicMetadataExtractor)           │
+│  └── Extract 200+ fields across 9 categories                        │
+│      Returns: {                                                      │
+│        &quot;critical&quot;: {&quot;material_category&quot;: &quot;ceramic tile&quot;},           │
+│        &quot;discovered&quot;: {                                               │
+│          &quot;material_properties&quot;: {&quot;finish&quot;: &quot;glossy&quot;},                │
+│          &quot;performance&quot;: {&quot;slip_resistance&quot;: &quot;R11&quot;}                   │
+│        }                                                             │
+│      }                                                               │
+│                                                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│ NEW: Prototype Validation Layer (ADDED)                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Stage 0C: Metadata Validation (MetadataPrototypeValidator)         │
+│  └── Validate extracted metadata against prototypes                 │
+│      Input: {&quot;finish&quot;: &quot;glossy&quot;, &quot;slip_resistance&quot;: &quot;R11&quot;}          │
+│      Process:                                                        │
+│        1. Generate CLIP embedding for &quot;glossy&quot;                      │
+│        2. Compare to finish prototypes (glossy, matte, satin)       │
+│        3. Return best match with confidence                         │
+│      Output: {                                                       │
+│        &quot;finish&quot;: {                                                   │
+│          &quot;value&quot;: &quot;glossy&quot;,                                          │
+│          &quot;validated&quot;: true,                                          │
+│          &quot;confidence&quot;: 0.94,                                         │
+│          &quot;original&quot;: &quot;glossy&quot;                                        │
+│        }                                                             │
+│      }                                                               │
+│                                                                      │
+│  Stage 1-8: Continue as normal (UNCHANGED)                          │
+│  └── Image extraction, embeddings, chunking, etc.                   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>Key Principle: <strong>NON-BREAKING ADDITION</strong></h3>
+<p>✅ <strong>Existing functionality preserved:</strong></p>
+<ul>
+<li>DynamicMetadataExtractor continues to work exactly as before</li>
+<li>All 200+ metadata fields still extracted</li>
+<li>Confidence scores still calculated</li>
+<li>Manual overrides still supported</li>
+</ul>
+<p>✅ <strong>New validation layer added:</strong></p>
+<ul>
+<li>Runs AFTER extraction, BEFORE database storage</li>
+<li>Validates and standardizes property values</li>
+<li>Adds validation metadata without changing structure</li>
+<li>Falls back gracefully if validation fails</li>
+</ul>
+<hr>
+<h2>Implementation Status</h2>
+<h3>Core Features</h3>
+<ul>
+<li>Database schema with 3 new columns</li>
+<li>36 material properties populated</li>
+<li>52 prototype values defined for 6 properties</li>
+<li>512D CLIP embeddings generated</li>
+<li>MetadataPrototypeValidator service created</li>
+<li>Integrated into PDF processing pipeline</li>
+</ul>
+<h3>Search Integration</h3>
+<ul>
+<li>Multi-vector search with metadata validation scoring (enabled by default)</li>
+<li>Search query tracking for zero-result discovery</li>
+<li>Unmatched term frequency analysis</li>
+<li>Automatic prototype suggestions</li>
+</ul>
+<h3>Dynamic Property Creation</h3>
+<ul>
+<li>Auto-create material_properties entries for new discovered fields</li>
+<li>Integrated with DynamicMetadataExtractor</li>
+<li>Support for custom fields with <em>custom</em> prefix</li>
+</ul>
+<hr>
+<h2>🔍 Relevancy Scoring Enhancement</h2>
+<h3>Current Search Scoring (Before Prototype Validation)</h3>
+<pre><code class="language-python"># Multi-vector search scoring (llamaindex_service.py, line 5209)
+final_score = (
+    0.4 * text_similarity +      # Text embedding match
+    0.3 * visual_similarity +    # Image embedding match
+    0.2 * metadata_match +       # Exact metadata match
+    0.1 * confidence_score       # Extraction confidence
+)
+</code></pre>
+<p><strong>Problem</strong>: Metadata matching is binary (exact match or no match)</p>
+<ul>
+<li>&quot;shiny&quot; doesn&#39;t match &quot;glossy&quot; (even though they&#39;re semantically similar)</li>
+<li>&quot;R-11&quot; doesn&#39;t match &quot;R11&quot; (formatting variation)</li>
+<li>&quot;ceramic tiles&quot; doesn&#39;t match &quot;ceramic&quot; (plural variation)</li>
+</ul>
+<h3>Enhanced Scoring with Prototype Validation</h3>
+<pre><code class="language-python"># Calculate metadata_prototype_match score
+metadata_prototype_match = 0.0
+validated_fields = 0
+total_query_fields = 0
+
+for field, query_value in query_metadata.items():
+    total_query_fields += 1
+
+    # Check if this field has prototype validation
+    if field in VALIDATED_PROPERTIES:
+        product_value = product.metadata.get(field)
+        validation_info = product.metadata.get(&#39;_validation&#39;, {}).get(field, {})
+
+        if validation_info.get(&#39;prototype_matched&#39;):
+            # Both query and product values are validated
+            # Check if they match the same prototype
+            if product_value == query_value:
+                # Exact match → full score
+                metadata_prototype_match += 1.0
+                validated_fields += 1
+            else:
+                # Different prototypes → check semantic similarity
+                query_embedding = await generate_clip_embedding(query_value)
+                product_embedding = await generate_clip_embedding(product_value)
+                similarity = cosine_similarity(query_embedding, product_embedding)
+
+                if similarity &gt; 0.70:
+                    # Semantically similar → partial score
+                    metadata_prototype_match += similarity
+                    validated_fields += 1
+        else:
+            # Product value not validated → fuzzy match
+            similarity = fuzzy_match(query_value, product_value)
+            if similarity &gt; 0.70:
+                metadata_prototype_match += similarity * 0.8  # Penalty for unvalidated
+                validated_fields += 1
+    else:
+        # No prototype validation → exact match only
+        if product.metadata.get(field) == query_value:
+            metadata_prototype_match += 1.0
+            validated_fields += 1
+
+# Normalize score
+if total_query_fields &gt; 0:
+    metadata_prototype_match /= total_query_fields
+
+# New scoring formula
+final_score = (
+    0.3 * text_similarity +           # Reduced from 0.4
+    0.3 * visual_similarity +          # Same
+    0.2 * metadata_prototype_match +   # NEW - validated metadata boost
+    0.1 * metadata_match +             # Reduced from 0.2 - exact match fallback
+    0.1 * confidence_score             # Same
+)
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ol>
+<li><strong>Semantic Matching</strong>: &quot;shiny&quot; query finds &quot;glossy&quot; products (0.92 similarity)</li>
+<li><strong>Fuzzy Matching</strong>: &quot;R-11&quot; query finds &quot;R11&quot; products (formatting normalized)</li>
+<li><strong>Validation Boost</strong>: Products with validated metadata rank higher</li>
+<li><strong>Consistent Terminology</strong>: All products use standardized values</li>
+</ol>
+<h3>Example Scoring Comparison</h3>
+<p><strong>Query</strong>: <code>{&quot;finish&quot;: &quot;shiny&quot;, &quot;slip_resistance&quot;: &quot;R-11&quot;}</code></p>
+<p><strong>Product A</strong> (validated metadata):</p>
+<pre><code class="language-json">{
+  &quot;metadata&quot;: {
+    &quot;finish&quot;: &quot;glossy&quot;,  // Validated: &quot;shiny&quot; → &quot;glossy&quot; (0.92 similarity)
+    &quot;slip_resistance&quot;: &quot;R11&quot;,  // Validated: &quot;R-11&quot; → &quot;R11&quot; (1.0 similarity)
+    &quot;_validation&quot;: {
+      &quot;finish&quot;: {&quot;prototype_matched&quot;: true, &quot;confidence&quot;: 0.92},
+      &quot;slip_resistance&quot;: {&quot;prototype_matched&quot;: true, &quot;confidence&quot;: 1.0}
+    }
+  }
+}
+</code></pre>
+<p><strong>Metadata Score</strong>: <code>(0.92 + 1.0) / 2 = 0.96</code> ✅ High score</p>
+<p><strong>Product B</strong> (unvalidated metadata):</p>
+<pre><code class="language-json">{
+  &quot;metadata&quot;: {
+    &quot;finish&quot;: &quot;shiny surface&quot;,  // Not validated
+    &quot;slip_resistance&quot;: &quot;R-11&quot;   // Not validated
+  }
+}
+</code></pre>
+<p><strong>Metadata Score</strong>: <code>(0.7 * 0.8 + 0.0) / 2 = 0.28</code> ❌ Low score</p>
+<p><strong>Result</strong>: Product A ranks significantly higher despite not having exact text match!</p>
+<h3>Integration Points</h3>
+<p><strong>1. Multi-Vector Search</strong> (<code>llamaindex_service.py</code>, line 5209):</p>
+<pre><code class="language-python"># Add metadata_prototype_match to scoring
+results = await self._score_with_metadata_validation(
+    results=results,
+    query_metadata=filters.get(&#39;metadata&#39;, {}),
+    enable_prototype_matching=True  # Enabled by default
+)
+</code></pre>
+<p><strong>2. Material Visual Search</strong> (<code>material_visual_search_service.py</code>, line 411):</p>
+<pre><code class="language-python"># Use validated category for filtering
+validated_category = await validate_metadata_value(
+    property_key=&quot;material_type&quot;,
+    value=category_filter
+)
+products = await self._filter_by_category(validated_category)
+</code></pre>
+<p><strong>3. Semantic Search</strong> (<code>llamaindex_service.py</code>, line 4800):</p>
+<pre><code class="language-python"># Boost results with validated metadata
+for result in results:
+    validation_boost = calculate_validation_boost(result.metadata)
+    result.score *= (1.0 + validation_boost * 0.2)  # Up to 20% boost
+</code></pre>
+<hr>
+<h2>📊 Database Schema</h2>
+<h3>material_properties Table (ENHANCED)</h3>
+<p><strong>Existing Columns</strong> (UNCHANGED):</p>
+<pre><code class="language-sql">id UUID PRIMARY KEY
+property_key VARCHAR UNIQUE  -- e.g., &quot;material_type&quot;, &quot;finish&quot;, &quot;slip_resistance&quot;
+name VARCHAR                  -- e.g., &quot;Material Type&quot;, &quot;Finish&quot;, &quot;Slip Resistance&quot;
+display_name VARCHAR
+description TEXT
+data_type VARCHAR             -- &quot;string&quot;, &quot;number&quot;, &quot;enum&quot;, &quot;boolean&quot;
+validation_rules JSONB
+is_searchable BOOLEAN
+is_filterable BOOLEAN
+is_ai_extractable BOOLEAN
+</code></pre>
+<p><strong>NEW Columns</strong> (ADDED):</p>
+<pre><code class="language-sql">-- Prototype validation columns
+prototype_descriptions TEXT[]        -- Array of 3-5 prototype descriptions per value
+text_embedding_512 VECTOR(512)      -- Averaged CLIP embedding for prototypes
+prototype_updated_at TIMESTAMP      -- Last update timestamp
+
+-- Example for &quot;finish&quot; property:
+-- prototype_descriptions: {
+--   &quot;glossy&quot;: [&quot;High gloss reflective surface&quot;, &quot;Polished shiny appearance&quot;, &quot;Mirror-like finish&quot;],
+--   &quot;matte&quot;: [&quot;Non-reflective flat surface&quot;, &quot;No shine or gloss&quot;, &quot;Flat appearance&quot;],
+--   &quot;satin&quot;: [&quot;Semi-gloss subtle sheen&quot;, &quot;Soft luster finish&quot;, &quot;Between matte and glossy&quot;]
+-- }
+</code></pre>
+<p><strong>Vector Index</strong>:</p>
+<pre><code class="language-sql">CREATE INDEX idx_material_properties_embedding 
+ON material_properties 
+USING ivfflat (text_embedding_512 vector_cosine_ops) 
+WITH (lists = 100);
+</code></pre>
+<hr>
+<h2>🔄 How Prototype Validation Works</h2>
+<h3>Step-by-Step Process</h3>
+<p><strong>1. Llama Extracts Free Text</strong></p>
+<pre><code class="language-python">llama_result = {
+    &quot;materials_identified&quot;: [&quot;ceramic tile with glossy finish&quot;],
+    &quot;properties&quot;: {
+        &quot;finish&quot;: &quot;glossy&quot;,
+        &quot;pattern&quot;: &quot;marble-like veining&quot;
+    }
+}
+</code></pre>
+<p><strong>2. Prototype Validator Processes Each Field</strong></p>
+<pre><code class="language-python">validator = MetadataPrototypeValidator()
+
+# Validate &quot;finish&quot; property
+validated_finish = await validator.validate_property(
+    property_key=&quot;finish&quot;,
+    extracted_value=&quot;glossy&quot;
+)
+# Returns: {
+#   &quot;value&quot;: &quot;glossy&quot;,
+#   &quot;validated&quot;: True,
+#   &quot;confidence&quot;: 0.94,
+#   &quot;similarity_scores&quot;: {&quot;glossy&quot;: 0.94, &quot;matte&quot;: 0.12, &quot;satin&quot;: 0.45}
+# }
+</code></pre>
+<p><strong>3. Validation Algorithm</strong></p>
+<pre><code class="language-python"># Generate CLIP embedding for extracted value
+extracted_embedding = generate_clip_embedding(&quot;glossy&quot;)  # 512D vector
+
+# Get property from database
+property = get_property(&quot;finish&quot;)
+
+# Compare against all prototype values
+similarities = {}
+for value_name, prototype_embedding in property.prototypes.items():
+    similarity = cosine_similarity(extracted_embedding, prototype_embedding)
+    similarities[value_name] = similarity
+
+# Get best match
+best_match = max(similarities.items(), key=lambda x: x[1])
+# Returns: (&quot;glossy&quot;, 0.94)
+
+# Validate confidence threshold
+if best_match[1] &gt;= 0.80:
+    return {&quot;value&quot;: best_match[0], &quot;validated&quot;: True, &quot;confidence&quot;: best_match[1]}
+else:
+    return {&quot;value&quot;: extracted_value, &quot;validated&quot;: False, &quot;confidence&quot;: best_match[1]}
+</code></pre>
+<p><strong>4. Store Validated Metadata</strong></p>
+<pre><code class="language-python">product.metadata = {
+    &quot;material_type&quot;: &quot;ceramic&quot;,      # Validated
+    &quot;finish&quot;: &quot;glossy&quot;,               # Validated
+    &quot;slip_resistance&quot;: &quot;R11&quot;,         # Validated
+    &quot;pattern&quot;: &quot;marble-like veining&quot;, # Free text (no prototype)
+    &quot;_validation_metadata&quot;: {
+        &quot;material_type&quot;: {&quot;validated&quot;: True, &quot;confidence&quot;: 0.92},
+        &quot;finish&quot;: {&quot;validated&quot;: True, &quot;confidence&quot;: 0.94},
+        &quot;slip_resistance&quot;: {&quot;validated&quot;: True, &quot;confidence&quot;: 0.96}
+    }
+}
+</code></pre>
+<hr>
+<h2>🔍 Integration with Search</h2>
+<h3>Enhanced Search Capabilities</h3>
+<p><strong>1. Exact Metadata Filtering (EXISTING - UNCHANGED)</strong></p>
+<pre><code class="language-python"># Search for products with specific metadata
+POST /api/search/products
+{
+    &quot;filters&quot;: {
+        &quot;metadata.finish&quot;: &quot;glossy&quot;,
+        &quot;metadata.slip_resistance&quot;: &quot;R11&quot;
+    }
+}
+</code></pre>
+<p><strong>2. Semantic Metadata Search (NEW - ADDED)</strong></p>
+<pre><code class="language-python"># Search using natural language
+POST /api/search/products/semantic
+{
+    &quot;query&quot;: &quot;shiny ceramic tiles for wet areas&quot;,
+    &quot;use_metadata_prototypes&quot;: true
+}
+
+# Process:
+# 1. Generate CLIP embedding for &quot;shiny&quot; → matches &quot;glossy&quot; prototype (0.89)
+# 2. Generate CLIP embedding for &quot;wet areas&quot; → matches &quot;R11 slip resistance&quot; (0.87)
+# 3. Boost products with validated metadata matching prototypes
+</code></pre>
+<p><strong>3. Metadata Similarity Scoring (NEW - ADDED)</strong></p>
+<pre><code class="language-python"># Rank products by metadata similarity
+search_score = (
+    0.4 * text_similarity +           # Existing
+    0.3 * visual_similarity +          # Existing
+    0.2 * metadata_prototype_match +   # NEW: Prototype similarity
+    0.1 * confidence_score             # Existing
+)
+</code></pre>
+<h3>Search Enhancement Benefits</h3>
+<p>✅ <strong>Better Fuzzy Matching</strong>: &quot;shiny&quot; → &quot;glossy&quot;, &quot;non-slip&quot; → &quot;R11&quot;
+✅ <strong>Standardized Filters</strong>: All variations map to same validated value
+✅ <strong>Confidence Boosting</strong>: High-confidence validated metadata ranks higher
+✅ <strong>Semantic Understanding</strong>: Natural language queries match technical terms</p>
+<hr>
+<h2>📋 Property Prototypes Definition</h2>
+<h3>Core Material Properties</h3>
+<p><strong>material_type</strong> (Primary classification)</p>
+<pre><code class="language-python">PROTOTYPES = {
+    &quot;ceramic&quot;: [
+        &quot;Ceramic tiles with glazed surface for interior applications&quot;,
+        &quot;Porcelain ceramic with uniform texture and color patterns&quot;,
+        &quot;Glazed ceramic tiles with smooth finish for residential use&quot;
+    ],
+    &quot;marble&quot;: [
+        &quot;Natural marble stone with characteristic veining patterns&quot;,
+        &quot;Polished marble with high gloss finish and natural variations&quot;,
+        &quot;Marble slabs with unique patterns and premium appearance&quot;
+    ],
+    &quot;porcelain&quot;: [
+        &quot;Porcelain tiles with high density and low water absorption&quot;,
+        &quot;Vitrified porcelain with uniform color throughout the body&quot;,
+        &quot;Porcelain stoneware for high-traffic commercial applications&quot;
+    ],
+    &quot;wood&quot;: [
+        &quot;Natural wood with visible grain patterns and organic texture&quot;,
+        &quot;Hardwood flooring with warm appearance and natural variations&quot;,
+        &quot;Wood planks with authentic texture and natural characteristics&quot;
+    ],
+    &quot;granite&quot;: [
+        &quot;Natural granite stone with speckled appearance and high durability&quot;,
+        &quot;Polished granite with crystalline structure and premium finish&quot;,
+        &quot;Granite slabs with natural variations and exceptional hardness&quot;
+    ]
+}
+</code></pre>
+<p><strong>finish</strong> (Surface treatment)</p>
+<pre><code class="language-python">PROTOTYPES = {
+    &quot;glossy&quot;: [
+        &quot;High gloss reflective surface finish with mirror-like quality&quot;,
+        &quot;Polished shiny appearance with maximum light reflection&quot;,
+        &quot;Glossy coating with brilliant shine and reflective properties&quot;
+    ],
+    &quot;matte&quot;: [
+        &quot;Non-reflective matte surface finish with flat appearance&quot;,
+        &quot;Matte coating with no shine or gloss, low light reflection&quot;,
+        &quot;Flat finish without sheen, ideal for hiding imperfections&quot;
+    ],
+    &quot;satin&quot;: [
+        &quot;Semi-gloss satin finish with subtle sheen and soft luster&quot;,
+        &quot;Satin coating between matte and glossy, elegant appearance&quot;,
+        &quot;Soft sheen finish with moderate light reflection&quot;
+    ]
+}
+</code></pre>
+<p><strong>slip_resistance</strong> (Safety rating)</p>
+<pre><code class="language-python">PROTOTYPES = {
+    &quot;R9&quot;: [
+        &quot;Low slip resistance rating R9 suitable for dry interior areas&quot;,
+        &quot;R9 classification for minimal slip protection in dry conditions&quot;,
+        &quot;Basic slip resistance R9 for residential dry spaces&quot;
+    ],
+    &quot;R10&quot;: [
+        &quot;Medium slip resistance rating R10 for wet areas and bathrooms&quot;,
+        &quot;R10 classification for moderate slip protection in damp conditions&quot;,
+        &quot;Standard slip resistance R10 for kitchens and wet rooms&quot;
+    ],
+    &quot;R11&quot;: [
+        &quot;High slip resistance rating R11 for commercial wet areas&quot;,
+        &quot;R11 classification for enhanced slip protection in wet conditions&quot;,
+        &quot;Superior slip resistance R11 for high-traffic wet environments&quot;
+    ],
+    &quot;R12&quot;: [
+        &quot;Very high slip resistance rating R12 for industrial applications&quot;,
+        &quot;R12 classification for maximum slip protection in extreme conditions&quot;,
+        &quot;Industrial-grade slip resistance R12 for outdoor wet areas&quot;
+    ]
+}
+</code></pre>
+<hr>
+<h2>Technical Implementation</h2>
+<h3>Database Schema</h3>
+<p>The system adds prototype validation columns to the <code>material_properties</code> table:</p>
+<pre><code class="language-sql">-- Add prototype columns
+ALTER TABLE material_properties
+ADD COLUMN prototype_descriptions JSONB DEFAULT &#39;{}&#39;,  -- Store prototypes per value
+ADD COLUMN text_embedding_512 VECTOR(512),
+ADD COLUMN prototype_updated_at TIMESTAMP;
+
+-- Create vector index
+CREATE INDEX idx_material_properties_embedding
+ON material_properties
+USING ivfflat (text_embedding_512 vector_cosine_ops)
+WITH (lists = 100);
+</code></pre>
+<h3>Property Population</h3>
+<p>The <code>material_properties</code> table is populated with 50+ meta fields from the existing system:</p>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Create script <code>scripts/populate_material_properties.py</code></li>
+<li>Extract property definitions from <code>DynamicMetadataExtractor.METADATA_CATEGORY_HINTS</code></li>
+<li>Insert properties with proper configuration:<ul>
+<li><code>property_key</code>: snake_case identifier (e.g., &quot;material_type&quot;, &quot;finish&quot;)</li>
+<li><code>name</code>: Human-readable name</li>
+<li><code>data_type</code>: &quot;string&quot;, &quot;number&quot;, &quot;enum&quot;, &quot;boolean&quot;</li>
+<li><code>is_ai_extractable</code>: true (all properties)</li>
+<li><code>is_searchable</code>: true (for search integration)</li>
+<li><code>is_filterable</code>: true (for filter integration)</li>
+</ul>
+</li>
+</ol>
+<p><strong>Properties to Add</strong> (50+ total):</p>
+<ul>
+<li>Material Properties: material_type, composition, texture, finish, pattern, weight, density</li>
+<li>Dimensions: length, width, height, thickness, diameter, size</li>
+<li>Appearance: color, color_code, gloss_level, sheen, transparency</li>
+<li>Performance: slip_resistance, fire_rating, water_resistance, wear_rating</li>
+<li>Application: recommended_use, installation_method, room_type, traffic_level</li>
+<li>Compliance: certifications, standards, eco_friendly, sustainability_rating</li>
+<li>Design: designer, studio, collection, series, aesthetic_style</li>
+<li>Manufacturing: factory, manufacturer, country_of_origin</li>
+<li>Commercial: pricing, availability, supplier, sku, warranty</li>
+</ul>
+<p><strong>Verification</strong>: Query <code>material_properties</code> table, should have 50+ rows</p>
+<hr>
+<h3>Phase 3: Define Prototypes (3-4 hours)</h3>
+<p><strong>Task</strong>: Create PROPERTY_PROTOTYPES dictionary with 3-5 descriptions per property value</p>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Create <code>app/services/property_prototypes.py</code></li>
+<li>Define prototypes for top 20 properties first</li>
+<li>Structure: <code>{property_key: {value_name: [descriptions]}}</code></li>
+</ol>
+<p><strong>Example Structure</strong>:</p>
+<pre><code class="language-python">PROPERTY_PROTOTYPES = {
+    &quot;material_type&quot;: {
+        &quot;ceramic&quot;: [&quot;Ceramic tiles with glazed surface...&quot;, ...],
+        &quot;marble&quot;: [&quot;Natural marble stone with veining...&quot;, ...],
+        &quot;porcelain&quot;: [&quot;Porcelain tiles with high density...&quot;, ...]
+    },
+    &quot;finish&quot;: {
+        &quot;glossy&quot;: [&quot;High gloss reflective surface...&quot;, ...],
+        &quot;matte&quot;: [&quot;Non-reflective flat surface...&quot;, ...],
+        &quot;satin&quot;: [&quot;Semi-gloss subtle sheen...&quot;, ...]
+    },
+    &quot;slip_resistance&quot;: {
+        &quot;R9&quot;: [&quot;Low slip resistance rating R9...&quot;, ...],
+        &quot;R10&quot;: [&quot;Medium slip resistance rating R10...&quot;, ...],
+        &quot;R11&quot;: [&quot;High slip resistance rating R11...&quot;, ...]
+    }
+}
+</code></pre>
+<p><strong>Verification</strong>: Import module, check dictionary has 20+ properties</p>
+<hr>
+<h3>Phase 4: Generate Embeddings (2 hours)</h3>
+<p><strong>Task</strong>: Generate CLIP embeddings for all prototype values</p>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Create <code>app/services/prototype_embedding_service.py</code></li>
+<li>For each property → for each value → generate averaged CLIP embedding</li>
+<li>Update <code>material_properties</code> table with embeddings</li>
+<li>Create API endpoint <code>/api/metadata/properties/populate-prototypes</code></li>
+</ol>
+<p><strong>Algorithm</strong>:</p>
+<pre><code class="language-python">for property_key, values in PROPERTY_PROTOTYPES.items():
+    for value_name, descriptions in values.items():
+        # Generate embeddings for all descriptions
+        embeddings = [generate_clip_embedding(desc) for desc in descriptions]
+        # Average embeddings
+        avg_embedding = np.mean(embeddings, axis=0)
+        # Store in database
+        update_property_prototype(property_key, value_name, descriptions, avg_embedding)
+</code></pre>
+<p><strong>Verification</strong>: Query <code>material_properties</code>, check <code>text_embedding_512</code> is populated</p>
+<hr>
+<h3>Phase 5: Validation Service (1 day)</h3>
+<p><strong>Task</strong>: Build <code>MetadataPrototypeValidator</code> service</p>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Create <code>app/services/metadata_prototype_validator.py</code></li>
+<li>Implement validation logic:<ul>
+<li>Generate CLIP embedding for extracted value</li>
+<li>Compare to all prototype embeddings for that property</li>
+<li>Return best match with confidence score</li>
+</ul>
+</li>
+<li>Add confidence threshold (0.80 default)</li>
+<li>Fallback to original value if confidence &lt; threshold</li>
+</ol>
+<p><strong>Key Methods</strong>:</p>
+<pre><code class="language-python">class MetadataPrototypeValidator:
+    async def validate_property(self, property_key: str, extracted_value: str) -&gt; Dict
+    async def validate_metadata(self, metadata: Dict) -&gt; Dict
+    async def get_property_prototypes(self, property_key: str) -&gt; Dict
+</code></pre>
+<p><strong>Verification</strong>: Unit tests for validation logic</p>
+<hr>
+<h3>Phase 6: Pipeline Integration (1 day)</h3>
+<p><strong>Task</strong>: Integrate validation into PDF processing pipeline</p>
+<p><strong>Actions</strong>:</p>
+<ol>
+<li>Update <code>app/services/product_discovery_service.py</code></li>
+<li>Add validation step AFTER <code>DynamicMetadataExtractor.extract_metadata()</code></li>
+<li>Preserve original extracted values</li>
+<li>Store validation metadata in <code>products.metadata._validation_metadata</code></li>
+</ol>
+<p><strong>Integration Point</strong> (line ~1160 in product_discovery_service.py):</p>
+<pre><code class="language-python"># EXISTING: Extract metadata
+extracted = await metadata_extractor.extract_metadata(
+    pdf_text=product_text,
+    category_hint=category_hint
+)
+
+# NEW: Validate metadata
+validator = MetadataPrototypeValidator()
+validated = await validator.validate_metadata(extracted)
+
+# Merge with validation metadata
+enriched_metadata = {
+    **validated,  # Validated values
+    &quot;_validation_metadata&quot;: {
+        # Store validation details
+    }
+}
+</code></pre>
+<p><strong>Verification</strong>: Process test PDF, check <code>products.metadata._validation_metadata</code> exists</p>
+<hr>
+<h3>Phase 7: Search Enhancement (1-2 days)</h3>
+<p><strong>Task</strong>: Integrate prototype validation into ALL search endpoints</p>
+<p><strong>Current Search Endpoints Using Metadata</strong>:</p>
+<ol>
+<li><code>/api/rag/search?strategy=multi_vector</code> (PRIMARY - enabled by default)</li>
+<li><code>/api/rag/search?strategy=material</code></li>
+<li><code>/api/rag/search?strategy=all</code></li>
+<li><code>/api/search/multimodal</code></li>
+<li><code>/api/search/material-visual</code></li>
+</ol>
+<p><strong>Actions for EACH Endpoint</strong>:</p>
+<h4>7.1: Multi-Vector Search (PRIMARY)</h4>
+<p><strong>File</strong>: <code>app/services/llamaindex_service.py</code> → <code>multi_vector_search()</code> (line 5209)</p>
+<p><strong>Current Implementation</strong>:</p>
+<pre><code class="language-python"># Line 5287-5301: JSONB metadata filtering
+if material_filters:
+    for key, value in material_filters.items():
+        if isinstance(value, list):
+            metadata_conditions.append(f&quot;p.metadata-&gt;&gt;&#39;{key}&#39; IN (&#39;{values_str}&#39;)&quot;)
+        else:
+            metadata_conditions.append(f&quot;p.metadata-&gt;&gt;&#39;{key}&#39; = &#39;{value}&#39;&quot;)
+</code></pre>
+<p><strong>NEW Implementation</strong>:</p>
+<pre><code class="language-python"># Add prototype-based fuzzy matching
+if material_filters:
+    validator = MetadataPrototypeValidator()
+    for key, value in material_filters.items():
+        # Validate filter value against prototypes
+        validated = await validator.validate_property(key, value)
+
+        if validated[&#39;validated&#39;]:
+            # Use validated value for exact match
+            metadata_conditions.append(f&quot;p.metadata-&gt;&gt;&#39;{key}&#39; = &#39;{validated[&#39;value&#39;]}&#39;&quot;)
+
+            # ALSO match similar values (similarity &gt; 0.7)
+            similar_values = validated.get(&#39;similar_values&#39;, [])
+            if similar_values:
+                similar_str = &quot;&#39;, &#39;&quot;.join(similar_values)
+                metadata_conditions.append(f&quot;OR p.metadata-&gt;&gt;&#39;{key}&#39; IN (&#39;{similar_str}&#39;)&quot;)
+</code></pre>
+<p><strong>Scoring Enhancement</strong>:</p>
+<pre><code class="language-python"># Line 5340-5360: Add metadata validation score
+for result in results:
+    metadata_match_score = 0.0
+    if material_filters:
+        # Calculate how well product metadata matches validated filters
+        for key, filter_value in material_filters.items():
+            product_value = result[&#39;metadata&#39;].get(key)
+            if product_value:
+                # Compare using prototype embeddings
+                similarity = await validator.compare_values(key, product_value, filter_value)
+                metadata_match_score += similarity
+        metadata_match_score /= len(material_filters)
+
+    # Update combined score
+    result[&#39;combined_score&#39;] = (
+        text_weight * result[&#39;text_score&#39;] +
+        visual_weight * result[&#39;visual_score&#39;] +
+        color_weight * result[&#39;color_score&#39;] +
+        texture_weight * result[&#39;texture_score&#39;] +
+        style_weight * result[&#39;style_score&#39;] +
+        material_weight * result[&#39;material_score&#39;] +
+        0.10 * metadata_match_score  # NEW: 10% weight for metadata validation
+    )
+</code></pre>
+<h4>7.2: Material Property Search</h4>
+<p><strong>File</strong>: <code>app/services/llamaindex_service.py</code> → <code>material_property_search()</code> (line 5514)</p>
+<p><strong>Enhancement</strong>: Add semantic matching for property values</p>
+<pre><code class="language-python"># Before building WHERE clauses, validate all filter values
+validator = MetadataPrototypeValidator()
+expanded_filters = {}
+
+for key, value in material_filters.items():
+    if isinstance(value, str):
+        # Validate and get similar values
+        validated = await validator.validate_property(key, value)
+        if validated[&#39;validated&#39;]:
+            # Include exact match + similar values
+            similar = [validated[&#39;value&#39;]] + validated.get(&#39;similar_values&#39;, [])
+            expanded_filters[key] = similar
+    else:
+        expanded_filters[key] = value
+
+# Use expanded_filters for WHERE clauses
+</code></pre>
+<h4>7.3: All Strategies Search</h4>
+<p><strong>File</strong>: <code>app/services/llamaindex_service.py</code> → <code>all_strategies_search()</code> (line 5789)</p>
+<p><strong>Enhancement</strong>: Pass validated filters to all strategies</p>
+<pre><code class="language-python"># Line 5844: Validate material_filters before passing to strategies
+if material_filters:
+    validator = MetadataPrototypeValidator()
+    validated_filters = await validator.validate_filters(material_filters)
+
+    # Pass validated filters to material search
+    strategy_tasks.append(
+        self.material_property_search(
+            workspace_id=workspace_id,
+            material_filters=validated_filters,  # Use validated
+            top_k=top_k
+        )
+    )
+</code></pre>
+<h4>7.4: Multimodal Search</h4>
+<p><strong>File</strong>: <code>app/api/search.py</code> → <code>multimodal_search()</code> (line 486)</p>
+<p><strong>Enhancement</strong>: Add metadata validation to scoring</p>
+<pre><code class="language-python"># After line 585: Add metadata validation scoring
+if hasattr(request, &#39;material_filters&#39;) and request.material_filters:
+    validator = MetadataPrototypeValidator()
+    for result in search_results:
+        metadata_score = await validator.score_metadata_match(
+            result.metadata,
+            request.material_filters
+        )
+        # Boost multimodal score with metadata match
+        result.multimodal_score = (
+            0.85 * result.multimodal_score +
+            0.15 * metadata_score
+        )
+</code></pre>
+<h4>7.5: Material Visual Search</h4>
+<p><strong>File</strong>: <code>app/api/search.py</code> → <code>material_visual_search()</code> (line 1104)</p>
+<p><strong>Enhancement</strong>: Already uses metadata filters, add validation</p>
+<pre><code class="language-python"># In MaterialVisualSearchService, add prototype validation
+# Before executing search, validate request.material_filters
+</code></pre>
+<p><strong>Enable by Default</strong>:</p>
+<ul>
+<li>Multi-vector search: Already enabled by default ✅</li>
+<li>Query understanding: Already enabled by default ✅</li>
+<li>Prototype validation: Enable by default in all endpoints</li>
+</ul>
+<p><strong>Verification</strong>:</p>
+<ul>
+<li>Test each endpoint with metadata filters</li>
+<li>Verify fuzzy matching works (&quot;shiny&quot; → &quot;glossy&quot;)</li>
+<li>Check scoring includes validation component</li>
+</ul>
+<hr>
+<h3>Phase 8: Documentation ✅ COMPLETE</h3>
+<ul>
+<li>✅ Created <code>docs/metadata-prototype-validation-system.md</code></li>
+<li>Next: Update <code>docs/metadata-management-system.md</code></li>
+<li>Next: Update <code>docs/comprehensive-metadata-fields-guide.md</code></li>
+<li>Next: Update <code>docs/api-endpoints.md</code> with new validation endpoints</li>
+</ul>
+<hr>
+<h3>Phase 9: Delete Categories System (2-3 hours)</h3>
+<p><strong>Task</strong>: Complete removal of <code>material_categories</code> system and replace with <code>metadata.material_type</code></p>
+<p><strong>CRITICAL</strong>: The <code>material_categories</code> table was NEVER properly integrated. Here&#39;s what we found:</p>
+<ul>
+<li>❌ <code>products.category_id</code> is ALWAYS NULL (never used)</li>
+<li>❌ Products use <code>products.category</code> field (free text, not FK)</li>
+<li>❌ Search uses <code>products.category</code> field (not <code>material_categories</code> table)</li>
+<li>❌ Material filters use <code>metadata.material_type</code> (not categories table)</li>
+<li>✅ The system ALREADY uses metadata-based approach!</li>
+</ul>
+<p><strong>What needs to change</strong>:</p>
+<ol>
+<li>Delete unused <code>material_categories</code> table and prototype code</li>
+<li>Replace <code>products.category</code> field with <code>metadata.material_type</code> (standardize on metadata)</li>
+<li>Update all references to use <code>metadata.material_type</code> consistently</li>
+</ol>
+<h4>9.1: Database Cleanup</h4>
+<pre><code class="language-sql">-- Drop material_categories table (never properly used)
+DROP TABLE IF EXISTS material_categories CASCADE;
+
+-- Remove category_id from products (ALWAYS NULL - never used)
+ALTER TABLE products DROP COLUMN IF EXISTS category_id;
+
+-- Migrate products.category to metadata.material_type (standardize on metadata)
+UPDATE products
+SET metadata = jsonb_set(
+    COALESCE(metadata, &#39;{}&#39;::jsonb),
+    &#39;{material_type}&#39;,
+    to_jsonb(category)
+)
+WHERE category IS NOT NULL
+AND category != &#39;&#39;
+AND (metadata-&gt;&gt;&#39;material_type&#39; IS NULL OR metadata-&gt;&gt;&#39;material_type&#39; = &#39;&#39;);
+
+-- After migration, drop the category column
+ALTER TABLE products DROP COLUMN IF EXISTS category;
+</code></pre>
+<h4>9.2: Backend Code to Delete</h4>
+<p><strong>Files to Delete Completely</strong>:</p>
+<ol>
+<li>❌ <code>mivaa-pdf-extractor/app/api/category_prototypes.py</code> (entire file - 6 references)</li>
+<li>❌ <code>mivaa-pdf-extractor/scripts/populate_category_prototypes.py</code> (entire file - 3 references)</li>
+</ol>
+<p><strong>Files to Update</strong>:</p>
+<ol>
+<li><p><strong><code>mivaa-pdf-extractor/app/main.py</code></strong>:</p>
+<ul>
+<li>❌ Remove line ~1455: <code>from app.api.category_prototypes import router as category_prototypes_router</code></li>
+<li>❌ Remove line ~1478: <code>app.include_router(category_prototypes_router)</code></li>
+</ul>
+</li>
+<li><p><strong><code>mivaa-pdf-extractor/app/services/llamaindex_service.py</code></strong>:</p>
+<ul>
+<li>❌ Remove <code>_determine_material_category()</code> method (lines 4643-4690)</li>
+<li>❌ Remove call to <code>_determine_material_category()</code> (line 4586)</li>
+<li>✅ Replace with direct use of <code>metadata.material_type</code>:<pre><code class="language-python"># BEFORE (line 4586)
+&#39;category&#39;: self._determine_material_category(material_analysis.get(&#39;material_type&#39;, &#39;&#39;)),
+
+# AFTER
+# Remove &#39;category&#39; field entirely - use metadata.material_type instead
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p><strong><code>mivaa-pdf-extractor/app/services/material_visual_search_service.py</code></strong>:</p>
+<ul>
+<li>✅ Already uses <code>material_types</code> filter (not category FK) - no changes needed</li>
+<li>✅ Line 411: <code>query.in_(&#39;category&#39;, request.material_types)</code> needs update:<pre><code class="language-python"># BEFORE
+if request.material_types:
+    query = query.in_(&#39;category&#39;, request.material_types)
+
+# AFTER
+if request.material_types:
+    # Filter by metadata.material_type instead of category column
+    for material_type in request.material_types:
+        query = query.filter(&#39;metadata-&gt;&gt;material_type&#39;, &#39;eq&#39;, material_type)
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p><strong><code>mivaa-pdf-extractor/app/api/knowledge_base.py</code></strong>:</p>
+<ul>
+<li>⚠️ <strong>DO NOT DELETE</strong> - <code>category_id</code> here refers to Knowledge Base categories, NOT material categories</li>
+<li>This is a different system (user-created documentation categories)</li>
+<li>Leave unchanged</li>
+</ul>
+</li>
+</ol>
+<h4>9.3: Frontend Code to Delete</h4>
+<p><strong>Files to Delete Completely</strong>:</p>
+<ol>
+<li>❌ <code>src/services/dynamicCategoryManagementService.ts</code> (entire file - 3 references to <code>material_categories</code> table)</li>
+<li>❌ <code>src/services/dynamicMaterialCategoriesService.ts</code> (entire file - 30+ references to MaterialCategory)</li>
+</ol>
+<p><strong>Files to Update</strong>:</p>
+<ol>
+<li><p><strong><code>src/types/materials.ts</code></strong>:</p>
+<ul>
+<li>❌ Remove <code>MaterialCategory</code> enum (lines 101-110):<pre><code class="language-typescript">export enum MaterialCategory {
+  WOOD = &#39;wood&#39;,
+  METAL = &#39;metal&#39;,
+  PLASTIC = &#39;plastic&#39;,
+  CERAMIC = &#39;ceramic&#39;,
+  GLASS = &#39;glass&#39;,
+  FABRIC = &#39;fabric&#39;,
+  STONE = &#39;stone&#39;,
+  COMPOSITE = &#39;composite&#39;,
+}
+</code></pre>
+</li>
+<li>❌ Remove <code>MaterialCategoryData</code> type</li>
+<li>❌ Remove <code>DynamicMaterialCategory</code> import/export</li>
+<li>✅ Update <code>Material</code> interface:<pre><code class="language-typescript">// BEFORE
+export interface Material {
+  category: MaterialCategory;
+  ...
+}
+
+// AFTER
+export interface Material {
+  // category field removed - use metadata.material_type instead
+  metadata: {
+    material_type?: string;
+    ...
+  };
+  ...
+}
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p><strong><code>src/types/unified-material-api.ts</code></strong>:</p>
+<ul>
+<li>❌ Remove <code>MaterialCategory</code> import</li>
+<li>❌ Remove <code>categories?: MaterialCategory[]</code> from interfaces</li>
+<li>❌ Remove <code>category: MaterialCategory</code> from interfaces</li>
+<li>❌ Remove <code>applicableCategories: MaterialCategory[]</code> from interfaces</li>
+<li>✅ Replace with <code>material_type?: string</code> (from metadata)</li>
+</ul>
+</li>
+<li><p><strong><code>src/utils/materialValidation.ts</code></strong>:</p>
+<ul>
+<li>❌ Remove <code>MaterialCategory</code> import</li>
+<li>❌ Remove <code>isMaterialCategory()</code> function</li>
+<li>❌ Remove <code>isValidFinish(finish: string, category: MaterialCategory)</code> - replace with metadata-based validation</li>
+<li>❌ Remove <code>isValidSize(size: string, category: MaterialCategory)</code> - replace with metadata-based validation</li>
+<li>✅ Update all validation functions to use <code>metadata.material_type</code> instead of <code>category</code></li>
+</ul>
+</li>
+<li><p><strong><code>src/components/Materials/MaterialCatalogListing.tsx</code></strong>:</p>
+<ul>
+<li>❌ Remove <code>MaterialCategory</code> import</li>
+<li>❌ Remove <code>category: MaterialCategory | &#39;all&#39;</code> from state</li>
+<li>✅ Replace with <code>material_type: string | &#39;all&#39;</code> (from metadata)</li>
+<li>✅ Update filter dropdown to use metadata values</li>
+<li>✅ Update search filter (line 150):<pre><code class="language-typescript">// BEFORE
+material.category.toLowerCase().includes(searchLower)
+
+// AFTER
+material.metadata?.material_type?.toLowerCase().includes(searchLower)
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p><strong><code>src/components/Admin/MaterialSuggestionsPanel.tsx</code></strong>:</p>
+<ul>
+<li>❌ Remove references to <code>metadata.material_categories</code> (lines 110-113)</li>
+<li>✅ Replace with <code>metadata.material_type</code> (single string value):<pre><code class="language-typescript">// BEFORE
+if (metadata?.material_categories &amp;&amp; Array.isArray(metadata.material_categories)) {
+  metadata.material_categories.forEach((category: string) =&gt; {
+    formattedSuggestions.push({ name: category, ... });
+  });
+}
+
+// AFTER
+if (metadata?.material_type) {
+  formattedSuggestions.push({
+    name: metadata.material_type,
+    category: (metadata.content_type as string) || &#39;pdf_content&#39;,
+    confidence: (item.confidence as number) || 0.8,
+    source: &#39;pdf_knowledge&#39;,
+    properties: metadata as Record&lt;string, unknown&gt;,
+  });
+}
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p><strong><code>src/services/unifiedSearchService.ts</code></strong>:</p>
+<ul>
+<li>✅ Already uses <code>material_filters</code> (not category-based) - no changes needed</li>
+<li>✅ <code>MaterialSearchResult.category</code> field can remain (it&#39;s a display category, not material_categories FK)</li>
+</ul>
+</li>
+<li><p><strong><code>src/components/RAG/EnhancedRAGInterface.tsx</code></strong>:</p>
+<ul>
+<li>✅ Already uses <code>material_type</code> in filters (line 171) - no changes needed</li>
+<li>✅ Correctly maps to <code>metadata.material_type</code></li>
+</ul>
+</li>
+</ol>
+<h4>9.4: Migration Strategy for Existing Data</h4>
+<p><strong>For existing products with <code>category_id</code></strong>:</p>
+<pre><code class="language-sql">-- Migrate category_id to metadata.material_type (if any products have category_id set)
+UPDATE products
+SET metadata = jsonb_set(
+    metadata,
+    &#39;{material_type}&#39;,
+    to_jsonb(mc.name)
+)
+FROM material_categories mc
+WHERE products.category_id = mc.id
+AND products.category_id IS NOT NULL;
+
+-- Then drop the column
+ALTER TABLE products DROP COLUMN category_id;
+</code></pre>
+<p><strong>Note</strong>: Based on investigation, ALL products have <code>category_id = NULL</code>, so migration is not needed. Just drop the column.</p>
+<h4>9.5: Verification Checklist</h4>
+<p><strong>Backend</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Run <code>cd /var/www/mivaa-pdf-extractor &amp;&amp; grep -r &quot;material_categories&quot; --include=&quot;*.py&quot; .</code> → Should return 0 results</li>
+<li><input disabled="" type="checkbox"> Run <code>cd /var/www/mivaa-pdf-extractor &amp;&amp; grep -r &quot;category_prototypes&quot; --include=&quot;*.py&quot; .</code> → Should return 0 results</li>
+<li><input disabled="" type="checkbox"> Run <code>pytest</code> → All tests pass</li>
+<li><input disabled="" type="checkbox"> Check <code>app/main.py</code> → No category_prototypes router</li>
+<li><input disabled="" type="checkbox"> Check database → <code>material_categories</code> table does not exist</li>
+<li><input disabled="" type="checkbox"> Check database → <code>products.category_id</code> column does not exist</li>
+</ul>
+<p><strong>Frontend</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Run <code>cd /var/www/material-kai-vision-platform &amp;&amp; grep -r &quot;MaterialCategory&quot; --include=&quot;*.ts&quot; --include=&quot;*.tsx&quot; . | grep -v node_modules</code> → Should return 0 results (except Knowledge Base)</li>
+<li><input disabled="" type="checkbox"> Run <code>cd /var/www/material-kai-vision-platform &amp;&amp; grep -r &quot;material_categories&quot; --include=&quot;*.ts&quot; --include=&quot;*.tsx&quot; .</code> → Should return 0 results</li>
+<li><input disabled="" type="checkbox"> Run <code>npm run build</code> → No TypeScript errors</li>
+<li><input disabled="" type="checkbox"> Check <code>src/types/materials.ts</code> → No MaterialCategory enum</li>
+<li><input disabled="" type="checkbox"> Check <code>src/services/</code> → No dynamicCategoryManagementService.ts or dynamicMaterialCategoriesService.ts</li>
+<li><input disabled="" type="checkbox"> Test material catalog listing → Uses metadata.material_type for filtering</li>
+<li><input disabled="" type="checkbox"> Test material validation → Uses metadata-based validation</li>
+</ul>
+<p><strong>Integration</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Upload test PDF → Products created with <code>metadata.material_type</code> (not <code>category_id</code>)</li>
+<li><input disabled="" type="checkbox"> Search with material filters → Uses <code>metadata.material_type</code> for filtering</li>
+<li><input disabled="" type="checkbox"> Admin panel → No references to material categories</li>
+<li><input disabled="" type="checkbox"> All existing products still accessible and searchable</li>
+</ul>
+<hr>
+<h3>Phase 10: Testing &amp; Validation (1 day)</h3>
+<p><strong>Task</strong>: Comprehensive end-to-end testing</p>
+<p><strong>Test Cases</strong>:</p>
+<ol>
+<li><p><strong>PDF Processing Flow</strong>:</p>
+<ul>
+<li>Upload test PDF (Harmony.pdf)</li>
+<li>Verify metadata extraction works</li>
+<li>Verify prototype validation runs</li>
+<li>Check <code>products.metadata._validation_metadata</code> exists</li>
+<li>Verify validated values are standardized</li>
+</ul>
+</li>
+<li><p><strong>Search Endpoints</strong>:</p>
+<ul>
+<li>Test multi-vector search with metadata filters</li>
+<li>Test fuzzy matching: &quot;shiny&quot; → finds &quot;glossy&quot; products</li>
+<li>Test semantic search: &quot;non-slip tiles&quot; → finds R11 products</li>
+<li>Verify scoring includes validation component</li>
+<li>Test all 5 search endpoints</li>
+</ul>
+</li>
+<li><p><strong>Backward Compatibility</strong>:</p>
+<ul>
+<li>Verify existing products still searchable</li>
+<li>Verify existing metadata still accessible</li>
+<li>Verify no breaking changes to API responses</li>
+</ul>
+</li>
+<li><p><strong>Performance</strong>:</p>
+<ul>
+<li>Measure validation overhead (&lt;100ms per product)</li>
+<li>Measure search performance (should be similar to before)</li>
+<li>Check database query performance</li>
+</ul>
+</li>
+</ol>
+<p><strong>Verification Checklist</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> PDF upload → extraction → validation works</li>
+<li><input disabled="" type="checkbox"> All search endpoints return results</li>
+<li><input disabled="" type="checkbox"> Fuzzy metadata matching works</li>
+<li><input disabled="" type="checkbox"> Scoring includes validation component</li>
+<li><input disabled="" type="checkbox"> No breaking changes to existing functionality</li>
+<li><input disabled="" type="checkbox"> Performance is acceptable</li>
+<li><input disabled="" type="checkbox"> Documentation is complete</li>
+<li><input disabled="" type="checkbox"> All category code deleted</li>
+</ul>
+<hr>
+<h2>✅ Benefits</h2>
+<h3>For Metadata Extraction</h3>
+<ul>
+<li>✅ <strong>Standardization</strong>: Llama&#39;s free text → validated property values</li>
+<li>✅ <strong>Consistency</strong>: Same material gets same label across PDFs</li>
+<li>✅ <strong>Validation</strong>: Prevents hallucinations and invalid values</li>
+<li>✅ <strong>Confidence</strong>: Semantic similarity scores for each validation</li>
+</ul>
+<h3>For Search</h3>
+<ul>
+<li>✅ <strong>Better Matching</strong>: &quot;shiny&quot; finds &quot;glossy&quot; products</li>
+<li>✅ <strong>Fuzzy Filters</strong>: Variations map to standard values</li>
+<li>✅ <strong>Semantic Search</strong>: Natural language queries work better</li>
+<li>✅ <strong>Ranking</strong>: Validated metadata boosts search scores</li>
+</ul>
+<h3>For System Architecture</h3>
+<ul>
+<li>✅ <strong>Single Source of Truth</strong>: <code>material_properties</code> table for everything</li>
+<li>✅ <strong>No Duplication</strong>: Categories merged into meta system</li>
+<li>✅ <strong>Extensible</strong>: Add new properties without code changes</li>
+<li>✅ <strong>Non-Breaking</strong>: Existing functionality preserved</li>
+</ul>
+<hr>
+<h2>🔧 API Endpoints</h2>
+<h3>Validation Endpoints (NEW)</h3>
+<p><strong>Populate Property Prototypes</strong></p>
+<pre><code class="language-bash">POST /api/metadata/properties/populate-prototypes
+{
+    &quot;property_key&quot;: &quot;finish&quot;,  # Optional: specific property
+    &quot;regenerate&quot;: false        # Optional: regenerate embeddings
+}
+</code></pre>
+<p><strong>Validate Metadata</strong></p>
+<pre><code class="language-bash">POST /api/metadata/validate
+{
+    &quot;metadata&quot;: {
+        &quot;finish&quot;: &quot;glossy&quot;,
+        &quot;slip_resistance&quot;: &quot;R11&quot;
+    }
+}
+
+Response:
+{
+    &quot;validated_metadata&quot;: {
+        &quot;finish&quot;: {&quot;value&quot;: &quot;glossy&quot;, &quot;validated&quot;: true, &quot;confidence&quot;: 0.94},
+        &quot;slip_resistance&quot;: {&quot;value&quot;: &quot;R11&quot;, &quot;validated&quot;: true, &quot;confidence&quot;: 0.96}
+    }
+}
+</code></pre>
+<p><strong>Get Property Prototypes</strong></p>
+<pre><code class="language-bash">GET /api/metadata/properties/{property_key}/prototypes
+
+Response:
+{
+    &quot;property_key&quot;: &quot;finish&quot;,
+    &quot;prototypes&quot;: {
+        &quot;glossy&quot;: [&quot;High gloss reflective surface&quot;, ...],
+        &quot;matte&quot;: [&quot;Non-reflective flat surface&quot;, ...],
+        &quot;satin&quot;: [&quot;Semi-gloss subtle sheen&quot;, ...]
+    }
+}
+</code></pre>
+<hr>
+<h2>📝 Notes</h2>
+<ul>
+<li><strong>Backward Compatibility</strong>: All existing metadata extraction continues to work</li>
+<li><strong>Gradual Rollout</strong>: Prototypes can be added incrementally (start with top 20 properties)</li>
+<li><strong>Fallback Logic</strong>: If validation fails, original extracted value is preserved</li>
+<li><strong>Admin Control</strong>: Prototypes can be edited via admin panel</li>
+<li><strong>Performance</strong>: CLIP embedding generation cached, validation is fast (&lt;100ms)</li>
+</ul>
+
+</div></body></html>
