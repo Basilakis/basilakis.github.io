@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Interior Designer Agent - Testing Guide</h1>
+<h2>Overview</h2>
+<p>The Interior Designer Agent is a comprehensive AI-powered interior design system that combines:</p>
+<ul>
+<li>3D design generation (10 AI models)</li>
+<li>Spatial analysis (Spaceformer with Claude Vision)</li>
+<li>Material matching (multi-vector search with 6 embedding types)</li>
+<li>Cost estimation (automated pricing calculations)</li>
+<li>Pre-made prompt library (database-driven templates)</li>
+</ul>
+<h2>Implementation Summary</h2>
+<h3>Backend Components ✅</h3>
+<ol>
+<li><p><strong>Agent Configuration</strong> (<code>supabase/functions/agent-chat/index.ts</code>)</p>
+<ul>
+<li>Interior Designer agent added to AGENT_CONFIGS</li>
+<li>5 tools registered: material_search, image_analysis, spaceformer_analysis, generate_3d, estimate_cost</li>
+<li>System prompt loaded from database</li>
+<li>Available to all user roles (viewer, member, admin, owner)</li>
+</ul>
+</li>
+<li><p><strong>LangChain Tools</strong> (4 new tools created)</p>
+<ul>
+<li><code>createSpaceformerTool()</code> - Spatial analysis using Claude Vision</li>
+<li><code>create3DGenerationTool()</code> - 3D generation via mastra-3d-generation Edge Function</li>
+<li><code>createCostEstimationTool()</code> - Material cost calculation from products table</li>
+<li>Existing tools reused: <code>createSearchTool()</code>, <code>createImageAnalysisTool()</code></li>
+</ul>
+</li>
+<li><p><strong>Database</strong> (<code>material_agents</code> table)</p>
+<ul>
+<li>System prompt inserted with comprehensive workflow guidelines</li>
+<li>Agent type: &#39;interior-designer&#39;</li>
+<li>Status: active</li>
+<li>Includes tool descriptions, design principles, and example interactions</li>
+</ul>
+</li>
+</ol>
+<h3>Frontend Components ✅</h3>
+<ol>
+<li><p><strong>PromptLibrary.tsx</strong> - Pre-made prompt selector</p>
+<ul>
+<li>Fetches prompts from <code>prompt_templates</code> table</li>
+<li>Filters by stage=&#39;design&#39; and category=&#39;interior&#39;</li>
+<li>Search and category filtering</li>
+<li>Glass morphism UI with gradient header</li>
+</ul>
+</li>
+<li><p><strong>MaterialMatchingModal.tsx</strong> - Material selection and cost display</p>
+<ul>
+<li>Grid display of matched materials with images</li>
+<li>Multi-select with visual indicators</li>
+<li>Real-time cost calculation</li>
+<li>Export to moodboard functionality</li>
+<li>Cost estimation integration</li>
+</ul>
+</li>
+<li><p><strong>DesignCanvas.tsx</strong> - Unified design results display</p>
+<ul>
+<li>Tabbed interface: 3D Images | Spatial Analysis | Materials</li>
+<li>Image carousel with thumbnails</li>
+<li>Spatial analysis visualization</li>
+<li>Material grid with click handlers</li>
+<li>Download functionality</li>
+</ul>
+</li>
+<li><p><strong>AgentHub.tsx</strong> - Enhanced message rendering</p>
+<ul>
+<li>Interior Designer agent added to AGENTS array</li>
+<li>New <code>designData</code> field in Message interface</li>
+<li>Automatic rendering of design results</li>
+<li>Prompt Library button (Sparkles icon) for Interior Designer agent</li>
+<li>Cost estimate display in messages</li>
+</ul>
+</li>
+</ol>
+<h2>Testing Workflow</h2>
+<h3>Test 1: Agent Selection and Availability</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Navigate to <code>/agents</code> (AgentHub page)</li>
+<li>Check agent selector dropdown</li>
+<li>Verify &quot;Interior Designer Agent&quot; is available</li>
+<li>Select Interior Designer Agent</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ Interior Designer Agent appears in dropdown</li>
+<li>✅ Icon: Sparkles (violet color)</li>
+<li>✅ Description: &quot;AI-powered interior design with 3D generation and material matching&quot;</li>
+<li>✅ Available to all user roles</li>
+<li>✅ Prompt Library button (Sparkles) appears in input area</li>
+</ul>
+<hr>
+<h3>Test 2: Prompt Library</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Select Interior Designer Agent</li>
+<li>Click Sparkles button in input area</li>
+<li>Browse available prompts</li>
+<li>Search for specific prompts</li>
+<li>Filter by category</li>
+<li>Select a prompt</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ Modal opens with gradient header</li>
+<li>✅ Prompts loaded from database (stage=&#39;design&#39;, category=&#39;interior&#39;)</li>
+<li>✅ Search functionality works</li>
+<li>✅ Category filter works</li>
+<li>✅ Selected prompt inserted into input field</li>
+<li>✅ Modal closes after selection</li>
+</ul>
+<hr>
+<h3>Test 3: Spatial Analysis (Spaceformer)</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Upload a room image</li>
+<li>Send message: &quot;Analyze this space and suggest improvements&quot;</li>
+<li>Wait for agent response</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ Agent calls <code>spaceformer_analysis</code> tool</li>
+<li>✅ Response includes:<ul>
+<li>Layout analysis (dimensions, natural light, traffic flow)</li>
+<li>Material suggestions (flooring, walls, furniture)</li>
+<li>Accessibility report (doorway width, clear space, lighting)</li>
+<li>Spatial metrics</li>
+</ul>
+</li>
+<li>✅ Results displayed in DesignCanvas component</li>
+<li>✅ Spatial Analysis tab shows structured data</li>
+</ul>
+<hr>
+<h3>Test 4: 3D Design Generation</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Send message: &quot;Generate a modern minimalist bedroom design&quot;</li>
+<li>Wait for agent response</li>
+<li>Check generated images</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ Agent calls <code>generate_3d</code> tool</li>
+<li>✅ Response includes:<ul>
+<li>Multiple generated images (from 10 AI models)</li>
+<li>Parsed request details</li>
+<li>Matched materials from catalog</li>
+<li>Quality assessment</li>
+<li>Processing time</li>
+</ul>
+</li>
+<li>✅ Images displayed in DesignCanvas carousel</li>
+<li>✅ Thumbnails navigation works</li>
+<li>✅ Download button works</li>
+</ul>
+<hr>
+<h3>Test 5: Material Matching</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>After 3D generation, check matched materials</li>
+<li>Click Materials tab in DesignCanvas</li>
+<li>Click on individual materials</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ Materials tab shows grid of matched materials</li>
+<li>✅ Each material shows:<ul>
+<li>Image</li>
+<li>Name</li>
+<li>Price (if available)</li>
+<li>Manufacturer</li>
+</ul>
+</li>
+<li>✅ Clicking material triggers handler</li>
+<li>✅ Materials matched using multi_vector search strategy</li>
+</ul>
+<hr>
+<h3>Test 6: Cost Estimation</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Send message: &quot;Estimate the cost of these materials: [material IDs]&quot;</li>
+<li>Wait for agent response</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ Agent calls <code>estimate_cost</code> tool</li>
+<li>✅ Response includes:<ul>
+<li>Itemized material list with prices</li>
+<li>Quantities and units</li>
+<li>Subtotals per material</li>
+<li>Total cost</li>
+<li>Currency</li>
+</ul>
+</li>
+<li>✅ Cost estimate displayed in message</li>
+<li>✅ Formatted with proper styling</li>
+</ul>
+<hr>
+<h3>Test 7: Complete Workflow</h3>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Upload room image</li>
+<li>Request spatial analysis</li>
+<li>Request 3D design generation based on analysis</li>
+<li>Review matched materials</li>
+<li>Request cost estimate for selected materials</li>
+</ol>
+<p><strong>Expected Results:</strong></p>
+<ul>
+<li>✅ All tools work in sequence</li>
+<li>✅ Agent maintains context between steps</li>
+<li>✅ Results properly formatted and displayed</li>
+<li>✅ No errors in console</li>
+<li>✅ Conversation saved to database</li>
+</ul>
+<hr>
+<h2>Database Verification</h2>
+<h3>Check Agent Configuration</h3>
+<pre><code class="language-sql">SELECT * FROM material_agents WHERE agent_type = &#39;interior-designer&#39;;
+</code></pre>
+<p><strong>Expected:</strong></p>
+<ul>
+<li>✅ Record exists</li>
+<li>✅ status = &#39;active&#39;</li>
+<li>✅ system_prompt contains tool descriptions</li>
+<li>✅ created_at and updated_at timestamps</li>
+</ul>
+<h3>Check Prompt Templates</h3>
+<pre><code class="language-sql">SELECT * FROM prompt_templates 
+WHERE stage = &#39;design&#39; AND category = &#39;interior&#39; AND is_active = true;
+</code></pre>
+<p><strong>Expected:</strong></p>
+<ul>
+<li>✅ Multiple prompt templates exist</li>
+<li>✅ Each has name, description, prompt_text</li>
+<li>✅ Industry and category fields populated</li>
+</ul>
+<hr>
+<h2>API Endpoint Verification</h2>
+<h3>Test Spaceformer API</h3>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/spaceformer/analyze \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;image_url&quot;: &quot;https://example.com/room.jpg&quot;,
+    &quot;room_type&quot;: &quot;bedroom&quot;,
+    &quot;analysis_type&quot;: &quot;full&quot;,
+    &quot;workspace_id&quot;: &quot;your-workspace-id&quot;
+  }&#39;
+</code></pre>
+<p><strong>Expected:</strong></p>
+<ul>
+<li>✅ 200 OK response</li>
+<li>✅ JSON with analysis_id, layout_analysis, material_suggestions, accessibility_report</li>
+</ul>
+<h3>Test 3D Generation Edge Function</h3>
+<pre><code class="language-bash">curl -X POST https://your-project.supabase.co/functions/v1/mastra-3d-generation \
+  -H &quot;Authorization: Bearer YOUR_ANON_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;user_id&quot;: &quot;user-id&quot;,
+    &quot;prompt&quot;: &quot;Modern minimalist bedroom&quot;,
+    &quot;room_type&quot;: &quot;bedroom&quot;,
+    &quot;style&quot;: &quot;minimalist&quot;
+  }&#39;
+</code></pre>
+<p><strong>Expected:</strong></p>
+<ul>
+<li>✅ 200 OK response</li>
+<li>✅ JSON with generationId, image_urls, matched_materials</li>
+</ul>
+<hr>
+<h2>Known Issues and Limitations</h2>
+<ol>
+<li><p><strong>Spaceformer Not Deployed</strong> ⚠️</p>
+<ul>
+<li>Code complete but not yet deployed to production server</li>
+<li>Need to push to GitHub to trigger auto-deployment</li>
+</ul>
+</li>
+<li><p><strong>Prompt Templates</strong> ⚠️</p>
+<ul>
+<li>Need to populate <code>prompt_templates</code> table with interior design prompts</li>
+<li>Currently may return empty results</li>
+</ul>
+</li>
+<li><p><strong>Material Pricing</strong> ⚠️</p>
+<ul>
+<li>Cost estimation depends on <code>metadata.price</code> field in products table</li>
+<li>Some materials may not have pricing data</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Next Steps</h2>
+<ol>
+<li>✅ Deploy Spaceformer to production (git push to main)</li>
+<li>✅ Populate prompt_templates table with interior design prompts</li>
+<li>✅ Test complete workflow end-to-end</li>
+<li>✅ Add material pricing data to products table</li>
+<li>✅ Create user documentation</li>
+<li>✅ Add analytics tracking for agent usage</li>
+</ol>
+<hr>
+<h2>Success Criteria</h2>
+<ul>
+<li>✅ All 5 tools working correctly</li>
+<li>✅ Agent responds appropriately to user requests</li>
+<li>✅ Design results properly displayed in UI</li>
+<li>✅ No TypeScript errors</li>
+<li>✅ No console errors during usage</li>
+<li>✅ Conversation history saved correctly</li>
+<li>✅ All components render without issues</li>
+</ul>
+
+</div></body></html>

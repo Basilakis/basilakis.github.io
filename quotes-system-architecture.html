@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Quotes System Architecture</h1>
+<h2>Overview</h2>
+<p>The Quotes System allows users to create multiple independent quotes, add materials to them from various sources (search, agents, 3D generation), and submit them as quote requests to receive pricing proposals.</p>
+<h2>Key Features</h2>
+<p>✅ <strong>Multiple Quotes</strong> - Users can have multiple active quotes simultaneously<br>✅ <strong>Independent Quotes</strong> - Each quote is completely independent (not tied to a cart)<br>✅ <strong>Auto-Expiration</strong> - Quotes expire after 30 days of inactivity<br>✅ <strong>Activity Tracking</strong> - Any activity extends the expiration by 30 days<br>✅ <strong>Source Tracking</strong> - Track where each material was added from<br>✅ <strong>Quote Requests</strong> - Convert quotes to formal quote requests  </p>
+<h2>Database Schema</h2>
+<h3><code>quotes</code> Table</h3>
+<pre><code class="language-sql">CREATE TABLE quotes (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id),
+    workspace_id UUID REFERENCES workspaces(id),
+    name TEXT,  -- Optional user-friendly name
+    status TEXT DEFAULT &#39;draft&#39;,  -- &#39;draft&#39;, &#39;submitted&#39;, &#39;quoted&#39;, &#39;accepted&#39;, &#39;rejected&#39;, &#39;expired&#39;
+    total_items INTEGER DEFAULT 0,
+    notes TEXT,
+    expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL &#39;30 days&#39;),
+    last_activity_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    submitted_at TIMESTAMPTZ
+);
+</code></pre>
+<h3><code>quote_items</code> Table</h3>
+<pre><code class="language-sql">CREATE TABLE quote_items (
+    id UUID PRIMARY KEY,
+    quote_id UUID REFERENCES quotes(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER DEFAULT 1,
+    notes TEXT,
+    added_from TEXT,  -- &#39;search&#39;, &#39;agent&#39;, &#39;3d_generation&#39;, &#39;manual&#39;, &#39;product_page&#39;
+    added_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(quote_id, product_id)  -- Prevent duplicate products in same quote
+);
+</code></pre>
+<h3><code>quote_requests</code> Table</h3>
+<pre><code class="language-sql">-- Modified to reference quotes instead of carts
+ALTER TABLE quote_requests 
+    DROP COLUMN cart_id,
+    ADD COLUMN quote_id UUID REFERENCES quotes(id);
+</code></pre>
+<h2>Auto-Expiration System</h2>
+<h3>How It Works</h3>
+<ol>
+<li><strong>Admin-Configurable Expiration</strong>: Admins can set expiration days via System Settings page</li>
+<li><strong>Default Expiration</strong>: New quotes expire after X days (default: 30 days, configurable)</li>
+<li><strong>Activity Extension</strong>: Any activity (adding/removing items) extends expiration by X days</li>
+<li><strong>Auto-Expire Function</strong>: <code>expire_old_quotes()</code> marks expired quotes</li>
+<li><strong>Scheduled Job</strong>: Should be called daily via cron or Edge Function</li>
+</ol>
+<h3>System Settings Table</h3>
+<p>The <code>system_settings</code> table stores platform-wide configuration:</p>
+<pre><code class="language-sql">CREATE TABLE system_settings (
+    id UUID PRIMARY KEY,
+    setting_key TEXT UNIQUE NOT NULL,
+    setting_value JSONB NOT NULL,
+    description TEXT,
+    updated_by UUID REFERENCES auth.users(id),
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+);
+
+-- Default setting
+INSERT INTO system_settings (setting_key, setting_value, description)
+VALUES (&#39;quote_expiration_days&#39;, &#39;30&#39;::jsonb, &#39;Number of days of inactivity before a draft quote expires&#39;);
+</code></pre>
+<h3>Admin Configuration</h3>
+<p>Admins can update the expiration days via:</p>
+<ul>
+<li><strong>UI</strong>: Navigate to <code>/admin/system-settings</code></li>
+<li><strong>Direct Update</strong>: Update <code>system_settings</code> table where <code>setting_key = &#39;quote_expiration_days&#39;</code></li>
+</ul>
+<h3>Triggers</h3>
+<ul>
+<li><strong><code>set_quote_expiration</code></strong> - Sets initial expiration when quote is created (uses current setting)</li>
+<li><strong><code>update_quote_activity</code></strong> - Extends expiration when items are added/updated (uses current setting)</li>
+<li><strong><code>update_quote_total_items</code></strong> - Keeps total_items count accurate</li>
+</ul>
+<h3>Helper Function</h3>
+<pre><code class="language-sql">-- Get current expiration days setting
+SELECT get_quote_expiration_days(); -- Returns INTEGER (default: 30)
+</code></pre>
+<h3>Manual Expiration</h3>
+<pre><code class="language-sql">-- Call this function daily to expire old quotes
+SELECT expire_old_quotes(); -- Returns count of expired quotes
+</code></pre>
+<h2>Frontend Architecture</h2>
+<h3>Services</h3>
+<p><strong><code>QuotesService</code></strong> (<code>src/services/quotes/QuotesService.ts</code>)</p>
+<ul>
+<li><code>createQuote()</code> - Create new quote</li>
+<li><code>getQuotes()</code> - List user&#39;s quotes</li>
+<li><code>getQuote()</code> - Get quote with items</li>
+<li><code>updateQuote()</code> - Update quote details</li>
+<li><code>deleteQuote()</code> - Delete draft quote</li>
+<li><code>addItem()</code> - Add material to quote</li>
+<li><code>updateItem()</code> - Update item quantity/notes</li>
+<li><code>removeItem()</code> - Remove item from quote</li>
+<li><code>submitQuote()</code> - Convert to quote request</li>
+<li><code>getExpirationInfo()</code> - Check expiration status</li>
+</ul>
+<h3>Components</h3>
+<p><strong><code>AddToQuoteButton</code></strong> - Reusable button for adding materials</p>
+<ul>
+<li>Can be placed on any product card</li>
+<li>Opens modal to select/create quote</li>
+<li>Supports custom styling and variants</li>
+</ul>
+<p><strong><code>AddToQuoteModal</code></strong> - Quote selection/creation modal</p>
+<ul>
+<li>Lists user&#39;s draft quotes</li>
+<li>Create new quote on the fly</li>
+<li>Set quantity and notes</li>
+<li>Shows product preview</li>
+</ul>
+<p><strong><code>QuoteManagementSidebar</code></strong> - Main quote management UI</p>
+<ul>
+<li>View all quotes</li>
+<li>Search quotes</li>
+<li>Create new quotes</li>
+<li>Delete quotes</li>
+<li>Navigate to quote details</li>
+</ul>
+<p><strong><code>QuoteBuilderView</code></strong> - Quote detail and material management</p>
+<ul>
+<li>View all materials in quote</li>
+<li>Add/remove materials</li>
+<li>Edit quantities and notes</li>
+<li>Send quote request</li>
+</ul>
+<h2>User Workflow</h2>
+<h3>1. Create Quote</h3>
+<pre><code class="language-typescript">const quote = await quotesService.createQuote({
+  name: &#39;Office Renovation Materials&#39;,
+  notes: &#39;Materials for main office renovation&#39;
+});
+</code></pre>
+<h3>2. Add Materials</h3>
+<pre><code class="language-typescript">// From product page
+await quotesService.addItem({
+  quote_id: quote.id,
+  product_id: &#39;product-uuid&#39;,
+  quantity: 5,
+  notes: &#39;Need matte finish&#39;,
+  added_from: &#39;product_page&#39;
+});
+
+// From agent response
+await quotesService.addItem({
+  quote_id: quote.id,
+  product_id: &#39;product-uuid&#39;,
+  quantity: 2,
+  added_from: &#39;agent&#39;
+});
+
+// From 3D generation
+await quotesService.addItem({
+  quote_id: quote.id,
+  product_id: &#39;product-uuid&#39;,
+  quantity: 10,
+  added_from: &#39;3d_generation&#39;
+});
+</code></pre>
+<h3>3. Submit Quote Request</h3>
+<pre><code class="language-typescript">await quotesService.submitQuote(quote.id, &#39;Please provide pricing for these materials&#39;);
+</code></pre>
+<h3>4. Admin Creates Proposal</h3>
+<ul>
+<li>Admin views quote request</li>
+<li>Adds pricing to each material</li>
+<li>Creates proposal with totals</li>
+<li>Sends proposal to user</li>
+</ul>
+<h3>5. User Reviews Proposal</h3>
+<ul>
+<li>User receives notification</li>
+<li>Views proposal with pricing</li>
+<li>Accepts or rejects proposal</li>
+</ul>
+<h2>Integration Points</h2>
+<h3>Search Results</h3>
+<pre><code class="language-tsx">&lt;AddToQuoteButton
+  productId={product.id}
+  productName={product.name}
+  productImage={product.image}
+  variant=&quot;outline&quot;
+  size=&quot;sm&quot;
+/&gt;
+</code></pre>
+<h3>Agent Responses</h3>
+<pre><code class="language-tsx">{materials.map(material =&gt; (
+  &lt;MaterialCard key={material.id}&gt;
+    &lt;MaterialInfo {...material} /&gt;
+    &lt;AddToQuoteButton
+      productId={material.id}
+      productName={material.name}
+      defaultQuantity={1}
+      added_from=&quot;agent&quot;
+    /&gt;
+  &lt;/MaterialCard&gt;
+))}
+</code></pre>
+<h3>3D Generation Results</h3>
+<pre><code class="language-tsx">&lt;AddToQuoteButton
+  productId={generatedMaterial.id}
+  productName={generatedMaterial.name}
+  added_from=&quot;3d_generation&quot;
+/&gt;
+</code></pre>
+<h2>Quote Expiration Management</h2>
+<h3>Check Expiration Status</h3>
+<pre><code class="language-typescript">const info = await quotesService.getExpirationInfo(quoteId);
+console.log(`Expires in ${info.days_until_expiration} days`);
+console.log(`Is expired: ${info.is_expired}`);
+</code></pre>
+<h3>Extend Expiration</h3>
+<p>Any activity automatically extends expiration:</p>
+<ul>
+<li>Adding items</li>
+<li>Removing items</li>
+<li>Updating items</li>
+</ul>
+<h3>Manual Cleanup</h3>
+<p>Create a Supabase Edge Function to run daily:</p>
+<pre><code class="language-typescript">// supabase/functions/expire-quotes/index.ts
+Deno.serve(async () =&gt; {
+  const { data, error } = await supabase.rpc(&#39;expire_old_quotes&#39;);
+  return new Response(JSON.stringify({ expired_count: data }));
+});
+</code></pre>
+<h2>Security (RLS Policies)</h2>
+<ul>
+<li>Users can only view/edit their own quotes</li>
+<li>Only draft quotes can be modified</li>
+<li>Submitted quotes are read-only</li>
+<li>Quote items inherit quote permissions</li>
+</ul>
+<h2>Implementation Status</h2>
+<h3>✅ Completed - Core Quote System</h3>
+<ol>
+<li>✅ <strong>Database Schema</strong> - Created <code>quotes</code>, <code>quote_items</code>, <code>system_settings</code> tables</li>
+<li>✅ <strong>Migration Executed</strong> - All tables, triggers, functions, and RLS policies created</li>
+<li>✅ <strong>QuotesService</strong> - Complete service with all CRUD operations</li>
+<li>✅ <strong>AddToQuoteButton</strong> - Reusable button component</li>
+<li>✅ <strong>AddToQuoteModal</strong> - Quote selection/creation modal (uses QuotesService)</li>
+<li>✅ <strong>QuoteManagementSidebar</strong> - Main quote management UI (uses QuotesService)<ul>
+<li>View all draft quotes</li>
+<li>Search quotes by name or ID</li>
+<li>Create new quotes</li>
+<li>Delete quotes</li>
+<li>Expiration status indicators (expired, expiring soon, active)</li>
+<li>Navigate to quote details</li>
+</ul>
+</li>
+<li>✅ <strong>QuoteBuilderView</strong> - Quote detail and material management (uses QuotesService)<ul>
+<li>View all materials in quote</li>
+<li>Update material quantities inline</li>
+<li>Remove materials</li>
+<li>Add notes</li>
+<li>Expiration countdown display</li>
+<li>Submit quote request</li>
+</ul>
+</li>
+<li>✅ <strong>Admin Configuration</strong> - SystemSettingsPage for managing expiration days</li>
+<li>✅ <strong>Dynamic Expiration</strong> - Expiration days configurable by admin via UI</li>
+<li>✅ <strong>Activity Tracking</strong> - Automatic expiration extension on any activity</li>
+<li>✅ <strong>Helper Functions</strong> - <code>get_quote_expiration_days()</code>, <code>expire_old_quotes()</code></li>
+<li>✅ <strong>Expiration UI</strong> - Visual indicators for quote expiration status</li>
+</ol>
+<h3>⏳ Pending - Integration &amp; Advanced Features</h3>
+<ol start="13">
+<li>⏳ Integrate AddToQuoteButton into search results</li>
+<li>⏳ Integrate AddToQuoteButton into agent responses</li>
+<li>⏳ Integrate AddToQuoteButton into 3D generation</li>
+<li>⏳ Create admin quote management interface (view requests, add pricing)</li>
+<li>⏳ Implement proposal PDF/HTML generation</li>
+<li>⏳ Create daily expiration cron job (Supabase Edge Function)</li>
+</ol>
+<h2>Admin Access</h2>
+<p><strong>System Settings Page</strong>: <code>/admin/system-settings</code></p>
+<p>Admins can configure:</p>
+<ul>
+<li>Quote expiration days (how long before inactive quotes expire)</li>
+<li>Future settings can be added to the same interface</li>
+</ul>
+
+</div></body></html>

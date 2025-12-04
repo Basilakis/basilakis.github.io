@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Interior Designer Agent - User Guide</h1>
+<h2>What is the Interior Designer Agent?</h2>
+<p>The Interior Designer Agent is your AI-powered interior design assistant that helps you:</p>
+<ul>
+<li>🎨 Generate 3D interior design visualizations</li>
+<li>📐 Analyze room layouts and spatial relationships</li>
+<li>🏠 Match materials from our catalog to your designs</li>
+<li>💰 Estimate costs for your design projects</li>
+<li>✨ Get expert design recommendations</li>
+</ul>
+<h2>Getting Started</h2>
+<h3>1. Access the Agent</h3>
+<ol>
+<li>Navigate to <strong>Agent Hub</strong> (<code>/agents</code>)</li>
+<li>Select <strong>Interior Designer Agent</strong> from the dropdown</li>
+<li>Start a new conversation or continue an existing one</li>
+</ol>
+<h3>2. Using Pre-Made Prompts</h3>
+<p>Click the <strong>✨ Sparkles button</strong> in the input area to open the Prompt Library:</p>
+<ul>
+<li>Browse curated design prompts</li>
+<li>Search by keywords</li>
+<li>Filter by category</li>
+<li>Click to insert into your message</li>
+</ul>
+<h2>Key Features</h2>
+<h3>🖼️ Room Image Analysis</h3>
+<p><strong>Upload a photo of your room and ask:</strong></p>
+<ul>
+<li>&quot;Analyze this space and suggest improvements&quot;</li>
+<li>&quot;What materials would work well in this room?&quot;</li>
+<li>&quot;Check if this layout meets accessibility standards&quot;</li>
+</ul>
+<p><strong>The agent will:</strong></p>
+<ul>
+<li>Analyze room dimensions and layout</li>
+<li>Identify natural light sources</li>
+<li>Suggest material improvements</li>
+<li>Provide accessibility compliance report</li>
+</ul>
+<hr>
+<h3>🎨 3D Design Generation</h3>
+<p><strong>Request design visualizations:</strong></p>
+<ul>
+<li>&quot;Generate a modern minimalist bedroom design&quot;</li>
+<li>&quot;Create a Scandinavian-style living room&quot;</li>
+<li>&quot;Show me a contemporary kitchen with oak cabinets&quot;</li>
+</ul>
+<p><strong>You can specify:</strong></p>
+<ul>
+<li>Room type (bedroom, living room, kitchen, bathroom, office)</li>
+<li>Design style (modern, minimalist, industrial, Scandinavian, traditional)</li>
+<li>Specific materials or colors</li>
+<li>Reference images for image-to-image generation</li>
+</ul>
+<p><strong>The agent will:</strong></p>
+<ul>
+<li>Generate multiple design variations</li>
+<li>Match materials from our catalog</li>
+<li>Provide quality assessments</li>
+<li>Show processing details</li>
+</ul>
+<hr>
+<h3>🏠 Material Matching</h3>
+<p><strong>After generating designs, ask:</strong></p>
+<ul>
+<li>&quot;What materials are used in this design?&quot;</li>
+<li>&quot;Find similar materials in our catalog&quot;</li>
+<li>&quot;Show me alternatives for the flooring&quot;</li>
+</ul>
+<p><strong>The agent will:</strong></p>
+<ul>
+<li>Search using multi-vector embeddings (6 types)</li>
+<li>Show matched materials with images and prices</li>
+<li>Provide technical specifications</li>
+<li>Suggest alternatives</li>
+</ul>
+<hr>
+<h3>💰 Cost Estimation</h3>
+<p><strong>Get pricing for your designs:</strong></p>
+<ul>
+<li>&quot;Estimate the cost of these materials&quot;</li>
+<li>&quot;What&#39;s the budget for this design?&quot;</li>
+<li>&quot;Calculate total cost including installation&quot;</li>
+</ul>
+<p><strong>The agent will:</strong></p>
+<ul>
+<li>Itemize material costs</li>
+<li>Calculate quantities and units</li>
+<li>Provide total estimates</li>
+<li>Suggest budget-friendly alternatives</li>
+</ul>
+<hr>
+<h2>Example Conversations</h2>
+<h3>Example 1: Complete Room Redesign</h3>
+<p><strong>You:</strong> [Upload room photo] &quot;I want to redesign this bedroom in a modern minimalist style. What do you suggest?&quot;</p>
+<p><strong>Agent:</strong> </p>
+<ol>
+<li>Analyzes your space using Spaceformer</li>
+<li>Provides layout recommendations</li>
+<li>Suggests material improvements</li>
+<li>Offers to generate 3D visualizations</li>
+</ol>
+<p><strong>You:</strong> &quot;Yes, generate some design options&quot;</p>
+<p><strong>Agent:</strong></p>
+<ol>
+<li>Creates multiple 3D designs</li>
+<li>Shows matched materials</li>
+<li>Provides cost estimates</li>
+</ol>
+<hr>
+<h3>Example 2: Material Selection</h3>
+<p><strong>You:</strong> &quot;I&#39;m looking for oak flooring for a 20 sqm living room&quot;</p>
+<p><strong>Agent:</strong></p>
+<ol>
+<li>Searches material catalog</li>
+<li>Shows oak flooring options with images</li>
+<li>Provides pricing per sqm</li>
+<li>Calculates total cost for 20 sqm</li>
+</ol>
+<hr>
+<h3>Example 3: Accessibility Check</h3>
+<p><strong>You:</strong> [Upload room photo] &quot;Does this layout meet accessibility standards?&quot;</p>
+<p><strong>Agent:</strong></p>
+<ol>
+<li>Analyzes doorway widths</li>
+<li>Checks clear floor space</li>
+<li>Evaluates lighting adequacy</li>
+<li>Provides compliance report with recommendations</li>
+</ol>
+<hr>
+<h2>Tips for Best Results</h2>
+<h3>📸 Image Upload Tips</h3>
+<ul>
+<li>Use well-lit photos</li>
+<li>Capture the entire room if possible</li>
+<li>Include multiple angles for better analysis</li>
+<li>Avoid heavy filters or editing</li>
+</ul>
+<h3>💬 Prompt Writing Tips</h3>
+<ul>
+<li>Be specific about style preferences</li>
+<li>Mention budget constraints upfront</li>
+<li>Specify room dimensions if known</li>
+<li>Include any existing furniture to keep</li>
+</ul>
+<h3>🎯 Getting Better Recommendations</h3>
+<ul>
+<li>Provide context (e.g., &quot;for a family with young children&quot;)</li>
+<li>Mention any constraints (e.g., &quot;rental property, can&#39;t change walls&quot;)</li>
+<li>Ask follow-up questions to refine designs</li>
+<li>Request alternatives if first suggestions don&#39;t fit</li>
+</ul>
+<hr>
+<h2>Understanding the Results</h2>
+<h3>3D Design Display</h3>
+<p><strong>Tabs:</strong></p>
+<ul>
+<li><strong>3D Images</strong> - Carousel of generated designs with thumbnails</li>
+<li><strong>Spatial Analysis</strong> - Layout metrics and recommendations</li>
+<li><strong>Materials</strong> - Grid of matched materials with prices</li>
+</ul>
+<p><strong>Controls:</strong></p>
+<ul>
+<li>◀️ ▶️ Navigate between images</li>
+<li>📥 Download individual images</li>
+<li>🔍 Click materials for details</li>
+</ul>
+<h3>Cost Estimates</h3>
+<p><strong>Breakdown includes:</strong></p>
+<ul>
+<li>Material name and quantity</li>
+<li>Unit price</li>
+<li>Subtotal per material</li>
+<li>Total cost in USD</li>
+<li>Currency conversion (if applicable)</li>
+</ul>
+<hr>
+<h2>Advanced Features</h2>
+<h3>Image-to-Image Generation</h3>
+<p><strong>Upload a reference image:</strong>
+&quot;Generate a design similar to this image but with modern materials&quot;</p>
+<p><strong>The agent will:</strong></p>
+<ul>
+<li>Use your image as a reference</li>
+<li>Apply specified style modifications</li>
+<li>Match materials from catalog</li>
+</ul>
+<h3>Multi-Room Projects</h3>
+<p><strong>Plan entire spaces:</strong>
+&quot;Design a cohesive look for my bedroom, bathroom, and walk-in closet&quot;</p>
+<p><strong>The agent will:</strong></p>
+<ul>
+<li>Maintain style consistency</li>
+<li>Suggest complementary materials</li>
+<li>Provide combined cost estimates</li>
+</ul>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>&quot;No materials found&quot;</h3>
+<ul>
+<li>Try broader search terms</li>
+<li>Use different search strategies (color, texture, style)</li>
+<li>Check if materials are in your workspace catalog</li>
+</ul>
+<h3>&quot;Generation failed&quot;</h3>
+<ul>
+<li>Check image quality and format</li>
+<li>Simplify your prompt</li>
+<li>Try a different AI model</li>
+<li>Contact support if issue persists</li>
+</ul>
+<h3>&quot;Cost estimate unavailable&quot;</h3>
+<ul>
+<li>Some materials may not have pricing data</li>
+<li>Request manual quote from sales team</li>
+<li>Check product metadata in catalog</li>
+</ul>
+<hr>
+<h2>Privacy and Data</h2>
+<ul>
+<li>All conversations are saved to your workspace</li>
+<li>Images are stored securely in Supabase storage</li>
+<li>Design data is private to your workspace</li>
+<li>You can export or delete conversations anytime</li>
+</ul>
+<hr>
+<h2>Support</h2>
+<p>Need help?</p>
+<ul>
+<li>Check the <a href="./interior-designer-agent-testing.md">Testing Guide</a> for technical details</li>
+<li>Contact support at <a href="mailto:support@materialshub.gr">support@materialshub.gr</a></li>
+<li>Join our community forum for tips and inspiration</li>
+</ul>
+<hr>
+<h2>What&#39;s Next?</h2>
+<p>The Interior Designer Agent is continuously improving with:</p>
+<ul>
+<li>More AI models for generation</li>
+<li>Enhanced material matching algorithms</li>
+<li>Better cost estimation accuracy</li>
+<li>Additional design styles and templates</li>
+</ul>
+<p>Stay tuned for updates! 🚀</p>
+
+</div></body></html>
