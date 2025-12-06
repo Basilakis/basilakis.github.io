@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Agent System Architecture</h1>
+<p>Complete guide to the AI Agent system with database-driven prompts and configurations.</p>
+<hr>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform uses an AI Agent system powered by LangChain.js and Anthropic Claude models. Agents are specialized AI assistants that help users with specific tasks like PDF processing, search, and product information.</p>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>Database-driven system prompts (no code deployment needed)</li>
+<li>Admin UI for prompt management</li>
+<li>Real-time prompt updates</li>
+<li>Fallback to default prompts</li>
+<li>Role-based access control</li>
+<li>Tool orchestration with LangChain.js</li>
+</ul>
+<hr>
+<h2>🏗️ Architecture</h2>
+<h3>Components</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     Frontend (React)                        │
+│  - Agent Hub (/agents)                                      │
+│  - Agent Configs Admin (/admin/agent-configs)              │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Supabase Edge Functions (Deno)                 │
+│  - agent-chat/index.ts                                      │
+│  - Loads prompts from database                              │
+│  - LangChain.js tool orchestration                          │
+│  - Claude Sonnet 4.5 model                                  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Database (PostgreSQL/Supabase)                 │
+│  - material_agents table                                    │
+│  - Stores: prompts, configs, capabilities                   │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>Database Schema</h3>
+<p><strong>Table: <code>material_agents</code></strong></p>
+<pre><code class="language-sql">CREATE TABLE material_agents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  agent_type TEXT NOT NULL UNIQUE,
+  description TEXT,
+  status TEXT DEFAULT &#39;active&#39;,
+  version TEXT,
+  system_prompt TEXT,              -- AI system prompt
+  configuration JSONB,              -- Agent-specific config
+  capabilities JSONB,               -- Agent capabilities
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+</code></pre>
+<p><strong>Current Agents</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Agent Type</th>
+<th>Name</th>
+<th>Status</th>
+<th>Prompt Length</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pdf-processor</td>
+<td>PDF Processing Agent</td>
+<td>active</td>
+<td>8,997 chars</td>
+<td>Orchestrate PDF processing pipeline</td>
+</tr>
+<tr>
+<td>search</td>
+<td>Search Agent</td>
+<td>active</td>
+<td>198 chars</td>
+<td>Help users search materials</td>
+</tr>
+<tr>
+<td>product</td>
+<td>Product Agent</td>
+<td>active</td>
+<td>158 chars</td>
+<td>Provide product information</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🎯 Agent Types</h2>
+<h3>1. PDF Processing Agent</h3>
+<p><strong>Agent Type</strong>: <code>pdf-processor</code><br><strong>Access</strong>: Admin only<br><strong>Model</strong>: Claude Sonnet 4.5</p>
+<p><strong>Purpose</strong>: Orchestrate the complete PDF processing pipeline with intelligent monitoring, diagnostics, and recovery.</p>
+<p><strong>Key Capabilities</strong>:</p>
+<ul>
+<li>Job recovery and continuity checking</li>
+<li>Pre-upload validation (check for existing jobs)</li>
+<li>Real-time progress monitoring</li>
+<li>Error handling and diagnostics</li>
+<li>Server health checks</li>
+<li>Sentry error querying</li>
+</ul>
+<p><strong>Available Tools</strong>:</p>
+<ol>
+<li><code>uploadPDF</code> - Upload PDF and start processing</li>
+<li><code>checkJobStatus</code> - Poll job progress</li>
+<li><code>queryDatabase</code> - Direct database access</li>
+<li><code>checkServerHealth</code> - SSH server diagnostics</li>
+<li><code>querySentry</code> - Error tracking</li>
+</ol>
+<p><strong>Workflow</strong>:</p>
+<ol>
+<li>Pre-upload check (MANDATORY)</li>
+<li>Upload phase</li>
+<li>Monitoring phase (poll every 10s)</li>
+<li>Completion phase (generate report)</li>
+<li>Failure phase (diagnostics and recovery)</li>
+</ol>
+<h3>2. Search Agent</h3>
+<p><strong>Agent Type</strong>: <code>search</code><br><strong>Access</strong>: All users<br><strong>Model</strong>: Claude Sonnet 4.5</p>
+<p><strong>Purpose</strong>: Help users find materials using multi-modal search capabilities.</p>
+<p><strong>Key Capabilities</strong>:</p>
+<ul>
+<li>Semantic search</li>
+<li>Vector search</li>
+<li>Image-based search</li>
+<li>Hybrid search strategies</li>
+</ul>
+<h3>3. Product Agent</h3>
+<p><strong>Agent Type</strong>: <code>product</code><br><strong>Access</strong>: All users<br><strong>Model</strong>: Claude Sonnet 4.5</p>
+<p><strong>Purpose</strong>: Provide detailed product information and recommendations.</p>
+<p><strong>Key Capabilities</strong>:</p>
+<ul>
+<li>Product details lookup</li>
+<li>Metadata explanation</li>
+<li>Related products</li>
+<li>Material recommendations</li>
+</ul>
+<hr>
+<h2>🔧 Admin UI - Agent Configurations</h2>
+<h3>Location</h3>
+<p><code>/admin/agent-configs</code></p>
+<h3>Features</h3>
+<p><strong>Table View</strong>:</p>
+<ul>
+<li>Agent name and description</li>
+<li>Agent type (code format)</li>
+<li>Status badge (active/inactive/development)</li>
+<li>Version number</li>
+<li>Prompt length (character count)</li>
+<li>Last updated timestamp</li>
+<li>Edit button</li>
+</ul>
+<p><strong>Edit Modal</strong>:</p>
+<ul>
+<li>Large textarea for prompt editing</li>
+<li>Real-time character count</li>
+<li>Agent metadata display</li>
+<li>Save/Cancel buttons</li>
+<li>Validation</li>
+</ul>
+<p><strong>Stats Cards</strong>:</p>
+<ul>
+<li>Total agents</li>
+<li>Active agents</li>
+<li>Configured prompts (&gt;100 chars)</li>
+</ul>
+<p><strong>Actions</strong>:</p>
+<ul>
+<li>Refresh data</li>
+<li>Edit prompts</li>
+<li>Save changes (updates database)</li>
+</ul>
+<h3>Usage</h3>
+<ol>
+<li>Navigate to Admin Dashboard → AI &amp; Intelligence → Agent Configurations</li>
+<li>Click &quot;Edit&quot; button on any agent</li>
+<li>Modify the system prompt in the textarea</li>
+<li>Click &quot;Save Changes&quot;</li>
+<li>Changes take effect immediately on next agent execution</li>
+</ol>
+<hr>
+<h2>💻 Technical Implementation</h2>
+<h3>Edge Function (agent-chat/index.ts)</h3>
+<p><strong>Load Prompt from Database</strong>:</p>
+<pre><code class="language-typescript">async function getAgentSystemPrompt(agentType: string): Promise&lt;string&gt; {
+  const { data, error } = await supabase
+    .from(&#39;material_agents&#39;)
+    .select(&#39;system_prompt&#39;)
+    .eq(&#39;agent_type&#39;, agentType)
+    .eq(&#39;status&#39;, &#39;active&#39;)
+    .single();
+
+  if (error || !data?.system_prompt) {
+    return getDefaultPrompt(agentType);
+  }
+
+  return data.system_prompt;
+}
+</code></pre>
+<p><strong>Execute Agent</strong>:</p>
+<pre><code class="language-typescript">async function executeAgent(agentId: string, userInput: string) {
+  const config = AGENT_CONFIGS[agentId];
+  
+  // Load prompt from database
+  const systemPrompt = config.systemPrompt || 
+                       await getAgentSystemPrompt(agentId);
+  
+  // Invoke model with tools
+  const response = await modelWithTools.invoke(messages, {
+    system: systemPrompt,
+  });
+  
+  return response;
+}
+</code></pre>
+<h3>Admin UI Component</h3>
+<p><strong>Load Agents</strong>:</p>
+<pre><code class="language-typescript">const loadAgents = async () =&gt; {
+  const { data, error } = await supabase
+    .from(&#39;material_agents&#39;)
+    .select(&#39;*&#39;)
+    .order(&#39;agent_type&#39;);
+
+  setAgents(data || []);
+};
+</code></pre>
+<p><strong>Update Prompt</strong>:</p>
+<pre><code class="language-typescript">const handleSave = async () =&gt; {
+  const { error } = await supabase
+    .from(&#39;material_agents&#39;)
+    .update({
+      system_prompt: editedPrompt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq(&#39;id&#39;, editingAgent.id);
+
+  if (!error) {
+    toast({ title: &#39;Success&#39;, description: &#39;Prompt updated&#39; });
+    await loadAgents();
+  }
+};
+</code></pre>
+<hr>
+<h2>🔐 Security &amp; Access Control</h2>
+<h3>Role-Based Access</h3>
+<p><strong>Agent Execution</strong>:</p>
+<ul>
+<li>PDF Processing Agent: Admin/Owner only</li>
+<li>Search Agent: All authenticated users</li>
+<li>Product Agent: All authenticated users</li>
+</ul>
+<p><strong>Admin UI</strong>:</p>
+<ul>
+<li>Agent Configurations page: Admin only (protected by AdminGuard)</li>
+<li>Prompt editing: Admin only</li>
+<li>View agents: Admin only</li>
+</ul>
+<h3>Authentication</h3>
+<p>All agent requests require:</p>
+<ol>
+<li>Valid Supabase session</li>
+<li>Workspace membership</li>
+<li>Appropriate role (for restricted agents)</li>
+</ol>
+<hr>
+<h2>📊 Monitoring &amp; Analytics</h2>
+<h3>Metrics Tracked</h3>
+<ul>
+<li>Agent invocations per type</li>
+<li>Average response time</li>
+<li>Error rates</li>
+<li>Token usage</li>
+<li>Cost per agent type</li>
+</ul>
+<h3>Logging</h3>
+<p>All agent interactions logged with:</p>
+<ul>
+<li>User ID</li>
+<li>Workspace ID</li>
+<li>Agent type</li>
+<li>Input/output</li>
+<li>Timestamp</li>
+<li>Duration</li>
+<li>Errors</li>
+</ul>
+<hr>
+<h2>🚀 Best Practices</h2>
+<h3>Prompt Engineering</h3>
+<p><strong>Do</strong>:</p>
+<ul>
+<li>✅ Be specific about agent role and capabilities</li>
+<li>✅ Include clear workflow steps</li>
+<li>✅ Provide example responses</li>
+<li>✅ Define error handling procedures</li>
+<li>✅ Use consistent formatting</li>
+</ul>
+<p><strong>Don&#39;t</strong>:</p>
+<ul>
+<li>❌ Make prompts too generic</li>
+<li>❌ Include outdated information</li>
+<li>❌ Forget to test changes</li>
+<li>❌ Remove critical instructions</li>
+<li>❌ Exceed reasonable length (&gt;10,000 chars)</li>
+</ul>
+<h3>Prompt Updates</h3>
+<ol>
+<li><strong>Test First</strong>: Test prompt changes in development</li>
+<li><strong>Incremental</strong>: Make small, incremental changes</li>
+<li><strong>Document</strong>: Document why changes were made</li>
+<li><strong>Monitor</strong>: Monitor agent performance after updates</li>
+<li><strong>Rollback</strong>: Keep previous versions for rollback</li>
+</ol>
+<h3>Performance</h3>
+<ul>
+<li>Keep prompts focused and concise</li>
+<li>Use tools efficiently (avoid redundant calls)</li>
+<li>Implement proper error handling</li>
+<li>Cache frequently used data</li>
+<li>Monitor token usage</li>
+</ul>
+<hr>
+<h2>🔄 Future Enhancements</h2>
+<h3>Planned Features</h3>
+<ol>
+<li><strong>Version History</strong>: Track prompt changes over time</li>
+<li><strong>A/B Testing</strong>: Test different prompts with same agent</li>
+<li><strong>Prompt Templates</strong>: Pre-built templates for common patterns</li>
+<li><strong>Analytics Dashboard</strong>: Agent performance metrics</li>
+<li><strong>Prompt Validation</strong>: Automatic validation of prompt quality</li>
+<li><strong>Export/Import</strong>: Backup and restore prompts</li>
+<li><strong>Multi-Language</strong>: Support for multiple languages</li>
+<li><strong>Custom Tools</strong>: Allow admins to add custom tools</li>
+</ol>
+<h3>Additional Agents</h3>
+<p>Potential future agents:</p>
+<ul>
+<li>Research Agent (market research, trends)</li>
+<li>Analytics Agent (data analysis, insights)</li>
+<li>Business Agent (quotes, orders, invoicing)</li>
+<li>Admin Agent (system management)</li>
+<li>Demo Agent (product demonstrations)</li>
+</ul>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models used by agents</li>
+<li><strong><a href="features-guide.md">features-guide.md</a></strong> - Platform features overview</li>
+<li><strong><a href="system-architecture.md">system-architecture.md</a></strong> - System architecture</li>
+<li><strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - API reference</li>
+</ul>
+<hr>
+<h2>🆘 Troubleshooting</h2>
+<h3>Agent Not Responding</h3>
+<p><strong>Symptoms</strong>: Agent doesn&#39;t respond or times out</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>Check Edge Function logs in Supabase</li>
+<li>Verify agent status is &#39;active&#39;</li>
+<li>Check system_prompt is not null</li>
+<li>Verify API keys are configured</li>
+<li>Check rate limits</li>
+</ol>
+<h3>Prompt Not Updating</h3>
+<p><strong>Symptoms</strong>: Changes to prompt don&#39;t take effect</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>Verify save was successful (check toast notification)</li>
+<li>Check updated_at timestamp changed</li>
+<li>Clear browser cache</li>
+<li>Restart Edge Function (if self-hosted)</li>
+<li>Check database connection</li>
+</ol>
+<h3>Permission Denied</h3>
+<p><strong>Symptoms</strong>: User can&#39;t access agent or admin UI</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>Verify user has admin role</li>
+<li>Check workspace membership</li>
+<li>Verify AdminGuard is working</li>
+<li>Check Supabase RLS policies</li>
+<li>Review authentication logs</li>
+</ol>
+<hr>
+<h2>📞 Support</h2>
+<p>For agent-related issues:</p>
+<ul>
+<li>Check Edge Function logs: Supabase Dashboard → Edge Functions</li>
+<li>Review agent prompts: <code>/admin/agent-configs</code></li>
+<li>Monitor errors: Sentry dashboard</li>
+<li>Contact: <a href="mailto:support@materialkaivision.com">support@materialkaivision.com</a></li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: November 21, 2025
+<strong>Version</strong>: 1.0.0
+<strong>Status</strong>: Production
+<strong>Maintainer</strong>: Development Team</p>
+
+</div></body></html>
