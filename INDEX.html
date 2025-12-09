@@ -55,6 +55,58 @@
 <li>Security features</li>
 <li>Analytics &amp; reporting</li>
 </ul>
+<p><strong><a href="platform-flows.md">platform-flows.md</a></strong> - User workflows &amp; feature flows ✨ NEW</p>
+<ul>
+<li>PDF Processing Flow</li>
+<li>Search &amp; Discovery Flow</li>
+<li>Spatial Analysis Flow (Spaceformer)</li>
+<li>Data Import Flow</li>
+<li>3D Generation Flow</li>
+<li>Knowledge Base Flow</li>
+<li>Agent Chat Flow</li>
+</ul>
+<p><strong><a href="duplicate-detection-merging.md">duplicate-detection-merging.md</a></strong> - Duplicate detection system</p>
+<ul>
+<li>Factory-based duplicate detection</li>
+<li>Product merging with undo</li>
+<li>Similarity scoring</li>
+<li>Merge history tracking</li>
+<li>API endpoints (7 total)</li>
+</ul>
+<p><strong><a href="data-import-system.md">data-import-system.md</a></strong> - Data import system ✨ NEW</p>
+<ul>
+<li>XML import with AI-powered field mapping</li>
+<li>Dynamic field mapping (Claude Sonnet 4.5)</li>
+<li>Batch processing (10 products at a time)</li>
+<li>Concurrent image downloads (5 parallel)</li>
+<li>Cron-based scheduling for recurring imports</li>
+<li>Manual re-run functionality</li>
+<li>Checkpoint recovery</li>
+<li>Real-time progress tracking</li>
+<li>API endpoints (4 total)</li>
+<li>Phase 1 &amp; 2 complete</li>
+</ul>
+<p><strong><a href="search-strategies.md">search-strategies.md</a></strong> - Complete search system guide</p>
+<ul>
+<li>6 search strategies (100% implemented)</li>
+<li>Semantic, Vector, Multi-Vector, Hybrid, Material, Image</li>
+<li>All strategies combined mode</li>
+<li>Database schema and indexes</li>
+<li>Performance metrics and benchmarks</li>
+<li>Usage examples and best practices</li>
+</ul>
+<p><strong><a href="comprehensive-metadata-fields-guide.md">comprehensive-metadata-fields-guide.md</a></strong> - Comprehensive metadata fields guide ✨ NEW</p>
+<ul>
+<li>200+ metadata fields across 9 categories</li>
+<li>Material Properties, Dimensions, Appearance, Performance</li>
+<li>Application, Compliance, Design, Manufacturing, Commercial</li>
+<li>AI-powered dynamic extraction (Claude Sonnet 4.5 / GPT-4o)</li>
+<li>Complete field reference with examples</li>
+<li>API usage and frontend display</li>
+<li>Step-by-step extraction process</li>
+<li>Confidence scoring system</li>
+<li>Best practices and troubleshooting</li>
+</ul>
 <hr>
 <h3>🏗️ Architecture &amp; Design</h3>
 <p><strong><a href="system-architecture.md">system-architecture.md</a></strong> - Complete system architecture</p>
@@ -72,17 +124,32 @@
 <li>Security measures</li>
 <li>Production metrics</li>
 </ul>
-<p><strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Database schema reference</p>
+<p><strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Metadata management system</p>
 <ul>
-<li>Core tables (workspaces, documents, chunks, products, images, embeddings)</li>
-<li>Products + Metadata architecture (JSONB)</li>
-<li>Document entities (certificates, logos, specifications)</li>
-<li>Product-document relationships</li>
-<li>Relationship tables (chunk-product, chunk-image, product-image, product-document)</li>
-<li>Row-Level Security (RLS)</li>
-<li>Indexes for performance</li>
-<li>Storage capacity</li>
-<li>Backup &amp; recovery</li>
+<li>Dynamic metadata extraction</li>
+<li>JSONB storage architecture</li>
+<li>Metadata validation and quality scoring</li>
+<li>Admin panel for metadata management</li>
+<li>API endpoints for metadata operations</li>
+<li>Best practices and guidelines</li>
+</ul>
+<p><strong><a href="meta-field-aggregation.md">meta-field-aggregation.md</a></strong> - Meta field aggregation system ✨ NEW</p>
+<ul>
+<li><strong>3-source redundancy strategy</strong> for maximum coverage</li>
+<li>Product Discovery + AI Extraction + Chunk Aggregation</li>
+<li>Case-insensitive deduplication</li>
+<li>Comprehensive metadata collection (colors, textures, finishes, materials, applications)</li>
+<li>Same architecture as dimension aggregation</li>
+<li>Prevents data loss from scattered information</li>
+</ul>
+<p><strong><a href="metadata-normalization-system.md">metadata-normalization-system.md</a></strong> - Metadata normalization system ✨ NEW</p>
+<ul>
+<li>Two-layer normalization architecture (prevention + correction)</li>
+<li>Semantic similarity-based field standardization (60% threshold)</li>
+<li>Automatic consolidation (individual fields → objects, single → arrays)</li>
+<li>Integrated into extraction pipeline</li>
+<li>Migration script for existing products</li>
+<li>95%+ field standardization accuracy</li>
 </ul>
 <p><strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job queue &amp; async processing</p>
 <ul>
@@ -102,19 +169,38 @@
 <h3>🤖 AI &amp; Processing</h3>
 <p><strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models integration</p>
 <ul>
-<li>12 AI models overview</li>
-<li>Claude Sonnet 4.5 (product discovery, enrichment)</li>
-<li>Claude Haiku 4.5 (fast validation)</li>
-<li>GPT-4o (alternative discovery)</li>
-<li>OpenAI embeddings (text-embedding-3-small)</li>
-<li>Llama 4 Scout 17B Vision (image analysis, OCR)</li>
-<li>OpenAI CLIP (5 embedding types)</li>
-<li>Anthropic Semantic Chunking</li>
-<li>LlamaIndex RAG system</li>
+<li>8 AI models across 4 providers</li>
+<li>Anthropic: Claude Sonnet 4.5, Claude Haiku 4.5</li>
+<li>OpenAI: GPT-4o, GPT-5, text-embedding-3-small</li>
+<li>Google: SigLIP ViT-SO400M (primary CLIP)</li>
+<li>TogetherAI: Llama 4 Scout 17B Vision</li>
+<li>OpenAI CLIP ViT-B/32 (fallback)</li>
+<li>6 embedding types (text, visual, color, texture, style, material)</li>
 <li>Model usage by pipeline stage</li>
 <li>Cost optimization</li>
 <li>API keys &amp; configuration</li>
 <li>Performance benchmarks</li>
+</ul>
+<p><strong><a href="agent-system.md">agent-system.md</a></strong> - AI Agent system architecture</p>
+<ul>
+<li>Database-driven agent prompts</li>
+<li>3 specialized agents (PDF Processor, Search, Product)</li>
+<li>Admin UI for prompt management (/admin/agent-configs)</li>
+<li>LangChain.js tool orchestration</li>
+<li>Real-time prompt updates (no deployment needed)</li>
+<li>Role-based access control</li>
+<li>Agent monitoring and analytics</li>
+<li>Best practices and troubleshooting</li>
+</ul>
+<p><strong><a href="prompt-enhancement-system.md">prompt-enhancement-system.md</a></strong> - Dynamic prompt system ✨ NEW</p>
+<ul>
+<li>Database-driven extraction prompts (extraction_prompts table)</li>
+<li>Custom vs default prompt priority (is_custom flag)</li>
+<li>Version control and workspace isolation</li>
+<li>4 stages: discovery, chunking, image_analysis, entity_creation</li>
+<li>4 categories: products, certificates, logos, specifications</li>
+<li>Automatic placeholder replacement</li>
+<li>Phase 1 complete (metadata extraction), Phases 2-4 pending</li>
 </ul>
 <p><strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - 14-stage PDF processing</p>
 <ul>
@@ -205,7 +291,7 @@
 <ol>
 <li>Read <strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - All endpoints</li>
 <li>Check <strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models used</li>
-<li>Review <strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Data structure</li>
+<li>Review <strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Data structure</li>
 <li>Study <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Authentication</li>
 </ol>
 <h3>For Operations</h3>
@@ -213,7 +299,7 @@
 <li>Read <strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Deployment process</li>
 <li>Study <strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues</li>
 <li>Review <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Monitoring</li>
-<li>Check <strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Backup strategy</li>
+<li>Check <strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job monitoring and recovery</li>
 </ol>
 <h3>For Product Managers</h3>
 <ol>
@@ -228,10 +314,9 @@
 <ul>
 <li><strong>5,000+</strong> users in production</li>
 <li><strong>99.5%+</strong> uptime SLA</li>
-<li><strong>12</strong> AI models integrated</li>
+<li><strong>8</strong> AI models across 4 providers</li>
 <li><strong>14</strong> processing pipeline stages</li>
-<li><strong>74+</strong> API endpoints</li>
-<li><strong>9</strong> API categories</li>
+<li><strong>108</strong> API endpoints (14 categories)</li>
 <li><strong>6</strong> embedding types</li>
 <li><strong>200+</strong> metafield types</li>
 <li><strong>95%+</strong> product detection accuracy</li>
@@ -275,17 +360,29 @@
 <h2>📝 Documentation Standards</h2>
 <p>All documentation follows these standards:</p>
 <ul>
-<li>✅ Clear, concise language</li>
-<li>✅ Code examples where applicable</li>
-<li>✅ Structured with headers</li>
-<li>✅ Links to related docs</li>
-<li>✅ No task lists or planning documents</li>
-<li>✅ Production-focused content</li>
-<li>✅ Updated regularly</li>
+<li>Clear, concise language</li>
+<li>Code examples where applicable</li>
+<li>Structured with headers</li>
+<li>Links to related docs</li>
+<li>No task lists or planning documents</li>
+<li>Production-focused content</li>
+<li>Updated regularly</li>
 </ul>
 <hr>
-<h2>🔄 Documentation Updates</h2>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production<br><strong>Maintainer</strong>: Development Team</p>
+<h2>Documentation Updates</h2>
+<p><strong>Last Updated</strong>: December 2, 2025
+<strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Production
+<strong>Maintainer</strong>: Development Team</p>
+<p><strong>Recent Changes:</strong></p>
+<ul>
+<li>Added metadata normalization system documentation</li>
+<li>Added dynamic prompt system documentation (Phase 1 complete)</li>
+<li>Removed temporary analysis documents (metadata-inconsistency-analysis.md, overview-general.md)</li>
+<li>Moved RESTART_PROTECTION_SUMMARY.md to /planning</li>
+<li>Complete platform audit (PLATFORM-AUDIT-2025-12-02.md)</li>
+<li>Updated documentation format and consistency</li>
+</ul>
 <hr>
 <h2>📞 Support</h2>
 <p>For questions or issues:</p>
@@ -296,6 +393,9 @@
 <li>GitHub Issues: <a href="https://github.com/creativeghq/material-kai-vision-platform/issues">https://github.com/creativeghq/material-kai-vision-platform/issues</a></li>
 </ul>
 <hr>
-<p><strong>Total Documentation</strong>: 10 comprehensive guides<br><strong>Total Lines</strong>: 5,000+<br><strong>Coverage</strong>: 100% of platform features</p>
+<p><strong>Total Documentation</strong>: 33 comprehensive guides (3 removed, 2 added)
+<strong>Total Lines</strong>: 10,000+
+<strong>Coverage</strong>: 100% of platform features
+<strong>Planning Documents</strong>: 10 files in /planning directory</p>
 
 </div></body></html>
