@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Meta Field Aggregation System</h1>
+<p><strong>Last Updated:</strong> 2025-12-03
+<strong>Status:</strong> ✅ Complete</p>
+<hr>
+<h2>Overview</h2>
+<p>The <strong>Meta Field Aggregation System</strong> uses a <strong>3-source redundancy strategy</strong> to ensure maximum metadata coverage. It collects and consolidates metadata (colors, textures, finishes, materials, applications) from:</p>
+<ol>
+<li><strong>Product Discovery</strong> (Stage 0) - Structured product pages</li>
+<li><strong>AI Extraction</strong> (DynamicMetadataExtractor) - Context-aware semantic understanding</li>
+<li><strong>Chunk Aggregation</strong> (NEW!) - Comprehensive keyword scanning across ALL chunks</li>
+</ol>
+<p>This <strong>belt-and-suspenders approach</strong> ensures products have complete metadata even when information is scattered across the entire document.</p>
+<hr>
+<h2>🎯 Why 3 Sources?</h2>
+<h3><strong>The Problem:</strong></h3>
+<p>Product information is often scattered across multiple pages:</p>
+<ul>
+<li><strong>Page 12:</strong> &quot;NOVA available in White and Beige&quot;</li>
+<li><strong>Page 15:</strong> &quot;All NOVA tiles feature a matte finish&quot;</li>
+<li><strong>Page 23:</strong> &quot;NOVA suitable for indoor and outdoor use&quot;</li>
+<li><strong>Page 31:</strong> &quot;NOVA also available in Clay and Natural tones&quot;</li>
+</ul>
+<h3><strong>The Solution:</strong></h3>
+<p>Use 3 complementary extraction methods to catch everything:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What It Catches</th>
+<th>Strengths</th>
+<th>Weaknesses</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Product Discovery</strong></td>
+<td>Structured product pages</td>
+<td>✅ High accuracy<br>✅ Structured format</td>
+<td>❌ Misses scattered info<br>❌ Limited to product pages</td>
+</tr>
+<tr>
+<td><strong>AI Extraction</strong></td>
+<td>Context-aware semantics</td>
+<td>✅ Understands context<br>✅ Extracts implied info</td>
+<td>❌ Limited to page range<br>❌ Expensive (AI calls)</td>
+</tr>
+<tr>
+<td><strong>Chunk Aggregation</strong></td>
+<td>Everything mentioned anywhere</td>
+<td>✅ Comprehensive<br>✅ No AI cost<br>✅ Fills gaps</td>
+<td>❌ No context<br>❌ Keyword-based only</td>
+</tr>
+</tbody></table>
+<h3><strong>Result:</strong></h3>
+<pre><code class="language-json">// Without chunk aggregation (Sources 1 + 2 only):
+{
+  &quot;colors&quot;: [&quot;beige&quot;, &quot;white&quot;]  // ❌ Missing clay, natural
+}
+
+// With all 3 sources:
+{
+  &quot;colors&quot;: [&quot;beige&quot;, &quot;clay&quot;, &quot;natural&quot;, &quot;white&quot;]  // ✅ Complete!
+}
+</code></pre>
+<hr>
+<h2>Architecture</h2>
+<h3>1. Quality Scoring Enhancement ✅</h3>
+<p><strong>File:</strong> <code>mivaa-pdf-extractor/app/services/llamaindex_service.py</code> (lines 3448-3534)</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li><code>_is_meta_rich_chunk()</code> method detects chunks with 2+ meta categories</li>
+<li>Quality boost: +0.3 for meta-rich chunks</li>
+<li>Minimum length score: 0.7 (no harsh penalty for short chunks)</li>
+<li>Same treatment as dimension chunks</li>
+</ul>
+<p><strong>Meta Keywords Detected:</strong></p>
+<ul>
+<li><strong>Colors:</strong> white, black, gray, beige, brown, blue, green, red, yellow, natural, clay, sand, taupe, ivory, cream, charcoal</li>
+<li><strong>Textures:</strong> smooth, rough, textured, polished, brushed, embossed, matte, glossy, satin, honed</li>
+<li><strong>Finishes:</strong> matte, glossy, satin, polished, honed, brushed, natural, unglazed, glazed, semi-gloss</li>
+<li><strong>Materials:</strong> ceramic, porcelain, stone, marble, granite, wood, metal, glass, concrete, terracotta, slate</li>
+<li><strong>Applications:</strong> indoor, outdoor, wall, floor, bathroom, kitchen, commercial, residential, waterproof, wet areas</li>
+</ul>
+<hr>
+<h3>2. Meta Field Aggregation ✅</h3>
+<p><strong>File:</strong> <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code> (lines 1732-1802)</p>
+<p><strong>Method:</strong> <code>_aggregate_meta_fields_from_chunks(document_id, product_name)</code></p>
+<p><strong>Process:</strong></p>
+<ol>
+<li>Fetch all chunks for the document</li>
+<li>Filter chunks that mention the product name</li>
+<li>Extract meta keywords from each chunk</li>
+<li>Deduplicate and sort values</li>
+<li>Return structured dictionary</li>
+</ol>
+<p><strong>Example Output:</strong></p>
+<pre><code class="language-json">{
+  &quot;colors&quot;: [&quot;beige&quot;, &quot;clay&quot;, &quot;natural&quot;, &quot;white&quot;],
+  &quot;textures&quot;: [&quot;matte&quot;, &quot;polished&quot;, &quot;smooth&quot;],
+  &quot;finishes&quot;: [&quot;glazed&quot;, &quot;matte&quot;, &quot;natural&quot;],
+  &quot;materials&quot;: [&quot;ceramic&quot;, &quot;porcelain&quot;],
+  &quot;applications&quot;: [&quot;floor&quot;, &quot;indoor&quot;, &quot;wall&quot;, &quot;waterproof&quot;]
+}
+</code></pre>
+<hr>
+<h3>3. Integration into Product Creation ✅</h3>
+<p><strong>File:</strong> <code>mivaa-pdf-extractor/app/services/product_creation_service.py</code> (lines 1855-1875)</p>
+<p><strong>Integration Point:</strong> After dimension aggregation, before building product data</p>
+<p><strong>Merge Logic (Prevents Duplication):</strong></p>
+<ol>
+<li><strong>No existing data</strong> → Use aggregated values from chunks</li>
+<li><strong>Existing string</strong> → Convert to list, merge with aggregated values (case-insensitive)</li>
+<li><strong>Existing list</strong> → Merge with aggregated values (case-insensitive deduplication)</li>
+<li><strong>Existing dict/other</strong> → Keep AI extraction as-is (takes priority)</li>
+</ol>
+<p><strong>Example Deduplication:</strong></p>
+<pre><code class="language-python"># AI extraction provides:
+metadata[&#39;colors&#39;] = [&#39;White&#39;, &#39;Beige&#39;]
+
+# Chunk aggregation finds:
+chunk_colors = [&#39;white&#39;, &#39;clay&#39;, &#39;natural&#39;]
+
+# Result (case-insensitive merge):
+metadata[&#39;colors&#39;] = [&#39;beige&#39;, &#39;clay&#39;, &#39;natural&#39;, &#39;white&#39;]
+# ✅ No duplicates! &#39;White&#39; and &#39;white&#39; merged to &#39;white&#39;
+</code></pre>
+<hr>
+<h2>Comparison: Dimensions vs Meta Fields</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Dimensions</th>
+<th>Meta Fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Quality Boost</strong></td>
+<td>✅ +0.3</td>
+<td>✅ +0.3</td>
+</tr>
+<tr>
+<td><strong>Aggregation Method</strong></td>
+<td>✅ <code>_aggregate_dimensions_from_chunks()</code></td>
+<td>✅ <code>_aggregate_meta_fields_from_chunks()</code></td>
+</tr>
+<tr>
+<td><strong>Storage Location</strong></td>
+<td><code>metadata[&#39;available_sizes&#39;]</code></td>
+<td><code>metadata[&#39;colors&#39;]</code>, <code>metadata[&#39;textures&#39;]</code>, etc.</td>
+</tr>
+<tr>
+<td><strong>Deduplication</strong></td>
+<td>✅ Yes</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td><strong>Merge Logic</strong></td>
+<td>✅ Yes</td>
+<td>✅ Yes</td>
+</tr>
+</tbody></table>
+<p><strong>Result:</strong> Both dimensions and meta fields are now handled identically!</p>
+<hr>
+<h2>Example: NOVA Product</h2>
+<p><strong>Chunks:</strong></p>
+<ol>
+<li>&quot;NOVA available in white and beige&quot;</li>
+<li>&quot;NOVA 15×38 cm ceramic tiles&quot;</li>
+<li>&quot;Matte finish, waterproof for indoor use&quot;</li>
+</ol>
+<p><strong>Aggregated Metadata:</strong></p>
+<pre><code class="language-json">{
+  &quot;available_sizes&quot;: [
+    {&quot;width&quot;: 15, &quot;height&quot;: 38, &quot;unit&quot;: &quot;cm&quot;, &quot;raw_text&quot;: &quot;15×38 cm&quot;}
+  ],
+  &quot;colors&quot;: [&quot;beige&quot;, &quot;white&quot;],
+  &quot;materials&quot;: [&quot;ceramic&quot;],
+  &quot;finishes&quot;: [&quot;matte&quot;],
+  &quot;applications&quot;: [&quot;indoor&quot;, &quot;waterproof&quot;]
+}
+</code></pre>
+<hr>
+<h2>Benefits</h2>
+<ol>
+<li><strong>No Data Loss</strong> - All meta field mentions are captured</li>
+<li><strong>Comprehensive Metadata</strong> - Products have complete information</li>
+<li><strong>Consistent Architecture</strong> - Same pattern as dimensions</li>
+<li><strong>Better Search</strong> - More accurate multi-vector search results</li>
+<li><strong>Quality Preservation</strong> - Meta-rich chunks no longer rejected</li>
+</ol>
+<hr>
+<h2>Data Sources &amp; Merge Priority</h2>
+<h3><strong>Three Sources of Metadata:</strong></h3>
+<ol>
+<li><p><strong>AI Extraction (DynamicMetadataExtractor)</strong> - Lines 1844-1847</p>
+<ul>
+<li>Uses Claude Sonnet 4.5 or GPT-4o</li>
+<li>Extracts from product-specific text</li>
+<li>Returns: <code>enrichment_data[&#39;colors&#39;]</code>, <code>enrichment_data[&#39;materials&#39;]</code>, etc.</li>
+<li><strong>Format:</strong> Can be string, list, or dict with confidence scores</li>
+</ul>
+</li>
+<li><p><strong>Chunk Aggregation</strong> - Lines 1855-1875</p>
+<ul>
+<li>Scans ALL chunks mentioning the product</li>
+<li>Keyword-based extraction (simple but comprehensive)</li>
+<li>Returns: <code>meta_fields[&#39;colors&#39;]</code>, <code>meta_fields[&#39;materials&#39;]</code>, etc.</li>
+<li><strong>Format:</strong> Always a list of strings</li>
+</ul>
+</li>
+<li><p><strong>Product Discovery</strong> - Earlier in pipeline</p>
+<ul>
+<li>Initial metadata from Stage 0 discovery</li>
+<li>Stored in <code>product.metadata</code> before enrichment</li>
+<li><strong>Format:</strong> Various (depends on discovery method)</li>
+</ul>
+</li>
+</ol>
+<h3><strong>Merge Priority:</strong></h3>
+<pre><code>Product Discovery (highest priority)
+    ↓
+AI Extraction (medium priority)
+    ↓
+Chunk Aggregation (lowest priority, fills gaps)
+</code></pre>
+<p><strong>Why This Order?</strong></p>
+<ul>
+<li><strong>Product Discovery:</strong> Most accurate (from structured product pages)</li>
+<li><strong>AI Extraction:</strong> Context-aware (understands semantics)</li>
+<li><strong>Chunk Aggregation:</strong> Comprehensive (catches everything mentioned)</li>
+</ul>
+<h3><strong>Deduplication Strategy:</strong></h3>
+<p><strong>Case-Insensitive Merge:</strong></p>
+<pre><code class="language-python"># Source 1: AI extraction
+metadata[&#39;colors&#39;] = [&#39;White&#39;, &#39;Beige&#39;]
+
+# Source 2: Chunk aggregation
+chunk_colors = [&#39;white&#39;, &#39;clay&#39;, &#39;natural&#39;, &#39;BEIGE&#39;]
+
+# Result: Case-insensitive deduplication
+metadata[&#39;colors&#39;] = [&#39;beige&#39;, &#39;clay&#39;, &#39;natural&#39;, &#39;white&#39;]
+</code></pre>
+<p><strong>String to List Conversion:</strong></p>
+<pre><code class="language-python"># Source 1: AI extraction (single value)
+metadata[&#39;finish&#39;] = &#39;Matte&#39;
+
+# Source 2: Chunk aggregation
+chunk_finishes = [&#39;matte&#39;, &#39;glossy&#39;]
+
+# Result: Convert to list and merge
+metadata[&#39;finish&#39;] = [&#39;glossy&#39;, &#39;matte&#39;]
+</code></pre>
+<p><strong>AI Dict Format Preserved:</strong></p>
+<pre><code class="language-python"># Source 1: AI extraction (with confidence)
+metadata[&#39;color&#39;] = {&#39;value&#39;: &#39;White&#39;, &#39;confidence&#39;: 0.95}
+
+# Source 2: Chunk aggregation
+chunk_colors = [&#39;white&#39;, &#39;beige&#39;]
+
+# Result: Keep AI format (takes priority)
+metadata[&#39;color&#39;] = {&#39;value&#39;: &#39;White&#39;, &#39;confidence&#39;: 0.95}
+</code></pre>
+<hr>
+<h2>Testing</h2>
+<p><strong>Test Case:</strong> Upload Harmony PDF and verify NOVA product has:</p>
+<ul>
+<li>✅ All available sizes aggregated</li>
+<li>✅ All colors mentioned across chunks</li>
+<li>✅ All textures/finishes/materials/applications collected</li>
+<li>✅ No duplicate values (case-insensitive)</li>
+<li>✅ Sorted lists for easy reading</li>
+<li>✅ AI extraction values preserved when present</li>
+</ul>
+<p><strong>Validation:</strong></p>
+<pre><code class="language-python"># Expected result for NOVA:
+{
+  &quot;colors&quot;: [&quot;beige&quot;, &quot;clay&quot;, &quot;natural&quot;, &quot;white&quot;],  # Merged from AI + chunks
+  &quot;materials&quot;: [&quot;ceramic&quot;, &quot;porcelain&quot;],            # From chunks
+  &quot;finishes&quot;: [&quot;glazed&quot;, &quot;matte&quot;],                  # From AI + chunks
+  &quot;applications&quot;: [&quot;floor&quot;, &quot;indoor&quot;, &quot;wall&quot;],      # From chunks
+  &quot;available_sizes&quot;: [                              # From chunks
+    {&quot;width&quot;: 15, &quot;height&quot;: 38, &quot;unit&quot;: &quot;cm&quot;},
+    {&quot;width&quot;: 20, &quot;height&quot;: 40, &quot;unit&quot;: &quot;cm&quot;}
+  ]
+}
+</code></pre>
+<hr>
+<h2>Next Steps</h2>
+<ol>
+<li>Test with Harmony PDF</li>
+<li>Verify aggregation works correctly</li>
+<li>Check that search results include aggregated meta fields</li>
+<li>Validate frontend displays all metadata properly</li>
+<li>Monitor for duplicate values in production</li>
+</ol>
+
+</div></body></html>
