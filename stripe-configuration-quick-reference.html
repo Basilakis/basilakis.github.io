@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Stripe Configuration Quick Reference</h1>
+<h2>🔑 What You Need from Stripe</h2>
+<h3>1. API Keys (from Stripe Dashboard → Developers → API Keys)</h3>
+<ul>
+<li><strong>Publishable Key</strong>: <code>pk_test_...</code> (starts with pk_test_ or pk_live_)</li>
+<li><strong>Secret Key</strong>: <code>sk_test_...</code> (starts with sk_test_ or sk_live_)</li>
+</ul>
+<h3>2. Price IDs (from Stripe Dashboard → Products)</h3>
+<p>Create these two subscription products first:</p>
+<ul>
+<li><strong>Pro Subscription</strong> ($29/month) → Copy Price ID: <code>price_...</code></li>
+<li><strong>Enterprise Subscription</strong> ($99/month) → Copy Price ID: <code>price_...</code></li>
+</ul>
+<h3>3. Webhook Secret (from Stripe Dashboard → Developers → Webhooks)</h3>
+<ul>
+<li>Create webhook endpoint: <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/stripe-webhooks</code></li>
+<li>Copy Signing Secret: <code>whsec_...</code></li>
+</ul>
+<hr>
+<h2>📍 Where to Add Each Configuration</h2>
+<h3>SUPABASE (4 Secrets)</h3>
+<p><strong>Location:</strong> Supabase Dashboard → Settings → Vault (Secrets)
+<strong>OR:</strong> Supabase Dashboard → Project Settings → Edge Functions → Manage Secrets</p>
+<pre><code>STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_ENTERPRISE_PRICE_ID=price_...
+</code></pre>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Go to <a href="https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/settings/vault">https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/settings/vault</a></li>
+<li>Click &quot;Add new secret&quot;</li>
+<li>Enter name and value</li>
+<li>Click &quot;Save&quot;</li>
+<li>Repeat for all 4 secrets</li>
+</ol>
+<hr>
+<h3>VERCEL (3 Environment Variables)</h3>
+<p><strong>Location:</strong> Vercel Dashboard → material-kai-vision-platform → Settings → Environment Variables</p>
+<pre><code>VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+VITE_STRIPE_PRO_PRICE_ID=price_...
+VITE_STRIPE_ENTERPRISE_PRICE_ID=price_...
+</code></pre>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Go to <a href="https://vercel.com/creativeghq/material-kai-vision-platform/settings/environment-variables">https://vercel.com/creativeghq/material-kai-vision-platform/settings/environment-variables</a></li>
+<li>Click &quot;Add New&quot;</li>
+<li>Enter variable name and value</li>
+<li>Select ALL environments (Production, Preview, Development)</li>
+<li>Click &quot;Save&quot;</li>
+<li>Repeat for all 3 variables</li>
+<li>Click &quot;Redeploy&quot; after adding all variables</li>
+</ol>
+<hr>
+<h2>✅ Configuration Checklist</h2>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Stripe Account Created</strong></li>
+<li><input disabled="" type="checkbox"> <strong>Pro Subscription Product Created</strong> ($29/month)</li>
+<li><input disabled="" type="checkbox"> <strong>Enterprise Subscription Product Created</strong> ($99/month)</li>
+<li><input disabled="" type="checkbox"> <strong>Copied Publishable Key</strong> (pk_test_...)</li>
+<li><input disabled="" type="checkbox"> <strong>Copied Secret Key</strong> (sk_test_...)</li>
+<li><input disabled="" type="checkbox"> <strong>Copied Pro Price ID</strong> (price_...)</li>
+<li><input disabled="" type="checkbox"> <strong>Copied Enterprise Price ID</strong> (price_...)</li>
+<li><input disabled="" type="checkbox"> <strong>Created Webhook Endpoint</strong> (<a href="https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/stripe-webhooks">https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/stripe-webhooks</a>)</li>
+<li><input disabled="" type="checkbox"> <strong>Copied Webhook Signing Secret</strong> (whsec_...)</li>
+<li><input disabled="" type="checkbox"> <strong>Added 4 Secrets to Supabase</strong><ul>
+<li><input disabled="" type="checkbox"> STRIPE_SECRET_KEY</li>
+<li><input disabled="" type="checkbox"> STRIPE_WEBHOOK_SECRET</li>
+<li><input disabled="" type="checkbox"> STRIPE_PRO_PRICE_ID</li>
+<li><input disabled="" type="checkbox"> STRIPE_ENTERPRISE_PRICE_ID</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> <strong>Added 3 Environment Variables to Vercel</strong><ul>
+<li><input disabled="" type="checkbox"> VITE_STRIPE_PUBLISHABLE_KEY</li>
+<li><input disabled="" type="checkbox"> VITE_STRIPE_PRO_PRICE_ID</li>
+<li><input disabled="" type="checkbox"> VITE_STRIPE_ENTERPRISE_PRICE_ID</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> <strong>Redeployed Vercel</strong> (to apply new environment variables)</li>
+</ul>
+<hr>
+<h2>🧪 Test After Configuration</h2>
+<ol>
+<li>Go to your app: <code>/profile?tab=subscription</code></li>
+<li>Click &quot;Upgrade to Pro&quot;</li>
+<li>Use test card: <code>4242 4242 4242 4242</code></li>
+<li>Complete checkout</li>
+<li>Verify subscription updated</li>
+<li>Verify credits granted</li>
+</ol>
+<hr>
+<h2>🆘 Quick Links</h2>
+<ul>
+<li><strong>Supabase Secrets:</strong> <a href="https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/settings/vault">https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/settings/vault</a></li>
+<li><strong>Vercel Env Vars:</strong> <a href="https://vercel.com/creativeghq/material-kai-vision-platform/settings/environment-variables">https://vercel.com/creativeghq/material-kai-vision-platform/settings/environment-variables</a></li>
+<li><strong>Stripe Dashboard:</strong> <a href="https://dashboard.stripe.com">https://dashboard.stripe.com</a></li>
+<li><strong>Stripe API Keys:</strong> <a href="https://dashboard.stripe.com/test/apikeys">https://dashboard.stripe.com/test/apikeys</a></li>
+<li><strong>Stripe Products:</strong> <a href="https://dashboard.stripe.com/test/products">https://dashboard.stripe.com/test/products</a></li>
+<li><strong>Stripe Webhooks:</strong> <a href="https://dashboard.stripe.com/test/webhooks">https://dashboard.stripe.com/test/webhooks</a></li>
+</ul>
+<hr>
+<h2>📝 Notes</h2>
+<ul>
+<li>Use <strong>test mode</strong> keys (pk_test_, sk_test_) for development</li>
+<li>Switch to <strong>live mode</strong> keys (pk_live_, sk_live_) for production</li>
+<li>Webhook URL uses your Supabase project ID: <code>bgbavxtjlbvgplozizxu</code></li>
+<li>All Vercel variables must be set for ALL environments (Production, Preview, Development)</li>
+<li>Redeploy Vercel after adding environment variables</li>
+</ul>
+
+</div></body></html>
