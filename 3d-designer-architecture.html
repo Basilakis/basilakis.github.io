@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>3D Room Designer - Architecture Documentation</h1>
+<h2>Overview</h2>
+<p>The 3D Room Designer is a <strong>standalone page</strong> that generates interior design images using AI. It is completely independent from the agent system and uses direct API calls to external services.</p>
+<h2>Why Standalone?</h2>
+<p>The 3D Designer is NOT integrated with the agent system for these critical reasons:</p>
+<ol>
+<li><strong>Timeout Constraints</strong>: Supabase Edge Functions have strict timeout limits (typically 60 seconds)</li>
+<li><strong>Long Processing Times</strong>: Image generation can take 30-60+ seconds</li>
+<li><strong>Direct API Access</strong>: Replicate/Hugging Face APIs work better with direct calls</li>
+<li><strong>Reliability</strong>: Agents are designed for conversational tasks, not long-running operations</li>
+</ol>
+<h2>Architecture</h2>
+<pre><code>User Input (Designer3DPage.tsx)
+    ↓
+Designer3DService (standalone service)
+    ↓
+BrowserApiIntegrationService
+    ↓
+Direct API Calls → Replicate / Hugging Face
+    ↓
+Image Generation (30-60 seconds)
+    ↓
+Store in Database (generation_3d table)
+    ↓
+Display Results
+</code></pre>
+<h2>Key Components</h2>
+<h3>1. Designer3DPage (<code>src/pages/Designer3DPage.tsx</code>)</h3>
+<ul>
+<li><strong>Purpose</strong>: User interface for 3D design generation</li>
+<li><strong>Features</strong>:<ul>
+<li>Design parameter inputs (prompt, room type, style)</li>
+<li>Real-time generation progress</li>
+<li>Image gallery display</li>
+<li>Download functionality</li>
+</ul>
+</li>
+<li><strong>Route</strong>: <code>/3d-designer</code></li>
+<li><strong>Sidebar</strong>: Accessible via &quot;3D Designer&quot; menu item</li>
+</ul>
+<h3>2. Designer3DService (<code>src/services/designer3DService.ts</code>)</h3>
+<ul>
+<li><strong>Purpose</strong>: Standalone service for image generation</li>
+<li><strong>Key Methods</strong>:<ul>
+<li><code>generateDesign()</code>: Main generation method</li>
+<li><code>buildEnhancedPrompt()</code>: Prompt enhancement</li>
+<li><code>getGenerationHistory()</code>: Fetch user&#39;s past generations</li>
+</ul>
+</li>
+<li><strong>NOT Agent-Based</strong>: Uses direct API calls only</li>
+</ul>
+<h3>3. BrowserApiIntegrationService (<code>src/services/apiGateway/browserApiIntegrationService.ts</code>)</h3>
+<ul>
+<li><strong>Purpose</strong>: Browser-compatible API client</li>
+<li><strong>Methods Used</strong>:<ul>
+<li><code>generateInteriorDesign()</code>: Calls Replicate/Hugging Face</li>
+<li>Handles model selection automatically</li>
+<li>Manages API errors and retries</li>
+</ul>
+</li>
+</ul>
+<h2>Data Flow</h2>
+<h3>Input Parameters</h3>
+<pre><code class="language-typescript">{
+  prompt: string;          // User&#39;s design description
+  room_type: string;       // living_room, bedroom, kitchen, etc.
+  style: string;           // modern, contemporary, minimalist, etc.
+  width: number;           // Image width (default: 768)
+  height: number;          // Image height (default: 768)
+}
+</code></pre>
+<h3>Output Result</h3>
+<pre><code class="language-typescript">{
+  success: boolean;
+  generation_id: string;
+  image_urls: string[];
+  enhanced_prompt: string;
+  processing_time_ms: number;
+  error?: string;
+}
+</code></pre>
+<h2>Database Schema</h2>
+<h3>Table: <code>generation_3d</code></h3>
+<pre><code class="language-sql">- id: uuid (primary key)
+- user_id: uuid (foreign key to auth.users)
+- generation_name: text
+- generation_type: text (&#39;interior_design&#39;)
+- generation_status: text (&#39;completed&#39;, &#39;failed&#39;)
+- input_data: jsonb (prompt, room_type, style)
+- output_data: jsonb (image_urls, enhanced_prompt)
+- processing_time_ms: integer
+- created_at: timestamp
+</code></pre>
+<h2>API Models Used</h2>
+<h3>Primary: Replicate</h3>
+<ul>
+<li><strong>Models</strong>: Interior design specific models</li>
+<li><strong>Quality</strong>: High quality, photorealistic</li>
+<li><strong>Speed</strong>: 30-60 seconds</li>
+<li><strong>Cost</strong>: Pay per generation</li>
+</ul>
+<h3>Fallback: Hugging Face</h3>
+<ul>
+<li><strong>Models</strong>: Stable Diffusion variants</li>
+<li><strong>Quality</strong>: Good quality</li>
+<li><strong>Speed</strong>: 20-40 seconds</li>
+<li><strong>Cost</strong>: Free tier available</li>
+</ul>
+<h2>User Experience</h2>
+<h3>Generation Flow</h3>
+<ol>
+<li>User enters design description</li>
+<li>Selects room type and style</li>
+<li>Clicks &quot;Generate Design&quot;</li>
+<li>Progress indicator shows status</li>
+<li>Image appears after 30-60 seconds</li>
+<li>User can download or reset</li>
+</ol>
+<h3>Error Handling</h3>
+<ul>
+<li>Authentication check before generation</li>
+<li>API error messages displayed to user</li>
+<li>Automatic retry on transient failures</li>
+<li>Graceful degradation if models unavailable</li>
+</ul>
+<h2>Comparison: 3D Designer vs Agent Hub</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>3D Designer</th>
+<th>Agent Hub</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Purpose</strong></td>
+<td>Image generation</td>
+<td>Conversational AI</td>
+</tr>
+<tr>
+<td><strong>Processing Time</strong></td>
+<td>30-60+ seconds</td>
+<td>&lt; 10 seconds</td>
+</tr>
+<tr>
+<td><strong>API Calls</strong></td>
+<td>Direct (Replicate/HF)</td>
+<td>Via Supabase Functions</td>
+</tr>
+<tr>
+<td><strong>Timeout Limits</strong></td>
+<td>None (browser-based)</td>
+<td>60 seconds (Supabase)</td>
+</tr>
+<tr>
+<td><strong>Use Case</strong></td>
+<td>Long-running tasks</td>
+<td>Quick interactions</td>
+</tr>
+<tr>
+<td><strong>Agent System</strong></td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+</tbody></table>
+<h2>Future Enhancements</h2>
+<ol>
+<li><strong>Material Matching</strong>: Integrate with material database</li>
+<li><strong>Spatial Analysis</strong>: Add SpaceFormer integration</li>
+<li><strong>3D Model Export</strong>: Generate actual 3D meshes</li>
+<li><strong>Batch Generation</strong>: Generate multiple variations</li>
+<li><strong>History View</strong>: Browse past generations</li>
+<li><strong>Favorites</strong>: Save and organize designs</li>
+</ol>
+<h2>Troubleshooting</h2>
+<h3>Common Issues</h3>
+<p><strong>Issue</strong>: Generation takes too long</p>
+<ul>
+<li><strong>Cause</strong>: API server load</li>
+<li><strong>Solution</strong>: Wait or retry later</li>
+</ul>
+<p><strong>Issue</strong>: &quot;No models available&quot; error</p>
+<ul>
+<li><strong>Cause</strong>: API keys not configured</li>
+<li><strong>Solution</strong>: Check environment variables</li>
+</ul>
+<p><strong>Issue</strong>: Authentication error</p>
+<ul>
+<li><strong>Cause</strong>: User not logged in</li>
+<li><strong>Solution</strong>: Redirect to login page</li>
+</ul>
+<h2>Configuration</h2>
+<h3>Environment Variables</h3>
+<pre><code class="language-bash"># Replicate API (primary)
+VITE_REPLICATE_API_KEY=your_key_here
+
+# Hugging Face API (fallback)
+VITE_HUGGINGFACE_API_KEY=your_key_here
+</code></pre>
+<h3>Model Selection</h3>
+<p>Models are automatically selected based on availability and requirements. Priority:</p>
+<ol>
+<li>Replicate interior design models</li>
+<li>Hugging Face Stable Diffusion models</li>
+</ol>
+<h2>Conclusion</h2>
+<p>The 3D Designer is a <strong>standalone, agent-independent</strong> system designed for long-running image generation tasks. It provides a reliable, user-friendly interface for creating AI-powered interior designs without the constraints of the agent system.</p>
+
+</div></body></html>
