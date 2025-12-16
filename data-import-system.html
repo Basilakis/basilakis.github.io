@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Data Import System</h1>
+<p>Complete documentation for the unified data import system supporting XML files and web scraping.</p>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#api-reference">API Reference</a></li>
+<li><a href="#database-schema">Database Schema</a></li>
+<li><a href="#usage-guide">Usage Guide</a></li>
+<li><a href="#testing">Testing</a></li>
+<li><a href="#performance">Performance</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>The Data Import System enables ingesting products from multiple sources including XML files, web scraping, and PDF processing through a unified data import hub. It provides dynamic field mapping, AI-assisted configuration, batch processing, and real-time progress tracking.</p>
+<h3>Key Features</h3>
+<ul>
+<li>Dynamic XML field mapping with AI suggestions (Claude Sonnet 4.5)</li>
+<li>Reusable mapping templates</li>
+<li>Manual re-run functionality</li>
+<li>Cron-based scheduling for recurring imports</li>
+<li>Real-time progress tracking</li>
+<li>Import history with audit trail</li>
+<li>Backend batch processing (10 products at a time)</li>
+<li>Concurrent image downloads (5 parallel)</li>
+<li>Direct product creation without PDF pipeline</li>
+<li>Image linking to products</li>
+<li>Async text processing (chunking, embeddings)</li>
+<li>Checkpoint recovery for failed jobs</li>
+<li>Comprehensive error handling</li>
+</ul>
+<h3>Use Cases</h3>
+<ol>
+<li><strong>Supplier Catalog Imports</strong> - Import products from supplier XML catalogs</li>
+<li><strong>Recurring Updates</strong> - Schedule automatic imports from supplier URLs</li>
+<li><strong>Manual Re-runs</strong> - Re-import catalogs with one click</li>
+<li><strong>Multi-source Integration</strong> - Combine XML, web scraping, and PDF sources</li>
+</ol>
+<hr>
+<h2>Architecture</h2>
+<h3>System Overview</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ FRONTEND (DataImportHub)                                    │
+│ ├─ XML Import Tab                                           │
+│ ├─ Web Scraping Tab                                         │
+│ └─ Import History Tab                                       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ EDGE FUNCTION (xml-import-orchestrator)                     │
+│ ├─ Parse XML and detect fields                              │
+│ ├─ AI-powered field mapping (Claude Sonnet 4.5)             │
+│ ├─ Create data_import_jobs record                           │
+│ └─ Call Python API (non-blocking)                           │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PYTHON API (DataImportService)                              │
+│ ├─ Batch processing (10 products at a time)                 │
+│ ├─ Image downloads (5 concurrent)                           │
+│ ├─ Product creation with metadata                           │
+│ ├─ Image linking via document_images                        │
+│ ├─ Async text processing queue                              │
+│ └─ Real-time progress updates                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ ASYNC PROCESSING (Background)                               │
+│ ├─ Chunking (UnifiedChunkingService)                        │
+│ ├─ Text Embeddings (RealEmbeddingsService)                  │
+│ └─ Product enrichment (optional)                            │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>Data Flow</h3>
+<pre><code>1. User uploads XML file
+   ↓
+2. Edge Function parses XML and detects fields
+   ↓
+3. AI suggests field mappings (Claude Sonnet 4.5)
+   ↓
+4. User reviews and confirms mappings
+   ↓
+5. Edge Function creates import job
+   ↓
+6. Python API processes job in batches
+   ↓
+7. Images downloaded concurrently
+   ↓
+8. Products created in database
+   ↓
+9. Images linked to products
+   ↓
+10. Text processing queued (async)
+    ↓
+11. Job marked as completed
+</code></pre>
+<hr>
+<h2>Frontend Components</h2>
+<h3>DataImportHub</h3>
+<p>Main hub component (<code>src/components/Admin/DataImportHub.tsx</code>) with 3 tabs:</p>
+<ul>
+<li><strong>XML Import Tab</strong> - Upload and configure XML imports</li>
+<li><strong>Web Scraping Tab</strong> - Firecrawl integration for web sources</li>
+<li><strong>Import History Tab</strong> - View past imports with re-run and scheduling</li>
+</ul>
+<h4>2. XMLFieldMappingModal (<code>src/components/Admin/DataImport/XMLFieldMappingModal.tsx</code>)</h4>
+<p>Interactive UI for reviewing AI-suggested field mappings:</p>
+<ul>
+<li>Color-coded confidence badges (green ≥90%, yellow ≥70%, red &lt;70%)</li>
+<li>Dropdown selectors for target schema fields</li>
+<li>Template saving functionality</li>
+<li>Preview of sample values</li>
+</ul>
+<h4>3. ImportHistoryTab (<code>src/components/Admin/DataImport/ImportHistoryTab.tsx</code>)</h4>
+<p>Displays past import jobs with:</p>
+<ul>
+<li>Status and progress indicators</li>
+<li>Manual re-run button (blue, Play icon)</li>
+<li>Schedule cron button (purple, Calendar icon)</li>
+<li>Next run time for scheduled imports</li>
+</ul>
+<h4>4. ScheduleImportModal (<code>src/components/Admin/DataImport/ScheduleImportModal.tsx</code>)</h4>
+<p>Configure cron schedules for recurring imports:</p>
+<ul>
+<li>6 preset schedules (hourly, daily, weekly, etc.)</li>
+<li>Custom cron expression support</li>
+<li>Source URL input for scheduled imports</li>
+</ul>
+<h3>Edge Functions</h3>
+<h4>xml-import-orchestrator (<code>supabase/functions/xml-import-orchestrator/index.ts</code>)</h4>
+<p><strong>Purpose:</strong> Parse XML, detect fields, suggest mappings, create import jobs</p>
+<p><strong>Endpoints:</strong></p>
+<ul>
+<li><code>POST /xml-import-orchestrator</code> - Upload XML and create import job</li>
+</ul>
+<p><strong>Features:</strong></p>
+<ul>
+<li>XML parsing with field detection</li>
+<li>AI-powered field mapping using Claude Sonnet 4.5</li>
+<li>Fallback rule-based mapping (multi-language support)</li>
+<li>Preview mode for field detection only</li>
+<li>Stores products in job metadata for Python API</li>
+</ul>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  workspace_id: string;
+  category: string;
+  xml_content: string; // Base64 encoded
+  preview_only?: boolean;
+  field_mappings?: Record&lt;string, string&gt;;
+  mapping_template_id?: string;
+  parent_job_id?: string;
+}
+</code></pre>
+<p><strong>Response (Preview Mode):</strong></p>
+<pre><code class="language-typescript">{
+  success: true;
+  detected_fields: DetectedField[];
+  total_products: number;
+}
+</code></pre>
+<p><strong>Response (Import Mode):</strong></p>
+<pre><code class="language-typescript">{
+  success: true;
+  job_id: string;
+  total_products: number;
+}
+</code></pre>
+<h4>scheduled-import-runner (<code>supabase/functions/scheduled-import-runner/index.ts</code>)</h4>
+<p><strong>Purpose:</strong> Run scheduled imports via Supabase Cron</p>
+<p><strong>Trigger:</strong> Supabase Cron (every 15 minutes)</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Fetches XML from source URLs</li>
+<li>Creates new import jobs with same field mappings</li>
+<li>Updates next_run_at timestamps</li>
+<li>Links to parent job via parent_job_id</li>
+</ul>
+<hr>
+<h2>Backend Data Processing</h2>
+<h3>Services</h3>
+<h4>1. DataImportService (<code>mivaa-pdf-extractor/app/services/data_import_service.py</code>)</h4>
+<p>Main orchestrator for processing import jobs.</p>
+<p><strong>Key Methods:</strong></p>
+<ul>
+<li><code>process_import_job()</code> - Process complete import job</li>
+<li><code>_process_batch()</code> - Process batch of 10 products</li>
+<li><code>_normalize_product()</code> - Apply field mappings</li>
+<li><code>_download_images()</code> - Download images concurrently</li>
+<li><code>_queue_product_processing()</code> - Create products in database</li>
+<li><code>_link_images_to_product()</code> - Link images to products</li>
+<li><code>_queue_text_processing()</code> - Queue async text processing</li>
+</ul>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Batch processing (10 products at a time)</li>
+<li>Checkpoint recovery</li>
+<li>Real-time progress updates</li>
+<li>Error handling with detailed logging</li>
+</ul>
+<h4>2. ImageDownloadService (<code>mivaa-pdf-extractor/app/services/image_download_service.py</code>)</h4>
+<p>Handles concurrent image downloads with validation and retry logic.</p>
+<p><strong>Key Methods:</strong></p>
+<ul>
+<li><code>download_images()</code> - Download multiple images concurrently</li>
+<li><code>_download_single_image()</code> - Download single image with retry</li>
+<li><code>validate_image_url()</code> - Validate URL format</li>
+<li><code>store_image_in_storage()</code> - Upload to Supabase Storage</li>
+</ul>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Concurrent downloads (5 parallel)</li>
+<li>URL validation</li>
+<li>Content validation (type, size)</li>
+<li>Retry logic (3 attempts with exponential backoff)</li>
+<li>10MB file size limit</li>
+<li>30s timeout per download</li>
+</ul>
+<h3>API Routes</h3>
+<h4>Data Import Routes (<code>mivaa-pdf-extractor/app/api/data_import_routes.py</code>)</h4>
+<p><strong>Endpoints:</strong></p>
+<ol>
+<li><strong>POST /api/import/process</strong> - Start processing an import job</li>
+<li><strong>GET /api/import/jobs/{job_id}</strong> - Get import job status</li>
+<li><strong>GET /api/import/history</strong> - Get import history</li>
+<li><strong>GET /api/import/health</strong> - Health check</li>
+</ol>
+<p>See <a href="#api-reference">API Reference</a> for detailed documentation.</p>
+<hr>
+<h2>API Reference</h2>
+<h3>Edge Function API</h3>
+<h4>POST /xml-import-orchestrator</h4>
+<p>Upload XML file and create import job.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;category&quot;: &quot;materials&quot;,
+  &quot;xml_content&quot;: &quot;base64_encoded_xml&quot;,
+  &quot;preview_only&quot;: false,
+  &quot;field_mappings&quot;: {
+    &quot;name&quot;: &quot;name&quot;,
+    &quot;factory&quot;: &quot;factory_name&quot;,
+    &quot;category&quot;: &quot;material_category&quot;
+  },
+  &quot;mapping_template_id&quot;: &quot;uuid&quot;,
+  &quot;parent_job_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;total_products&quot;: 10
+}
+</code></pre>
+<h3>Python API</h3>
+<h4>POST /api/import/process</h4>
+<p>Start processing an import job (called by Edge Function).</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Import job processing started&quot;,
+  &quot;job_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<h4>GET /api/import/jobs/{job_id}</h4>
+<p>Get import job status and progress.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;import_type&quot;: &quot;xml&quot;,
+  &quot;source_name&quot;: &quot;Supplier Catalog&quot;,
+  &quot;total_products&quot;: 100,
+  &quot;processed_products&quot;: 45,
+  &quot;failed_products&quot;: 2,
+  &quot;progress_percentage&quot;: 45,
+  &quot;current_stage&quot;: &quot;downloading_images&quot;,
+  &quot;started_at&quot;: &quot;2025-11-10T10:00:00Z&quot;,
+  &quot;completed_at&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;estimated_time_remaining&quot;: 120
+}
+</code></pre>
+<h4>GET /api/import/history</h4>
+<p>Get import history for a workspace.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required) - Workspace ID</li>
+<li><code>page</code> (optional, default: 1) - Page number</li>
+<li><code>page_size</code> (optional, default: 20) - Items per page</li>
+<li><code>status</code> (optional) - Filter by status</li>
+<li><code>import_type</code> (optional) - Filter by import type</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;imports&quot;: [
+    {
+      &quot;job_id&quot;: &quot;uuid&quot;,
+      &quot;import_type&quot;: &quot;xml&quot;,
+      &quot;source_name&quot;: &quot;Supplier Catalog&quot;,
+      &quot;status&quot;: &quot;completed&quot;,
+      &quot;total_products&quot;: 100,
+      &quot;processed_products&quot;: 98,
+      &quot;failed_products&quot;: 2,
+      &quot;created_at&quot;: &quot;2025-11-10T10:00:00Z&quot;,
+      &quot;completed_at&quot;: &quot;2025-11-10T10:15:00Z&quot;
+    }
+  ],
+  &quot;total_count&quot;: 50,
+  &quot;page&quot;: 1,
+  &quot;page_size&quot;: 20
+}
+</code></pre>
+<h4>GET /api/import/health</h4>
+<p>Health check for data import API.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;service&quot;: &quot;data-import-api&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;features&quot;: {
+    &quot;xml_import&quot;: true,
+    &quot;web_scraping&quot;: false,
+    &quot;batch_processing&quot;: true,
+    &quot;concurrent_image_downloads&quot;: true,
+    &quot;checkpoint_recovery&quot;: true,
+    &quot;real_time_progress&quot;: true
+  }
+}
+</code></pre>
+<hr>
+<h2>Database Schema</h2>
+<h3>data_import_jobs</h3>
+<p>Tracks import jobs with status and progress.</p>
+<pre><code class="language-sql">CREATE TABLE data_import_jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id),
+  import_type TEXT NOT NULL, -- &#39;xml&#39;, &#39;web_scraping&#39;
+  source_name TEXT,
+  source_url TEXT,
+  status TEXT NOT NULL DEFAULT &#39;pending&#39;, -- &#39;pending&#39;, &#39;processing&#39;, &#39;completed&#39;, &#39;failed&#39;
+  total_products INTEGER DEFAULT 0,
+  processed_products INTEGER DEFAULT 0,
+  failed_products INTEGER DEFAULT 0,
+  category TEXT,
+  original_xml_content TEXT, -- For re-runs
+  field_mappings JSONB, -- User-configured field mappings
+  mapping_template_id UUID REFERENCES xml_mapping_templates(id),
+  parent_job_id UUID REFERENCES data_import_jobs(id), -- For re-runs and scheduled runs
+  is_scheduled BOOLEAN DEFAULT FALSE,
+  cron_schedule TEXT,
+  last_run_at TIMESTAMPTZ,
+  next_run_at TIMESTAMPTZ,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  error_message TEXT,
+  metadata JSONB, -- Stores products for processing
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h3>data_import_history</h3>
+<p>Tracks individual product imports for audit trail.</p>
+<pre><code class="language-sql">CREATE TABLE data_import_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  job_id UUID NOT NULL REFERENCES data_import_jobs(id) ON DELETE CASCADE,
+  source_data JSONB NOT NULL, -- Original product data from XML
+  normalized_data JSONB, -- Normalized product data after field mapping
+  processing_status TEXT NOT NULL DEFAULT &#39;pending&#39;, -- &#39;pending&#39;, &#39;success&#39;, &#39;failed&#39;
+  error_details TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+</code></pre>
+<h3>xml_mapping_templates</h3>
+<p>Stores reusable field mapping templates.</p>
+<pre><code class="language-sql">CREATE TABLE xml_mapping_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  field_mappings JSONB NOT NULL, -- XML field -&gt; Platform field mappings
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(workspace_id, name)
+);
+</code></pre>
+<hr>
+<h2>Usage Guide</h2>
+<h3>1. Upload XML File</h3>
+<ol>
+<li>Navigate to Admin Dashboard → Data Import Hub</li>
+<li>Click &quot;XML Import&quot; tab</li>
+<li>Select category (e.g., &quot;materials&quot;)</li>
+<li>Upload XML file</li>
+<li>Review AI-suggested field mappings</li>
+<li>Adjust mappings if needed</li>
+<li>Optionally save as template</li>
+<li>Click &quot;Import&quot;</li>
+</ol>
+<h3>2. Schedule Recurring Import</h3>
+<ol>
+<li>Go to Import History tab</li>
+<li>Find completed import</li>
+<li>Click &quot;Schedule Cron&quot; button</li>
+<li>Enter source URL</li>
+<li>Select schedule (hourly, daily, weekly, custom)</li>
+<li>Click &quot;Schedule&quot;</li>
+</ol>
+<h3>3. Manual Re-run</h3>
+<ol>
+<li>Go to Import History tab</li>
+<li>Find completed import</li>
+<li>Click &quot;Manual Re-run&quot; button</li>
+<li>Confirm re-run</li>
+<li>New job created with same mappings</li>
+</ol>
+<hr>
+<h2>Testing</h2>
+<h3>Integration Test Script</h3>
+<p><strong>Location:</strong> <code>scripts/testing/test-xml-import-phase2.js</code></p>
+<p><strong>Usage:</strong></p>
+<pre><code class="language-bash">node scripts/testing/test-xml-import-phase2.js
+</code></pre>
+<p><strong>Test Flow:</strong></p>
+<ol>
+<li>Upload XML with 3 sample products</li>
+<li>Monitor job progress (polls every 5s, max 5 min)</li>
+<li>Verify products created in database</li>
+<li>Verify images downloaded and linked</li>
+<li>Verify import history records</li>
+<li>Display comprehensive summary</li>
+</ol>
+<hr>
+<h2>Performance</h2>
+<h3>Batch Processing</h3>
+<ul>
+<li><strong>Batch Size:</strong> 10 products</li>
+<li><strong>Concurrent Images:</strong> 5 per batch</li>
+<li><strong>Checkpoint Frequency:</strong> After each batch</li>
+<li><strong>Memory Management:</strong> Garbage collection after each batch</li>
+</ul>
+<h3>Image Downloads</h3>
+<ul>
+<li><strong>Max File Size:</strong> 10MB</li>
+<li><strong>Timeout:</strong> 30 seconds per image</li>
+<li><strong>Retry Attempts:</strong> 3 with exponential backoff</li>
+<li><strong>Storage:</strong> Supabase <code>pdf-tiles</code> bucket</li>
+</ul>
+<h3>Database Operations</h3>
+<ul>
+<li><strong>Products:</strong> Direct insert to <code>products</code> table</li>
+<li><strong>Images:</strong> Linked via <code>document_images</code> table</li>
+<li><strong>Chunks:</strong> Created in <code>chunks</code> table</li>
+<li><strong>History:</strong> Tracked in <code>data_import_history</code> table</li>
+</ul>
+<hr>
+<h2>Future Enhancements</h2>
+<h3>Frontend Improvements</h3>
+<ul>
+<li>Enhanced real-time progress tracking in UI</li>
+<li>Advanced mapping template management</li>
+<li>Comprehensive import job monitoring dashboard</li>
+</ul>
+<h3>Web Scraping Expansion</h3>
+<ul>
+<li>Extended Firecrawl integration capabilities</li>
+<li>Advanced dynamic mapping for complex web structures</li>
+<li>Automatic product extraction from supplier websites</li>
+<li>Unified processing through <code>data_import_jobs</code> pipeline</li>
+</ul>
+
+</div></body></html>
