@@ -323,16 +323,54 @@ class BankStatementExtractionService:
             save_document_entity(entity)
 </code></pre>
 <hr>
-<h2>📋 Next Steps</h2>
-<ol>
-<li><strong>Create document_entities table</strong> in Supabase</li>
-<li><strong>Create product_document_relationships table</strong> in Supabase</li>
-<li><strong>Update ProductDiscoveryService</strong> to store metadata in product.metadata JSONB</li>
-<li><strong>Create DocumentEntityDiscoveryService</strong> for optional document extraction</li>
-<li><strong>Create &quot;Docs&quot; Admin Page</strong> to manage document entities</li>
-<li><strong>Implement AI-based entity linking</strong> to connect documents to products</li>
-</ol>
+<h2>Implementation Components</h2>
+<h3>Database Schema</h3>
+<p>The product discovery architecture requires the following database components:</p>
+<p><strong>document_entities Table:</strong></p>
+<ul>
+<li>Stores certificates, logos, specifications, and other document entities</li>
+<li>Includes factory/manufacturer identification fields</li>
+<li>Supports entity-specific metadata in JSONB format</li>
+<li>Enables category-based filtering and retrieval</li>
+</ul>
+<p><strong>product_document_relationships Table:</strong></p>
+<ul>
+<li>Links document entities to products</li>
+<li>Tracks relationship types (certification, specification, logo, marketing)</li>
+<li>Includes relevance scoring for relationship strength</li>
+<li>Supports AI-based linking metadata</li>
+</ul>
+<h3>Service Architecture</h3>
+<p><strong>ProductDiscoveryService:</strong></p>
+<ul>
+<li>Stores all product metadata in product.metadata JSONB field</li>
+<li>Maintains inseparable product-metadata relationship</li>
+<li>Supports dynamic metadata extraction from PDFs</li>
+<li>Provides high-confidence product identification</li>
+</ul>
+<p><strong>DocumentEntityDiscoveryService:</strong></p>
+<ul>
+<li>Handles optional document entity extraction</li>
+<li>Supports configurable extraction categories</li>
+<li>Enables async processing after product extraction</li>
+<li>Provides extensibility for new entity types</li>
+</ul>
+<h3>Admin Interface</h3>
+<p><strong>Docs Admin Page:</strong></p>
+<ul>
+<li>Manages document entities (certificates, logos, specifications)</li>
+<li>Displays entity-product relationships</li>
+<li>Supports filtering by factory/manufacturer</li>
+<li>Enables manual entity management and linking</li>
+</ul>
+<h3>AI Integration</h3>
+<p><strong>Entity Linking System:</strong></p>
+<ul>
+<li>Uses AI to identify relationships between entities and products</li>
+<li>Analyzes content context for relationship detection</li>
+<li>Assigns confidence scores to relationships</li>
+<li>Supports manual override and validation</li>
+</ul>
 <hr>
-<p><strong>Would you like me to proceed with implementing these changes?</strong></p>
 
 </div></body></html>
