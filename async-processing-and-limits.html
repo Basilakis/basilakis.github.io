@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Async Processing &amp; Concurrency Limits</h1>
+<p>Complete documentation for async processing architecture and concurrency limits across all product generation methods.</p>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#async-architecture">Async Architecture</a></li>
+<li><a href="#concurrency-limits">Concurrency Limits</a></li>
+<li><a href="#timeout-configuration">Timeout Configuration</a></li>
+<li><a href="#rate-limiting">Rate Limiting</a></li>
+<li><a href="#shared-services">Shared Services</a></li>
+<li><a href="#performance-optimization">Performance Optimization</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>All three product generation methods (PDF Processing, Web Scraping, XML Import) use <strong>fully async processing</strong> with <strong>unified concurrency limits</strong> to ensure:</p>
+<ul>
+<li><strong>Memory efficiency</strong>: Prevent OOM crashes</li>
+<li><strong>API rate limiting</strong>: Respect external API limits</li>
+<li><strong>Resource optimization</strong>: Balance speed vs. resource usage</li>
+<li><strong>Consistent behavior</strong>: Same limits across all methods</li>
+</ul>
+<h3>Key Principles</h3>
+<p>✅ <strong>Fully Async</strong>: All I/O operations use <code>async/await</code><br>✅ <strong>Semaphore-based</strong>: Concurrency controlled via <code>asyncio.Semaphore</code><br>✅ <strong>Batch Processing</strong>: Large datasets processed in batches<br>✅ <strong>Retry Logic</strong>: Automatic retry with exponential backoff<br>✅ <strong>Circuit Breakers</strong>: Prevent cascading failures<br>✅ <strong>Timeout Guards</strong>: Prevent infinite hangs  </p>
+<hr>
+<h2>Async Architecture</h2>
+<h3>1. Main Processing Flow</h3>
+<p>All three methods use <code>AsyncQueueService</code> for background job processing:</p>
+<pre><code class="language-python"># PDF Processing
+async def process_pdf_document(document_id: str, workspace_id: str):
+    # Fully async processing
+    result = await pdf_processor.process_pdf_from_bytes(...)
+    await chunking_service.create_chunks_and_embeddings(...)
+    await image_processing_service.process_images(...)
+
+# Web Scraping
+async def process_scraping_session(session_id: str, workspace_id: str):
+    # Fully async processing
+    catalog = await discovery_service.discover_products_from_text(...)
+    await chunking_service.create_chunks_and_embeddings(...)
+    await image_processing_service.process_images(...)
+
+# XML Import
+async def process_import_job(job_id: str, workspace_id: str):
+    # Fully async processing
+    await self._process_batch(...)
+    await self._queue_text_processing(...)
+    await image_downloader.download_images(...)
+</code></pre>
+<h3>2. Background Job Processing</h3>
+<pre><code class="language-python"># AsyncQueueService - Shared across all methods
+class AsyncQueueService:
+    async def queue_ai_analysis_jobs(
+        self,
+        chunks: List[Dict],
+        analysis_type: str = &#39;embedding_generation&#39;
+    ):
+        # Queue jobs for async processing
+        # - Chunking
+        # - Embedding generation
+        # - Product enrichment
+</code></pre>
+<h3>3. Progress Tracking</h3>
+<p>All methods update <code>background_jobs</code> table in real-time:</p>
+<pre><code class="language-python">await self._update_background_job_status(
+    job_id=job_id,
+    status=&#39;processing&#39;,
+    progress_percent=50,
+    metadata={&#39;stage&#39;: &#39;image_processing&#39;}
+)
+</code></pre>
+<hr>
+<h2>Concurrency Limits</h2>
+<h3>1. Image Classification (AI-based filtering)</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import<br><strong>Service</strong>: <code>ImageProcessingService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Llama Vision Concurrent</strong></td>
+<td>5</td>
+<td>Fast material classification</td>
+</tr>
+<tr>
+<td><strong>Claude Validation Concurrent</strong></td>
+<td>2</td>
+<td>Validation for uncertain cases</td>
+</tr>
+<tr>
+<td><strong>Batch Size</strong></td>
+<td>15 images</td>
+<td>Memory optimization</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/image_processing_service.py
+llama_semaphore = Semaphore(5)   # 5 concurrent Llama requests
+claude_semaphore = Semaphore(2)  # 2 concurrent Claude requests
+batch_size = 15  # Process 15 images per batch
+</code></pre>
+<p><strong>Why these limits?</strong></p>
+<ul>
+<li><strong>Llama (5)</strong>: Fast, cheap model → higher concurrency</li>
+<li><strong>Claude (2)</strong>: Expensive, rate-limited → lower concurrency</li>
+<li><strong>Batch (15)</strong>: Prevents OOM on large PDFs with 500+ images</li>
+</ul>
+<hr>
+<h3>2. Image Upload to Storage</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import<br><strong>Service</strong>: <code>ImageProcessingService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Concurrent Uploads</strong></td>
+<td>10</td>
+<td>Supabase Storage upload limit</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/image_processing_service.py
+upload_semaphore = Semaphore(10)  # 10 concurrent uploads
+</code></pre>
+<p><strong>Why 10?</strong></p>
+<ul>
+<li>Supabase Storage can handle ~10 concurrent uploads</li>
+<li>Higher values cause connection pool exhaustion</li>
+</ul>
+<hr>
+<h3>3. CLIP Embeddings Generation</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import<br><strong>Service</strong>: <code>ImageProcessingService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Batch Size</strong></td>
+<td>20 images</td>
+<td>Memory optimization</td>
+</tr>
+<tr>
+<td><strong>Max Retries</strong></td>
+<td>3</td>
+<td>Retry failed embeddings</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/image_processing_service.py
+async def save_images_and_generate_clips(
+    self,
+    material_images: List[Dict[str, Any]],
+    document_id: str,
+    workspace_id: str,
+    batch_size: int = 20,  # 20 images per batch
+    max_retries: int = 3   # 3 retry attempts
+)
+</code></pre>
+<p><strong>Why 20?</strong></p>
+<ul>
+<li>CLIP model processes ~20 images in 10-15 seconds</li>
+<li>Larger batches cause memory spikes</li>
+</ul>
+<hr>
+<h3>4. Image Downloads (XML Import Only)</h3>
+<p><strong>Applies to</strong>: XML Import<br><strong>Service</strong>: <code>ImageDownloadService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Concurrent Downloads</strong></td>
+<td>5</td>
+<td>Network bandwidth optimization</td>
+</tr>
+<tr>
+<td><strong>Max Retries</strong></td>
+<td>3</td>
+<td>Retry failed downloads</td>
+</tr>
+<tr>
+<td><strong>Timeout</strong></td>
+<td>30 seconds</td>
+<td>Prevent hanging downloads</td>
+</tr>
+<tr>
+<td><strong>Max File Size</strong></td>
+<td>10 MB</td>
+<td>Prevent large file downloads</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/image_download_service.py
+class ImageDownloadService:
+    def __init__(self):
+        self.max_concurrent = 5  # 5 concurrent downloads
+        self.max_retries = 3     # 3 retry attempts
+        self.timeout = 30        # 30 seconds timeout
+        self.max_file_size = 10 * 1024 * 1024  # 10MB max
+</code></pre>
+<p><strong>Why these limits?</strong></p>
+<ul>
+<li><strong>5 concurrent</strong>: Prevents network congestion</li>
+<li><strong>30s timeout</strong>: Most images download in &lt;10s</li>
+<li><strong>10MB max</strong>: Prevents downloading huge files</li>
+</ul>
+<hr>
+<h3>5. Product Batch Processing (XML Import Only)</h3>
+<p><strong>Applies to</strong>: XML Import
+<strong>Service</strong>: <code>DataImportService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Batch Size</strong></td>
+<td>10 products</td>
+<td>Memory optimization</td>
+</tr>
+<tr>
+<td><strong>Image Downloads per Batch</strong></td>
+<td>5 concurrent</td>
+<td>Network optimization</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/data_import_service.py
+class DataImportService:
+    def __init__(self):
+        self.batch_size = 10  # Process 10 products at a time
+        self.max_concurrent_images = 5  # Download 5 images concurrently
+</code></pre>
+<p><strong>Why 10 products?</strong></p>
+<ul>
+<li>Each product can have 5-10 images</li>
+<li>10 products × 5 images = 50 images per batch</li>
+<li>Prevents memory spikes on large imports</li>
+</ul>
+<hr>
+<h3>6. PDF Processing Workers</h3>
+<p><strong>Applies to</strong>: PDF Processing
+<strong>Service</strong>: <code>PDFProcessor</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Max Workers</strong></td>
+<td>2</td>
+<td>Memory optimization (reduced from 4)</td>
+</tr>
+<tr>
+<td><strong>Pages per Worker</strong></td>
+<td>5</td>
+<td>Batch size for page processing</td>
+</tr>
+<tr>
+<td><strong>Max Pages in Memory</strong></td>
+<td>10</td>
+<td>2 workers × 5 pages</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/pdf_processor.py
+# REDUCED from 4 to 2 workers to prevent OOM kills
+# (each worker processes 5 pages = 10 pages max in memory)
+max_workers = self.config.get(&#39;max_workers&#39;, 2)
+self.executor = ThreadPoolExecutor(max_workers=max_workers)
+</code></pre>
+<p><strong>Why 2 workers?</strong></p>
+<ul>
+<li><strong>Before</strong>: 4 workers × 5 pages = 20 pages in memory → OOM crashes</li>
+<li><strong>After</strong>: 2 workers × 5 pages = 10 pages in memory → Stable</li>
+</ul>
+<hr>
+<h2>Timeout Configuration</h2>
+<h3>1. Product Discovery Timeouts</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping
+<strong>Service</strong>: <code>ProductDiscoveryService</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Product Discovery</strong></td>
+<td>300s (5 min)</td>
+<td>AI analysis of full document</td>
+</tr>
+<tr>
+<td><strong>Per-product Extraction</strong></td>
+<td>60s</td>
+<td>Individual product metadata</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/product_discovery_service.py
+async def discover_products(self, pdf_content: bytes, pdf_text: str):
+    result = await with_timeout(
+        self._discover_products_internal(...),
+        timeout_seconds=300,  # 5 minutes
+        operation_name=&quot;Product discovery&quot;
+    )
+</code></pre>
+<hr>
+<h3>2. PDF Extraction Timeouts</h3>
+<p><strong>Applies to</strong>: PDF Processing
+<strong>Service</strong>: <code>PDFProcessor</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Full PDF Extraction</strong></td>
+<td>7200s (2 hours)</td>
+<td>Large PDFs with OCR</td>
+</tr>
+<tr>
+<td><strong>Per-page Extraction</strong></td>
+<td>Dynamic</td>
+<td>Based on file size</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># Dynamic timeout calculation
+file_size_mb = len(pdf_bytes) / (1024 * 1024)
+num_pages = len(product_pages)
+pdf_extraction_timeout = max(300, file_size_mb * 10 + num_pages * 5)
+</code></pre>
+<p><strong>Why dynamic?</strong></p>
+<ul>
+<li>Small PDFs (10 pages, 5MB): ~300s</li>
+<li>Large PDFs (500 pages, 50MB): ~3000s (50 min)</li>
+</ul>
+<hr>
+<h3>3. Image Download Timeouts</h3>
+<p><strong>Applies to</strong>: XML Import
+<strong>Service</strong>: <code>ImageDownloadService</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Per-image Download</strong></td>
+<td>30s</td>
+<td>Single image download</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/image_download_service.py
+async with httpx.AsyncClient(timeout=30) as client:
+    response = await client.get(url)
+</code></pre>
+<hr>
+<h3>4. AI Classification Timeouts</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>TogetherAIService</code>, <code>AIClientService</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Llama Vision Request</strong></td>
+<td>120s</td>
+<td>Image classification</td>
+</tr>
+<tr>
+<td><strong>Claude Request</strong></td>
+<td>120s</td>
+<td>Validation</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/together_ai_service.py
+@dataclass
+class TogetherAIConfig:
+    timeout: int = 120  # 2 minutes
+</code></pre>
+<hr>
+<h2>Rate Limiting</h2>
+<h3>1. TogetherAI (Llama Vision)</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>TogetherAIService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Requests per Minute</strong></td>
+<td>10</td>
+<td>API rate limit</td>
+</tr>
+<tr>
+<td><strong>Burst Limit</strong></td>
+<td>5</td>
+<td>Short-term burst</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/services/together_ai_service.py
+@dataclass
+class TogetherAIConfig:
+    rate_limit_requests_per_minute: int = 10
+    rate_limit_burst: int = 5
+</code></pre>
+<hr>
+<h3>2. Claude API (Circuit Breaker)</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>CircuitBreaker</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Failure Threshold</strong></td>
+<td>5</td>
+<td>Open circuit after 5 failures</td>
+</tr>
+<tr>
+<td><strong>Recovery Timeout</strong></td>
+<td>60s</td>
+<td>Try again after 60s</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/utils/circuit_breaker.py
+claude_breaker = CircuitBreaker(
+    failure_threshold=5,
+    recovery_timeout=60
+)
+</code></pre>
+<hr>
+<h3>3. Image Export Rate Limiting</h3>
+<p><strong>Applies to</strong>: All methods
+<strong>Service</strong>: <code>images.py</code> API</p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Exports per Hour</strong></td>
+<td>5</td>
+<td>Prevent abuse</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python"># mivaa-pdf-extractor/app/api/images.py
+EXPORT_RATE_LIMIT = 5  # Max exports per hour
+EXPORT_RATE_WINDOW = 3600  # 1 hour in seconds
+</code></pre>
+<hr>
+<h2>Shared Services</h2>
+<p>All three methods use the <strong>SAME</strong> services with <strong>SAME</strong> limits:</p>
+<h3>1. ImageProcessingService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<pre><code class="language-python"># Shared limits across all methods
+llama_semaphore = Semaphore(5)   # 5 concurrent Llama
+claude_semaphore = Semaphore(2)  # 2 concurrent Claude
+upload_semaphore = Semaphore(10) # 10 concurrent uploads
+batch_size = 15  # Classification batch
+clip_batch_size = 20  # CLIP batch
+</code></pre>
+<hr>
+<h3>2. RealEmbeddingsService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<pre><code class="language-python"># Shared CLIP model and embeddings
+model = &quot;google/siglip-so400m-patch14-384&quot;  # SigLIP 1152D
+specialized_embeddings = [
+    &#39;color_siglip_1152&#39;,
+    &#39;texture_siglip_1152&#39;,
+    &#39;material_siglip_1152&#39;,
+    &#39;style_siglip_1152&#39;,
+    &#39;visual_siglip_1152&#39;
+]
+</code></pre>
+<hr>
+<h3>3. AsyncQueueService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<pre><code class="language-python"># Shared background job processing
+async def queue_ai_analysis_jobs(
+    chunks: List[Dict],
+    analysis_type: str = &#39;embedding_generation&#39;
+):
+    # Queue jobs for:
+    # - Chunking
+    # - Embedding generation
+    # - Product enrichment
+</code></pre>
+<hr>
+<h3>4. ChunkingService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<pre><code class="language-python"># Shared chunking logic
+class UnifiedChunkingService:
+    chunk_size = 1000  # Characters per chunk
+    chunk_overlap = 200  # Overlap between chunks
+</code></pre>
+<hr>
+<h2>Performance Optimization</h2>
+<h3>1. Memory Optimization</h3>
+<p><strong>Batch Processing</strong>: All methods process data in batches to prevent OOM</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Batch Size</th>
+<th>Memory Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>PDF Image Classification</strong></td>
+<td>15 images</td>
+<td>~500MB per batch</td>
+</tr>
+<tr>
+<td><strong>CLIP Embeddings</strong></td>
+<td>20 images</td>
+<td>~300MB per batch</td>
+</tr>
+<tr>
+<td><strong>XML Product Import</strong></td>
+<td>10 products</td>
+<td>~200MB per batch</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>2. Network Optimization</h3>
+<p><strong>Concurrent Downloads</strong>: Controlled via semaphores</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Concurrency</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Image Downloads (XML)</strong></td>
+<td>5 concurrent</td>
+<td>~5 images/sec</td>
+</tr>
+<tr>
+<td><strong>Image Uploads</strong></td>
+<td>10 concurrent</td>
+<td>~10 images/sec</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3. API Optimization</h3>
+<p><strong>Rate Limiting</strong>: Prevent API throttling</p>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>Limit</th>
+<th>Strategy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>TogetherAI (Llama)</strong></td>
+<td>10 req/min</td>
+<td>Semaphore (5 concurrent)</td>
+</tr>
+<tr>
+<td><strong>Claude</strong></td>
+<td>Circuit breaker</td>
+<td>Semaphore (2 concurrent)</td>
+</tr>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td>No limit</td>
+<td>Batch processing</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Comparison Table</h2>
+<h3>Async Processing</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Main Processing</strong></td>
+<td>✅ Fully async</td>
+<td>✅ Fully async</td>
+<td>✅ Fully async</td>
+</tr>
+<tr>
+<td><strong>Background Jobs</strong></td>
+<td>✅ AsyncQueueService</td>
+<td>✅ AsyncQueueService</td>
+<td>✅ AsyncQueueService</td>
+</tr>
+<tr>
+<td><strong>Product Discovery</strong></td>
+<td>✅ Async + timeout</td>
+<td>✅ Async + timeout</td>
+<td>✅ Async (queued)</td>
+</tr>
+<tr>
+<td><strong>Image Processing</strong></td>
+<td>✅ Async + semaphores</td>
+<td>✅ Async + semaphores</td>
+<td>✅ Async + semaphores</td>
+</tr>
+<tr>
+<td><strong>Chunking</strong></td>
+<td>✅ Async</td>
+<td>✅ Async</td>
+<td>✅ Async (queued)</td>
+</tr>
+<tr>
+<td><strong>Embeddings</strong></td>
+<td>✅ Async</td>
+<td>✅ Async</td>
+<td>✅ Async (queued)</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Concurrency Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Llama Vision</strong></td>
+<td>5 concurrent</td>
+<td>5 concurrent</td>
+<td>5 concurrent</td>
+</tr>
+<tr>
+<td><strong>Claude Validation</strong></td>
+<td>2 concurrent</td>
+<td>2 concurrent</td>
+<td>2 concurrent</td>
+</tr>
+<tr>
+<td><strong>Image Classification Batch</strong></td>
+<td>15 images</td>
+<td>15 images</td>
+<td>15 images</td>
+</tr>
+<tr>
+<td><strong>Image Uploads</strong></td>
+<td>10 concurrent</td>
+<td>10 concurrent</td>
+<td>10 concurrent</td>
+</tr>
+<tr>
+<td><strong>CLIP Batch</strong></td>
+<td>20 images</td>
+<td>20 images</td>
+<td>20 images</td>
+</tr>
+<tr>
+<td><strong>Image Downloads</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>5 concurrent</td>
+</tr>
+<tr>
+<td><strong>Product Batch</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>10 products</td>
+</tr>
+<tr>
+<td><strong>PDF Workers</strong></td>
+<td>2 workers</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Timeout Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Timeout</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Product Discovery</strong></td>
+<td>300s (5 min)</td>
+<td>300s (5 min)</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><strong>PDF Extraction</strong></td>
+<td>7200s (2 hours)</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><strong>Image Download</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>30s</td>
+</tr>
+<tr>
+<td><strong>AI Classification</strong></td>
+<td>120s</td>
+<td>120s</td>
+<td>120s</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Best Practices</h2>
+<h3>1. Monitoring</h3>
+<pre><code class="language-python"># Always log batch progress
+logger.info(f&quot;Processing batch {batch_num}/{total_batches}&quot;)
+logger.info(f&quot;Progress: {progress_percent}%&quot;)
+</code></pre>
+<h3>2. Error Handling</h3>
+<pre><code class="language-python"># Always use try/except with detailed logging
+try:
+    result = await process_batch(...)
+except Exception as e:
+    logger.error(f&quot;Batch failed: {e}&quot;)
+    # Continue with next batch
+</code></pre>
+<h3>3. Resource Cleanup</h3>
+<pre><code class="language-python"># Always cleanup after batch processing
+import gc
+del batch_data
+gc.collect()
+</code></pre>
+<h3>4. Progress Tracking</h3>
+<pre><code class="language-python"># Always update background_jobs table
+await self._update_background_job_status(
+    job_id=job_id,
+    progress_percent=progress,
+    metadata={&#39;stage&#39;: &#39;current_stage&#39;}
+)
+</code></pre>
+<hr>
+<h2>Summary</h2>
+<p>✅ <strong>All methods fully async</strong>: PDF, Web Scraping, XML Import
+✅ <strong>Same concurrency limits</strong>: 5 Llama, 2 Claude, 10 uploads, 20 CLIP
+✅ <strong>Same timeout guards</strong>: 300s discovery, 120s AI, 30s downloads
+✅ <strong>Same rate limiting</strong>: 10 req/min TogetherAI, circuit breaker Claude
+✅ <strong>Same shared services</strong>: ImageProcessingService, RealEmbeddingsService, AsyncQueueService
+✅ <strong>Memory optimized</strong>: Batch processing prevents OOM
+✅ <strong>Network optimized</strong>: Semaphores prevent congestion
+✅ <strong>API optimized</strong>: Rate limiting prevents throttling</p>
+<p><strong>The architecture is unified, consistent, and production-ready!</strong> 🚀</p>
+
+</div></body></html>
