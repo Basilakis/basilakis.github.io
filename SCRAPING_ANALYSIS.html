@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Web Scraping Implementation Analysis</h1>
+<h2>🔍 Current Implementation Overview</h2>
+<h3>Architecture</h3>
+<p>Your platform uses a <strong>hybrid architecture</strong> combining:</p>
+<ol>
+<li><strong>Firecrawl API</strong> (Cloud service) - Primary scraping engine</li>
+<li><strong>Jina Reader API</strong> (Fallback) - Alternative scraping service</li>
+<li><strong>Python FastAPI Backend</strong> - Product discovery and processing</li>
+<li><strong>Supabase Edge Functions</strong> - Orchestration and session management</li>
+</ol>
+<hr>
+<h2>📋 Current Scraping Flow (Step-by-Step)</h2>
+<h3><strong>Step 1: User Initiates Scraping</strong> (Frontend)</h3>
+<p><strong>File:</strong> <code>src/components/Scraper/NewScraperPage.tsx</code></p>
+<p><strong>Scraping Modes Available:</strong></p>
+<ol>
+<li><strong>Single Page</strong> - Scrape one URL</li>
+<li><strong>Sitemap</strong> - Scrape from sitemap.xml</li>
+<li><strong>Crawl</strong> - Crawl entire website (up to max pages)</li>
+<li><strong>Search</strong> - Search web and scrape results</li>
+<li><strong>Map</strong> - Get all URLs from a website</li>
+</ol>
+<p><strong>User Input:</strong></p>
+<ul>
+<li>URL or search query</li>
+<li>Max pages (for crawl mode)</li>
+<li>Extraction prompt (optional)</li>
+<li>Service selection (Firecrawl or Jina)</li>
+</ul>
+<hr>
+<h3><strong>Step 2: Session Creation</strong> (Edge Function)</h3>
+<p><strong>File:</strong> <code>supabase/functions/scrape-session-manager/index.ts</code></p>
+<p><strong>What Happens:</strong></p>
+<ol>
+<li>Creates <code>scraping_sessions</code> record in database</li>
+<li>Creates <code>scraping_pages</code> records for each URL to scrape</li>
+<li>Sets status to <code>pending</code></li>
+<li>Returns session ID to frontend</li>
+</ol>
+<p><strong>Database Tables:</strong></p>
+<pre><code class="language-sql">scraping_sessions:
+- id, workspace_id, status, total_pages, pages_scraped, materials_processed
+
+scraping_pages:
+- id, session_id, url, status, markdown_content, images
+</code></pre>
+<hr>
+<h3><strong>Step 3: Page Scraping</strong> (Edge Function → Firecrawl/Jina)</h3>
+<p><strong>File:</strong> <code>supabase/functions/scrape-single-page/index.ts</code></p>
+<p><strong>Process:</strong></p>
+<ol>
+<li>Fetches pending pages from <code>scraping_pages</code> table</li>
+<li>Processes in batches (configurable batch size)</li>
+<li>For each page:<ul>
+<li>Calls Firecrawl API or Jina API</li>
+<li>Extracts markdown content</li>
+<li>Downloads images</li>
+<li>Stores in <code>scraping_pages</code> table</li>
+</ul>
+</li>
+<li>Updates progress in <code>scraping_sessions</code></li>
+</ol>
+<p><strong>Firecrawl API Call:</strong></p>
+<pre><code class="language-typescript">POST https://api.firecrawl.dev/v1/scrape
+{
+  url: &quot;https://example.com&quot;,
+  formats: [&quot;markdown&quot;, &quot;html&quot;],
+  timeout: 30000,
+  extractorOptions: {
+    mode: &quot;llm-extraction&quot;,
+    extractionPrompt: &quot;Extract material information...&quot;
+  }
+}
+</code></pre>
+<p><strong>Jina API Call (Fallback):</strong></p>
+<pre><code class="language-typescript">GET https://r.jina.ai/{url}
+Headers: {
+  Authorization: &quot;Bearer {JINA_API_KEY}&quot;,
+  X-Return-Format: &quot;markdown&quot;
+}
+</code></pre>
+<hr>
+<h3><strong>Step 4: Product Discovery</strong> (Python API)</h3>
+<p><strong>File:</strong> <code>mivaa-pdf-extractor/app/services/web_scraping_service.py</code></p>
+<p><strong>Process:</strong></p>
+<ol>
+<li>Fetches all scraped markdown from <code>scraping_pages</code></li>
+<li>Combines markdown content</li>
+<li>Calls <code>ProductDiscoveryService.discover_products_from_text()</code></li>
+<li>Uses Claude AI to extract product information</li>
+<li>Creates products in database</li>
+<li>Links images to products</li>
+<li>Updates session status to <code>completed</code></li>
+</ol>
+<p><strong>AI Model:</strong> Claude (Anthropic)
+<strong>Timeout:</strong> 5 minutes for product discovery
+<strong>Retry Logic:</strong> 3 attempts with exponential backoff</p>
+<hr>
+<h2>🆚 Firecrawl v1 vs v2 Comparison</h2>
+<h3><strong>Current Implementation: Firecrawl v1</strong></h3>
+<p>Your code uses:</p>
+<pre><code class="language-typescript">POST /v1/scrape
+{
+  url: string,
+  formats: [&quot;markdown&quot;, &quot;html&quot;],
+  extractorOptions: {
+    mode: &quot;llm-extraction&quot;,
+    extractionPrompt: string
+  }
+}
+</code></pre>
+<h3><strong>Firecrawl v2 (Latest)</strong></h3>
+<p>New API structure:</p>
+<pre><code class="language-typescript">POST /v2/scrape
+{
+  url: string,
+  formats: [&quot;markdown&quot;, &quot;html&quot;, &quot;screenshot&quot;],
+  actions: [  // NEW: Browser automation
+    { type: &quot;wait&quot;, milliseconds: 1000 },
+    { type: &quot;click&quot;, selector: &quot;button&quot; },
+    { type: &quot;screenshot&quot; }
+  ],
+  extract: {  // NEW: Structured extraction
+    schema: {...},
+    systemPrompt: string
+  }
+}
+</code></pre>
+<hr>
+<h2>🚨 Key Differences (v1 vs v2)</h2>
+<h3><strong>1. Actions (Browser Automation)</strong> ⭐ NEW</h3>
+<p>v2 adds powerful browser automation:</p>
+<ul>
+<li><code>wait</code> - Wait for elements/time</li>
+<li><code>click</code> - Click elements</li>
+<li><code>write</code> - Fill forms</li>
+<li><code>press</code> - Press keys</li>
+<li><code>screenshot</code> - Take screenshots</li>
+<li><code>scroll</code> - Scroll page</li>
+</ul>
+<p><strong>Use Case:</strong> Scrape pages behind login, infinite scroll, dynamic content</p>
+<h3><strong>2. Structured Extraction</strong> ⭐ IMPROVED</h3>
+<p>v1: Basic LLM extraction with prompt
+v2: Schema-based extraction with validation</p>
+<pre><code class="language-typescript">// v2 Example
+extract: {
+  schema: {
+    type: &quot;object&quot;,
+    properties: {
+      name: { type: &quot;string&quot; },
+      price: { type: &quot;number&quot; },
+      images: { type: &quot;array&quot;, items: { type: &quot;string&quot; } }
+    },
+    required: [&quot;name&quot;]
+  }
+}
+</code></pre>
+<h3><strong>3. Batch Scraping</strong> ⭐ NEW</h3>
+<p>v2 adds native batch scraping:</p>
+<pre><code class="language-typescript">POST /v2/batch/scrape
+{
+  urls: [&quot;url1&quot;, &quot;url2&quot;, ...],
+  formats: [&quot;markdown&quot;]
+}
+</code></pre>
+<h3><strong>4. Crawl Improvements</strong> ⭐ IMPROVED</h3>
+<p>v2 has better crawl control:</p>
+<ul>
+<li><code>limit</code> - Max pages to crawl</li>
+<li><code>maxDepth</code> - How deep to crawl</li>
+<li><code>allowBackwardLinks</code> - Follow links to parent pages</li>
+<li><code>allowExternalLinks</code> - Follow external domains</li>
+<li><code>ignoreSitemap</code> - Skip sitemap.xml</li>
+</ul>
+<h3><strong>5. Map Endpoint</strong> ⭐ NEW</h3>
+<p>v2 adds dedicated map endpoint:</p>
+<pre><code class="language-typescript">POST /v2/map
+{
+  url: &quot;https://example.com&quot;,
+  search: &quot;products&quot;  // Optional: filter URLs
+}
+</code></pre>
+<hr>
+<h2>✅ Recommendations</h2>
+<h3><strong>Option 1: Stay on v1 (Current)</strong></h3>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>✅ Working implementation</li>
+<li>✅ No migration needed</li>
+<li>✅ Stable API</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>❌ Missing browser automation</li>
+<li>❌ Missing structured extraction</li>
+<li>❌ Missing batch scraping</li>
+<li>❌ v1 may be deprecated soon</li>
+</ul>
+<h3><strong>Option 2: Migrate to v2</strong> ⭐ RECOMMENDED</h3>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>✅ Browser automation (login, forms, infinite scroll)</li>
+<li>✅ Better structured extraction</li>
+<li>✅ Native batch scraping</li>
+<li>✅ Future-proof</li>
+<li>✅ Better performance</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>⚠️ Requires code changes</li>
+<li>⚠️ Testing needed</li>
+</ul>
+<hr>
+<h2>🔧 Migration Plan (If Upgrading to v2)</h2>
+<h3><strong>Phase 1: Update Edge Function</strong></h3>
+<p>File: <code>supabase/functions/scrape-single-page/index.ts</code></p>
+<p><strong>Changes:</strong></p>
+<ol>
+<li>Update API endpoint: <code>/v1/scrape</code> → <code>/v2/scrape</code></li>
+<li>Update request body structure</li>
+<li>Add <code>actions</code> support for dynamic pages</li>
+<li>Add <code>extract.schema</code> for structured data</li>
+</ol>
+<h3><strong>Phase 2: Update Python Service</strong></h3>
+<p>File: <code>mivaa-pdf-extractor/app/services/web_scraping_service.py</code></p>
+<p><strong>Changes:</strong></p>
+<ol>
+<li>Handle new response format</li>
+<li>Parse structured extraction results</li>
+<li>Update error handling</li>
+</ol>
+<h3><strong>Phase 3: Add Preview Support</strong></h3>
+<p>Similar to XML preview, add scraping preview:</p>
+<ol>
+<li>Scrape 1 sample page</li>
+<li>Show extracted product preview</li>
+<li>User confirms before full scrape</li>
+</ol>
+<hr>
+<h2>📊 Current vs Recommended Flow</h2>
+<h3><strong>Current Flow:</strong></h3>
+<pre><code>User Input → Session Creation → Scrape Pages (v1) → Store Markdown → 
+AI Discovery → Create Products
+</code></pre>
+<h3><strong>Recommended Flow (v2):</strong></h3>
+<pre><code>User Input → Session Creation → Scrape Sample (v2) → Preview Product → 
+User Confirms → Scrape All Pages (v2 Batch) → AI Discovery → Create Products
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Preview before full scrape (like XML)</li>
+<li>✅ Faster batch scraping</li>
+<li>✅ Better data quality with schema validation</li>
+<li>✅ Support for complex pages (login, forms)</li>
+</ul>
+<hr>
+<h2>🎯 Conclusion</h2>
+<p><strong>Your current implementation is GOOD but using v1 API.</strong></p>
+<p><strong>Recommendation:</strong> Migrate to Firecrawl v2 for:</p>
+<ol>
+<li><strong>Browser automation</strong> - Handle dynamic content, logins, forms</li>
+<li><strong>Structured extraction</strong> - Better data quality</li>
+<li><strong>Batch scraping</strong> - Faster processing</li>
+<li><strong>Future-proofing</strong> - v1 may be deprecated</li>
+</ol>
+<p><strong>Priority:</strong> MEDIUM (not urgent, but beneficial)</p>
+<p><strong>Estimated Effort:</strong> 2-3 days</p>
+<ul>
+<li>Day 1: Update Edge Function to v2</li>
+<li>Day 2: Update Python service + testing</li>
+<li>Day 3: Add preview feature</li>
+</ul>
+<p>Would you like me to start the migration to Firecrawl v2?</p>
+
+</div></body></html>
