@@ -24,45 +24,57 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>Job Queue System &amp; Async Processing</h1>
-<p><strong>Status</strong>: ✅ Production-Ready<br><strong>Architecture</strong>: Supabase-Native with Custom Recovery Layer<br><strong>Last Updated</strong>: October 31, 2025</p>
+<p><strong>Architecture</strong>: Supabase-Native with Custom Recovery Layer
+<strong>Last Updated</strong>: December 21, 2025</p>
 <hr>
-<h2>📋 Overview</h2>
-<p>The Material Kai Vision Platform uses a <strong>Supabase-native job queue system</strong> with a custom checkpoint-based recovery layer for resilient PDF processing. This hybrid approach combines Supabase&#39;s reliability with custom recovery logic for fault tolerance.</p>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform uses a <strong>unified job queue system</strong> across all data import pipelines with custom checkpoint-based recovery for resilient processing. This hybrid approach combines Supabase&#39;s reliability with custom recovery logic for fault tolerance.</p>
+<h3>Supported Job Types</h3>
+<ol>
+<li><strong>PDF Processing</strong> - Extract materials from PDF catalogs with 9-stage checkpoint recovery</li>
+<li><strong>Web Scraping</strong> - Discover materials from websites with page-level tracking</li>
+<li><strong>XML Import</strong> - Import materials from XML feeds with webhook retry logic</li>
+</ol>
 <h3>Key Features</h3>
 <ul>
-<li>✅ <strong>Supabase-Native Storage</strong>: All jobs persisted in PostgreSQL tables</li>
-<li>✅ <strong>Checkpoint-Based Recovery</strong>: Resume from last successful stage</li>
-<li>✅ <strong>Auto-Recovery</strong>: Automatic detection and restart of stuck jobs</li>
-<li>✅ <strong>Real-Time Progress</strong>: Live progress tracking with SSE/WebSocket</li>
-<li>✅ <strong>Priority Queuing</strong>: Support for low/normal/high/critical priorities</li>
-<li>✅ <strong>Retry Logic</strong>: Automatic retry with exponential backoff</li>
-<li>✅ <strong>Dead Letter Queue</strong>: Failed jobs moved to DLQ for analysis</li>
-<li>✅ <strong>Health Monitoring</strong>: Continuous monitoring and auto-recovery</li>
+<li><strong>Unified Job Tracking</strong>: All jobs tracked in <code>background_jobs</code> table</li>
+<li><strong>Type-Specific Tables</strong>: Specialized tables for each job type (scraping_sessions, data_import_jobs)</li>
+<li><strong>Checkpoint-Based Recovery</strong>: Resume PDF jobs from last successful stage</li>
+<li><strong>Auto-Recovery</strong>: Automatic detection and restart of stuck jobs (all types)</li>
+<li><strong>Real-Time Progress</strong>: Live progress tracking with Supabase subscriptions</li>
+<li><strong>Sentry Integration</strong>: All failures automatically reported with full context</li>
+<li><strong>Retry Logic</strong>: Automatic retry with exponential backoff</li>
+<li><strong>Health Monitoring</strong>: Continuous monitoring across all job types</li>
 </ul>
 <hr>
 <h2>🏗️ Architecture</h2>
-<h3>Three-Layer Design</h3>
-<pre><code>┌─────────────────────────────────────────────────────────┐
-│  Frontend (React)                                       │
-│  - PDF Upload Modal                                     │
-│  - Progress Tracking (SSE/WebSocket)                    │
-│  - Job Status Display                                   │
-└────────────────┬────────────────────────────────────────┘
+<h3>Multi-Pipeline Architecture</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│  Frontend (React)                                               │
+│  - PDF Upload (/admin/data-import)                              │
+│  - Web Scraping UI (/scraper)                                   │
+│  - XML Import (/admin/data-import)                              │
+│  - Unified Job Monitor (/admin/async-queue-monitor)             │
+└────────────────┬────────────────────────────────────────────────┘
                  │
-┌────────────────▼────────────────────────────────────────┐
-│  MIVAA Backend (FastAPI)                                │
-│  - Job Queue Service (AsyncQueueService)                │
-│  - Checkpoint Recovery (CheckpointRecoveryService)      │
-│  - Job Monitor (JobMonitorService)                      │
-│  - Progress Tracking (JobProgressService)               │
-└────────────────┬────────────────────────────────────────┘
+┌────────────────▼────────────────────────────────────────────────┐
+│  Processing Layer                                               │
+│                                                                 │
+│  MIVAA Backend (FastAPI)          Edge Functions (Deno)        │
+│  - PDF Processing Service         - scrape-session-manager     │
+│  - Web Scraping Service           - xml-import-orchestrator    │
+│  - Checkpoint Recovery            - scrape-single-page         │
+│  - Job Monitor (ALL TYPES)                                     │
+└────────────────┬────────────────────────────────────────────────┘
                  │
-┌────────────────▼────────────────────────────────────────┐
-│  Supabase PostgreSQL                                    │
-│  - background_jobs (job tracking)                       │
-│  - job_progress (real-time progress)                    │
-│  - job_checkpoints (recovery data)                      │
-│  - image_processing_queue (image jobs)                  │
+┌────────────────▼────────────────────────────────────────────────┐
+│  Supabase PostgreSQL                                            │
+│  - background_jobs (unified job tracking)                       │
+│  - scraping_sessions (web scraping jobs)                        │
+│  - scraping_pages (page-level tracking)                         │
+│  - data_import_jobs (XML import jobs)                           │
+│  - webhook_calls (API call tracking)                            │
+│  - job_checkpoints (PDF recovery data)                          │
 │  - ai_analysis_queue (AI analysis jobs)                 │
 └─────────────────────────────────────────────────────────┘
 </code></pre>
@@ -481,18 +493,49 @@ Response:
 <li><a href="database-schema-complete.md">Database Schema</a></li>
 <li><a href="api-endpoints.md">API Endpoints</a></li>
 <li><a href="troubleshooting-guide.md">Troubleshooting Guide</a></li>
+<li><a href="unified-job-tracking.md">Unified Job Tracking</a> ✨ NEW</li>
+<li><a href="monitoring-and-alerting.md">Monitoring &amp; Alerting</a> ✨ NEW</li>
 </ul>
 <hr>
-<h2>✅ Summary</h2>
-<p>The Material Kai Vision Platform uses a <strong>production-ready, Supabase-native job queue system</strong> with:</p>
+<h2>🚨 Monitoring &amp; Alerting</h2>
+<h3>Job Monitor Service</h3>
+<p>The <code>JobMonitorService</code> continuously monitors ALL job types:</p>
+<p><strong>PDF Processing Jobs</strong>:</p>
 <ul>
-<li>✅ Persistent job storage in PostgreSQL</li>
-<li>✅ Checkpoint-based recovery for fault tolerance</li>
-<li>✅ Automatic stuck job detection and recovery</li>
-<li>✅ Real-time progress tracking</li>
-<li>✅ Priority-based job processing</li>
-<li>✅ Comprehensive monitoring and observability</li>
-<li>✅ 99%+ reliability in production</li>
+<li>Heartbeat timeout detection (15 minutes)</li>
+<li>Update timeout detection (5 minutes)</li>
+<li>Auto-restart from checkpoints</li>
+</ul>
+<p><strong>Web Scraping Sessions</strong>:</p>
+<ul>
+<li>Update timeout detection (30 minutes)</li>
+<li>Mark as failed + Sentry alert</li>
+</ul>
+<p><strong>XML Import Jobs</strong>:</p>
+<ul>
+<li>Update timeout detection (20 minutes)</li>
+<li>Mark as failed + Sentry alert</li>
+</ul>
+<h3>Sentry Integration</h3>
+<p>All job failures are automatically reported to Sentry with:</p>
+<ul>
+<li>Full job context (ID, type, progress, stage)</li>
+<li>Error details and stack traces</li>
+<li>Timestamps and duration</li>
+<li>Unique fingerprints for grouping</li>
+</ul>
+<p>See <a href="monitoring-and-alerting.md">monitoring-and-alerting.md</a> for complete details.</p>
+<hr>
+<h2>Summary</h2>
+<p>The Material Kai Vision Platform uses a <strong>production-ready, unified job queue system</strong> with:</p>
+<ul>
+<li>Persistent job storage in PostgreSQL</li>
+<li>Checkpoint-based recovery for fault tolerance</li>
+<li>Automatic stuck job detection and recovery</li>
+<li>Real-time progress tracking</li>
+<li>Priority-based job processing</li>
+<li>Comprehensive monitoring and observability</li>
+<li>99%+ reliability in production</li>
 </ul>
 <p>This hybrid approach combines Supabase&#39;s reliability with custom recovery logic to ensure robust PDF processing even in the face of failures.</p>
 
