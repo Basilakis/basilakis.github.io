@@ -62,10 +62,10 @@
 <p>Comma-separated list of categories to extract.</p>
 <p><strong>Available Categories</strong>:</p>
 <ul>
-<li><code>products</code> - Product pages (✅ <strong>Fully Implemented</strong>)</li>
-<li><code>certificates</code> - Certification pages (⚠️ <strong>TODO</strong>)</li>
-<li><code>logos</code> - Logo/branding pages (⚠️ <strong>TODO</strong>)</li>
-<li><code>specifications</code> - Technical specification pages (⚠️ <strong>TODO</strong>)</li>
+<li><code>products</code> - Product pages (Fully Implemented)</li>
+<li><code>certificates</code> - Certification pages (Planned)</li>
+<li><code>logos</code> - Logo/branding pages (Planned)</li>
+<li><code>specifications</code> - Technical specification pages (Planned)</li>
 <li><code>all</code> - All content (same as <code>focused_extraction=False</code>)</li>
 </ul>
 <p><strong>Examples</strong>:</p>
@@ -86,11 +86,11 @@ extract_categories=&quot;all&quot;                         # Everything
 </code></pre>
 <p><strong>Result</strong>:</p>
 <ul>
-<li>✅ Chunks from product pages only</li>
-<li>✅ Images from product pages only</li>
-<li>✅ Products created from discovery</li>
-<li>❌ Marketing content skipped</li>
-<li>❌ Company history skipped</li>
+<li>Chunks from product pages only</li>
+<li>Images from product pages only</li>
+<li>Products created from discovery</li>
+<li>Marketing content skipped</li>
+<li>Company history skipped</li>
 </ul>
 <hr>
 <h3><strong>Use Case 2: Products + Certificates</strong></h3>
@@ -104,12 +104,12 @@ extract_categories=&quot;all&quot;                         # Everything
 </code></pre>
 <p><strong>Result</strong> (when certificates category is implemented):</p>
 <ul>
-<li>✅ Chunks from product pages</li>
-<li>✅ Chunks from certificate pages</li>
-<li>✅ Images from product pages</li>
-<li>✅ Images from certificate pages</li>
-<li>✅ Products created</li>
-<li>✅ Certificates extracted and linked to products</li>
+<li>Chunks from product pages</li>
+<li>Chunks from certificate pages</li>
+<li>Images from product pages</li>
+<li>Images from certificate pages</li>
+<li>Products created</li>
+<li>Certificates extracted and linked to products</li>
 </ul>
 <hr>
 <h3><strong>Use Case 3: Full PDF Processing</strong></h3>
@@ -130,14 +130,14 @@ extract_categories=&quot;all&quot;                         # Everything
 </code></pre>
 <p><strong>Result</strong>:</p>
 <ul>
-<li>✅ Chunks from all pages</li>
-<li>✅ Images from all pages</li>
-<li>✅ Products created from discovery</li>
-<li>✅ All content processed</li>
+<li>Chunks from all pages</li>
+<li>Images from all pages</li>
+<li>Products created from discovery</li>
+<li>All content processed</li>
 </ul>
 <hr>
 <h2>Implementation Status</h2>
-<h3><strong>✅ Fully Implemented: Products Category</strong></h3>
+<h3>Fully Implemented: Products Category</h3>
 <p><strong>How it works</strong>:</p>
 <ol>
 <li>Claude analyzes PDF → identifies products on pages 5-11</li>
@@ -155,20 +155,18 @@ extract_categories=&quot;all&quot;                         # Everything
 <li>Lines 2202-2264: Image filtering by category</li>
 </ul>
 <hr>
-<h3><strong>⚠️ TODO: Other Categories</strong></h3>
-<p><strong>Certificates, Logos, Specifications</strong> are not yet implemented.</p>
-<p><strong>What needs to be done</strong>:</p>
+<h3>Planned Categories</h3>
+<p><strong>Certificates, Logos, Specifications</strong> are planned for future implementation.</p>
+<p><strong>Implementation Requirements</strong>:</p>
 <ol>
-<li><strong>Update Product Discovery Service</strong> to classify content into categories</li>
-<li><strong>Add category-specific page sets</strong> (like <code>product_pages</code>, add <code>certificate_pages</code>, <code>logo_pages</code>, etc.)</li>
-<li><strong>Update image filtering logic</strong> to handle multiple categories</li>
-<li><strong>Create database tables</strong> for certificates, logos, specifications</li>
-<li><strong>Add API endpoints</strong> to retrieve category-specific content</li>
+<li>Update Product Discovery Service to classify content into categories</li>
+<li>Add category-specific page sets (like <code>product_pages</code>, add <code>certificate_pages</code>, <code>logo_pages</code>, etc.)</li>
+<li>Update image filtering logic to handle multiple categories</li>
+<li>Create database tables for certificates, logos, specifications</li>
+<li>Add API endpoints to retrieve category-specific content</li>
 </ol>
-<p><strong>Placeholder Code</strong> (Lines 2220-2223):</p>
-<pre><code class="language-python"># TODO: Add support for other categories (certificates, logos, specifications)
-# For now, only &#39;products&#39; category is fully implemented
-</code></pre>
+<p><strong>Current Implementation</strong>:
+The codebase includes placeholder support for additional categories. The <code>products</code> category is fully functional and serves as the template for implementing additional categories.</p>
 <hr>
 <h2>Database Schema</h2>
 <h3><strong>Image Metadata</strong></h3>
@@ -188,27 +186,27 @@ extract_categories=&quot;all&quot;                         # Everything
 </code></pre>
 <hr>
 <h2>Migration Path</h2>
-<h3><strong>Phase 1: Products Only (Current)</strong></h3>
+<h3>Phase 1: Products Only (Current)</h3>
 <ul>
-<li>✅ Extract products</li>
-<li>✅ Filter images by product pages</li>
-<li>✅ Skip non-product content</li>
+<li>Extract products</li>
+<li>Filter images by product pages</li>
+<li>Skip non-product content</li>
 </ul>
-<h3><strong>Phase 2: Add Certificates</strong></h3>
+<h3>Phase 2: Add Certificates</h3>
 <ul>
 <li>Update Claude prompt to identify certificate pages</li>
 <li>Create <code>certificates</code> table</li>
 <li>Link certificates to products</li>
 <li>Filter images by certificate pages</li>
 </ul>
-<h3><strong>Phase 3: Add Logos &amp; Specifications</strong></h3>
+<h3>Phase 3: Add Logos &amp; Specifications</h3>
 <ul>
 <li>Identify logo pages (usually first few pages)</li>
 <li>Identify specification pages (technical details)</li>
 <li>Create appropriate database tables</li>
 <li>Link to products</li>
 </ul>
-<h3><strong>Phase 4: Advanced Classification</strong></h3>
+<h3>Phase 4: Advanced Classification</h3>
 <ul>
 <li>AI-powered content classification</li>
 <li>Automatic category detection</li>
@@ -241,27 +239,27 @@ extract_categories=&quot;all&quot;                         # Everything
 </ul>
 <hr>
 <h2>Summary</h2>
-<h3><strong>Current Behavior</strong>:</h3>
+<h3>Current Behavior</h3>
 <ul>
-<li>✅ <code>extract_categories=&quot;products&quot;</code> → Only product pages processed</li>
-<li>✅ <code>focused_extraction=True</code> → Filtering enabled</li>
-<li>✅ <code>focused_extraction=False</code> → All content processed</li>
-<li>✅ Image metadata includes category information</li>
+<li><code>extract_categories=&quot;products&quot;</code> → Only product pages processed</li>
+<li><code>focused_extraction=True</code> → Filtering enabled</li>
+<li><code>focused_extraction=False</code> → All content processed</li>
+<li>Image metadata includes category information</li>
 </ul>
-<h3><strong>Future Enhancements</strong>:</h3>
+<h3>Future Enhancements</h3>
 <ul>
-<li>⚠️ Implement <code>certificates</code> category</li>
-<li>⚠️ Implement <code>logos</code> category</li>
-<li>⚠️ Implement <code>specifications</code> category</li>
-<li>⚠️ Add category-specific database tables</li>
-<li>⚠️ Add category-specific API endpoints</li>
+<li>Implement <code>certificates</code> category</li>
+<li>Implement <code>logos</code> category</li>
+<li>Implement <code>specifications</code> category</li>
+<li>Add category-specific database tables</li>
+<li>Add category-specific API endpoints</li>
 </ul>
-<h3><strong>Key Benefits</strong>:</h3>
+<h3>Key Benefits</h3>
 <ul>
-<li>🎯 <strong>Focused Processing</strong>: Only extract what you need</li>
-<li>💰 <strong>Cost Savings</strong>: Skip irrelevant content (fewer AI calls)</li>
-<li>⚡ <strong>Faster Processing</strong>: Less content to process</li>
-<li>🗄️ <strong>Cleaner Data</strong>: No marketing/admin clutter</li>
+<li><strong>Focused Processing</strong>: Only extract what you need</li>
+<li><strong>Cost Savings</strong>: Skip irrelevant content (fewer AI calls)</li>
+<li><strong>Faster Processing</strong>: Less content to process</li>
+<li><strong>Cleaner Data</strong>: No marketing/admin clutter</li>
 <li>🔧 <strong>Configurable</strong>: Choose what to extract per upload</li>
 </ul>
 
