@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Unified Product Generation Flow</h1>
+<p>Complete documentation for all three product generation methods and their unified search architecture.</p>
+<blockquote>
+<p><strong>📚 Related Documentation:</strong></p>
+<ul>
+<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a> - PDF processing details</li>
+<li><a href="./web-scraping-integration.md">Web Scraping Integration</a> - Web scraping details</li>
+<li><a href="./data-import-system.md">Data Import System</a> - XML import details</li>
+</ul>
+</blockquote>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#architecture-diagram">Architecture Diagram</a></li>
+<li><a href="#method-comparison">Method Comparison</a></li>
+<li><a href="#production-hardening">Production Hardening</a></li>
+<li><a href="#unified-storage">Unified Storage</a></li>
+<li><a href="#unified-search">Unified Search</a></li>
+<li><a href="#verification-checklist">Verification Checklist</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform supports <strong>three product generation methods</strong>, all feeding into a <strong>unified storage and search infrastructure</strong>:</p>
+<ol>
+<li><strong>📄 PDF Processing</strong> - Extract products from PDF catalogs</li>
+<li><strong>🌐 Web Scraping</strong> - Scrape products from manufacturer websites</li>
+<li><strong>📋 XML Import</strong> - Import products from XML files</li>
+</ol>
+<h3>Key Principles</h3>
+<p>✅ <strong>Unified Pipeline</strong>: All methods use the same AI models and services<br>✅ <strong>Same Quality</strong>: Same metadata extraction, chunking, and embeddings<br>✅ <strong>Same Storage</strong>: All products stored in same tables and VECS collections<br>✅ <strong>Same Search</strong>: All products searchable via unified multi-vector search<br>✅ <strong>Same Limits</strong>: Same concurrency limits and async processing  </p>
+<hr>
+<h2>Architecture Diagram</h2>
+<pre><code class="language-mermaid">graph TB
+    subgraph &quot;📄 METHOD 1: PDF Processing&quot;
+        PDF[PDF Upload] --&gt; PDF_Extract[PyMuPDF4LLM Extract]
+        PDF_Extract --&gt; PDF_Discover[ProductDiscoveryService&lt;br/&gt;discover_products]
+        PDF_Discover --&gt; PDF_Products[Products Created&lt;br/&gt;with Metadata]
+        PDF_Products --&gt; PDF_Chunks[ChunkingService&lt;br/&gt;create_chunks_and_embeddings]
+        PDF_Chunks --&gt; PDF_Text_Embed[Text Embeddings&lt;br/&gt;OpenAI 1536D]
+        PDF_Extract --&gt; PDF_Images[Image Extraction]
+        PDF_Images --&gt; PDF_CLIP[CLIP Embeddings&lt;br/&gt;SigLIP 1152D x5]
+    end
+
+    subgraph &quot;🌐 METHOD 2: Web Scraping&quot;
+        WEB[Firecrawl Scraping] --&gt; WEB_MD[Markdown Content&lt;br/&gt;from scraping_pages]
+        WEB_MD --&gt; WEB_Discover[ProductDiscoveryService&lt;br/&gt;discover_products_from_text]
+        WEB_Discover --&gt; WEB_Products[Products Created&lt;br/&gt;with Metadata]
+        WEB_Products --&gt; WEB_Chunks[ChunkingService&lt;br/&gt;create_chunks_and_embeddings]
+        WEB_Chunks --&gt; WEB_Text_Embed[Text Embeddings&lt;br/&gt;OpenAI 1536D]
+        WEB_MD --&gt; WEB_Images[Image URLs Extracted]
+        WEB_Images --&gt; WEB_CLIP[CLIP Embeddings&lt;br/&gt;SigLIP 1152D x5]
+    end
+
+    subgraph &quot;📋 METHOD 3: XML Import&quot;
+        XML[XML Upload] --&gt; XML_Parse[Parse XML&lt;br/&gt;Extract Products]
+        XML_Parse --&gt; XML_Products[Products Created&lt;br/&gt;Direct Insert]
+        XML_Products --&gt; XML_Chunks[_queue_text_processing&lt;br/&gt;Async Chunking]
+        XML_Chunks --&gt; XML_Text_Embed[Text Embeddings&lt;br/&gt;OpenAI 1536D]
+        XML_Parse --&gt; XML_Images[Image Download&lt;br/&gt;from URLs]
+        XML_Images --&gt; XML_CLIP[CLIP Embeddings&lt;br/&gt;SigLIP 1152D x5]
+    end
+
+    subgraph &quot;💾 UNIFIED STORAGE - VECS Collections&quot;
+        VECS_Text[(chunks table&lt;br/&gt;text_embedding 1536D)]
+        VECS_Visual[(image_siglip_embeddings&lt;br/&gt;1152D)]
+        VECS_Color[(image_color_embeddings&lt;br/&gt;1152D)]
+        VECS_Texture[(image_texture_embeddings&lt;br/&gt;1152D)]
+        VECS_Material[(image_material_embeddings&lt;br/&gt;1152D)]
+        VECS_Style[(image_style_embeddings&lt;br/&gt;1152D)]
+    end
+
+    subgraph &quot;🔍 UNIFIED SEARCH - Works Across All Sources&quot;
+        SEARCH[User Query] --&gt; SEARCH_Embed[Generate Query&lt;br/&gt;Embedding]
+        SEARCH_Embed --&gt; SEARCH_Multi[Multi-Vector Search]
+        SEARCH_Multi --&gt; SEARCH_Text[Search Text&lt;br/&gt;Chunks]
+        SEARCH_Multi --&gt; SEARCH_Visual[Search Visual&lt;br/&gt;Embeddings]
+        SEARCH_Multi --&gt; SEARCH_Specialized[Search Specialized&lt;br/&gt;Color/Texture/Material/Style]
+        SEARCH_Text --&gt; RESULTS[Unified Results&lt;br/&gt;PDF + Web + XML]
+        SEARCH_Visual --&gt; RESULTS
+        SEARCH_Specialized --&gt; RESULTS
+    end
+
+    PDF_Text_Embed --&gt; VECS_Text
+    WEB_Text_Embed --&gt; VECS_Text
+    XML_Text_Embed --&gt; VECS_Text
+
+    PDF_CLIP --&gt; VECS_Visual
+    PDF_CLIP --&gt; VECS_Color
+    PDF_CLIP --&gt; VECS_Texture
+    PDF_CLIP --&gt; VECS_Material
+    PDF_CLIP --&gt; VECS_Style
+
+    WEB_CLIP --&gt; VECS_Visual
+    WEB_CLIP --&gt; VECS_Color
+    WEB_CLIP --&gt; VECS_Texture
+    WEB_CLIP --&gt; VECS_Material
+    WEB_CLIP --&gt; VECS_Style
+
+    XML_CLIP --&gt; VECS_Visual
+    XML_CLIP --&gt; VECS_Color
+    XML_CLIP --&gt; VECS_Texture
+    XML_CLIP --&gt; VECS_Material
+    XML_CLIP --&gt; VECS_Style
+
+    VECS_Text --&gt; SEARCH_Text
+    VECS_Visual --&gt; SEARCH_Visual
+    VECS_Color --&gt; SEARCH_Specialized
+    VECS_Texture --&gt; SEARCH_Specialized
+    VECS_Material --&gt; SEARCH_Specialized
+    VECS_Style --&gt; SEARCH_Specialized
+</code></pre>
+<hr>
+<h2>Method Comparison</h2>
+<h3>Feature Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>📄 PDF Processing</th>
+<th>🌐 Web Scraping</th>
+<th>📋 XML Import</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Product Discovery</strong></td>
+<td>✅ <code>ProductDiscoveryService.discover_products()</code></td>
+<td>✅ <code>ProductDiscoveryService.discover_products_from_text()</code></td>
+<td>✅ Direct creation from XML</td>
+</tr>
+<tr>
+<td><strong>Text Chunks</strong></td>
+<td>✅ <code>ChunkingService.create_chunks_and_embeddings()</code></td>
+<td>✅ <code>ChunkingService.create_chunks_and_embeddings()</code></td>
+<td>✅ <code>_queue_text_processing()</code> (async)</td>
+</tr>
+<tr>
+<td><strong>Text Embeddings</strong></td>
+<td>✅ OpenAI 1536D → <code>chunks.text_embedding</code></td>
+<td>✅ OpenAI 1536D → <code>chunks.text_embedding</code></td>
+<td>✅ OpenAI 1536D → <code>chunks.text_embedding</code></td>
+</tr>
+<tr>
+<td><strong>Image Processing</strong></td>
+<td>✅ Extract from PDF pages</td>
+<td>✅ Extract from scraped pages</td>
+<td>✅ Download from URLs</td>
+</tr>
+<tr>
+<td><strong>CLIP Embeddings</strong></td>
+<td>✅ SigLIP 1152D x5 types</td>
+<td>✅ SigLIP 1152D x5 types</td>
+<td>✅ SigLIP 1152D x5 types</td>
+</tr>
+<tr>
+<td><strong>VECS Storage</strong></td>
+<td>✅ All 6 collections</td>
+<td>✅ All 6 collections</td>
+<td>✅ All 6 collections</td>
+</tr>
+<tr>
+<td><strong>Searchable</strong></td>
+<td>✅ Via unified search</td>
+<td>✅ Via unified search</td>
+<td>✅ Via unified search</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Detailed Flow Verification</h3>
+<h4><strong>METHOD 1: PDF Processing</strong> ✅</h4>
+<pre><code class="language-python"># 1. Product Discovery
+catalog = await discovery_service.discover_products(
+    pdf_content=pdf_bytes,
+    pdf_text=markdown_text,
+    categories=[&quot;products&quot;]
+)
+
+# 2. Products Created → products table
+# 3. Chunks Created → chunks table
+chunks_result = await chunking_service.create_chunks_and_embeddings(
+    document_id=document_id,
+    extracted_text=pdf_text,
+    product_ids=product_ids
+)
+
+# 4. Text Embeddings → chunks.text_embedding (1536D)
+embedding = await embedding_service._generate_text_embedding(text=chunk_text)
+
+# 5. Image Embeddings → VECS collections (1152D x5)
+await vecs_service.upsert_specialized_embeddings(
+    image_id=image_id,
+    embeddings={
+        &#39;color_siglip_1152&#39;: [...],
+        &#39;texture_siglip_1152&#39;: [...],
+        &#39;material_siglip_1152&#39;: [...],
+        &#39;style_siglip_1152&#39;: [...],
+        &#39;visual_siglip_1152&#39;: [...]
+    }
+)
+</code></pre>
+<hr>
+<h4><strong>METHOD 2: Web Scraping</strong> ✅</h4>
+<pre><code class="language-python"># 1. Product Discovery from Markdown
+catalog = await discovery_service.discover_products_from_text(
+    markdown_text=scraped_markdown,
+    source_type=&quot;web_scraping&quot;,
+    categories=[&quot;products&quot;]
+)
+
+# 2. Products Created → products table
+created_products = await self._create_products_in_database(
+    catalog=catalog,
+    workspace_id=workspace_id,
+    session_id=session_id
+)
+
+# 3. Chunks Created → chunks table
+# 4. Text Embeddings → chunks.text_embedding (1536D)
+# (Same ChunkingService as PDF)
+
+# 5. Image Embeddings → VECS collections (1152D x5)
+# (Same ImageProcessingService as PDF)
+</code></pre>
+<hr>
+<h4><strong>METHOD 3: XML Import</strong> ✅</h4>
+<pre><code class="language-python"># 1. Products Created Directly → products table
+product_record = {
+    &quot;name&quot;: product_name,
+    &quot;description&quot;: description,
+    &quot;properties&quot;: {...},
+    &quot;metadata&quot;: {...}
+}
+insert_response = supabase.table(&#39;products&#39;).insert(product_record).execute()
+
+# 2. Async Chunking &amp; Embeddings
+await self._queue_text_processing(
+    product_id=product_id,
+    product_data=product_data,
+    workspace_id=workspace_id
+)
+
+# 3. Chunks Created → chunks table
+chunk_record = {
+    &#39;document_id&#39;: product_id,
+    &#39;text&#39;: description,
+    &#39;workspace_id&#39;: workspace_id
+}
+
+# 4. Text Embeddings → chunks.text_embedding (1536D)
+await async_queue.queue_ai_analysis_jobs(
+    chunks=[{&#39;id&#39;: chunk_id}],
+    analysis_type=&#39;embedding_generation&#39;
+)
+
+# 5. Image Embeddings → VECS collections (1152D x5)
+# (Same ImageProcessingService as PDF)
+</code></pre>
+<hr>
+<h2>Production Hardening</h2>
+<p>All three processing methods implement <strong>complete production hardening</strong> for reliability, monitoring, and debugging.</p>
+<h3>Source Tracking</h3>
+<p>Every product, chunk, image, and embedding is tagged with its source for complete data lineage:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+<th>Example Values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>source_type</strong></td>
+<td>Processing method</td>
+<td><code>&#39;pdf_processing&#39;</code>, <code>&#39;xml_import&#39;</code>, <code>&#39;web_scraping&#39;</code></td>
+</tr>
+<tr>
+<td><strong>source_job_id</strong></td>
+<td>Originating job</td>
+<td>Job UUID from <code>background_jobs</code> or <code>data_import_jobs</code></td>
+</tr>
+</tbody></table>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Filter Materials Data page by specific job</li>
+<li>✅ Trace any data back to its source</li>
+<li>✅ Delete all data from a specific import</li>
+<li>✅ Audit data quality by source</li>
+</ul>
+<p><strong>Implementation:</strong></p>
+<pre><code class="language-python"># PDF Processing
+await supabase.table(&#39;products&#39;).insert({
+    &#39;name&#39;: product_name,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,
+    &#39;source_job_id&#39;: job_id,
+    # ... other fields
+})
+
+# XML Import
+await supabase.table(&#39;products&#39;).insert({
+    &#39;name&#39;: product_name,
+    &#39;source_type&#39;: &#39;xml_import&#39;,
+    &#39;source_job_id&#39;: job_id,
+    # ... other fields
+})
+
+# Web Scraping
+await supabase.table(&#39;products&#39;).insert({
+    &#39;name&#39;: product_name,
+    &#39;source_type&#39;: &#39;web_scraping&#39;,
+    &#39;source_job_id&#39;: session_id,
+    # ... other fields
+})
+</code></pre>
+<hr>
+<h3>Heartbeat Monitoring</h3>
+<p>All processing methods update heartbeat timestamps to detect stuck/crashed jobs:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Heartbeat Field</th>
+<th>Update Frequency</th>
+<th>Stuck Threshold</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>PDF Processing</strong></td>
+<td><code>last_heartbeat</code></td>
+<td>Every stage</td>
+<td>&gt;10 minutes</td>
+</tr>
+<tr>
+<td><strong>XML Import</strong></td>
+<td><code>last_heartbeat</code></td>
+<td>Every batch (10 products)</td>
+<td>&gt;30 minutes</td>
+</tr>
+<tr>
+<td><strong>Web Scraping</strong></td>
+<td><code>last_heartbeat_at</code></td>
+<td>Every 30 seconds</td>
+<td>&gt;5 minutes</td>
+</tr>
+</tbody></table>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Detect crashed/stuck jobs automatically</li>
+<li>✅ Enable auto-recovery mechanisms</li>
+<li>✅ Monitor job health in real-time</li>
+<li>✅ Alert on processing delays</li>
+</ul>
+<p><strong>Implementation:</strong></p>
+<pre><code class="language-python"># Update heartbeat during processing
+await supabase.table(&#39;background_jobs&#39;).update({
+    &#39;last_heartbeat&#39;: datetime.utcnow().isoformat()
+}).eq(&#39;id&#39;, job_id).execute()
+
+# Detect stuck jobs
+stuck_jobs = await supabase.table(&#39;background_jobs&#39;).select(&#39;*&#39;).filter(
+    &#39;status&#39;, &#39;eq&#39;, &#39;processing&#39;
+).filter(
+    &#39;last_heartbeat&#39;, &#39;lt&#39;, (datetime.utcnow() - timedelta(minutes=10)).isoformat()
+).execute()
+</code></pre>
+<hr>
+<h3>Sentry Error Tracking</h3>
+<p>All processing methods use Sentry for comprehensive error tracking and performance monitoring:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>PDF</th>
+<th>XML</th>
+<th>Web Scraping</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Transaction Tracking</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Breadcrumbs</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Exception Capture</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Performance Monitoring</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Error Context</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Track performance bottlenecks</li>
+<li>✅ Debug errors with full context</li>
+<li>✅ Monitor AI model usage</li>
+<li>✅ Identify slow operations</li>
+</ul>
+<p><strong>Implementation:</strong></p>
+<pre><code class="language-python"># Start Sentry transaction
+with sentry_sdk.start_transaction(op=&quot;pdf_processing&quot;, name=&quot;process_job&quot;) as transaction:
+    transaction.set_tag(&quot;job_id&quot;, job_id)
+    transaction.set_data(&quot;total_products&quot;, total_products)
+
+    # Add breadcrumbs for debugging
+    sentry_sdk.add_breadcrumb(
+        category=&quot;processing&quot;,
+        message=f&quot;Processing batch {batch_index}&quot;,
+        level=&quot;info&quot;,
+        data={&quot;batch_size&quot;: len(batch)}
+    )
+
+    try:
+        # ... processing logic ...
+        transaction.set_status(&quot;ok&quot;)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        transaction.set_status(&quot;internal_error&quot;)
+        raise
+</code></pre>
+<hr>
+<h3>Production Hardening Status</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>PDF</th>
+<th>XML</th>
+<th>Web Scraping</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Source Tracking</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td><strong>Heartbeat Monitoring</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td><strong>Sentry Tracking</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td><strong>Error Handling</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td><strong>Progress Tracking</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td><strong>Checkpoint Recovery</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td><strong>Auto-Recovery</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>COMPLETE</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Unified Storage</h2>
+<p>All three methods store data in the <strong>same tables and VECS collections</strong>:</p>
+<h3>1. PostgreSQL Tables</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+<th>Used By</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>products</strong></td>
+<td>Product records</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>chunks</strong></td>
+<td>Text chunks with embeddings</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>document_images</strong></td>
+<td>Image metadata</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>documents</strong></td>
+<td>Source documents</td>
+<td>PDF, Web, XML</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>2. VECS Collections</h3>
+<p>All three methods store embeddings in the same VECS collections:</p>
+<h4><strong>Text Embeddings</strong></h4>
+<table>
+<thead>
+<tr>
+<th>Collection</th>
+<th>Dimension</th>
+<th>Model</th>
+<th>Used By</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>chunks.text_embedding</strong></td>
+<td>1536D</td>
+<td>OpenAI text-embedding-3-small</td>
+<td>PDF, Web, XML</td>
+</tr>
+</tbody></table>
+<h4><strong>Visual Embeddings</strong></h4>
+<table>
+<thead>
+<tr>
+<th>Collection</th>
+<th>Dimension</th>
+<th>Model</th>
+<th>Used By</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>image_siglip_embeddings</strong></td>
+<td>1152D</td>
+<td>SigLIP</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>image_color_embeddings</strong></td>
+<td>1152D</td>
+<td>SigLIP (color-focused)</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>image_texture_embeddings</strong></td>
+<td>1152D</td>
+<td>SigLIP (texture-focused)</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>image_material_embeddings</strong></td>
+<td>1152D</td>
+<td>SigLIP (material-focused)</td>
+<td>PDF, Web, XML</td>
+</tr>
+<tr>
+<td><strong>image_style_embeddings</strong></td>
+<td>1152D</td>
+<td>SigLIP (style-focused)</td>
+<td>PDF, Web, XML</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Unified Search</h2>
+<p>All products are searchable via the <strong>same unified search service</strong>, regardless of source:</p>
+<h3>Frontend: UnifiedSearchService</h3>
+<pre><code class="language-typescript">// Search across ALL sources (PDF + Web + XML)
+const results = await UnifiedSearchService.searchMultiVector({
+  query: &quot;blue ceramic tiles&quot;,
+  workspace_id: workspace_id,
+  limit: 20
+});
+</code></pre>
+<hr>
+<h3>Backend: unified_search_service.py</h3>
+<pre><code class="language-python">async def search(query: str, workspace_id: str):
+    # 1. Generate query embedding
+    query_embedding = await embedding_service.generate_embedding(query)
+
+    # 2. Search text chunks (PDF + Web + XML)
+    text_results = await self._search_semantic(query, workspace_id)
+
+    # 3. Search visual embeddings (PDF + Web + XML)
+    visual_results = await vecs_service.search_similar_images(
+        query_embedding=query_embedding,
+        filters={&quot;workspace_id&quot;: workspace_id}
+    )
+
+    # 4. Search specialized embeddings (Color, Texture, Material, Style)
+    color_results = await vecs_service.search_specialized_embeddings(
+        embedding_type=&#39;color&#39;,
+        query_embedding=query_embedding
+    )
+
+    # 5. Combine and rank results
+    return unified_results  # Contains products from ALL sources
+</code></pre>
+<hr>
+<h3>Search Flow</h3>
+<pre><code>User Query: &quot;blue ceramic tiles&quot;
+           ↓
+Generate Query Embedding (OpenAI 1536D)
+           ↓
+┌──────────────────────────────────────┐
+│ Multi-Vector Search (Parallel)      │
+├──────────────────────────────────────┤
+│ 1. Text Search (chunks table)       │
+│    → Searches: PDF + Web + XML      │
+│                                      │
+│ 2. Visual Search (VECS)              │
+│    → Searches: PDF + Web + XML      │
+│                                      │
+│ 3. Color Search (VECS)               │
+│    → Searches: PDF + Web + XML      │
+│                                      │
+│ 4. Texture Search (VECS)             │
+│    → Searches: PDF + Web + XML      │
+│                                      │
+│ 5. Material Search (VECS)            │
+│    → Searches: PDF + Web + XML      │
+│                                      │
+│ 6. Style Search (VECS)               │
+│    → Searches: PDF + Web + XML      │
+└──────────────────────────────────────┘
+           ↓
+Combine &amp; Rank Results
+           ↓
+Return Unified Results (PDF + Web + XML)
+</code></pre>
+<hr>
+<h2>Verification Checklist</h2>
+<h3>✅ Product Generation</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Products Created</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>products</code> table</td>
+</tr>
+<tr>
+<td><strong>Chunks Created</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>chunks</code> table</td>
+</tr>
+<tr>
+<td><strong>Text Embeddings</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>chunks.text_embedding</code> (1536D)</td>
+</tr>
+<tr>
+<td><strong>Image Embeddings</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>VECS collections (1152D x5)</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>✅ Unified Storage</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Same Products Table</strong></td>
+<td>✅</td>
+<td>All methods insert to <code>products</code></td>
+</tr>
+<tr>
+<td><strong>Same Chunks Table</strong></td>
+<td>✅</td>
+<td>All methods insert to <code>chunks</code></td>
+</tr>
+<tr>
+<td><strong>Same VECS Collections</strong></td>
+<td>✅</td>
+<td>All methods use same 6 collections</td>
+</tr>
+<tr>
+<td><strong>Same Embedding Models</strong></td>
+<td>✅</td>
+<td>OpenAI 1536D + SigLIP 1152D</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>✅ Unified Search</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Text Search</strong></td>
+<td>✅</td>
+<td>Searches <code>chunks</code> table (all sources)</td>
+</tr>
+<tr>
+<td><strong>Visual Search</strong></td>
+<td>✅</td>
+<td>Searches VECS collections (all sources)</td>
+</tr>
+<tr>
+<td><strong>Multi-Vector Search</strong></td>
+<td>✅</td>
+<td>Combines all search types</td>
+</tr>
+<tr>
+<td><strong>Cross-Source Results</strong></td>
+<td>✅</td>
+<td>Returns products from PDF + Web + XML</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>✅ Async Processing</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Fully Async</strong></td>
+<td>✅</td>
+<td>All methods use <code>async/await</code></td>
+</tr>
+<tr>
+<td><strong>Same Limits</strong></td>
+<td>✅</td>
+<td>5 Llama, 2 Claude, 10 uploads, 20 CLIP</td>
+</tr>
+<tr>
+<td><strong>Same Timeouts</strong></td>
+<td>✅</td>
+<td>300s discovery, 120s AI, 30s downloads</td>
+</tr>
+<tr>
+<td><strong>Same Services</strong></td>
+<td>✅</td>
+<td>ImageProcessingService, RealEmbeddingsService, AsyncQueueService</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Summary</h2>
+<p>✅ <strong>All 3 methods generate products</strong>: PDF, Web Scraping, XML Import
+✅ <strong>All use same AI models</strong>: Claude/GPT for discovery, OpenAI for text, SigLIP for images
+✅ <strong>All create chunks</strong>: Text chunks with embeddings
+✅ <strong>All create embeddings</strong>: Text (1536D) + Visual (1152D x5)
+✅ <strong>All use same storage</strong>: PostgreSQL tables + VECS collections
+✅ <strong>All searchable</strong>: Via unified multi-vector search
+✅ <strong>All fully async</strong>: Same concurrency limits and timeout guards</p>
+<p><strong>The architecture is unified, consistent, and production-ready!</strong> 🚀</p>
+
+</div></body></html>

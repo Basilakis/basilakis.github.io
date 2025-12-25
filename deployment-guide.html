@@ -24,29 +24,688 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>Deployment Guide</h1>
+<h2>🔐 <strong>Complete Secrets Reference</strong></h2>
+<p><strong>All secrets required for deployment across all platforms.</strong></p>
+<h3><strong>Supabase Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Used</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Public</td>
+<td>Frontend, Backend, Edge Functions</td>
+<td>Supabase project URL</td>
+<td><code>https://bgbavxtjlbvgplozizxu.supabase.co</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>Public</td>
+<td>Frontend, Backend</td>
+<td>Public anonymous key for client-side</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Backend, Edge Functions</td>
+<td>Service role key (admin access)</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_JWT_SECRET</code></td>
+<td><strong>Secret</strong></td>
+<td>Backend</td>
+<td>JWT verification secret</td>
+<td><code>your-super-secret-jwt-secret-with-at-least-32-characters</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_DB_PASSWORD</code></td>
+<td><strong>Secret</strong></td>
+<td>Direct DB access (optional)</td>
+<td>Database password</td>
+<td><code>your-secure-db-password</code></td>
+</tr>
+</tbody></table>
+<h3><strong>GitHub Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Used</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GH_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>Personal access token for deployments</td>
+<td><code>ghp_xxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VERCEL_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>Vercel deployment token</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VERCEL_ORG_ID</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>Vercel organization ID</td>
+<td><code>team_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VERCEL_PROJECT_ID</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>Vercel project ID</td>
+<td><code>prj_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>SSH_PRIVATE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions</td>
+<td>SSH key for server deployment</td>
+<td><code>-----BEGIN OPENSSH PRIVATE KEY-----...</code></td>
+</tr>
+<tr>
+<td><code>SSH_HOST</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>Server hostname</td>
+<td><code>v1api.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>SSH_USER</code></td>
+<td>Public</td>
+<td>GitHub Actions</td>
+<td>SSH username</td>
+<td><code>root</code> or <code>deploy</code></td>
+</tr>
+</tbody></table>
+<h3><strong>Vercel Environment Variables</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Environment</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Supabase project URL</td>
+<td><code>https://bgbavxtjlbvgplozizxu.supabase.co</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Supabase anonymous key</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Service role key for Edge Functions</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>MIVAA_GATEWAY_URL</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>MIVAA API endpoint</td>
+<td><code>https://v1api.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>MIVAA_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>MIVAA JWT token</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>VITE_OPENAI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>OpenAI API key</td>
+<td><code>sk-proj-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_ANTHROPIC_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Anthropic API key</td>
+<td><code>sk-ant-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_TOGETHER_AI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Together AI API key</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_REPLICATE_API_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>Production</td>
+<td>Replicate API token</td>
+<td><code>r8_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>VITE_STRIPE_PUBLISHABLE_KEY</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Stripe publishable key</td>
+<td><code>pk_test_...</code> or <code>pk_live_...</code></td>
+</tr>
+<tr>
+<td><code>VITE_STRIPE_PRO_PRICE_ID</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Stripe price ID for Pro subscription</td>
+<td><code>price_...</code></td>
+</tr>
+<tr>
+<td><code>VITE_STRIPE_ENTERPRISE_PRICE_ID</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Stripe price ID for Enterprise subscription</td>
+<td><code>price_...</code></td>
+</tr>
+<tr>
+<td><code>NODE_ENV</code></td>
+<td>Public</td>
+<td>Production</td>
+<td>Node environment</td>
+<td><code>production</code></td>
+</tr>
+<tr>
+<td><code>VITE_DEBUG</code></td>
+<td>Public</td>
+<td>Production, Preview</td>
+<td>Debug mode</td>
+<td><code>false</code> (production), <code>true</code> (preview)</td>
+</tr>
+</tbody></table>
+<h3><strong>Backend/MIVAA Service Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Set</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Supabase project URL</td>
+<td><code>https://bgbavxtjlbvgplozizxu.supabase.co</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ANON_KEY</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Supabase anonymous key</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Service role key</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>JWT_SECRET_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>JWT signing secret</td>
+<td><code>your-super-secret-jwt-secret-with-at-least-32-characters</code></td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>OpenAI API key</td>
+<td><code>sk-proj-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Anthropic API key</td>
+<td><code>sk-ant-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>TOGETHER_AI_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Together AI API key</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>REPLICATE_API_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Replicate API token</td>
+<td><code>r8_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>SENTRY_DSN</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Sentry error tracking DSN</td>
+<td><code>https://xxxxx@xxxxx.ingest.sentry.io/xxxxx</code></td>
+</tr>
+<tr>
+<td><code>CORS_ORIGINS</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Allowed CORS origins</td>
+<td><code>https://your-domain.com,https://preview.vercel.app</code></td>
+</tr>
+<tr>
+<td><code>ENVIRONMENT</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Environment name</td>
+<td><code>production</code>, <code>staging</code>, <code>development</code></td>
+</tr>
+<tr>
+<td><code>DEBUG</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Debug mode</td>
+<td><code>false</code> (production), <code>true</code> (development)</td>
+</tr>
+<tr>
+<td><code>LOG_LEVEL</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Logging level</td>
+<td><code>ERROR</code>, <code>WARNING</code>, <code>INFO</code>, <code>DEBUG</code></td>
+</tr>
+</tbody></table>
+<h3><strong>AI Service API Keys</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Secret Name</th>
+<th>Where Used</th>
+<th>How to Get</th>
+<th>Pricing</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>OpenAI</strong></td>
+<td><code>OPENAI_API_KEY</code></td>
+<td>Frontend, Backend</td>
+<td><a href="https://platform.openai.com/api-keys">https://platform.openai.com/api-keys</a></td>
+<td>Pay-per-use</td>
+</tr>
+<tr>
+<td><strong>Anthropic</strong></td>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Backend</td>
+<td><a href="https://console.anthropic.com/">https://console.anthropic.com/</a></td>
+<td>Pay-per-use</td>
+</tr>
+<tr>
+<td><strong>Together AI</strong></td>
+<td><code>TOGETHER_AI_API_KEY</code></td>
+<td>Backend</td>
+<td><a href="https://api.together.xyz/settings/api-keys">https://api.together.xyz/settings/api-keys</a></td>
+<td>Pay-per-use</td>
+</tr>
+<tr>
+<td><strong>Replicate</strong></td>
+<td><code>REPLICATE_API_TOKEN</code></td>
+<td>Frontend, Backend</td>
+<td><a href="https://replicate.com/account/api-tokens">https://replicate.com/account/api-tokens</a></td>
+<td>Pay-per-use</td>
+</tr>
+</tbody></table>
+<h3><strong>Supabase Edge Functions Secrets</strong></h3>
+<p><strong>Required for PDF Processing Agent and other Edge Functions</strong></p>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Set</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>Claude API key for agent chat</td>
+<td><code>sk-ant-xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>MIVAA_SERVICE_URL</code></td>
+<td>Public</td>
+<td>Supabase Dashboard</td>
+<td>MIVAA API endpoint</td>
+<td><code>https://v1api.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>MIVAA_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>MIVAA API authentication (optional)</td>
+<td><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></td>
+</tr>
+<tr>
+<td><code>SSH_HOST</code></td>
+<td>Public</td>
+<td>Supabase Dashboard</td>
+<td>Server hostname for health checks</td>
+<td><code>v1api.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>SSH_USER</code></td>
+<td>Public</td>
+<td>Supabase Dashboard</td>
+<td>SSH username for server monitoring</td>
+<td><code>root</code> or <code>deploy</code></td>
+</tr>
+<tr>
+<td><code>SSH_PRIVATE_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>SSH private key for server access</td>
+<td><code>-----BEGIN OPENSSH PRIVATE KEY-----...</code></td>
+</tr>
+<tr>
+<td><code>SENTRY_AUTH_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>Sentry API token for error queries</td>
+<td><code>sntrys_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>STRIPE_SECRET_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>Stripe secret key for payments</td>
+<td><code>sk_test_...</code> or <code>sk_live_...</code></td>
+</tr>
+<tr>
+<td><code>STRIPE_WEBHOOK_SECRET</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>Stripe webhook signing secret</td>
+<td><code>whsec_...</code></td>
+</tr>
+<tr>
+<td><code>STRIPE_PRO_PRICE_ID</code></td>
+<td>Public</td>
+<td>Supabase Dashboard</td>
+<td>Stripe price ID for Pro subscription</td>
+<td><code>price_...</code></td>
+</tr>
+<tr>
+<td><code>STRIPE_ENTERPRISE_PRICE_ID</code></td>
+<td>Public</td>
+<td>Supabase Dashboard</td>
+<td>Stripe price ID for Enterprise subscription</td>
+<td><code>price_...</code></td>
+</tr>
+<tr>
+<td><code>AWS_REGION</code></td>
+<td>Public</td>
+<td>Supabase Dashboard</td>
+<td>AWS region for SES</td>
+<td><code>us-east-1</code></td>
+</tr>
+<tr>
+<td><code>AWS_ACCESS_KEY_ID</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>AWS IAM access key for SES</td>
+<td><code>AKIAXXXXXXXXXXXXXXXX</code></td>
+</tr>
+<tr>
+<td><code>AWS_SECRET_ACCESS_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Supabase Dashboard</td>
+<td>AWS IAM secret key for SES</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note:</strong> Default sender email and name are now configured through the Admin Panel at <code>/admin/email</code> → Email Settings, not as environment variables.</p>
+</blockquote>
+<p><strong>How to Set Supabase Edge Function Secrets:</strong></p>
+<ol>
+<li>Go to <a href="https://supabase.com/dashboard">Supabase Dashboard</a></li>
+<li>Select your project (KAI - <code>bgbavxtjlbvgplozizxu</code>)</li>
+<li>Navigate to <strong>Edge Functions</strong> → <strong>Settings</strong> → <strong>Secrets</strong></li>
+<li>Add each secret with the exact name from the table above</li>
+<li>Secrets are automatically available to all Edge Functions (no redeployment needed)</li>
+</ol>
+<p><strong>PDF Processing Agent Features:</strong></p>
+<ul>
+<li>✅ <strong>Intelligent job recovery</strong> - Checks for existing jobs before upload, resumes from checkpoints</li>
+<li>✅ <strong>Connection loss resilience</strong> - Verifies job status even when API is down (falls back to database)</li>
+<li>✅ <strong>Duplicate prevention</strong> - Never starts duplicate jobs for the same PDF</li>
+<li>✅ <strong>Automatic retry</strong> on transient failures (1 retry for 5xx errors)</li>
+<li>✅ <strong>Stuck job detection</strong> - Alerts if no progress for 5+ minutes</li>
+<li>✅ <strong>Comprehensive error diagnostics</strong> with Sentry integration</li>
+<li>✅ <strong>Server health monitoring</strong> via SSH (disk, memory, CPU)</li>
+<li>✅ <strong>Conversational progress updates</strong> with real-time stage tracking and emojis</li>
+<li>✅ <strong>Self-healing suggestions</strong> for common issues</li>
+<li>✅ <strong>Partial data recovery</strong> - Identifies what was created before failure</li>
+<li>✅ <strong>Respects user&#39;s custom prompts</strong> while auto-executing uploads</li>
+</ul>
+<h3><strong>Optional Monitoring &amp; Analytics Secrets</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Where Used</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SENTRY_DSN</code></td>
+<td><strong>Secret</strong></td>
+<td>Backend</td>
+<td>Sentry error tracking</td>
+<td><code>https://xxxxx@xxxxx.ingest.sentry.io/xxxxx</code></td>
+</tr>
+<tr>
+<td><code>SENTRY_AUTH_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>GitHub Actions, Supabase Edge Functions</td>
+<td>Sentry release tracking &amp; error queries</td>
+<td><code>sntrys_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>GOOGLE_ANALYTICS_ID</code></td>
+<td>Public</td>
+<td>Frontend</td>
+<td>Google Analytics tracking</td>
+<td><code>G-XXXXXXXXXX</code></td>
+</tr>
+<tr>
+<td><code>POSTHOG_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td>Frontend</td>
+<td>PostHog analytics</td>
+<td><code>phc_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>💳 Stripe Setup (Subscription &amp; Credits System)</h2>
+<h3><strong>Step 1: Create Stripe Account &amp; Products</strong></h3>
+<ol>
+<li><strong>Create Stripe Account</strong>: <a href="https://dashboard.stripe.com/register">https://dashboard.stripe.com/register</a></li>
+<li><strong>Create Products</strong> in Stripe Dashboard:</li>
+</ol>
+<p><strong>Pro Subscription ($29/month):</strong></p>
+<ul>
+<li>Go to <strong>Products</strong> → <strong>Add Product</strong></li>
+<li>Name: <code>Pro Subscription</code></li>
+<li>Description: <code>1000 credits per month + unlimited access</code></li>
+<li>Pricing: <code>$29.00 USD</code> / <code>Recurring</code> / <code>Monthly</code></li>
+<li>Copy the <strong>Price ID</strong> (starts with <code>price_...</code>)</li>
+</ul>
+<p><strong>Enterprise Subscription ($99/month):</strong></p>
+<ul>
+<li>Go to <strong>Products</strong> → <strong>Add Product</strong></li>
+<li>Name: <code>Enterprise Subscription</code></li>
+<li>Description: <code>5000 credits per month + priority support</code></li>
+<li>Pricing: <code>$99.00 USD</code> / <code>Recurring</code> / <code>Monthly</code></li>
+<li>Copy the <strong>Price ID</strong> (starts with <code>price_...</code>)</li>
+</ul>
+<p><strong>Credit Packages (One-time purchases):</strong></p>
+<ul>
+<li>100 Credits: <code>$10.00 USD</code> / <code>One-time</code></li>
+<li>600 Credits: <code>$50.00 USD</code> / <code>One-time</code></li>
+<li>1300 Credits: <code>$100.00 USD</code> / <code>One-time</code></li>
+</ul>
+<h3><strong>Step 2: Get Stripe API Keys</strong></h3>
+<ol>
+<li>Go to <strong>Developers</strong> → <strong>API Keys</strong></li>
+<li>Copy <strong>Publishable key</strong> (starts with <code>pk_test_...</code> or <code>pk_live_...</code>)</li>
+<li>Copy <strong>Secret key</strong> (starts with <code>sk_test_...</code> or <code>sk_live_...</code>)</li>
+</ol>
+<h3><strong>Step 3: Set Up Webhook</strong></h3>
+<ol>
+<li>Go to <strong>Developers</strong> → <strong>Webhooks</strong></li>
+<li>Click <strong>Add endpoint</strong></li>
+<li><strong>Endpoint URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/stripe-webhooks</code></li>
+<li><strong>Events to send</strong>: Select these events:<ul>
+<li><code>customer.created</code></li>
+<li><code>customer.subscription.created</code></li>
+<li><code>customer.subscription.updated</code></li>
+<li><code>customer.subscription.deleted</code></li>
+<li><code>payment_intent.succeeded</code></li>
+<li><code>invoice.paid</code></li>
+<li><code>invoice.payment_failed</code></li>
+</ul>
+</li>
+<li>Click <strong>Add endpoint</strong></li>
+<li>Copy the <strong>Signing secret</strong> (starts with <code>whsec_...</code>)</li>
+</ol>
+<h3><strong>Step 4: Configure Supabase Secrets</strong></h3>
+<p><strong>Go to:</strong> <a href="https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/settings/vault">https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/settings/vault</a></p>
+<p>Add these 4 secrets:</p>
+<pre><code>STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_ENTERPRISE_PRICE_ID=price_...
+</code></pre>
+<h3><strong>Step 5: Configure Vercel Environment Variables</strong></h3>
+<p><strong>Go to:</strong> <a href="https://vercel.com/creativeghq/material-kai-vision-platform/settings/environment-variables">https://vercel.com/creativeghq/material-kai-vision-platform/settings/environment-variables</a></p>
+<p>Add these 3 variables (select <strong>ALL</strong> environments: Production, Preview, Development):</p>
+<pre><code>VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+VITE_STRIPE_PRO_PRICE_ID=price_...
+VITE_STRIPE_ENTERPRISE_PRICE_ID=price_...
+</code></pre>
+<h3><strong>Step 6: Test the Integration</strong></h3>
+<ol>
+<li><p><strong>Test Subscription Flow</strong>:</p>
+<ul>
+<li>Go to <code>/profile</code> page</li>
+<li>Click &quot;Subscribe to Pro&quot;</li>
+<li>Use Stripe test card: <code>4242 4242 4242 4242</code></li>
+<li>Verify subscription created in Stripe Dashboard</li>
+<li>Verify credits granted in database</li>
+</ul>
+</li>
+<li><p><strong>Test Credit Purchase</strong>:</p>
+<ul>
+<li>Go to <code>/profile</code> page</li>
+<li>Click &quot;Buy Credits&quot;</li>
+<li>Complete test purchase</li>
+<li>Verify credits added to account</li>
+</ul>
+</li>
+<li><p><strong>Test Webhook Events</strong>:</p>
+<ul>
+<li>Go to Stripe Dashboard → <strong>Developers</strong> → <strong>Webhooks</strong></li>
+<li>Click on your webhook endpoint</li>
+<li>View <strong>Recent events</strong> to verify events are being received</li>
+</ul>
+</li>
+</ol>
+<h3><strong>Stripe Test Cards</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Card Number</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>4242 4242 4242 4242</code></td>
+<td>Successful payment</td>
+</tr>
+<tr>
+<td><code>4000 0000 0000 0002</code></td>
+<td>Card declined</td>
+</tr>
+<tr>
+<td><code>4000 0000 0000 9995</code></td>
+<td>Insufficient funds</td>
+</tr>
+</tbody></table>
+<p><strong>Expiry</strong>: Any future date (e.g., <code>12/34</code>)
+<strong>CVC</strong>: Any 3 digits (e.g., <code>123</code>)
+<strong>ZIP</strong>: Any 5 digits (e.g., <code>12345</code>)</p>
+<hr>
 <h2>🚀 Deployment Architecture</h2>
 <p>The Material Kai Vision Platform uses a multi-service deployment strategy:</p>
 <ol>
 <li><strong>Frontend</strong>: Vercel (Static hosting + Edge functions)</li>
-<li><strong>MIVAA Service</strong>: Docker containers (Self-hosted or cloud)</li>
+<li><strong>MIVAA Service</strong>: Systemd service with UV (Self-hosted server)</li>
 <li><strong>Database</strong>: Supabase (Managed PostgreSQL)</li>
-<li><strong>External APIs</strong>: Third-party services (OpenAI, HuggingFace, Replicate)</li>
+<li><strong>External APIs</strong>: Third-party services (OpenAI, Anthropic, Together AI, Replicate)</li>
 </ol>
 <h2>🏗️ Infrastructure Overview</h2>
 <pre><code class="language-mermaid">graph TB
     subgraph &quot;Production Environment&quot;
         A[Vercel Frontend&lt;br/&gt;Static + Edge]
-        B[MIVAA Service&lt;br/&gt;Docker Container]
+        B[MIVAA Service&lt;br/&gt;Systemd + UV]
         C[Supabase&lt;br/&gt;Database + Auth]
-        D[External APIs&lt;br/&gt;OpenAI, HuggingFace]
+        D[External APIs&lt;br/&gt;OpenAI, Anthropic, Together AI]
     end
-    
+
     subgraph &quot;Development Environment&quot;
         E[Local Frontend&lt;br/&gt;localhost:5173]
         F[Local MIVAA&lt;br/&gt;localhost:8000]
         G[Supabase Cloud&lt;br/&gt;Shared Instance]
     end
-    
+
     A --&gt; B
     A --&gt; C
     B --&gt; C
@@ -190,21 +849,14 @@ git push origin main  # Triggers automatic deployment
   },
 });
 </code></pre>
-<h2>🐳 MIVAA Service Deployment (Docker)</h2>
-<h3>🚀 Deployment Options</h3>
-<h4>🔄 Default Deployment (Recommended)</h4>
+<h2>⚙️ MIVAA Service Deployment (Systemd + UV)</h2>
+<h3>🚀 Deployment Method</h3>
+<p>The MIVAA backend service is deployed using:</p>
 <ul>
-<li><strong>Automatic</strong>: Triggers on push to <code>main</code> or <code>production</code> branches</li>
-<li><strong>Fast &amp; Reliable</strong>: Optimized for regular deployments (2-3 minutes)</li>
-<li><strong>Manual Option</strong>: Available via GitHub Actions workflow_dispatch</li>
-<li><strong>Health Monitoring</strong>: Real-time endpoint testing with auto-recovery</li>
-</ul>
-<h4>🚀 Orchestrated Deployment (Advanced)</h4>
-<ul>
-<li><strong>On-Demand Only</strong>: Manual trigger via GitHub Actions</li>
-<li><strong>Multi-Phase Pipeline</strong>: Intelligence, validation, and comprehensive reporting</li>
-<li><strong>Configurable</strong>: Multiple deployment modes (fast-track, intelligent, comprehensive)</li>
-<li><strong>Advanced Diagnostics</strong>: Comprehensive system analysis and auto-recovery</li>
+<li><strong>UV Package Manager</strong>: Fast Python package installer and resolver</li>
+<li><strong>Systemd Service</strong>: Linux service manager for process control</li>
+<li><strong>GitHub Actions</strong>: Automated CI/CD pipeline</li>
+<li><strong>Direct File Deployment</strong>: No containers, optimized for fast updates</li>
 </ul>
 <h3>🏥 Health Check &amp; Monitoring Features</h3>
 <h4><strong>Real-Time Health Monitoring</strong></h4>
@@ -242,122 +894,98 @@ git push origin main  # Triggers automatic deployment
 <li><strong>AI Analysis</strong>: <code>https://v1api.materialshub.gr/api/v1/ai/*</code></li>
 <li><strong>Vector Search</strong>: <code>https://v1api.materialshub.gr/api/v1/search/*</code></li>
 </ul>
-<h3>Docker Configuration</h3>
-<p><strong>Dockerfile</strong>:</p>
-<pre><code class="language-dockerfile">FROM python:3.9-slim
+<h3>📋 Systemd Service Configuration</h3>
+<p><strong>Service File</strong>: <code>/etc/systemd/system/mivaa-pdf-extractor.service</code></p>
+<pre><code class="language-ini">[Unit]
+Description=MIVAA PDF Extractor FastAPI service
+After=network.target
 
-WORKDIR /app
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/mivaa-pdf-extractor
+Environment=SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
+Environment=SUPABASE_SERVICE_KEY=&lt;your-service-key&gt;
+Environment=TOGETHER_AI_API_KEY=&lt;your-together-ai-key&gt;
+Environment=ANTHROPIC_API_KEY=&lt;your-anthropic-key&gt;
+Environment=OPENAI_API_KEY=&lt;your-openai-key&gt;
+ExecStart=/var/www/mivaa-pdf-extractor/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
 
-# Install system dependencies
-RUN apt-get update &amp;&amp; apt-get install -y \
-    gcc \
-    g++ \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Create non-root user
-RUN useradd -m -u 1000 appuser &amp;&amp; chown -R appuser:appuser /app
-USER appuser
-
-# Expose port
-EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
-
-# Start application
-CMD [&quot;uvicorn&quot;, &quot;app.main:app&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8000&quot;]
+[Install]
+WantedBy=multi-user.target
 </code></pre>
-<p><strong>Docker Compose</strong> (<code>docker-compose.yml</code>):</p>
-<pre><code class="language-yaml">version: &#39;3.8&#39;
+<h3>🚀 Deployment Process</h3>
+<h4><strong>Automated Deployment (GitHub Actions)</strong></h4>
+<p>The deployment is fully automated via GitHub Actions workflow (<code>.github/workflows/deploy.yml</code>):</p>
+<ol>
+<li><strong>Code Push</strong>: Push to <code>main</code> branch triggers deployment</li>
+<li><strong>SSH Connection</strong>: Connects to production server (165.227.31.109)</li>
+<li><strong>Code Update</strong>: Pulls latest code from GitHub</li>
+<li><strong>Dependency Installation</strong>: Uses UV to install/update dependencies</li>
+<li><strong>Service Update</strong>: Updates systemd service file with latest environment variables</li>
+<li><strong>Service Restart</strong>: Restarts the mivaa-pdf-extractor service</li>
+<li><strong>Health Check</strong>: Verifies all endpoints are responding correctly</li>
+<li><strong>Auto-Recovery</strong>: Automatically restarts service if health checks fail</li>
+</ol>
+<h4><strong>Manual Deployment</strong></h4>
+<p>If you need to deploy manually:</p>
+<pre><code class="language-bash"># SSH into server
+ssh root@165.227.31.109
 
-services:
-  mivaa-service:
-    build: .
-    ports:
-      - &quot;8000:8000&quot;
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-    volumes:
-      - ./logs:/var/log/mivaa
-    restart: unless-stopped
-    healthcheck:
-      test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-f&quot;, &quot;http://localhost:8000/health&quot;]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+# Navigate to project directory
+cd /var/www/mivaa-pdf-extractor
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - &quot;80:80&quot;
-      - &quot;443:443&quot;
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - mivaa-service
-    restart: unless-stopped
+# Pull latest code
+git pull origin main
+
+# Install/update dependencies with UV
+uv pip install -r requirements.txt
+
+# Restart service
+sudo systemctl restart mivaa-pdf-extractor
+
+# Check service status
+sudo systemctl status mivaa-pdf-extractor
+
+# View logs
+sudo journalctl -u mivaa-pdf-extractor -f
 </code></pre>
-<h3>Deployment Options</h3>
-<h4>Option 1: Cloud Provider (AWS/GCP/Azure)</h4>
-<p><strong>AWS ECS Deployment</strong>:</p>
-<pre><code class="language-bash"># Build and push to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin your-account.dkr.ecr.us-east-1.amazonaws.com
-
-docker build -t mivaa-service .
-docker tag mivaa-service:latest your-account.dkr.ecr.us-east-1.amazonaws.com/mivaa-service:latest
-docker push your-account.dkr.ecr.us-east-1.amazonaws.com/mivaa-service:latest
-
-# Deploy to ECS
-aws ecs update-service --cluster mivaa-cluster --service mivaa-service --force-new-deployment
-</code></pre>
-<h4>Option 2: VPS/Dedicated Server</h4>
-<p><strong>Setup Script</strong> (<code>deploy/setup-server.sh</code>):</p>
-<pre><code class="language-bash">#!/bin/bash
-
-# Update system
+<h3>🔧 Server Setup (One-Time)</h3>
+<p><strong>Initial Server Configuration</strong>:</p>
+<pre><code class="language-bash"># Update system
 sudo apt update &amp;&amp; sudo apt upgrade -y
 
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-sudo usermod -aG docker $USER
+# Install Python 3.11
+sudo apt install python3.11 python3.11-venv python3-pip -y
 
-# Install Docker Compose
-sudo curl -L &quot;https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)&quot; -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+# Install UV package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone repository
-git clone https://github.com/your-org/material-kai-vision-platform.git
-cd material-kai-vision-platform/mivaa-pdf-extractor
+cd /var/www
+git clone https://github.com/creativeghq/mivaa-pdf-extractor.git
+cd mivaa-pdf-extractor
 
-# Set up environment variables for Docker deployment
-# These MUST be available in the shell environment where docker-compose runs
-export SUPABASE_URL=&quot;https://your-project.supabase.co&quot;
-export SUPABASE_ANON_KEY=&quot;your-anon-key&quot;
-export OPENAI_API_KEY=&quot;your-openai-key&quot;
-export MATERIAL_KAI_API_URL=&quot;https://your-platform-url.com&quot;
-export MATERIAL_KAI_API_KEY=&quot;your-api-key&quot;
-export SENTRY_DSN=&quot;your-sentry-dsn&quot;
+# Create virtual environment
+python3.11 -m venv .venv
 
-# Deploy
-docker-compose -f docker-compose.prod.yml up -d
+# Install dependencies
+uv pip install -r requirements.txt
 
-# Set up SSL with Let&#39;s Encrypt
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com
+# Create systemd service (see configuration above)
+sudo nano /etc/systemd/system/mivaa-pdf-extractor.service
+
+# Enable and start service
+sudo systemctl daemon-reload
+sudo systemctl enable mivaa-pdf-extractor
+sudo systemctl start mivaa-pdf-extractor
+
+# Check status
+sudo systemctl status mivaa-pdf-extractor
 </code></pre>
 <h2>🤖 GitHub Actions Deployment Workflows</h2>
 <h3>🚀 Default Deployment Workflow</h3>
@@ -493,7 +1121,7 @@ curl https://v1api.materialshub.gr/openapi.json
 <p>Set these in GitHub repository secrets:</p>
 <pre><code class="language-bash"># Server Access
 SSH_PRIVATE_KEY=your_ssh_private_key
-DEPLOY_HOST=104.248.68.3
+DEPLOY_HOST=165.227.31.109
 
 # Application Environment
 SUPABASE_URL=https://bgbavxtjlbvgplozizxu.supabase.co
@@ -666,20 +1294,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Deploy to server
-        env:
-          # ⚠️ IMPORTANT: Use GH_TOKEN, not GITHUB_TOKEN as env var name
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: appleboy/ssh-action@v0.1.5
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           script: |
-            cd /app/material-kai-vision-platform
+            cd /var/www/mivaa-pdf-extractor
             git pull origin main
-            # Authenticate with GitHub Container Registry
-            echo &quot;$GH_TOKEN&quot; | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker-compose -f docker-compose.prod.yml up -d --build
+            uv pip install -r requirements.txt
+            sudo systemctl restart mivaa-pdf-extractor
+            sudo systemctl status mivaa-pdf-extractor
 </code></pre>
 <h3>⚠️ GitHub Actions Security Notes</h3>
 <ol>
@@ -689,24 +1314,22 @@ jobs:
 <li>❌ <strong>Wrong</strong>: <code>GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></li>
 </ul>
 </li>
-<li><p><strong>Container Registry Authentication</strong>: Always authenticate before pulling private images</p>
-<pre><code class="language-bash">echo &quot;$GH_TOKEN&quot; | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-</code></pre>
+<li><p><strong>SSH Key Security</strong>: Always use SSH keys stored in GitHub Secrets for server access</p>
 </li>
 </ol>
 <h2>🚨 Deployment Issues &amp; Solutions</h2>
 <h3>Common Issues</h3>
 <ol>
-<li><p><strong>Missing Docker Environment Variables</strong>:</p>
+<li><p><strong>Missing Environment Variables</strong>:</p>
 <ul>
-<li><strong>Problem</strong>: Docker shows warnings like &quot;variable is not set. Defaulting to a blank string&quot;</li>
-<li><strong>Solution</strong>: Ensure all required environment variables are exported on the deployment server:<pre><code class="language-bash">export SUPABASE_URL=&quot;https://your-project.supabase.co&quot;
-export SUPABASE_ANON_KEY=&quot;your-anon-key&quot;
-export OPENAI_API_KEY=&quot;your-openai-key&quot;
-export MATERIAL_KAI_API_URL=&quot;https://your-platform-url.com&quot;
-export MATERIAL_KAI_API_KEY=&quot;your-api-key&quot;
-export SENTRY_DSN=&quot;your-sentry-dsn&quot;
-</code></pre>
+<li><strong>Problem</strong>: Service fails to start due to missing environment variables</li>
+<li><strong>Solution</strong>: Ensure all required environment variables are set in systemd service file:<ul>
+<li>SUPABASE_URL</li>
+<li>SUPABASE_SERVICE_KEY</li>
+<li>OPENAI_API_KEY</li>
+<li>ANTHROPIC_API_KEY</li>
+<li>TOGETHER_AI_API_KEY</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -719,7 +1342,7 @@ export SENTRY_DSN=&quot;your-sentry-dsn&quot;
 <li><p><strong>CORS Errors</strong>:</p>
 <ul>
 <li><strong>Problem</strong>: Frontend can&#39;t connect to backend</li>
-<li><strong>Solution</strong>: Configure CORS_ORIGINS properly</li>
+<li><strong>Solution</strong>: Configure CORS_ORIGINS properly in backend environment</li>
 </ul>
 </li>
 <li><p><strong>Database Connection Issues</strong>:</p>
@@ -737,36 +1360,47 @@ export SENTRY_DSN=&quot;your-sentry-dsn&quot;
 </ol>
 <h3>Rollback Strategy</h3>
 <pre><code class="language-bash"># Quick rollback for MIVAA service
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --scale mivaa-service=0
-docker tag mivaa-service:previous mivaa-service:latest
-docker-compose -f docker-compose.prod.yml up -d
+ssh root@165.227.31.109
+
+# Navigate to project directory
+cd /var/www/mivaa-pdf-extractor
+
+# Checkout previous commit
+git log --oneline -n 5  # Find previous commit hash
+git checkout &lt;previous-commit-hash&gt;
+
+# Restart service
+sudo systemctl restart mivaa-pdf-extractor
+
+# Verify service is running
+sudo systemctl status mivaa-pdf-extractor
+curl https://v1api.materialshub.gr/health
 </code></pre>
 <h2>📋 Deployment Checklist</h2>
 <h3>Pre-Deployment</h3>
 <ul>
-<li><input disabled="" type="checkbox"> All tests passing</li>
-<li><input disabled="" type="checkbox"> Environment variables configured in GitHub Secrets</li>
-<li><input disabled="" type="checkbox"> <strong>Docker environment variables exported on server</strong> (SUPABASE_URL, SUPABASE_ANON_KEY, OPENAI_API_KEY, MATERIAL_KAI_API_URL, MATERIAL_KAI_API_KEY, SENTRY_DSN)</li>
-<li><input disabled="" type="checkbox"> SSL certificates ready</li>
-<li><input disabled="" type="checkbox"> Database migrations prepared</li>
-<li><input disabled="" type="checkbox"> Backup strategy in place</li>
+<li>All tests passing</li>
+<li>Environment variables configured in GitHub Secrets</li>
+<li>Systemd service file updated with latest environment variables</li>
+<li>SSL certificates ready</li>
+<li>Database migrations prepared</li>
+<li>Backup strategy in place</li>
 </ul>
 <h3>Deployment</h3>
 <ul>
-<li><input disabled="" type="checkbox"> Frontend deployed to Vercel</li>
-<li><input disabled="" type="checkbox"> Backend deployed to production server</li>
-<li><input disabled="" type="checkbox"> Database schema updated</li>
-<li><input disabled="" type="checkbox"> Health checks passing</li>
-<li><input disabled="" type="checkbox"> SSL/HTTPS working</li>
+<li>Frontend deployed to Vercel</li>
+<li>Backend deployed to production server</li>
+<li>Database schema updated</li>
+<li>Health checks passing</li>
+<li>SSL/HTTPS working</li>
 </ul>
 <h3>Post-Deployment</h3>
 <ul>
-<li><input disabled="" type="checkbox"> Monitor application logs</li>
-<li><input disabled="" type="checkbox"> Verify all endpoints working</li>
-<li><input disabled="" type="checkbox"> Check performance metrics</li>
-<li><input disabled="" type="checkbox"> Validate security headers</li>
-<li><input disabled="" type="checkbox"> Test critical workflows</li>
+<li>Monitor application logs</li>
+<li>Verify all endpoints working</li>
+<li>Check performance metrics</li>
+<li>Validate security headers</li>
+<li>Test critical workflows</li>
 </ul>
 <h2>💾 Backup &amp; Disaster Recovery</h2>
 <h3>Automated Backup Strategy</h3>
@@ -859,17 +1493,26 @@ CREATE EXTENSION IF NOT EXISTS &quot;ltree&quot;;
 <h2>📊 Performance Optimization &amp; Scaling</h2>
 <h3>Horizontal Scaling</h3>
 <p><strong>MIVAA Service Scaling</strong>:</p>
-<pre><code class="language-yaml"># docker-compose.yml
-services:
-  mivaa-service:
-    deploy:
-      replicas: 3  # Scale to 3 instances
+<p>For horizontal scaling, you can run multiple instances of the MIVAA service on different ports and use nginx for load balancing:</p>
+<pre><code class="language-bash"># Create multiple systemd services
+sudo cp /etc/systemd/system/mivaa-pdf-extractor.service /etc/systemd/system/mivaa-pdf-extractor-8001.service
+sudo cp /etc/systemd/system/mivaa-pdf-extractor.service /etc/systemd/system/mivaa-pdf-extractor-8002.service
+
+# Edit each service to use different ports
+# mivaa-pdf-extractor.service uses port 8000
+# mivaa-pdf-extractor-8001.service uses port 8001
+# mivaa-pdf-extractor-8002.service uses port 8002
+
+# Start all services
+sudo systemctl start mivaa-pdf-extractor
+sudo systemctl start mivaa-pdf-extractor-8001
+sudo systemctl start mivaa-pdf-extractor-8002
 </code></pre>
-<p><strong>Load Balancing</strong>:</p>
+<p><strong>Load Balancing with Nginx</strong>:</p>
 <pre><code class="language-nginx">upstream mivaa_backend {
-    server mivaa-service:8000;
-    server mivaa-service:8001;
-    server mivaa-service:8002;
+    server localhost:8000;
+    server localhost:8001;
+    server localhost:8002;
 }
 
 server {
