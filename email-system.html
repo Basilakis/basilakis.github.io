@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Email System Documentation</h1>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform includes a comprehensive email system built on <strong>Amazon SES</strong> (Simple Email Service) with <strong>React Email</strong> for template management. The system provides:</p>
+<ul>
+<li>✅ Domain verification and management</li>
+<li>✅ Email sending with templates</li>
+<li>✅ Delivery tracking and analytics</li>
+<li>✅ Bounce and complaint monitoring</li>
+<li>✅ Transactional and marketing email support</li>
+<li>✅ React Email template builder</li>
+<li>✅ Admin dashboard for monitoring</li>
+</ul>
+<h2>Architecture</h2>
+<h3>Components</h3>
+<ol>
+<li><p><strong>Email Service</strong> (<code>src/services/email/emailService.ts</code>)</p>
+<ul>
+<li>Amazon SES integration</li>
+<li>Domain verification</li>
+<li>Email sending</li>
+<li>Analytics retrieval</li>
+</ul>
+</li>
+<li><p><strong>Email Templates</strong> (<code>src/services/email/templates/</code>)</p>
+<ul>
+<li>React Email components</li>
+<li>Template rendering</li>
+<li>Variable substitution</li>
+</ul>
+</li>
+<li><p><strong>API Endpoints</strong> (<code>supabase/functions/email-api/</code>)</p>
+<ul>
+<li>Send emails</li>
+<li>Manage domains</li>
+<li>Retrieve logs and analytics</li>
+</ul>
+</li>
+<li><p><strong>Webhook Handler</strong> (<code>supabase/functions/email-webhooks/</code>)</p>
+<ul>
+<li>Process SES events (bounces, complaints, deliveries)</li>
+<li>Update email logs automatically</li>
+</ul>
+</li>
+<li><p><strong>Admin Dashboard</strong> (<code>src/components/Admin/EmailManagement.tsx</code>)</p>
+<ul>
+<li>Domain management</li>
+<li>Template management</li>
+<li>Analytics visualization</li>
+<li>Email logs viewer</li>
+<li>Test email functionality</li>
+</ul>
+</li>
+</ol>
+<h3>Database Schema</h3>
+<p>The system uses 5 main tables:</p>
+<ul>
+<li><code>email_domains</code> - Verified SES domains</li>
+<li><code>email_templates</code> - React Email templates</li>
+<li><code>email_logs</code> - All sent emails</li>
+<li><code>email_events</code> - Delivery events (bounces, complaints, opens, clicks)</li>
+<li><code>email_analytics</code> - Aggregated daily statistics</li>
+</ul>
+<h2>Setup Guide</h2>
+<h3>1. AWS SES Configuration</h3>
+<h4>Create AWS Account and Configure SES</h4>
+<ol>
+<li><p><strong>Sign up for AWS</strong> at <a href="https://aws.amazon.com">https://aws.amazon.com</a></p>
+</li>
+<li><p><strong>Navigate to SES</strong> in the AWS Console</p>
+</li>
+<li><p><strong>Request production access</strong> (initially in sandbox mode)</p>
+</li>
+<li><p><strong>Create IAM user</strong> with SES permissions:</p>
+<pre><code class="language-json">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;ses:SendEmail&quot;,
+        &quot;ses:SendRawEmail&quot;,
+        &quot;ses:VerifyDomainIdentity&quot;,
+        &quot;ses:GetIdentityVerificationAttributes&quot;,
+        &quot;ses:GetSendQuota&quot;,
+        &quot;ses:GetSendStatistics&quot;
+      ],
+      &quot;Resource&quot;: &quot;*&quot;
+    }
+  ]
+}
+</code></pre>
+</li>
+<li><p><strong>Generate access keys</strong> for the IAM user</p>
+</li>
+</ol>
+<h4>Configure Supabase Secrets</h4>
+<p><strong>IMPORTANT</strong>: AWS credentials are stored as <strong>Supabase Secrets</strong>, NOT in environment variables.</p>
+<ol>
+<li>Go to <a href="https://supabase.com/dashboard">Supabase Dashboard</a></li>
+<li>Select your project (KAI - <code>bgbavxtjlbvgplozizxu</code>)</li>
+<li>Navigate to <strong>Edge Functions</strong> → <strong>Settings</strong> → <strong>Secrets</strong></li>
+<li>Add the following secrets:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AWS_REGION</code></td>
+<td><code>us-east-1</code></td>
+<td>AWS region for SES</td>
+</tr>
+<tr>
+<td><code>AWS_ACCESS_KEY_ID</code></td>
+<td>Your AWS access key</td>
+<td>IAM user access key with SES permissions</td>
+</tr>
+<tr>
+<td><code>AWS_SECRET_ACCESS_KEY</code></td>
+<td>Your AWS secret key</td>
+<td>IAM user secret access key</td>
+</tr>
+<tr>
+<td><code>DEFAULT_FROM_EMAIL</code></td>
+<td><code>noreply@yourdomain.com</code></td>
+<td>Default sender email address</td>
+</tr>
+<tr>
+<td><code>DEFAULT_FROM_NAME</code></td>
+<td><code>Material Kai</code></td>
+<td>Default sender name</td>
+</tr>
+</tbody></table>
+<p><strong>Why Supabase Secrets?</strong></p>
+<ul>
+<li>✅ Secure - Never exposed to frontend code</li>
+<li>✅ Centralized - Available to all Edge Functions</li>
+<li>✅ No redeployment needed when updating secrets</li>
+<li>✅ Follows security best practices</li>
+</ul>
+<h3>2. Database Migration</h3>
+<p>Run the migration to create email tables:</p>
+<pre><code class="language-bash"># Apply migration
+supabase db push
+</code></pre>
+<p>Or manually run:</p>
+<pre><code class="language-bash">psql -h your-db-host -U postgres -d postgres -f supabase/migrations/20250101000000_create_email_system.sql
+</code></pre>
+<h3>3. Domain Verification</h3>
+<h4>Via Admin Dashboard</h4>
+<ol>
+<li>Navigate to <strong>Admin → Email Management → Domains</strong></li>
+<li>Click <strong>Add Domain</strong></li>
+<li>Enter your domain (e.g., <code>yourdomain.com</code>)</li>
+<li>Copy the verification token</li>
+<li>Add DNS TXT record:<ul>
+<li><strong>Name</strong>: <code>_amazonses.yourdomain.com</code></li>
+<li><strong>Value</strong>: <code>[verification token]</code></li>
+</ul>
+</li>
+<li>Click <strong>Check Verification Status</strong> after DNS propagates (can take up to 72 hours)</li>
+</ol>
+<h4>Via AWS Console</h4>
+<p>Alternatively, verify domains directly in AWS SES Console and sync to database.</p>
+<h3>4. SNS Webhook Setup (Optional but Recommended)</h3>
+<p>To track bounces and complaints:</p>
+<ol>
+<li><strong>Create SNS Topic</strong> in AWS Console</li>
+<li><strong>Configure SES</strong> to publish events to SNS</li>
+<li><strong>Subscribe webhook endpoint</strong>:<ul>
+<li>Endpoint: <code>https://your-project.supabase.co/functions/v1/email-webhooks</code></li>
+<li>Protocol: HTTPS</li>
+</ul>
+</li>
+<li><strong>Confirm subscription</strong> (automatic via webhook handler)</li>
+</ol>
+<h2>Usage</h2>
+<h3>Sending Emails</h3>
+<h4>Using the Email Service</h4>
+<pre><code class="language-typescript">import { emailService } from &#39;@/services/email/emailService&#39;;
+
+// Send simple email
+await emailService.sendEmail({
+  to: &#39;user@example.com&#39;,
+  subject: &#39;Welcome!&#39;,
+  html: &#39;&lt;h1&gt;Welcome to Material Kai&lt;/h1&gt;&#39;,
+  text: &#39;Welcome to Material Kai&#39;,
+  emailType: &#39;transactional&#39;,
+});
+
+// Send with template
+await emailService.sendEmail({
+  to: &#39;user@example.com&#39;,
+  templateSlug: &#39;welcome&#39;,
+  variables: {
+    userName: &#39;John Doe&#39;,
+    loginUrl: &#39;https://app.materialkai.com/login&#39;,
+  },
+  emailType: &#39;transactional&#39;,
+});
+</code></pre>
+<h4>Using the API</h4>
+<pre><code class="language-bash">curl -X POST https://your-project.supabase.co/functions/v1/email-api/send \
+  -H &quot;Authorization: Bearer YOUR_TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;to&quot;: &quot;user@example.com&quot;,
+    &quot;subject&quot;: &quot;Test Email&quot;,
+    &quot;html&quot;: &quot;&lt;p&gt;Hello World&lt;/p&gt;&quot;,
+    &quot;emailType&quot;: &quot;transactional&quot;
+  }&#39;
+</code></pre>
+<h3>Creating Email Templates</h3>
+<p>Templates are built with React Email components:</p>
+<pre><code class="language-tsx">// src/services/email/templates/MyTemplate.tsx
+import React from &#39;react&#39;;
+import { Text, Button } from &#39;@react-email/components&#39;;
+import { BaseEmailTemplate } from &#39;./BaseEmailTemplate&#39;;
+
+export interface MyTemplateProps {
+  userName: string;
+  actionUrl: string;
+}
+
+export const MyTemplate: React.FC&lt;MyTemplateProps&gt; = ({ userName, actionUrl }) =&gt; {
+  return (
+    &lt;BaseEmailTemplate&gt;
+      &lt;Text&gt;Hello {userName}!&lt;/Text&gt;
+      &lt;Button href={actionUrl}&gt;Click Here&lt;/Button&gt;
+    &lt;/BaseEmailTemplate&gt;
+  );
+};
+</code></pre>
+<p>Register in <code>src/services/email/templates/index.ts</code>:</p>
+<pre><code class="language-typescript">export const emailTemplates = {
+  welcome: WelcomeEmail,
+  myTemplate: MyTemplate, // Add your template
+} as const;
+</code></pre>
+<h2>Admin Dashboard</h2>
+<p>Access at <code>/admin/emails</code></p>
+<h3>Features</h3>
+<ol>
+<li><p><strong>Analytics Tab</strong></p>
+<ul>
+<li>Total sent, delivered, bounced, complained</li>
+<li>Delivery, bounce, and complaint rates</li>
+<li>Performance charts</li>
+<li>Recommendations</li>
+</ul>
+</li>
+<li><p><strong>Email Logs Tab</strong></p>
+<ul>
+<li>View all sent emails</li>
+<li>Filter by status and type</li>
+<li>Export to CSV</li>
+<li>Track delivery status</li>
+</ul>
+</li>
+<li><p><strong>Domains Tab</strong></p>
+<ul>
+<li>Add and verify domains</li>
+<li>View verification status</li>
+<li>Monitor domain reputation</li>
+<li>Check bounce/complaint rates</li>
+</ul>
+</li>
+<li><p><strong>Templates Tab</strong></p>
+<ul>
+<li>View all templates</li>
+<li>Preview templates</li>
+<li>Manage template variables</li>
+</ul>
+</li>
+<li><p><strong>Test Email</strong></p>
+<ul>
+<li>Send test emails</li>
+<li>Verify configuration</li>
+</ul>
+</li>
+</ol>
+<h2>Best Practices</h2>
+<h3>Email Deliverability</h3>
+<ol>
+<li><strong>Warm up your domain</strong> - Start with low volume and gradually increase</li>
+<li><strong>Monitor bounce rate</strong> - Keep below 5%</li>
+<li><strong>Monitor complaint rate</strong> - Keep below 0.1%</li>
+<li><strong>Use double opt-in</strong> for marketing emails</li>
+<li><strong>Provide unsubscribe links</strong> in all marketing emails</li>
+<li><strong>Authenticate your domain</strong> with SPF, DKIM, and DMARC</li>
+</ol>
+<h3>Template Design</h3>
+<ol>
+<li><strong>Keep it simple</strong> - Avoid complex layouts</li>
+<li><strong>Mobile-first</strong> - Most emails are read on mobile</li>
+<li><strong>Test across clients</strong> - Gmail, Outlook, Apple Mail</li>
+<li><strong>Include plain text</strong> version</li>
+<li><strong>Use inline CSS</strong> - Better compatibility</li>
+</ol>
+<h3>Monitoring</h3>
+<ol>
+<li><strong>Check analytics daily</strong></li>
+<li><strong>Investigate high bounce rates</strong> immediately</li>
+<li><strong>Review complaint feedback</strong></li>
+<li><strong>Monitor sending quota</strong> usage</li>
+<li><strong>Set up alerts</strong> for critical metrics</li>
+</ol>
+<h2>Troubleshooting</h2>
+<h3>Common Issues</h3>
+<p><strong>Domain verification fails</strong></p>
+<ul>
+<li>Check DNS propagation (use <code>dig</code> or online tools)</li>
+<li>Ensure TXT record is correct</li>
+<li>Wait up to 72 hours for DNS changes</li>
+</ul>
+<p><strong>Emails not sending</strong></p>
+<ul>
+<li>Verify AWS credentials</li>
+<li>Check SES sandbox mode (verify recipient emails)</li>
+<li>Review CloudWatch logs</li>
+<li>Check sending quota</li>
+</ul>
+<p><strong>High bounce rate</strong></p>
+<ul>
+<li>Clean email list</li>
+<li>Remove invalid addresses</li>
+<li>Check email format validation</li>
+</ul>
+<p><strong>Emails in spam</strong></p>
+<ul>
+<li>Configure SPF, DKIM, DMARC</li>
+<li>Improve email content</li>
+<li>Reduce sending frequency</li>
+<li>Monitor sender reputation</li>
+</ul>
+<h2>API Reference</h2>
+<p>See <code>supabase/functions/email-api/index.ts</code> for full API documentation.</p>
+<h3>Endpoints</h3>
+<ul>
+<li><code>POST /email-api/send</code> - Send email</li>
+<li><code>POST /email-api/verify-domain</code> - Verify domain</li>
+<li><code>POST /email-api/check-domain</code> - Check verification status</li>
+<li><code>GET /email-api/domains</code> - List domains</li>
+<li><code>GET /email-api/logs</code> - Get email logs</li>
+<li><code>GET /email-api/analytics</code> - Get analytics</li>
+<li><code>GET /email-api/sending-stats</code> - Get SES quota stats</li>
+</ul>
+<h2>Support</h2>
+<p>For issues or questions:</p>
+<ol>
+<li>Check CloudWatch logs in AWS Console</li>
+<li>Review Supabase function logs</li>
+<li>Check email_logs table for error messages</li>
+<li>Consult AWS SES documentation</li>
+</ol>
+<h2>Resources</h2>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ses/">Amazon SES Documentation</a></li>
+<li><a href="https://react.email">React Email Documentation</a></li>
+<li><a href="https://docs.aws.amazon.com/ses/latest/dg/best-practices.html">Email Best Practices</a></li>
+</ul>
+
+</div></body></html>
