@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AI Usage Logging Implementation Guide</h1>
+<h2>Quick Start</h2>
+<h3>1. Import Required Modules</h3>
+<pre><code class="language-python">from app.config.ai_pricing import AIPricingConfig
+from app.services.ai_usage_logger import AIUsageLogger
+</code></pre>
+<h3>2. Log an AI API Call</h3>
+<h4>For OpenAI/Anthropic/Llama (Token-based)</h4>
+<pre><code class="language-python"># After making an API call
+response = openai_client.chat.completions.create(...)
+
+# Extract usage from response
+usage = response.usage
+
+# Log the usage
+await AIUsageLogger.log_usage(
+    user_id=current_user.id,
+    model_name=&quot;gpt-4o&quot;,
+    provider=&quot;openai&quot;,
+    operation_type=&quot;chat_completion&quot;,
+    input_tokens=usage.prompt_tokens,
+    output_tokens=usage.completion_tokens,
+    request_metadata={
+        &quot;messages&quot;: messages,
+        &quot;temperature&quot;: 0.7
+    },
+    response_metadata={
+        &quot;finish_reason&quot;: response.choices[0].finish_reason
+    }
+)
+</code></pre>
+<h4>For Firecrawl (Credit-based)</h4>
+<pre><code class="language-python"># After making a Firecrawl API call
+response = firecrawl_client.scrape_url(url)
+
+# Extract credits from response
+credits_used = response.get(&quot;credits_used&quot;, 1)
+
+# Log the usage
+await AIUsageLogger.log_usage(
+    user_id=current_user.id,
+    model_name=&quot;firecrawl-scrape&quot;,
+    provider=&quot;firecrawl&quot;,
+    operation_type=&quot;scrape&quot;,
+    firecrawl_credits=credits_used,
+    request_metadata={
+        &quot;url&quot;: url,
+        &quot;options&quot;: scrape_options
+    },
+    response_metadata={
+        &quot;success&quot;: response.get(&quot;success&quot;),
+        &quot;pages_scraped&quot;: response.get(&quot;pages&quot;, 1)
+    }
+)
+</code></pre>
+<hr>
+<h2>Complete Examples</h2>
+<h3>Example 1: OpenAI Chat Completion</h3>
+<pre><code class="language-python">from openai import AsyncOpenAI
+from app.services.ai_usage_logger import AIUsageLogger
+
+async def generate_summary(text: str, user_id: str):
+    client = AsyncOpenAI()
+    
+    messages = [
+        {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;You are a helpful assistant.&quot;},
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: f&quot;Summarize: {text}&quot;}
+    ]
+    
+    # Make API call
+    response = await client.chat.completions.create(
+        model=&quot;gpt-4o&quot;,
+        messages=messages,
+        temperature=0.7
+    )
+    
+    # Log usage
+    await AIUsageLogger.log_usage(
+        user_id=user_id,
+        model_name=&quot;gpt-4o&quot;,
+        provider=&quot;openai&quot;,
+        operation_type=&quot;chat_completion&quot;,
+        input_tokens=response.usage.prompt_tokens,
+        output_tokens=response.usage.completion_tokens,
+        request_metadata={&quot;messages&quot;: messages, &quot;temperature&quot;: 0.7},
+        response_metadata={
+            &quot;finish_reason&quot;: response.choices[0].finish_reason,
+            &quot;model&quot;: response.model
+        }
+    )
+    
+    return response.choices[0].message.content
+</code></pre>
+<h3>Example 2: Anthropic Claude with Caching</h3>
+<pre><code class="language-python">from anthropic import AsyncAnthropic
+from app.services.ai_usage_logger import AIUsageLogger
+
+async def analyze_document(document: str, user_id: str):
+    client = AsyncAnthropic()
+    
+    # Make API call
+    response = await client.messages.create(
+        model=&quot;claude-3-5-sonnet-20241022&quot;,
+        max_tokens=1024,
+        messages=[
+            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: document}
+        ]
+    )
+    
+    # Extract usage (including cache info)
+    usage = response.usage
+    
+    # Log usage
+    await AIUsageLogger.log_usage(
+        user_id=user_id,
+        model_name=&quot;claude-3-5-sonnet-20241022&quot;,
+        provider=&quot;anthropic&quot;,
+        operation_type=&quot;message_create&quot;,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        cached_tokens=getattr(usage, &#39;cache_read_input_tokens&#39;, 0),
+        request_metadata={
+            &quot;max_tokens&quot;: 1024,
+            &quot;document_length&quot;: len(document)
+        },
+        response_metadata={
+            &quot;stop_reason&quot;: response.stop_reason,
+            &quot;model&quot;: response.model
+        }
+    )
+    
+    return response.content[0].text
+</code></pre>
+<h3>Example 3: Firecrawl Web Scraping</h3>
+<pre><code class="language-python">from firecrawl import FirecrawlApp
+from app.services.ai_usage_logger import AIUsageLogger
+
+async def scrape_website(url: str, user_id: str):
+    app = FirecrawlApp(api_key=settings.FIRECRAWL_API_KEY)
+    
+    # Make API call
+    response = app.scrape_url(url, params={
+        &#39;formats&#39;: [&#39;markdown&#39;, &#39;html&#39;]
+    })
+    
+    # Extract credits (check response structure)
+    credits_used = response.get(&quot;credits_used&quot;, 1)
+    
+    # Log usage
+    await AIUsageLogger.log_usage(
+        user_id=user_id,
+        model_name=&quot;firecrawl-scrape&quot;,
+        provider=&quot;firecrawl&quot;,
+        operation_type=&quot;scrape&quot;,
+        firecrawl_credits=credits_used,
+        request_metadata={
+            &quot;url&quot;: url,
+            &quot;formats&quot;: [&#39;markdown&#39;, &#39;html&#39;]
+        },
+        response_metadata={
+            &quot;success&quot;: response.get(&quot;success&quot;),
+            &quot;content_length&quot;: len(response.get(&quot;markdown&quot;, &quot;&quot;))
+        }
+    )
+    
+    return response
+</code></pre>
+<hr>
+<h2>Cost Calculation</h2>
+<p>The <code>AIUsageLogger</code> automatically calculates costs using <code>AIPricingConfig</code>:</p>
+<pre><code class="language-python"># For token-based models
+cost_usd = AIPricingConfig.calculate_cost(
+    model=&quot;gpt-4o&quot;,
+    input_tokens=1000,
+    output_tokens=500
+)
+
+# For Firecrawl
+cost_usd = AIPricingConfig.calculate_firecrawl_cost(
+    credits_used=5
+)
+
+# Convert to platform credits
+platform_credits = int(cost_usd * 100)
+</code></pre>
+<hr>
+<h2>Best Practices</h2>
+<ol>
+<li><strong>Always log immediately after API call</strong> - Don&#39;t wait or batch logs</li>
+<li><strong>Include relevant metadata</strong> - Helps with debugging and analysis</li>
+<li><strong>Handle errors gracefully</strong> - Log even if API call fails</li>
+<li><strong>Use correct provider names</strong> - &quot;openai&quot;, &quot;anthropic&quot;, &quot;firecrawl&quot;, etc.</li>
+<li><strong>Track all token types</strong> - input, output, cached (if applicable)</li>
+</ol>
+<hr>
+<h2>Querying Usage Data</h2>
+<pre><code class="language-python">from app.services.ai_usage_logger import AIUsageLogger
+
+# Get user&#39;s total usage
+total_credits = await AIUsageLogger.get_user_total_credits(user_id)
+
+# Get usage by date range
+usage = await AIUsageLogger.get_usage_by_date_range(
+    user_id=user_id,
+    start_date=&quot;2025-01-01&quot;,
+    end_date=&quot;2025-01-31&quot;
+)
+
+# Get usage by model
+model_usage = await AIUsageLogger.get_usage_by_model(
+    user_id=user_id,
+    model_name=&quot;gpt-4o&quot;
+)
+</code></pre>
+
+</div></body></html>
