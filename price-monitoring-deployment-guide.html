@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Price Monitoring - Deployment &amp; Testing Guide</h1>
+<h2>Architecture Overview</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     PRICE MONITORING SYSTEM                      │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐      ┌──────────────┐      ┌──────────────────┐
+│  Supabase    │      │    Edge      │      │     Python       │
+│  Cron Job    │─────▶│  Function    │─────▶│    Backend       │
+│  (Hourly)    │      │  (Cron)      │      │    (FastAPI)     │
+└──────────────┘      └──────────────┘      └──────────────────┘
+                                                      │
+                      ┌───────────────────────────────┼───────────────────────────┐
+                      │                               │                           │
+                      ▼                               ▼                           ▼
+            ┌──────────────────┐          ┌──────────────────┐      ┌──────────────────┐
+            │  Firecrawl API   │          │  Credits Service │      │  AI Call Logger  │
+            │  (Web Scraping)  │          │  (Debit Credits) │      │  (Usage Logs)    │
+            └──────────────────┘          └──────────────────┘      └──────────────────┘
+                      │                               │                           │
+                      └───────────────────────────────┼───────────────────────────┘
+                                                      ▼
+                                          ┌──────────────────────┐
+                                          │  Supabase Database   │
+                                          │  - price_history     │
+                                          │  - competitor_sources│
+                                          │  - price_alerts      │
+                                          │  - ai_usage_logs     │
+                                          └──────────────────────┘
+</code></pre>
+<h2>Prerequisites</h2>
+<ol>
+<li><strong>Supabase Project</strong> - Active Supabase project</li>
+<li><strong>Python Backend</strong> - FastAPI backend deployed and running</li>
+<li><strong>Firecrawl API Key</strong> - Get from <a href="https://firecrawl.dev">firecrawl.dev</a></li>
+<li><strong>Database Migrations</strong> - All price monitoring tables created</li>
+</ol>
+<h2>Step 1: Database Setup</h2>
+<h3>Apply Migrations</h3>
+<pre><code class="language-bash">cd material-kai-vision-platform
+
+# Apply all migrations
+supabase db push
+
+# Verify tables exist
+supabase db diff
+</code></pre>
+<h3>Verify Tables</h3>
+<p>Check that these tables exist:</p>
+<ul>
+<li><code>price_monitoring_products</code></li>
+<li><code>price_history</code></li>
+<li><code>competitor_sources</code></li>
+<li><code>price_monitoring_jobs</code></li>
+<li><code>price_alerts</code></li>
+<li><code>price_alert_history</code></li>
+</ul>
+<h3>Verify Database Functions</h3>
+<p>Check that these functions exist:</p>
+<ul>
+<li><code>get_products_due_for_monitoring()</code></li>
+<li><code>update_next_check_time(p_monitoring_id, p_frequency)</code></li>
+<li><code>should_trigger_alert(p_alert_id, p_old_price, p_new_price)</code></li>
+</ul>
+<h2>Step 2: Python Backend Configuration</h2>
+<h3>Environment Variables</h3>
+<p>Add to <code>mivaa-pdf-extractor/.env</code>:</p>
+<pre><code class="language-bash"># Firecrawl API Key
+FIRECRAWL_API_KEY=fc-your-api-key-here
+
+# Supabase Configuration (should already exist)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_JWT_SECRET=your-jwt-secret
+
+# Material Kai API Key (should already exist)
+MATERIAL_KAI_API_KEY=your-material-kai-api-key
+MATERIAL_KAI_WORKSPACE_ID=your-workspace-id
+</code></pre>
+<h3>Verify Backend is Running</h3>
+<pre><code class="language-bash">cd mivaa-pdf-extractor
+
+# Start backend
+python -m uvicorn app.main:app --reload --port 8000
+
+# Test health endpoint
+curl http://localhost:8000/health
+
+# Test price monitoring endpoint (should return 401 without auth)
+curl http://localhost:8000/api/v1/price-monitoring/status/test-id
+</code></pre>
+<h2>Step 3: Edge Function Deployment</h2>
+<h3>Set Secrets</h3>
+<pre><code class="language-bash"># Set all required secrets
+supabase secrets set SUPABASE_URL=https://your-project.supabase.co
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+supabase secrets set PYTHON_BACKEND_URL=http://localhost:8000  # or production URL
+supabase secrets set CRON_SECRET=$(openssl rand -hex 32)
+
+# Verify secrets are set
+supabase secrets list
+</code></pre>
+<h3>Deploy Edge Function</h3>
+<pre><code class="language-bash"># Deploy the cron function
+supabase functions deploy price-monitoring-cron
+
+# Verify deployment
+supabase functions list
+</code></pre>
+<h3>Test Edge Function Manually</h3>
+<pre><code class="language-bash"># Get your cron secret
+CRON_SECRET=$(supabase secrets get CRON_SECRET)
+
+# Test the function
+curl -X POST https://your-project.supabase.co/functions/v1/price-monitoring-cron \
+  -H &quot;x-cron-secret: $CRON_SECRET&quot; \
+  -H &quot;Content-Type: application/json&quot;
+
+# Expected response:
+# {
+#   &quot;success&quot;: true,
+#   &quot;message&quot;: &quot;Price monitoring completed: 0/0 succeeded&quot;,
+#   &quot;stats&quot;: {
+#     &quot;total&quot;: 0,
+#     &quot;processed&quot;: 0,
+#     &quot;succeeded&quot;: 0,
+#     &quot;failed&quot;: 0,
+#     &quot;results&quot;: []
+#   },
+#   &quot;timestamp&quot;: &quot;2025-12-25T15:30:00Z&quot;
+# }
+</code></pre>
+<h2>Step 4: Set Up Cron Schedule</h2>
+<h3>Option A: Supabase Dashboard</h3>
+<ol>
+<li>Go to <strong>Database</strong> → <strong>Cron Jobs</strong></li>
+<li>Click <strong>Create a new cron job</strong></li>
+<li>Configure:<ul>
+<li><strong>Name</strong>: <code>price-monitoring-hourly</code></li>
+<li><strong>Schedule</strong>: <code>0 * * * *</code> (every hour)</li>
+<li><strong>Command</strong>:</li>
+</ul>
+<pre><code class="language-sql">SELECT net.http_post(
+  url := &#39;https://your-project.supabase.co/functions/v1/price-monitoring-cron&#39;,
+  headers := jsonb_build_object(
+    &#39;Content-Type&#39;, &#39;application/json&#39;,
+    &#39;x-cron-secret&#39;, &#39;your-cron-secret-here&#39;
+  )
+);
+</code></pre>
+</li>
+</ol>
+<h3>Option B: SQL Command</h3>
+<pre><code class="language-sql">SELECT cron.schedule(
+  &#39;price-monitoring-hourly&#39;,
+  &#39;0 * * * *&#39;,  -- Every hour
+  $$
+  SELECT net.http_post(
+    url := &#39;https://your-project.supabase.co/functions/v1/price-monitoring-cron&#39;,
+    headers := jsonb_build_object(
+      &#39;Content-Type&#39;, &#39;application/json&#39;,
+      &#39;x-cron-secret&#39;, &#39;your-cron-secret-here&#39;
+    )
+  );
+  $$
+);
+</code></pre>
+<h3>Verify Cron Job</h3>
+<pre><code class="language-sql">-- List all cron jobs
+SELECT * FROM cron.job;
+
+-- Check cron job runs
+SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;
+</code></pre>
+<h2>Step 5: Testing the Complete Flow</h2>
+<h3>1. Create Test Product Monitoring</h3>
+<pre><code class="language-bash"># Use your JWT token
+TOKEN=&quot;your-jwt-token-here&quot;
+
+# Start monitoring for a product
+curl -X POST http://localhost:8000/api/v1/price-monitoring/start \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;product_id&quot;: &quot;test-product-123&quot;,
+    &quot;frequency&quot;: &quot;hourly&quot;,
+    &quot;enabled&quot;: true
+  }&#39;
+</code></pre>
+<h3>2. Add Competitor Sources</h3>
+<pre><code class="language-bash"># Add first competitor
+curl -X POST http://localhost:8000/api/v1/price-monitoring/sources \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;product_id&quot;: &quot;test-product-123&quot;,
+    &quot;source_name&quot;: &quot;Amazon&quot;,
+    &quot;source_url&quot;: &quot;https://www.amazon.com/dp/B08N5WRWNW&quot;,
+    &quot;scraping_config&quot;: {
+      &quot;waitFor&quot;: 2000,
+      &quot;timeout&quot;: 30000
+    }
+  }&#39;
+
+# Add second competitor
+curl -X POST http://localhost:8000/api/v1/price-monitoring/sources \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;product_id&quot;: &quot;test-product-123&quot;,
+    &quot;source_name&quot;: &quot;Wayfair&quot;,
+    &quot;source_url&quot;: &quot;https://www.wayfair.com/furniture/pdp/example.html&quot;
+  }&#39;
+</code></pre>
+<h3>3. Trigger Manual Price Check</h3>
+<pre><code class="language-bash"># Check prices now
+curl -X POST http://localhost:8000/api/v1/price-monitoring/check-now \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;product_id&quot;: &quot;test-product-123&quot;,
+    &quot;product_name&quot;: &quot;Premium Leather Sofa&quot;
+  }&#39;
+
+# Expected response:
+# {
+#   &quot;success&quot;: true,
+#   &quot;message&quot;: &quot;Checked 2 sources&quot;,
+#   &quot;job_id&quot;: &quot;uuid&quot;,
+#   &quot;sources_checked&quot;: 2,
+#   &quot;prices_found&quot;: 2,
+#   &quot;credits_consumed&quot;: 2
+# }
+</code></pre>
+<h3>4. Verify Database Records</h3>
+<pre><code class="language-sql">-- Check price history
+SELECT * FROM price_history 
+WHERE product_id = &#39;test-product-123&#39; 
+ORDER BY scraped_at DESC;
+
+-- Check monitoring jobs
+SELECT * FROM price_monitoring_jobs 
+WHERE product_id = &#39;test-product-123&#39; 
+ORDER BY created_at DESC;
+
+-- Check AI usage logs
+SELECT * FROM ai_usage_logs
+WHERE provider = &#39;firecrawl&#39;
+ORDER BY created_at DESC;
+</code></pre>
+<h3>5. Test Cron Job Execution</h3>
+<pre><code class="language-bash"># Manually trigger the cron job
+CRON_SECRET=$(supabase secrets get CRON_SECRET)
+
+curl -X POST https://your-project.supabase.co/functions/v1/price-monitoring-cron \
+  -H &quot;x-cron-secret: $CRON_SECRET&quot; \
+  -H &quot;Content-Type: application/json&quot;
+
+# Check Edge Function logs
+supabase functions logs price-monitoring-cron --tail
+
+# Check Python backend logs
+# (in your Python backend terminal)
+</code></pre>
+<h3>6. Verify Cron Schedule</h3>
+<pre><code class="language-sql">-- Check if cron job is scheduled
+SELECT * FROM cron.job WHERE jobname = &#39;price-monitoring-hourly&#39;;
+
+-- Check recent cron job runs
+SELECT
+  jobid,
+  runid,
+  job_pid,
+  database,
+  username,
+  command,
+  status,
+  return_message,
+  start_time,
+  end_time
+FROM cron.job_run_details
+WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = &#39;price-monitoring-hourly&#39;)
+ORDER BY start_time DESC
+LIMIT 10;
+</code></pre>
+<h2>Step 6: Monitoring &amp; Troubleshooting</h2>
+<h3>Check Edge Function Logs</h3>
+<pre><code class="language-bash"># View real-time logs
+supabase functions logs price-monitoring-cron --tail
+
+# View last 100 logs
+supabase functions logs price-monitoring-cron --limit 100
+</code></pre>
+<h3>Check Python Backend Logs</h3>
+<pre><code class="language-bash"># If using systemd
+sudo journalctl -u mivaa-backend -f
+
+# If using Docker
+docker logs -f mivaa-backend
+
+# If running locally
+# Check terminal output
+</code></pre>
+<h3>Common Issues</h3>
+<h4>1. Cron Job Not Running</h4>
+<p><strong>Symptoms</strong>: No logs in Edge Function, no database updates</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Verify cron job is scheduled: <code>SELECT * FROM cron.job;</code></li>
+<li>Check cron secret is correct</li>
+<li>Verify Edge Function is deployed: <code>supabase functions list</code></li>
+<li>Check cron job run history: <code>SELECT * FROM cron.job_run_details;</code></li>
+</ul>
+<h4>2. Edge Function Returns 401</h4>
+<p><strong>Symptoms</strong>: &quot;Unauthorized&quot; error in logs</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Verify <code>CRON_SECRET</code> is set correctly</li>
+<li>Check cron job is using correct secret</li>
+<li>Regenerate secret if needed:<pre><code class="language-bash">supabase secrets set CRON_SECRET=$(openssl rand -hex 32)
+</code></pre>
+</li>
+</ul>
+<h4>3. Python Backend Not Responding</h4>
+<p><strong>Symptoms</strong>: Edge Function logs show connection errors</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Verify <code>PYTHON_BACKEND_URL</code> is correct</li>
+<li>Check Python backend is running: <code>curl http://localhost:8000/health</code></li>
+<li>Check firewall rules allow Edge Function → Backend communication</li>
+<li>For production, ensure backend URL is publicly accessible</li>
+</ul>
+<h4>4. No Products Being Processed</h4>
+<p><strong>Symptoms</strong>: &quot;Found 0 products due for monitoring&quot;</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Check <code>price_monitoring_products</code> table has records</li>
+<li>Verify <code>monitoring_enabled = true</code></li>
+<li>Verify <code>next_check_at &lt;= NOW()</code></li>
+<li>Check product monitoring status:<pre><code class="language-sql">SELECT
+  product_id,
+  monitoring_enabled,
+  monitoring_frequency,
+  next_check_at,
+  status
+FROM price_monitoring_products
+WHERE monitoring_enabled = true;
+</code></pre>
+</li>
+</ul>
+<h4>5. Firecrawl API Errors</h4>
+<p><strong>Symptoms</strong>: &quot;Failed to scrape&quot; errors in logs</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Verify <code>FIRECRAWL_API_KEY</code> is set in Python backend</li>
+<li>Check Firecrawl API key is valid: <a href="https://firecrawl.dev/dashboard">https://firecrawl.dev/dashboard</a></li>
+<li>Check Firecrawl credits balance</li>
+<li>Verify competitor URLs are accessible</li>
+<li>Check scraping_config is valid</li>
+</ul>
+<h4>6. Credits Not Being Debited</h4>
+<p><strong>Symptoms</strong>: Price checks succeed but credits unchanged</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li>Check <code>CreditsIntegrationService</code> is configured</li>
+<li>Verify user has sufficient credits</li>
+<li>Check <code>ai_usage_logs</code> table for entries</li>
+<li>Review Python backend logs for credit debit errors</li>
+</ul>
+<h2>Step 7: Production Deployment</h2>
+<h3>1. Update Environment Variables</h3>
+<pre><code class="language-bash"># Production Python backend URL
+supabase secrets set PYTHON_BACKEND_URL=https://api.yourdomain.com
+
+# Verify all secrets
+supabase secrets list
+</code></pre>
+<h3>2. Deploy Edge Function</h3>
+<pre><code class="language-bash"># Deploy to production
+supabase functions deploy price-monitoring-cron --project-ref your-project-ref
+
+# Verify deployment
+supabase functions list --project-ref your-project-ref
+</code></pre>
+<h3>3. Update Cron Schedule</h3>
+<p>Update the cron job to use production URL:</p>
+<pre><code class="language-sql">-- Delete old cron job
+SELECT cron.unschedule(&#39;price-monitoring-hourly&#39;);
+
+-- Create new cron job with production URL
+SELECT cron.schedule(
+  &#39;price-monitoring-hourly&#39;,
+  &#39;0 * * * *&#39;,
+  $$
+  SELECT net.http_post(
+    url := &#39;https://your-project.supabase.co/functions/v1/price-monitoring-cron&#39;,
+    headers := jsonb_build_object(
+      &#39;Content-Type&#39;, &#39;application/json&#39;,
+      &#39;x-cron-secret&#39;, &#39;your-production-cron-secret&#39;
+    )
+  );
+  $$
+);
+</code></pre>
+<h3>4. Set Up Monitoring</h3>
+<h4>Supabase Dashboard</h4>
+<ul>
+<li>Monitor Edge Function invocations</li>
+<li>Check error rates</li>
+<li>Review execution times</li>
+</ul>
+<h4>Python Backend</h4>
+<ul>
+<li>Monitor API endpoint <code>/api/v1/price-monitoring/check-now</code></li>
+<li>Track credit consumption</li>
+<li>Review AI usage logs in Admin Dashboard</li>
+</ul>
+<h4>Database</h4>
+<ul>
+<li>Monitor <code>price_monitoring_jobs</code> table for failures</li>
+<li>Check <code>price_history</code> table for data gaps</li>
+<li>Review <code>ai_usage_logs</code> for anomalies</li>
+</ul>
+<h2>Step 8: Maintenance</h2>
+<h3>Daily Tasks</h3>
+<ul>
+<li>Check cron job execution: <code>SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;</code></li>
+<li>Review error logs in Edge Function</li>
+<li>Monitor credit consumption</li>
+</ul>
+<h3>Weekly Tasks</h3>
+<ul>
+<li>Review price monitoring success rates</li>
+<li>Check for failed competitor sources</li>
+<li>Update scraping configs if needed</li>
+<li>Review AI usage analytics</li>
+</ul>
+<h3>Monthly Tasks</h3>
+<ul>
+<li>Analyze price trends</li>
+<li>Optimize scraping frequency</li>
+<li>Review and update competitor sources</li>
+<li>Check Firecrawl API usage and costs</li>
+</ul>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="./price-monitoring-system.md">Price Monitoring System</a></li>
+<li><a href="./price-monitoring-backend-implementation.md">Price Monitoring Backend Implementation</a></li>
+<li><a href="../supabase/functions/price-monitoring-cron/README.md">Edge Function README</a></li>
+<li><a href="../supabase/functions/price-monitoring-cron/.env.example">Environment Variables</a></li>
+</ul>
+<h2>Support</h2>
+<p>For issues or questions:</p>
+<ol>
+<li>Check Edge Function logs: <code>supabase functions logs price-monitoring-cron</code></li>
+<li>Check Python backend logs</li>
+<li>Review database tables for errors</li>
+<li>Check Firecrawl API status: <a href="https://status.firecrawl.dev">https://status.firecrawl.dev</a></li>
+<li>Review Supabase status: <a href="https://status.supabase.com">https://status.supabase.com</a></li>
+</ol>
+
+</div></body></html>

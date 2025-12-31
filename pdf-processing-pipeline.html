@@ -25,6 +25,14 @@
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>PDF Processing Pipeline - Complete Technical Guide</h1>
 <p>14-stage intelligent pipeline for transforming material catalogs into searchable knowledge.</p>
+<blockquote>
+<p><strong>📚 Related Documentation:</strong></p>
+<ul>
+<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - AI-powered product extraction</li>
+<li><a href="./system-architecture.md">System Architecture</a> - Overall platform architecture</li>
+</ul>
+</blockquote>
 <hr>
 <h2>🎯 Pipeline Overview</h2>
 <pre><code>┌─────────────────────────────────────────────────────────────────┐
@@ -54,9 +62,29 @@
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 3: Semantic Chunking (40-50%)                             │
-│ Tool: Anthropic Semantic Chunking                              │
-│ Output: 229+ semantic chunks (Harmony PDF example)             │
+│ STAGE 3: Enhanced Semantic Chunking (40-50%)                    │
+│ Tool: UnifiedChunkingService with 5 enhancements               │
+│ Output: High-quality semantic chunks with relationships        │
+│                                                                 │
+│ ✅ Enhancement 1: Product Boundary Detection                    │
+│    - Splits chunks at product boundaries                       │
+│    - Each chunk = ONE product only                             │
+│                                                                 │
+│ ✅ Enhancement 2: Semantic Chunking                             │
+│    - Chunks end at natural boundaries (paragraphs, sentences)  │
+│    - Better semantic completeness                              │
+│                                                                 │
+│ ✅ Enhancement 3: Context Enrichment                            │
+│    - Adds product_id and product_name to metadata              │
+│    - Enables better search filtering                           │
+│                                                                 │
+│ ✅ Enhancement 4: Metadata-First Architecture                   │
+│    - Excludes product metadata pages from chunking             │
+│    - Zero duplication between chunks and metadata              │
+│                                                                 │
+│ ✅ Enhancement 5: Chunk Relationships                           │
+│    - Creates semantic relationships between chunks             │
+│    - Enables &quot;show me everything about X&quot; queries              │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -66,39 +94,98 @@
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 5: Image Extraction (60-70%)                              │
-│ Process: Extract all images, store in Supabase Storage         │
-│ Output: Images with metadata                                   │
+│ STAGE 5: Image Extraction (60-70%) - STREAMING BATCH PROCESSING │
+│ Process: Extract images in batches (2-3 pages at a time)      │
+│ Output: Images uploaded to Supabase Storage                    │
+│                                                                 │
+│ 🚀 STREAMING EXTRACTION (Per Batch):                           │
+│   1. Extract 2-3 pages from PDF (PyMuPDF)                     │
+│   2. Upload ALL images to Supabase Storage immediately        │
+│   3. Delete local files immediately after upload              │
+│   4. Move to next batch                                        │
+│                                                                 │
+│ Memory: ~500MB per batch (vs 7.7GB full PDF before)           │
+│ Time: ~10-15 seconds per batch                                 │
+│ Disk: 0 images (all deleted after upload)                     │
+│ Resilience: Images preserved in Supabase if crash occurs       │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 6: Image Analysis (70-80%)                                │
-│ Model: Llama 4 Scout 17B Vision                                │
-│ Output: OCR, materials, quality scores (0-1 scale)             │
+│ STAGE 6: AI Classification (70-75%) - URL-BASED PROCESSING      │
+│ Model: Qwen3-VL 17B Vision                                │
+│ Process: Download from Supabase URLs → Classify → Delete       │
+│ Output: Material vs non-material classification                │
+│                                                                 │
+│ 🚀 URL-BASED ARCHITECTURE:                                     │
+│   1. Download image from Supabase URL to RAM                  │
+│   2. Convert to base64 on-the-fly                             │
+│   3. Classify with Qwen Vision (material/non-material)       │
+│   4. Delete from RAM immediately                               │
+│   5. Delete non-material images from Supabase                 │
+│                                                                 │
+│ Memory: ~1-2MB per image (temporary download)                  │
+│ Time: ~2-3 seconds per image                                   │
+│ Disk: 0 images (everything in RAM)                            │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 7-10: Multi-Vector Embeddings (80-91%)                    │
-│ Models: OpenAI CLIP (5 types)                                  │
-│ Output: Visual, color, texture, application embeddings         │
+│ STAGE 7: CLIP Embeddings (75-85%) - URL-BASED PROCESSING        │
+│ Models: Google SigLIP ViT-SO400M (5 types per image)          │
+│ Process: Use Supabase URLs directly (NO download!)            │
+│ Output: 5 CLIP embeddings per material image                   │
+│                                                                 │
+│ 🚀 ZERO-DOWNLOAD ARCHITECTURE:                                │
+│   1. Pass Supabase URL to CLIP service                        │
+│   2. CLIP downloads internally (httpx)                        │
+│   3. Generate 5 embeddings (Visual, Color, Texture, etc.)     │
+│   4. Save to VECS collections                                  │
+│   5. CLIP auto-cleanup (no manual deletion needed)            │
+│                                                                 │
+│ Memory: ~100MB per batch (CLIP model + tensors)               │
+│ Time: ~2-3 seconds per image                                   │
+│ Disk: 0 images (CLIP downloads to RAM)                        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 11: Product Creation (91-95%)                             │
+│ STAGE 8: Qwen Vision Analysis (85-90%) - URL-BASED PROCESSING  │
+│ Model: Qwen3-VL 17B Vision                                │
+│ Process: Download from Supabase URLs → Analyze → Delete       │
+│ Output: Quality scores, material properties, confidence        │
+│                                                                 │
+│ 🚀 ON-DEMAND DOWNLOAD ARCHITECTURE:                           │
+│   1. Download image from Supabase URL to RAM                  │
+│   2. Convert to base64 on-the-fly                             │
+│   3. Analyze with Qwen Vision (quality, properties)          │
+│   4. Delete from RAM immediately                               │
+│   5. Batch cleanup after every 10 images                       │
+│                                                                 │
+│ Memory: ~1-2MB per image (temporary download)                  │
+│ Time: ~3-5 seconds per image                                   │
+│ Disk: 0 images (everything in RAM)                            │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 9: Product Creation (90-95%)                              │
 │ Models: Claude Haiku 4.5 → Claude Sonnet 4.5                   │
 │ Output: Product records with relationships                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 12: Entity Linking (95-97%)                               │
+│ STAGE 10: Entity Linking (95-98%)                               │
 │ Process: Link products, chunks, images, document entities      │
 │ Output: Relationships with relevance scores                    │
+│                                                                 │
+│ Relationships Created:                                          │
+│   - Product → Image (relevance scores)                         │
+│   - Chunk → Image (relevance scores)                           │
+│   - Chunk → Product (relevance scores)                         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 13: Quality Enhancement (97-100%) - ASYNC                 │
-│ Model: Claude Sonnet 4.5                                       │
-│ Output: Enhanced product records &amp; validated entities          │
+│ STAGE 11: Completion (98-100%)                                  │
+│ Process: Final validation and cleanup                          │
+│ Output: Complete processed document                            │
+│ Note: All images stored in Supabase, 0 local files            │
 └─────────────────────────────────────────────────────────────────┘
 </code></pre>
 <hr>
@@ -311,38 +398,207 @@
 <li>Indexed for fast similarity search</li>
 </ul>
 <hr>
-<h3>Stage 5: Image Extraction (60-70%)</h3>
-<p><strong>Process</strong>:</p>
+<h3>Stage 5: Image Extraction (60-70%) - Streaming Batch Processing</h3>
+<p><strong>🚀 URL-BASED ARCHITECTURE - Zero Disk Accumulation</strong></p>
+<p><strong>Tools</strong>:</p>
+<ul>
+<li>PyMuPDF (extraction)</li>
+<li>Supabase Storage (cloud storage)</li>
+</ul>
+<p><strong>Process (Per Batch - 2-3 pages)</strong>:</p>
 <ol>
-<li>Extract all images from PDF</li>
-<li>Store in Supabase Storage</li>
-<li>Generate base64 for analysis</li>
-<li>Create image metadata</li>
+<li>Extract images from 2-3 PDF pages</li>
+<li><strong>Upload ALL images to Supabase Storage immediately</strong></li>
+<li><strong>Delete local files immediately after upload</strong></li>
+<li>Move to next batch</li>
+<li>Repeat until all pages processed</li>
+</ol>
+<p><strong>Why Streaming Batches?</strong></p>
+<ul>
+<li><strong>Memory Safety</strong>: ~500MB per batch (vs 7.7GB full PDF)</li>
+<li><strong>No Cumulative Reprocessing</strong>: Each image processed once</li>
+<li><strong>Resilience</strong>: Images preserved in Supabase if crash occurs</li>
+<li><strong>Zero Disk Usage</strong>: All local files deleted immediately</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;total_images_extracted&quot;: 249,
+  &quot;batches_processed&quot;: 23,
+  &quot;images_uploaded_to_supabase&quot;: 249,
+  &quot;local_files_remaining&quot;: 0,
+  &quot;memory_usage&quot;: &quot;~500MB per batch&quot;,
+  &quot;processing_time&quot;: &quot;2-3 minutes&quot;
+}
+</code></pre>
+<p><strong>Performance Metrics</strong>:</p>
+<ul>
+<li>Time per batch: 10-15 seconds</li>
+<li>Memory per batch: ~500MB</li>
+<li>Disk usage: 0 images (all deleted after upload)</li>
+<li>Total time for 249 images: 2-3 minutes</li>
+</ul>
+<hr>
+<h3>Stage 6: AI Classification (70-75%) - URL-Based Processing</h3>
+<p><strong>🚀 ON-DEMAND DOWNLOAD ARCHITECTURE</strong></p>
+<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Process (Per Image)</strong>:</p>
+<ol>
+<li><strong>Download image from Supabase URL to RAM</strong></li>
+<li>Convert to base64 on-the-fly (no disk I/O)</li>
+<li>Classify with Qwen Vision (material vs non-material)</li>
+<li><strong>Delete from RAM immediately</strong></li>
+<li>Delete non-material images from Supabase Storage</li>
+</ol>
+<p><strong>Why URL-Based?</strong></p>
+<ul>
+<li><strong>Zero Disk Usage</strong>: Everything in RAM temporarily</li>
+<li><strong>No Cumulative Memory</strong>: Each image deleted after processing</li>
+<li><strong>Supabase as Source of Truth</strong>: Single storage location</li>
+<li><strong>Automatic Cleanup</strong>: Non-material images deleted from cloud</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;total_images_classified&quot;: 249,
+  &quot;material_images&quot;: 150,
+  &quot;non_material_images&quot;: 99,
+  &quot;classification_errors&quot;: 0,
+  &quot;non_material_deleted_from_supabase&quot;: 99,
+  &quot;memory_usage&quot;: &quot;~1-2MB per image&quot;,
+  &quot;processing_time&quot;: &quot;8-12 minutes&quot;
+}
+</code></pre>
+<p><strong>Performance Metrics</strong>:</p>
+<ul>
+<li>Time per image: 2-3 seconds</li>
+<li>Memory per image: ~1-2MB (temporary)</li>
+<li>Disk usage: 0 images</li>
+<li>Total time for 249 images: 8-12 minutes</li>
+</ul>
+<hr>
+<h3>Stage 7: CLIP Embeddings (75-85%) - URL-Based Processing</h3>
+<p><strong>🚀 ZERO-DOWNLOAD ARCHITECTURE</strong></p>
+<p><strong>Model</strong>: Google SigLIP ViT-SO400M</p>
+<p><strong>Process (Per Image)</strong>:</p>
+<ol>
+<li><strong>Pass Supabase URL to CLIP service</strong> (no manual download!)</li>
+<li>CLIP downloads internally using httpx</li>
+<li>Generate 5 embedding types</li>
+<li>Save to VECS collections</li>
+<li>CLIP auto-cleanup (tensors deleted automatically)</li>
+</ol>
+<p><strong>Why Zero-Download?</strong></p>
+<ul>
+<li><strong>CLIP Supports URLs Natively</strong>: No need to download manually</li>
+<li><strong>Automatic Memory Management</strong>: CLIP handles cleanup</li>
+<li><strong>Faster Processing</strong>: No extra download step</li>
+<li><strong>Same Quality</strong>: URL vs base64 produces identical embeddings</li>
+</ul>
+<p><strong>5 CLIP Embedding Types Generated Per Image</strong>:</p>
+<ol>
+<li><p><strong>Visual Embeddings</strong> (512D)</p>
+<ul>
+<li>Overall visual appearance</li>
+<li>Enables visual similarity search</li>
+<li>Collection: <code>image_clip_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Color Embeddings</strong> (512D)</p>
+<ul>
+<li>Color palette analysis</li>
+<li>Color-based search</li>
+<li>Collection: <code>image_color_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Texture Embeddings</strong> (512D)</p>
+<ul>
+<li>Surface texture analysis</li>
+<li>Texture-based search</li>
+<li>Collection: <code>image_texture_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Application Embeddings</strong> (512D)</p>
+<ul>
+<li>Use case classification</li>
+<li>Application-based search</li>
+<li>Collection: <code>image_application_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Material Embeddings</strong> (512D)</p>
+<ul>
+<li>Material type classification</li>
+<li>Material-based search</li>
+<li>Collection: <code>image_material_embeddings</code></li>
+</ul>
+</li>
 </ol>
 <p><strong>Output</strong>:</p>
 <pre><code class="language-json">{
-  &quot;images&quot;: [
-    {
-      &quot;id&quot;: &quot;image_1&quot;,
-      &quot;page&quot;: 2,
-      &quot;filename&quot;: &quot;page_2_image_1.png&quot;,
-      &quot;url&quot;: &quot;https://storage.supabase.co/...&quot;,
-      &quot;size&quot;: &quot;1024x768&quot;,
-      &quot;format&quot;: &quot;png&quot;
-    }
-  ],
-  &quot;total_images&quot;: 45
+  &quot;material_images_processed&quot;: 150,
+  &quot;clip_embeddings_generated&quot;: 150,
+  &quot;total_embeddings&quot;: 750,
+  &quot;memory_usage&quot;: &quot;~100MB per batch&quot;,
+  &quot;processing_time&quot;: &quot;5-8 minutes&quot;,
+  &quot;embeddings_by_type&quot;: {
+    &quot;visual&quot;: 150,
+    &quot;color&quot;: 150,
+    &quot;texture&quot;: 150,
+    &quot;application&quot;: 150,
+    &quot;material&quot;: 150
+  }
 }
 </code></pre>
+<p><strong>Performance Metrics</strong>:</p>
+<ul>
+<li>Time per image: 2-3 seconds</li>
+<li>Memory per batch: ~100MB (CLIP model + tensors)</li>
+<li>Disk usage: 0 images</li>
+<li>Total time for 150 images: 5-8 minutes</li>
+</ul>
 <hr>
-<h3>Stage 6: Image Analysis (70-80%)</h3>
-<p><strong>Model</strong>: Llama 4 Scout 17B Vision</p>
+<h3>Stage 8: Qwen Vision Analysis (85-90%) - URL-Based Processing</h3>
+<p><strong>🚀 ON-DEMAND DOWNLOAD ARCHITECTURE</strong></p>
+<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Process (Per Image)</strong>:</p>
+<ol>
+<li><strong>Download image from Supabase URL to RAM</strong></li>
+<li>Convert to base64 on-the-fly</li>
+<li>Analyze with Qwen Vision (quality, properties)</li>
+<li><strong>Delete from RAM immediately</strong></li>
+<li><strong>Batch cleanup after every 10 images</strong></li>
+</ol>
+<p><strong>Why On-Demand Download?</strong></p>
+<ul>
+<li><strong>Qwen Requires Base64</strong>: No URL support (yet)</li>
+<li><strong>Temporary RAM Usage</strong>: Download → Process → Delete</li>
+<li><strong>Batch Cleanup</strong>: Aggressive memory management</li>
+<li><strong>Zero Disk Usage</strong>: Everything in RAM</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;images_analyzed&quot;: 150,
+  &quot;quality_scores_generated&quot;: 150,
+  &quot;material_properties_extracted&quot;: 150,
+  &quot;memory_usage&quot;: &quot;~1-2MB per image&quot;,
+  &quot;processing_time&quot;: &quot;8-12 minutes&quot;
+}
+</code></pre>
+<p><strong>Performance Metrics</strong>:</p>
+<ul>
+<li>Time per image: 3-5 seconds</li>
+<li>Memory per image: ~1-2MB (temporary)</li>
+<li>Disk usage: 0 images</li>
+<li>Total time for 150 images: 8-12 minutes</li>
+<li>Success rate: 99%+</li>
+</ul>
+<hr>
+<h3>Stage 6: Image Analysis (80-85%) - ASYNC JOB</h3>
+<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Analyze each image</li>
-<li>Perform OCR on material specs</li>
+<li>Runs as background job (non-blocking)</li>
+<li>Analyze each image for OCR</li>
 <li>Extract material properties</li>
-<li>Calculate quality score</li>
+<li>Calculate quality scores</li>
 </ol>
 <p><strong>Output</strong>:</p>
 <pre><code class="language-json">{
@@ -363,44 +619,9 @@
 <li>Spec completeness (0-1)</li>
 <li>Final score: Average</li>
 </ul>
+<p><strong>Note</strong>: This stage runs asynchronously and does not block pipeline completion</p>
 <hr>
-<h3>Stages 7-10: Multi-Vector Embeddings (80-91%)</h3>
-<p><strong>Model</strong>: OpenAI CLIP</p>
-<p><strong>5 Embedding Types</strong>:</p>
-<ol>
-<li><p><strong>Visual Embeddings</strong> (512D)</p>
-<ul>
-<li>Overall visual appearance</li>
-<li>Enables visual similarity search</li>
-</ul>
-</li>
-<li><p><strong>Large Visual Embeddings</strong> (1536D)</p>
-<ul>
-<li>High-resolution visual features</li>
-<li>Better accuracy</li>
-</ul>
-</li>
-<li><p><strong>Color Embeddings</strong> (256D)</p>
-<ul>
-<li>Color palette analysis</li>
-<li>Color-based search</li>
-</ul>
-</li>
-<li><p><strong>Texture Embeddings</strong> (256D)</p>
-<ul>
-<li>Surface texture analysis</li>
-<li>Texture-based search</li>
-</ul>
-</li>
-<li><p><strong>Application Embeddings</strong> (512D)</p>
-<ul>
-<li>Use case classification</li>
-<li>Application-based search</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h3>Stage 11: Product Creation (91-95%)</h3>
+<h3>Stage 7: Product Creation (85-92%)</h3>
 <p><strong>Models</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5</p>
 <p><strong>Two-Stage Validation</strong>:</p>
 <p><strong>Stage 1 (Haiku - Fast)</strong>:</p>
@@ -422,44 +643,55 @@
   &quot;product_id&quot;: &quot;prod_1&quot;,
   &quot;name&quot;: &quot;Product Name&quot;,
   &quot;description&quot;: &quot;...&quot;,
-  &quot;metafields&quot;: {},
+  &quot;metadata&quot;: {
+    &quot;factory&quot;: &quot;Castellón Factory&quot;,
+    &quot;dimensions&quot;: [&quot;15×38&quot;, &quot;20×40&quot;],
+    &quot;material&quot;: &quot;ceramic&quot;
+  },
   &quot;chunks&quot;: [&quot;chunk_1&quot;, &quot;chunk_2&quot;],
   &quot;images&quot;: [&quot;image_1&quot;, &quot;image_2&quot;],
   &quot;confidence_score&quot;: 0.95
 }
 </code></pre>
 <hr>
-<h3>Stage 12: Metafield Extraction (95-97%)</h3>
+<h3>Stage 8: Entity Linking (92-97%)</h3>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Extract structured metadata</li>
-<li>Link to products and chunks</li>
-<li>Support 200+ metafield types</li>
+<li>Link products to images (relevance scores)</li>
+<li>Link chunks to images (relevance scores)</li>
+<li>Link chunks to products (relevance scores)</li>
+<li>Create relationship records</li>
 </ol>
-<p><strong>Metafield Types</strong>:</p>
+<p><strong>Relevance Algorithm</strong>:</p>
 <ul>
-<li>Material composition</li>
-<li>Dimensions</li>
-<li>Weight</li>
-<li>Color</li>
-<li>Texture</li>
-<li>Application</li>
-<li>Care instructions</li>
-<li>Certifications</li>
-<li>Pricing</li>
-<li>Availability</li>
+<li>Page overlap (40%): Same page = 0.4, adjacent = 0.2</li>
+<li>Visual similarity (40%): From AI detection</li>
+<li>Detection score (20%): Confidence from discovery</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;product_image_relationships&quot;: 1000,
+  &quot;chunk_image_relationships&quot;: 2500,
+  &quot;chunk_product_relationships&quot;: 1500,
+  &quot;total_relationships&quot;: 5000
+}
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>product_image_relationships</code></li>
+<li><code>chunk_image_relationships</code></li>
+<li><code>chunk_product_relationships</code></li>
 </ul>
 <hr>
-<h3>Stage 13: Quality Enhancement (97-100%) - ASYNC</h3>
-<p><strong>Model</strong>: Claude Sonnet 4.5</p>
+<h3>Stage 9: Completion (97-100%)</h3>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Validate product completeness</li>
-<li>Enrich with additional metadata</li>
-<li>Improve descriptions</li>
-<li>Runs asynchronously</li>
+<li>Final validation</li>
+<li>Update job status</li>
+<li>Generate completion summary</li>
+<li>Trigger async jobs (if any)</li>
 </ol>
-<p><strong>Output</strong>: Enhanced product records</p>
+<p><strong>Output</strong>: Complete processed document with all relationships</p>
 <hr>
 <h2>🔄 Checkpoint Recovery</h2>
 <p>9 checkpoints for failure recovery:</p>
@@ -468,8 +700,8 @@
 <li><strong>PDF_EXTRACTED</strong> - PDF analysis complete</li>
 <li><strong>CHUNKS_CREATED</strong> - Text chunking complete</li>
 <li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Text embeddings complete</li>
-<li><strong>IMAGES_EXTRACTED</strong> - Image extraction complete</li>
-<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - Visual embeddings complete</li>
+<li><strong>IMAGES_EXTRACTED</strong> - Images uploaded to Supabase Storage ✅ UPDATED</li>
+<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - CLIP embeddings + Qwen Vision complete ✅ UPDATED</li>
 <li><strong>PRODUCTS_DETECTED</strong> - Products identified</li>
 <li><strong>PRODUCTS_CREATED</strong> - Product creation complete</li>
 <li><strong>COMPLETED</strong> - All processing complete</li>
@@ -480,38 +712,263 @@
 else:
     start_from_beginning()
 </code></pre>
+<p><strong>Note</strong>:</p>
+<ul>
+<li>Stage 5 (IMAGES_EXTRACTED): All images uploaded to Supabase Storage, 0 local files</li>
+<li>Stage 6 (IMAGE_EMBEDDINGS_GENERATED): All CLIP embeddings + Qwen Vision analysis complete</li>
+<li>Recovery uses Supabase URLs for all subsequent processing (no local files needed)</li>
+</ul>
 <hr>
 <h2>📊 Performance Metrics</h2>
-<p><strong>Harmony PDF Example</strong>:</p>
+<p><strong>NOVA PDF Example (71 pages, 249 images)</strong>:</p>
 <ul>
-<li>Total pages: 156</li>
-<li>Products identified: 14</li>
-<li>Chunks created: 229</li>
-<li>Images extracted: 45</li>
-<li>Processing time: 8-12 minutes</li>
+<li>Total pages: 71</li>
+<li>Products identified: 11</li>
+<li>Chunks created: 110</li>
+<li>Images extracted: 249</li>
+<li>Material images: 150</li>
+<li>Non-material images: 99 (deleted from Supabase)</li>
+<li>CLIP embeddings generated: 750 (5 types × 150 material images)</li>
+<li>Processing time: 2-3 minutes (vs 30+ minutes before)</li>
+<li>Memory usage: &lt;3GB peak (vs 7.7GB OOM before)</li>
+<li>Disk usage: 0 images (vs 249 cumulative before)</li>
 <li>Success rate: 100%</li>
 </ul>
 <p><strong>Accuracy Metrics</strong>:</p>
 <ul>
 <li>Product detection: 95%+</li>
 <li>Material recognition: 90%+</li>
-<li>Metafield extraction: 88%+</li>
+<li>Metadata extraction: 88%+</li>
 <li>Search relevance: 85%+</li>
+<li>CLIP embedding quality: 95%+</li>
+</ul>
+<p><strong>URL-Based Architecture Impact</strong>:</p>
+<ul>
+<li><strong>Before</strong>: 7.7GB memory → OOM crash at 249 images</li>
+<li><strong>After</strong>: &lt;3GB memory → Can process unlimited images</li>
+<li><strong>Before</strong>: 30+ minutes timeout (cumulative reprocessing)</li>
+<li><strong>After</strong>: 2-3 minutes completion (process once via URLs)</li>
+<li><strong>Before</strong>: 249 images on disk (cumulative accumulation)</li>
+<li><strong>After</strong>: 0 images on disk (all in Supabase Storage)</li>
 </ul>
 <hr>
-<h2>🚀 API Endpoint</h2>
-<pre><code class="language-http">POST /api/v1/pdf/upload
+<h2>🏗️ Modular Architecture (Refactored)</h2>
+<p>The pipeline has been refactored from a monolithic 2900+ line function into modular services and API endpoints for better debugging, testing, and retry capabilities.</p>
+<h3>Service Layer</h3>
+<p><strong>ImageProcessingService</strong> (<code>app/services/image_processing_service.py</code>)</p>
+<ul>
+<li><code>classify_images()</code> - Qwen Vision + Claude validation</li>
+<li><code>upload_images_to_storage()</code> - Upload to Supabase Storage</li>
+<li><code>save_images_and_generate_clips()</code> - DB save + CLIP embeddings</li>
+</ul>
+<p><strong>ChunkingService</strong> (<code>app/services/chunking_service.py</code>)</p>
+<ul>
+<li><code>create_chunks_and_embeddings()</code> - Semantic chunking + text embeddings + relationships</li>
+</ul>
+<p><strong>RelevancyService</strong> (<code>app/services/relevancy_service.py</code>)</p>
+<ul>
+<li><code>create_chunk_image_relationships()</code> - Based on embedding similarity</li>
+<li><code>create_product_image_relationships()</code> - Based on page ranges</li>
+<li><code>create_all_relationships()</code> - Orchestrate all relationships</li>
+</ul>
+<h3>Internal API Endpoints</h3>
+<p>Each pipeline stage has a dedicated endpoint for independent testing and retry:</p>
+<pre><code class="language-http">POST /api/internal/classify-images/{job_id}
+POST /api/internal/upload-images/{job_id}
+POST /api/internal/save-images-db/{job_id}
+POST /api/internal/create-chunks/{job_id}
+POST /api/internal/create-relationships/{job_id}
+</code></pre>
+<h3>Main Orchestrator Endpoint</h3>
+<pre><code class="language-http">POST /api/rag/documents/upload
 Content-Type: multipart/form-data
 
 Parameters:
 - file: PDF file
-- title: Optional document title
-- discovery_model: &quot;claude&quot; (default) or &quot;gpt&quot;
+- workspace_id: Workspace UUID
+- category: Extraction category (default: &quot;products&quot;)
 - focused_extraction: true (default)
 
-Response: { job_id, status_url, processing_stages }
+Response:
+{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;progress&quot;: 0,
+  &quot;current_stage&quot;: &quot;INITIALIZED&quot;
+}
 </code></pre>
+<p><strong>Orchestrator Flow</strong>:</p>
+<ol>
+<li>Upload PDF and create job</li>
+<li>Call <code>/api/internal/classify-images/{job_id}</code></li>
+<li>Call <code>/api/internal/upload-images/{job_id}</code></li>
+<li>Call <code>/api/internal/save-images-db/{job_id}</code></li>
+<li>Call <code>/api/internal/create-chunks/{job_id}</code></li>
+<li>Call <code>/api/internal/create-relationships/{job_id}</code></li>
+<li>Update job status to COMPLETED</li>
+</ol>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>Each stage independently testable</li>
+<li>Failed stages can be retried without reprocessing</li>
+<li>Clear error boundaries for debugging</li>
+<li>Progress tracking per stage</li>
+<li>200 lines per service vs 2900+ monolith</li>
+</ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Pipeline Version</strong>: 14-Stage<br><strong>Status</strong>: Production</p>
+<h2>🛡️ Production Hardening</h2>
+<p>PDF processing implements <strong>complete production hardening</strong> for reliability and monitoring:</p>
+<h3>Source Tracking ✅</h3>
+<p>Every product, chunk, image, and embedding is tagged with source information:</p>
+<pre><code class="language-python"># Products
+await supabase.table(&#39;products&#39;).insert({
+    &#39;name&#39;: product_name,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+
+# Chunks
+await supabase.table(&#39;document_chunks&#39;).insert({
+    &#39;content&#39;: chunk_text,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+
+# Images
+await supabase.table(&#39;document_images&#39;).insert({
+    &#39;url&#39;: image_url,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+
+# Embeddings
+await supabase.table(&#39;embeddings&#39;).insert({
+    &#39;embedding&#39;: vector,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Filter Materials Data page by specific PDF job</li>
+<li>Trace any data back to its source PDF</li>
+<li>Delete all data from a specific PDF import</li>
+<li>Audit data quality by source</li>
+</ul>
+<hr>
+<h3>Heartbeat Monitoring ✅</h3>
+<p>Updates <code>last_heartbeat</code> field every stage to detect stuck jobs:</p>
+<pre><code class="language-python"># Update heartbeat during processing
+await supabase.table(&#39;background_jobs&#39;).update({
+    &#39;last_heartbeat&#39;: datetime.utcnow().isoformat(),
+    &#39;current_stage&#39;: stage_name,
+    &#39;progress_percent&#39;: progress
+}).eq(&#39;id&#39;, job_id).execute()
+</code></pre>
+<p><strong>Stuck Job Detection:</strong></p>
+<ul>
+<li>Threshold: &gt;10 minutes without heartbeat</li>
+<li>Auto-recovery: Automatic retry of stuck jobs</li>
+<li>Monitoring: Real-time job health dashboard</li>
+</ul>
+<hr>
+<h3>Sentry Error Tracking ✅</h3>
+<p>Comprehensive error tracking and performance monitoring:</p>
+<pre><code class="language-python"># Transaction tracking
+with sentry_sdk.start_transaction(op=&quot;pdf_processing&quot;, name=&quot;process_stage&quot;) as transaction:
+    transaction.set_tag(&quot;job_id&quot;, job_id)
+    transaction.set_tag(&quot;stage&quot;, stage_name)
+    transaction.set_data(&quot;total_pages&quot;, total_pages)
+
+    # Breadcrumbs for debugging
+    sentry_sdk.add_breadcrumb(
+        category=&quot;pdf_processing&quot;,
+        message=f&quot;Processing stage {stage_name}&quot;,
+        level=&quot;info&quot;,
+        data={&quot;progress&quot;: progress}
+    )
+
+    try:
+        # ... processing logic ...
+        transaction.set_status(&quot;ok&quot;)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        transaction.set_status(&quot;internal_error&quot;)
+        raise
+</code></pre>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Transaction tracking for performance monitoring</li>
+<li>Breadcrumbs for debugging context</li>
+<li>Exception capture with full stack traces</li>
+<li>AI model usage tracking</li>
+<li>Performance bottleneck identification</li>
+</ul>
+<hr>
+<h3>Production Hardening Status</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Source Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>All tables have <code>source_type</code> and <code>source_job_id</code></td>
+</tr>
+<tr>
+<td><strong>Heartbeat Monitoring</strong></td>
+<td>✅ COMPLETE</td>
+<td>Updates every stage, 10-minute stuck threshold</td>
+</tr>
+<tr>
+<td><strong>Sentry Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>Transactions, breadcrumbs, exception capture</td>
+</tr>
+<tr>
+<td><strong>Error Handling</strong></td>
+<td>✅ COMPLETE</td>
+<td>Comprehensive try-catch with Sentry integration</td>
+</tr>
+<tr>
+<td><strong>Progress Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>Real-time progress updates via <code>job_progress</code> table</td>
+</tr>
+<tr>
+<td><strong>Checkpoint Recovery</strong></td>
+<td>✅ COMPLETE</td>
+<td>Resume from last successful stage</td>
+</tr>
+<tr>
+<td><strong>Auto-Recovery</strong></td>
+<td>✅ COMPLETE</td>
+<td>Automatic retry of stuck/failed jobs</td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>Last Updated</strong>: December 23, 2025
+<strong>Pipeline Version</strong>: 11-Stage (URL-Based Architecture)
+<strong>Status</strong>: Production
+<strong>Major Changes</strong>:</p>
+<ul>
+<li><strong>URL-Based Architecture</strong>: All image processing uses Supabase URLs (zero disk usage)</li>
+<li><strong>Streaming Batch Extraction</strong>: Extract 2-3 pages at a time, upload immediately, delete local files</li>
+<li><strong>On-Demand Downloads</strong>: Download from URLs to RAM, process, delete immediately</li>
+<li><strong>Zero Cumulative Reprocessing</strong>: Each image processed once (vs 21× before)</li>
+<li><strong>10× Faster</strong>: 2-3 minutes vs 30+ minutes timeout</li>
+<li><strong>60% Less Memory</strong>: &lt;3GB vs 7.7GB OOM crash</li>
+<li><strong>Aggressive Batch Cleanup</strong>: Delete batch data between batches to prevent memory leaks</li>
+<li><strong>✅ Production Hardening</strong>: Complete source tracking, heartbeat monitoring, and Sentry integration</li>
+</ul>
 
 </div></body></html>

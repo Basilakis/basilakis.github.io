@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Page-Aware Chunking Implementation</h1>
+<h2>Overview</h2>
+<p>This document describes the implementation of page-aware chunking system that preserves page information from PyMuPDF4LLM extraction through to chunk-product relationship scoring.</p>
+<h2>Changes Made</h2>
+<h3>1. UnifiedChunkingService (<code>mivaa-pdf-extractor/app/services/unified_chunking_service.py</code>)</h3>
+<h4>New Method: <code>chunk_pages()</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Process PyMuPDF4LLM&#39;s page_chunks output while preserving page metadata</li>
+<li><strong>Input</strong>: List of page dicts: <code>[{&quot;metadata&quot;: {&quot;page&quot;: 0}, &quot;text&quot;: &quot;...&quot;}, ...]</code></li>
+<li><strong>Output</strong>: List of chunks with <code>page_number</code> in metadata</li>
+<li><strong>Process</strong>:<ol>
+<li>Iterates through each page</li>
+<li>Chunks the page&#39;s text using configured strategy</li>
+<li>Stores page number (1-based) in chunk metadata</li>
+<li>Maintains global chunk indexing across all pages</li>
+</ol>
+</li>
+</ul>
+<h4>Updated Method: <code>_chunk_page_text()</code></h4>
+<ul>
+<li><strong>Purpose</strong>: Chunk text from a single page</li>
+<li><strong>Parameters</strong>: Added <code>page_number</code> parameter</li>
+<li><strong>Process</strong>: Calls appropriate chunking strategy with page number</li>
+</ul>
+<h4>Updated Methods: All Chunking Strategies</h4>
+<ul>
+<li><code>_chunk_semantic()</code> - Added <code>page_number</code> parameter</li>
+<li><code>_chunk_fixed_size()</code> - Added <code>page_number</code> parameter</li>
+<li><code>_chunk_hybrid()</code> - Added <code>page_number</code> parameter</li>
+<li><code>_chunk_layout_aware()</code> - Added <code>page_number</code> parameter</li>
+</ul>
+<h4>Updated Method: <code>_create_chunk()</code></h4>
+<ul>
+<li><strong>New Parameter</strong>: <code>page_number: Optional[int]</code></li>
+<li><strong>Behavior</strong>: Stores <code>page_number</code> in chunk metadata if provided</li>
+<li><strong>Storage</strong>: <code>chunk.metadata[&quot;page_number&quot;] = page_number</code></li>
+</ul>
+<h3>2. RAGService (<code>mivaa-pdf-extractor/app/services/rag_service.py</code>)</h3>
+<h4>Updated Method: <code>index_pdf_content()</code></h4>
+<ul>
+<li><strong>Old Behavior</strong>: <pre><code class="language-python">markdown_text = pymupdf4llm.to_markdown(tmp_path)
+chunks = await chunking_service.chunk_text(text=markdown_text, ...)
+</code></pre>
+</li>
+<li><strong>New Behavior</strong>:<pre><code class="language-python">pages = pymupdf4llm.to_markdown(tmp_path, page_chunks=True)
+chunks = await chunking_service.chunk_pages(pages=pages, ...)
+</code></pre>
+</li>
+<li><strong>Benefits</strong>:<ul>
+<li>Preserves page metadata from PyMuPDF4LLM</li>
+<li>Each chunk knows which page it came from</li>
+<li>Enables accurate page-based relevance scoring</li>
+</ul>
+</li>
+</ul>
+<h3>3. EntityLinkingService (<code>mivaa-pdf-extractor/app/services/entity_linking_service.py</code>)</h3>
+<h4>Updated Method: <code>link_chunks_to_products()</code></h4>
+<ul>
+<li><strong>Old</strong>: Used <code>page_label</code> (string) from metadata</li>
+<li><strong>New</strong>: Uses <code>page_number</code> (int) from metadata</li>
+<li><strong>Threshold</strong>: Changed from 0.2 to 0.3</li>
+</ul>
+<h4>Updated Method: <code>_calculate_chunk_product_relevance()</code></h4>
+<ul>
+<li><p><strong>Old Algorithm</strong>:</p>
+<ul>
+<li>Base score: 20% (all chunks)</li>
+<li>Page proximity: 40%</li>
+<li>Content mentions: 40%</li>
+<li>Threshold: 0.2</li>
+</ul>
+</li>
+<li><p><strong>New Algorithm</strong>:</p>
+<ul>
+<li>Page proximity: 40% (same page = 0.4, adjacent = 0.2, 2 away = 0.1)</li>
+<li>Content mentions: 40% (product name in chunk)</li>
+<li>Baseline: 20% (medium relevance)</li>
+<li>Threshold: 0.3</li>
+</ul>
+</li>
+<li><p><strong>Examples</strong>:</p>
+<ul>
+<li>Chunk on product page: 0.4 + 0.2 = 0.6 ✅ LINKED</li>
+<li>Chunk mentioning product: 0.4 + 0.2 = 0.6 ✅ LINKED</li>
+<li>Chunk with both: 0.4 + 0.4 + 0.2 = 1.0 ✅ LINKED</li>
+<li>Random chunk: 0.2 ❌ NOT LINKED (below threshold)</li>
+</ul>
+</li>
+</ul>
+<h2>Database Schema</h2>
+<h3>document_chunks Table</h3>
+<ul>
+<li><strong>Column</strong>: <code>metadata</code> (JSONB)</li>
+<li><strong>New Field</strong>: <code>metadata.page_number</code> (integer, 1-based)</li>
+<li><strong>Example</strong>:<pre><code class="language-json">{
+  &quot;page_number&quot;: 24,
+  &quot;chunk_strategy&quot;: &quot;hybrid&quot;,
+  &quot;chunk_size_actual&quot;: 980,
+  &quot;created_at&quot;: &quot;2025-12-31T10:00:00&quot;
+}
+</code></pre>
+</li>
+</ul>
+<h3>chunk_product_relationships Table</h3>
+<ul>
+<li><strong>No schema changes</strong> - uses existing <code>relevance_score</code> column</li>
+<li><strong>New Behavior</strong>: Scores now based on real page proximity</li>
+</ul>
+<h2>Migration Notes</h2>
+<h3>For New Documents</h3>
+<ul>
+<li>✅ All new PDF uploads will use page-aware chunking</li>
+<li>✅ Chunks will have <code>page_number</code> in metadata</li>
+<li>✅ Relationships will use accurate page-based scoring</li>
+</ul>
+<h3>For Existing Documents</h3>
+<ul>
+<li>⚠️ Old chunks do NOT have <code>page_number</code> in metadata</li>
+<li>⚠️ Old relationships will have lower scores (only baseline + mentions)</li>
+<li>💡 <strong>Recommendation</strong>: Re-upload important documents OR run migration script</li>
+</ul>
+<h2>Testing Checklist</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Upload new PDF and verify chunks have <code>page_number</code> in metadata</li>
+<li><input disabled="" type="checkbox"> Check chunk_product_relationships have appropriate relevance scores</li>
+<li><input disabled="" type="checkbox"> Test search for product on specific page</li>
+<li><input disabled="" type="checkbox"> Test RAG/Chat still returns all relevant chunks</li>
+<li><input disabled="" type="checkbox"> Verify product search filters out irrelevant chunks</li>
+</ul>
+<h2>Expected Results</h2>
+<h3>Before (Base Score System)</h3>
+<ul>
+<li>All 187 chunks linked to MAISON product</li>
+<li>6 chunks with 0.6 score (mention)</li>
+<li>181 chunks with 0.2 score (base only)</li>
+<li>Search returns all chunks with low differentiation</li>
+</ul>
+<h3>After (Page-Aware System)</h3>
+<ul>
+<li>~50 chunks linked to MAISON product (on pages 24-29)</li>
+<li>Chunks on product pages: 0.6 score</li>
+<li>Chunks mentioning product: 0.6 score</li>
+<li>Chunks with both: 1.0 score</li>
+<li>Other chunks: NOT linked</li>
+<li>Search returns only relevant chunks with high precision</li>
+</ul>
+
+</div></body></html>
