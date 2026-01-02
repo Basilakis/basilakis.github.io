@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Price Monitoring Cron API</h1>
+<h2>Overview</h2>
+<p>The Price Monitoring Cron API is a scheduled Edge Function that automatically monitors product prices from competitor sources. It runs on a schedule (hourly) and orchestrates price checking through the Python backend.</p>
+<p><strong>Edge Function:</strong> <code>price-monitoring-cron</code><br><strong>Trigger:</strong> Scheduled (hourly) or manual invocation<br><strong>Backend Service:</strong> Python API at <code>/api/v1/price-monitoring/check-now</code></p>
+<h2>Architecture</h2>
+<pre><code>Supabase Cron (hourly)
+  ↓
+Edge Function (price-monitoring-cron)
+  ↓
+Python Backend API (/api/v1/price-monitoring/check-now)
+  ↓
+CompetitorScraperService
+  ├─→ Firecrawl API (scrape competitor pages)
+  ├─→ CreditsIntegrationService (debit credits)
+  ├─→ AICallLogger (log usage)
+  ├─→ Database (save price history)
+  └─→ PriceAlertService (check alerts)
+</code></pre>
+<h2>Authentication</h2>
+<p>This is a cron job that requires a secret header for security:</p>
+<pre><code class="language-typescript">X-Cron-Secret: &lt;cron_secret&gt;
+</code></pre>
+<p>The secret must match the <code>CRON_SECRET</code> environment variable.</p>
+<h2>Manual Invocation</h2>
+<p>While this function is designed to run on a schedule, it can be manually triggered:</p>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/</code></p>
+<p><strong>Headers:</strong></p>
+<pre><code class="language-typescript">X-Cron-Secret: &lt;cron_secret&gt;
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  message: string,
+  processed: number,      // Total products processed
+  succeeded: number,      // Successfully monitored
+  failed: number,         // Failed to monitor
+  results: Array&lt;{
+    product_id: string,
+    product_name: string,
+    status: &#39;success&#39; | &#39;failed&#39;,
+    price_changes: number,
+    alerts_triggered: number,
+    error?: string
+  }&gt;
+}
+</code></pre>
+<h2>How It Works</h2>
+<h3>1. Query Products Due for Monitoring</h3>
+<p>The function calls the database function <code>get_products_due_for_monitoring()</code> which returns products where:</p>
+<ul>
+<li><code>next_check_at &lt;= NOW()</code></li>
+<li><code>is_active = true</code></li>
+<li>Has valid competitor sources</li>
+</ul>
+<h3>2. Process Each Product</h3>
+<p>For each product, the function:</p>
+<ol>
+<li>Calls Python backend API: <code>POST /api/v1/price-monitoring/check-now</code></li>
+<li>Python backend handles:<ul>
+<li>Scraping competitor pages via Firecrawl</li>
+<li>Debiting credits via CreditsIntegrationService</li>
+<li>Logging AI usage via AICallLogger</li>
+<li>Saving price history to database</li>
+<li>Creating price monitoring jobs</li>
+<li>Checking and triggering price alerts</li>
+</ul>
+</li>
+</ol>
+<h3>3. Update Next Check Time</h3>
+<p>After processing, the <code>next_check_at</code> is updated based on the monitoring frequency:</p>
+<ul>
+<li><code>hourly</code> → +1 hour</li>
+<li><code>daily</code> → +1 day</li>
+<li><code>weekly</code> → +7 days</li>
+<li><code>monthly</code> → +30 days</li>
+</ul>
+<h2>Monitoring Frequencies</h2>
+<table>
+<thead>
+<tr>
+<th>Frequency</th>
+<th>Check Interval</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hourly</code></td>
+<td>Every hour</td>
+<td>High-priority products</td>
+</tr>
+<tr>
+<td><code>daily</code></td>
+<td>Every 24 hours</td>
+<td>Standard monitoring</td>
+</tr>
+<tr>
+<td><code>weekly</code></td>
+<td>Every 7 days</td>
+<td>Low-priority products</td>
+</tr>
+<tr>
+<td><code>monthly</code></td>
+<td>Every 30 days</td>
+<td>Occasional checks</td>
+</tr>
+</tbody></table>
+<h2>Price Alerts</h2>
+<p>When price changes are detected, the system checks for active alerts:</p>
+<p><strong>Alert Types:</strong></p>
+<ul>
+<li><code>price_drop</code> - Price decreased by X%</li>
+<li><code>price_increase</code> - Price increased by X%</li>
+<li><code>threshold_below</code> - Price fell below threshold</li>
+<li><code>threshold_above</code> - Price rose above threshold</li>
+</ul>
+<p><strong>Alert Actions:</strong></p>
+<ul>
+<li>Email notification</li>
+<li>In-app notification</li>
+<li>Webhook call (if configured)</li>
+</ul>
+<h2>Database Tables</h2>
+<h3>price_monitoring_jobs</h3>
+<p>Tracks each monitoring execution:</p>
+<pre><code class="language-typescript">{
+  id: string,
+  product_id: string,
+  status: &#39;pending&#39; | &#39;processing&#39; | &#39;completed&#39; | &#39;failed&#39;,
+  sources_checked: number,
+  prices_found: number,
+  credits_used: number,
+  started_at: string,
+  completed_at: string,
+  error_message?: string
+}
+</code></pre>
+<h3>price_history</h3>
+<p>Stores historical price data:</p>
+<pre><code class="language-typescript">{
+  id: string,
+  product_id: string,
+  source_id: string,
+  price: number,
+  currency: string,
+  availability: boolean,
+  scraped_at: string,
+  metadata: object
+}
+</code></pre>
+<h3>price_alerts</h3>
+<p>User-configured price alerts:</p>
+<pre><code class="language-typescript">{
+  id: string,
+  user_id: string,
+  product_id: string,
+  alert_type: string,
+  threshold_value: number,
+  is_active: boolean,
+  last_triggered_at?: string
+}
+</code></pre>
+<h2>Error Handling</h2>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string,
+  processed: number,
+  succeeded: number,
+  failed: number
+}
+</code></pre>
+<p><strong>Common Errors:</strong></p>
+<ul>
+<li><code>401</code> - Invalid cron secret</li>
+<li><code>500</code> - Database query failed</li>
+<li><code>503</code> - Python backend unavailable</li>
+</ul>
+<h2>Monitoring &amp; Logs</h2>
+<p>The function logs detailed information:</p>
+<ul>
+<li>Products found for monitoring</li>
+<li>Processing status for each product</li>
+<li>Price changes detected</li>
+<li>Alerts triggered</li>
+<li>Errors encountered</li>
+</ul>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../price-monitoring-system.md">Price Monitoring System</a></li>
+<li><a href="../price-monitoring-deployment-guide.md">Price Monitoring Deployment Guide</a></li>
+<li><a href="../internal-pricing-credit-system.md">Credits System</a></li>
+</ul>
+
+</div></body></html>

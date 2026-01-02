@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Campaign System</h1>
+<p>Complete documentation for the email campaign management system with audience targeting, recipient tracking, and comprehensive analytics.</p>
+<blockquote>
+<p><strong>📚 Related Documentation:</strong></p>
+<ul>
+<li><a href="./email-system.md">Email System</a> - Email sending and template management</li>
+<li><a href="./ses-webhook-setup.md">SES Webhook Setup</a> - Bounce and complaint handling</li>
+<li><a href="./system-architecture.md">System Architecture</a> - Platform overview</li>
+<li><a href="./api-endpoints.md">API Endpoints</a> - Complete API reference</li>
+</ul>
+</blockquote>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#database-schema">Database Schema</a></li>
+<li><a href="#campaign-service-api">Campaign Service API</a></li>
+<li><a href="#admin-dashboard">Admin Dashboard</a></li>
+<li><a href="#campaign-workflow">Campaign Workflow</a></li>
+<li><a href="#usage-examples">Usage Examples</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>The Campaign System provides enterprise-grade email marketing capabilities with audience targeting, recipient tracking, and real-time analytics. Built on top of the Email System, it enables bulk email sending with personalization, scheduling, and comprehensive delivery tracking.</p>
+<h3>Key Features</h3>
+<ul>
+<li><strong>Campaign Management</strong> - Create, schedule, and manage email campaigns</li>
+<li><strong>Audience Targeting</strong> - Filter recipients by user attributes, roles, or custom criteria</li>
+<li><strong>Recipient Tracking</strong> - Individual tracking for each recipient (sent, delivered, opened, clicked, bounced)</li>
+<li><strong>Template Integration</strong> - Use React Email templates with variable substitution</li>
+<li><strong>Test Emails</strong> - Send test emails before launching campaigns</li>
+<li><strong>Campaign Scheduling</strong> - Schedule campaigns for future delivery</li>
+<li><strong>Real-time Analytics</strong> - Track delivery rates, open rates, click rates, bounce rates</li>
+<li><strong>Bounce Handling</strong> - Automatic bounce and complaint tracking via SES webhooks</li>
+<li><strong>Campaign Status</strong> - Draft, scheduled, sending, sent, paused, cancelled</li>
+<li><strong>Admin Interface</strong> - Complete management UI at <code>/admin/emails</code> → Campaigns tab</li>
+</ul>
+<h3>Use Cases</h3>
+<ol>
+<li><strong>Marketing Campaigns</strong> - Product announcements, newsletters, promotions</li>
+<li><strong>User Onboarding</strong> - Welcome series, feature announcements</li>
+<li><strong>System Notifications</strong> - Platform updates, maintenance alerts</li>
+<li><strong>Re-engagement</strong> - Win-back campaigns, inactive user outreach</li>
+<li><strong>Event Invitations</strong> - Webinars, product launches, community events</li>
+</ol>
+<hr>
+<h2>Architecture</h2>
+<h3>System Overview</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ FRONTEND (React)                                            │
+│ ├─ Campaign Service (src/services/email/campaignService.ts)│
+│ ├─ Admin Dashboard (/admin/emails → Campaigns tab)         │
+│ └─ Campaign Components (CampaignsTab, CreateCampaignModal) │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ SUPABASE (Database + Edge Functions)                       │
+│ ├─ campaigns table (Campaign metadata)                     │
+│ ├─ campaign_recipients table (Individual tracking)         │
+│ ├─ email_actions table (Trigger-based emails)              │
+│ ├─ email_templates table (React Email templates)           │
+│ └─ email-api Edge Function (Email sending)                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ AMAZON SES (Email Delivery)                                 │
+│ ├─ Configuration Set (material-kai-emails)                 │
+│ ├─ SNS Topic (ses-notifications)                           │
+│ └─ Bounce/Complaint Tracking                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ WEBHOOK PROCESSING (Supabase Edge Function)                │
+│ └─ ses-webhook (Updates campaign_recipients status)        │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>Components</h3>
+<h4>1. Frontend Service Layer</h4>
+<p><strong>Location:</strong> <code>src/services/email/campaignService.ts</code></p>
+<p>Complete campaign management service with methods:</p>
+<ul>
+<li>Campaign CRUD operations</li>
+<li>Recipient management</li>
+<li>Campaign scheduling and sending</li>
+<li>Test email functionality</li>
+<li>Statistics and analytics</li>
+</ul>
+<h4>2. Admin Dashboard</h4>
+<p><strong>Location:</strong> <code>src/components/Admin/EmailManagement/</code></p>
+<p><strong>CampaignsTab.tsx</strong> - Main campaigns list</p>
+<ul>
+<li>View all campaigns with status</li>
+<li>Create new campaigns</li>
+<li>Quick actions (send, schedule, pause, cancel)</li>
+<li>Campaign statistics overview</li>
+</ul>
+<p><strong>CreateCampaignModal.tsx</strong> - Campaign creation wizard</p>
+<ul>
+<li>Template selection</li>
+<li>Audience targeting</li>
+<li>Email customization</li>
+<li>Preview functionality</li>
+</ul>
+<p><strong>CampaignDetailsModal.tsx</strong> - Detailed campaign view</p>
+<ul>
+<li>Recipient list with status</li>
+<li>Send test emails</li>
+<li>Campaign statistics</li>
+<li>Schedule/send controls</li>
+</ul>
+<h4>3. Database Tables</h4>
+<p><strong>Location:</strong> Supabase PostgreSQL</p>
+<p><strong>campaigns</strong> - Campaign metadata</p>
+<ul>
+<li>Campaign settings and configuration</li>
+<li>Status tracking</li>
+<li>Scheduling information</li>
+<li>Analytics counters</li>
+</ul>
+<p><strong>campaign_recipients</strong> - Individual recipient tracking</p>
+<ul>
+<li>Per-recipient delivery status</li>
+<li>Tracking timestamps (sent, delivered, opened, clicked, bounced)</li>
+<li>Error messages and retry counts</li>
+<li>Personalization variables</li>
+</ul>
+<p><strong>email_actions</strong> - Trigger-based emails</p>
+<ul>
+<li>Maps actions (welcome, password_reset) to templates</li>
+<li>Automatic email sending on events</li>
+</ul>
+<h4>4. Edge Functions</h4>
+<p><strong>Location:</strong> <code>supabase/functions/</code></p>
+<p><strong>email-api</strong> - Email sending with campaign support</p>
+<ul>
+<li>Sends individual emails</li>
+<li>Updates campaign_recipients status</li>
+<li>Links to email_logs for tracking</li>
+</ul>
+<p><strong>ses-webhook</strong> - SES event processing</p>
+<ul>
+<li>Handles bounce notifications</li>
+<li>Handles complaint notifications</li>
+<li>Handles delivery confirmations</li>
+<li>Updates campaign_recipients in real-time</li>
+</ul>
+<hr>
+<h2>Features</h2>
+<h3>Detailed Feature List</h3>
+<h4>Campaign Creation</h4>
+<ul>
+<li>✅ Name and description</li>
+<li>✅ Template selection from library</li>
+<li>✅ Subject line customization</li>
+<li>✅ Preview text</li>
+<li>✅ From name and email</li>
+<li>✅ Reply-to address</li>
+<li>✅ Audience filtering</li>
+<li>✅ Tags for organization</li>
+<li>✅ Metadata storage</li>
+</ul>
+<h4>Audience Targeting</h4>
+<ul>
+<li>✅ All users</li>
+<li>✅ Filter by role (admin, user, etc.)</li>
+<li>✅ Filter by subscription tier</li>
+<li>✅ Filter by user status</li>
+<li>✅ Custom JSONB filters</li>
+<li>✅ Manual recipient list</li>
+<li>✅ Import from contacts (future)</li>
+</ul>
+<h4>Campaign Scheduling</h4>
+<ul>
+<li>✅ Send immediately</li>
+<li>✅ Schedule for future date/time</li>
+<li>✅ Pause sending</li>
+<li>✅ Resume paused campaigns</li>
+<li>✅ Cancel scheduled campaigns</li>
+</ul>
+<h4>Recipient Management</h4>
+<ul>
+<li>✅ Add recipients from users table</li>
+<li>✅ Add recipients from contacts table (future)</li>
+<li>✅ Manual email entry</li>
+<li>✅ Personalization variables per recipient</li>
+<li>✅ Unique constraint (one email per campaign)</li>
+<li>✅ Automatic recipient count updates</li>
+</ul>
+<h4>Tracking &amp; Analytics</h4>
+<ul>
+<li>✅ Total recipients</li>
+<li>✅ Sent count</li>
+<li>✅ Delivered count</li>
+<li>✅ Opened count (requires tracking pixel)</li>
+<li>✅ Clicked count (requires link tracking)</li>
+<li>✅ Bounced count</li>
+<li>✅ Complained count</li>
+<li>✅ Delivery rate percentage</li>
+<li>✅ Bounce rate percentage</li>
+<li>✅ Complaint rate percentage</li>
+</ul>
+<h4>Test Functionality</h4>
+<ul>
+<li>✅ Send test email to any address</li>
+<li>✅ Preview with actual template</li>
+<li>✅ Test personalization variables</li>
+<li>✅ Verify email rendering</li>
+</ul>
+<hr>
+<h2>Database Schema</h2>
+<h3>campaigns Table</h3>
+<pre><code class="language-sql">CREATE TABLE campaigns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  template_id UUID REFERENCES email_templates(id) ON DELETE SET NULL,
+  
+  -- Campaign status
+  status TEXT NOT NULL DEFAULT &#39;draft&#39; 
+    CHECK (status IN (&#39;draft&#39;, &#39;scheduled&#39;, &#39;sending&#39;, &#39;sent&#39;, &#39;paused&#39;, &#39;cancelled&#39;)),
+  
+  -- Scheduling
+  scheduled_at TIMESTAMPTZ,
+  sent_at TIMESTAMPTZ,
+  
+  -- Audience targeting
+  audience_filter JSONB DEFAULT &#39;{}&#39;::jsonb,
+  recipient_count INTEGER DEFAULT 0,
+  
+  -- Campaign settings
+  subject_line TEXT,
+  preview_text TEXT,
+  from_name TEXT,
+  from_email TEXT,
+  reply_to TEXT,
+  
+  -- Tracking settings
+  track_opens BOOLEAN DEFAULT true,
+  track_clicks BOOLEAN DEFAULT true,
+  
+  -- Campaign metadata
+  tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+  metadata JSONB DEFAULT &#39;{}&#39;::jsonb,
+  
+  -- Audit fields
+  created_by UUID REFERENCES auth.users(id),
+  updated_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_campaigns_status ON campaigns(status);
+CREATE INDEX idx_campaigns_scheduled_at ON campaigns(scheduled_at);
+CREATE INDEX idx_campaigns_created_by ON campaigns(created_by);
+CREATE INDEX idx_campaigns_template_id ON campaigns(template_id);
+CREATE INDEX idx_campaigns_tags ON campaigns USING GIN(tags);
+
+-- RLS Policies (Admin-only access)
+ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY &quot;Admins can manage campaigns&quot;
+ON campaigns FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles up
+    JOIN roles r ON up.role_id = r.id
+    WHERE up.user_id = auth.uid() AND r.name = &#39;admin&#39;
+  )
+);
+</code></pre>
+<p><strong>Key Fields:</strong></p>
+<ul>
+<li><code>status</code> - Campaign lifecycle state</li>
+<li><code>audience_filter</code> - JSONB filter for recipient selection</li>
+<li><code>recipient_count</code> - Auto-updated via trigger</li>
+<li><code>track_opens/track_clicks</code> - Enable/disable tracking</li>
+<li><code>tags</code> - Array for campaign organization</li>
+<li><code>metadata</code> - Additional custom data</li>
+</ul>
+<h3>campaign_recipients Table</h3>
+<pre><code class="language-sql">CREATE TABLE campaign_recipients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+
+  -- Recipient information
+  email TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  contact_id UUID, -- Future: REFERENCES contacts(id)
+
+  -- Personalization data
+  variables JSONB DEFAULT &#39;{}&#39;::jsonb,
+
+  -- Sending status
+  status TEXT NOT NULL DEFAULT &#39;pending&#39;
+    CHECK (status IN (&#39;pending&#39;, &#39;sending&#39;, &#39;sent&#39;, &#39;failed&#39;, &#39;bounced&#39;, &#39;complained&#39;)),
+
+  -- Tracking timestamps
+  sent_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  opened_at TIMESTAMPTZ,
+  clicked_at TIMESTAMPTZ,
+  bounced_at TIMESTAMPTZ,
+  complained_at TIMESTAMPTZ,
+
+  -- Error tracking
+  error_message TEXT,
+  retry_count INTEGER DEFAULT 0,
+
+  -- Link to email_logs
+  email_log_id UUID REFERENCES email_logs(id) ON DELETE SET NULL,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Unique constraint: one recipient per email per campaign
+  UNIQUE(campaign_id, email)
+);
+
+-- Indexes
+CREATE INDEX idx_campaign_recipients_campaign_id ON campaign_recipients(campaign_id);
+CREATE INDEX idx_campaign_recipients_email ON campaign_recipients(email);
+CREATE INDEX idx_campaign_recipients_status ON campaign_recipients(status);
+CREATE INDEX idx_campaign_recipients_sent_at ON campaign_recipients(sent_at);
+
+-- RLS Policies (Admin-only access)
+ALTER TABLE campaign_recipients ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY &quot;Admins can manage recipients&quot;
+ON campaign_recipients FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles up
+    JOIN roles r ON up.role_id = r.id
+    WHERE up.user_id = auth.uid() AND r.name = &#39;admin&#39;
+  )
+);
+</code></pre>
+<p><strong>Key Fields:</strong></p>
+<ul>
+<li><code>status</code> - Recipient-specific delivery status</li>
+<li><code>variables</code> - Personalization data for template</li>
+<li>Tracking timestamps - Individual tracking per recipient</li>
+<li><code>email_log_id</code> - Links to email_logs for detailed tracking</li>
+</ul>
+<p><strong>Triggers:</strong></p>
+<ul>
+<li>Auto-update <code>campaigns.recipient_count</code> on INSERT/DELETE</li>
+<li>Auto-update <code>updated_at</code> on UPDATE</li>
+</ul>
+<h3>email_actions Table</h3>
+<pre><code class="language-sql">CREATE TABLE email_actions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  action_key TEXT UNIQUE NOT NULL,
+  action_name TEXT NOT NULL,
+  description TEXT,
+  template_id UUID REFERENCES email_templates(id) ON DELETE SET NULL,
+  is_active BOOLEAN DEFAULT true,
+  trigger_conditions JSONB DEFAULT &#39;{}&#39;::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Default actions
+INSERT INTO email_actions (action_key, action_name, description) VALUES
+  (&#39;welcome_email&#39;, &#39;Welcome Email&#39;, &#39;Sent when a new user signs up&#39;),
+  (&#39;password_reset&#39;, &#39;Password Reset&#39;, &#39;Sent when user requests password reset&#39;),
+  (&#39;email_verification&#39;, &#39;Email Verification&#39;, &#39;Sent to verify email address&#39;),
+  (&#39;quote_request&#39;, &#39;Quote Request Confirmation&#39;, &#39;Sent when user submits a quote request&#39;),
+  (&#39;quote_response&#39;, &#39;Quote Response&#39;, &#39;Sent when admin responds to a quote request&#39;),
+  (&#39;order_confirmation&#39;, &#39;Order Confirmation&#39;, &#39;Sent when an order is placed&#39;);
+</code></pre>
+<p><strong>Purpose:</strong> Maps system events to email templates for automatic sending.</p>
+<hr>
+<h2>Campaign Service API</h2>
+<h3>Location</h3>
+<p><code>src/services/email/campaignService.ts</code></p>
+<h3>Methods</h3>
+<h4>Campaign Management</h4>
+<p><strong>getCampaigns(filters?)</strong></p>
+<pre><code class="language-typescript">async getCampaigns(filters?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise&lt;Campaign[]&gt;
+</code></pre>
+<p>Get all campaigns with optional filtering.</p>
+<p><strong>getCampaign(id)</strong></p>
+<pre><code class="language-typescript">async getCampaign(id: string): Promise&lt;Campaign&gt;
+</code></pre>
+<p>Get campaign details with template information.</p>
+<p><strong>createCampaign(data)</strong></p>
+<pre><code class="language-typescript">async createCampaign(data: {
+  name: string;
+  description?: string;
+  template_id: string;
+  subject_line: string;
+  preview_text?: string;
+  from_name?: string;
+  from_email?: string;
+  reply_to?: string;
+  audience_filter?: object;
+  tags?: string[];
+}): Promise&lt;Campaign&gt;
+</code></pre>
+<p>Create a new campaign.</p>
+<p><strong>updateCampaign(id, data)</strong></p>
+<pre><code class="language-typescript">async updateCampaign(id: string, data: Partial&lt;Campaign&gt;): Promise&lt;Campaign&gt;
+</code></pre>
+<p>Update campaign details (only for draft campaigns).</p>
+<p><strong>deleteCampaign(id)</strong></p>
+<pre><code class="language-typescript">async deleteCampaign(id: string): Promise&lt;void&gt;
+</code></pre>
+<p>Delete a campaign (only draft campaigns).</p>
+<h4>Campaign Actions</h4>
+<p><strong>scheduleCampaign(id, scheduledAt)</strong></p>
+<pre><code class="language-typescript">async scheduleCampaign(id: string, scheduledAt: Date): Promise&lt;void&gt;
+</code></pre>
+<p>Schedule campaign for future delivery.</p>
+<p><strong>sendCampaign(id)</strong></p>
+<pre><code class="language-typescript">async sendCampaign(id: string): Promise&lt;void&gt;
+</code></pre>
+<p>Send campaign immediately. Creates recipients and queues emails.</p>
+<p><strong>pauseCampaign(id)</strong></p>
+<pre><code class="language-typescript">async pauseCampaign(id: string): Promise&lt;void&gt;
+</code></pre>
+<p>Pause a sending campaign.</p>
+<p><strong>cancelCampaign(id)</strong></p>
+<pre><code class="language-typescript">async cancelCampaign(id: string): Promise&lt;void&gt;
+</code></pre>
+<p>Cancel a scheduled campaign.</p>
+<p><strong>sendTestEmail(campaignId, email)</strong></p>
+<pre><code class="language-typescript">async sendTestEmail(campaignId: string, email: string): Promise&lt;void&gt;
+</code></pre>
+<p>Send test email to specified address.</p>
+<h4>Recipient Management</h4>
+<p><strong>getCampaignRecipients(campaignId, filters?)</strong></p>
+<pre><code class="language-typescript">async getCampaignRecipients(
+  campaignId: string,
+  filters?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise&lt;CampaignRecipient[]&gt;
+</code></pre>
+<p>Get recipients for a campaign with optional filtering.</p>
+<p><strong>getCampaignStats(campaignId)</strong></p>
+<pre><code class="language-typescript">async getCampaignStats(campaignId: string): Promise&lt;{
+  totalRecipients: number;
+  sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  bounced: number;
+  complained: number;
+  deliveryRate: number;
+  openRate: number;
+  clickRate: number;
+  bounceRate: number;
+  complaintRate: number;
+}&gt;
+</code></pre>
+<p>Get comprehensive campaign statistics.</p>
+<hr>
+<h2>Admin Dashboard</h2>
+<h3>Location</h3>
+<p><code>/admin/emails</code> → <strong>Campaigns</strong> tab</p>
+<h3>Components</h3>
+<h4>1. Campaigns List (CampaignsTab.tsx)</h4>
+<p><strong>Features:</strong></p>
+<ul>
+<li>View all campaigns in table format</li>
+<li>Filter by status (draft, scheduled, sending, sent, paused, cancelled)</li>
+<li>Search by campaign name</li>
+<li>Quick stats (total recipients, delivery rate, open rate)</li>
+<li>Action buttons (view, send, schedule, pause, cancel, delete)</li>
+<li>Create new campaign button</li>
+</ul>
+<p><strong>Columns:</strong></p>
+<ul>
+<li>Campaign name</li>
+<li>Status badge</li>
+<li>Template name</li>
+<li>Recipients count</li>
+<li>Scheduled/sent date</li>
+<li>Delivery rate</li>
+<li>Actions menu</li>
+</ul>
+<h4>2. Create Campaign Modal (CreateCampaignModal.tsx)</h4>
+<p><strong>Steps:</strong></p>
+<ol>
+<li><strong>Basic Info</strong> - Name, description, tags</li>
+<li><strong>Template</strong> - Select from template library</li>
+<li><strong>Email Settings</strong> - Subject, preview text, from/reply-to</li>
+<li><strong>Audience</strong> - Select recipients (all users, filtered, manual)</li>
+<li><strong>Review</strong> - Preview and confirm</li>
+</ol>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Template preview</li>
+<li>Variable substitution preview</li>
+<li>Audience size estimation</li>
+<li>Save as draft option</li>
+</ul>
+<h4>3. Campaign Details Modal (CampaignDetailsModal.tsx)</h4>
+<p><strong>Tabs:</strong></p>
+<ul>
+<li><strong>Overview</strong> - Campaign info and stats</li>
+<li><strong>Recipients</strong> - List with individual status</li>
+<li><strong>Analytics</strong> - Charts and metrics</li>
+<li><strong>Settings</strong> - Edit campaign settings</li>
+</ul>
+<p><strong>Actions:</strong></p>
+<ul>
+<li>Send test email</li>
+<li>Schedule campaign</li>
+<li>Send now</li>
+<li>Pause/resume</li>
+<li>Cancel</li>
+<li>Delete (draft only)</li>
+</ul>
+<p><strong>Statistics:</strong></p>
+<ul>
+<li>Total recipients</li>
+<li>Sent/delivered/opened/clicked counts</li>
+<li>Bounce and complaint counts</li>
+<li>Delivery/open/click/bounce/complaint rates</li>
+<li>Timeline chart</li>
+</ul>
+<hr>
+<h2>Campaign Workflow</h2>
+<h3>1. Create Campaign</h3>
+<pre><code class="language-typescript">// Create campaign
+const campaign = await campaignService.createCampaign({
+  name: &#39;Product Launch Announcement&#39;,
+  description: &#39;Announce new material collection&#39;,
+  template_id: &#39;template-uuid&#39;,
+  subject_line: &#39;Introducing Our New Collection&#39;,
+  preview_text: &#39;Discover innovative materials for your next project&#39;,
+  from_name: &#39;Material Kai&#39;,
+  from_email: &#39;hello@materialkai.com&#39;,
+  reply_to: &#39;support@materialkai.com&#39;,
+  audience_filter: { role: &#39;user&#39;, subscription_tier: &#39;pro&#39; },
+  tags: [&#39;product-launch&#39;, &#39;marketing&#39;],
+});
+</code></pre>
+<h3>2. Add Recipients</h3>
+<p>Recipients are automatically added based on <code>audience_filter</code> when campaign is sent.</p>
+<p><strong>Audience Filter Examples:</strong></p>
+<pre><code class="language-typescript">// All users
+{ type: &#39;all_users&#39; }
+
+// Filter by role
+{ role: &#39;user&#39; }
+
+// Filter by subscription
+{ subscription_tier: &#39;pro&#39; }
+
+// Complex filter
+{
+  role: &#39;user&#39;,
+  subscription_tier: [&#39;pro&#39;, &#39;enterprise&#39;],
+  status: &#39;active&#39;
+}
+</code></pre>
+<h3>3. Send Test Email</h3>
+<pre><code class="language-typescript">await campaignService.sendTestEmail(campaign.id, &#39;test@example.com&#39;);
+</code></pre>
+<h3>4. Schedule or Send</h3>
+<pre><code class="language-typescript">// Schedule for later
+await campaignService.scheduleCampaign(
+  campaign.id,
+  new Date(&#39;2025-01-15T10:00:00Z&#39;)
+);
+
+// Or send immediately
+await campaignService.sendCampaign(campaign.id);
+</code></pre>
+<h3>5. Monitor Progress</h3>
+<pre><code class="language-typescript">// Get campaign stats
+const stats = await campaignService.getCampaignStats(campaign.id);
+
+console.log(`Delivery Rate: ${stats.deliveryRate}%`);
+console.log(`Open Rate: ${stats.openRate}%`);
+console.log(`Bounce Rate: ${stats.bounceRate}%`);
+
+// Get recipients with status
+const recipients = await campaignService.getCampaignRecipients(campaign.id, {
+  status: &#39;bounced&#39;
+});
+</code></pre>
+<hr>
+<h2>Usage Examples</h2>
+<h3>Example 1: Welcome Campaign</h3>
+<pre><code class="language-typescript">// Create welcome campaign for new users
+const welcomeCampaign = await campaignService.createCampaign({
+  name: &#39;Welcome Series - Day 1&#39;,
+  template_id: welcomeTemplateId,
+  subject_line: &#39;Welcome to Material Kai! 🎉&#39;,
+  from_name: &#39;Material Kai Team&#39;,
+  from_email: &#39;hello@materialkai.com&#39;,
+  audience_filter: {
+    created_after: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+  },
+});
+
+// Send immediately
+await campaignService.sendCampaign(welcomeCampaign.id);
+</code></pre>
+<h3>Example 2: Product Announcement</h3>
+<pre><code class="language-typescript">// Create product announcement for pro users
+const announcement = await campaignService.createCampaign({
+  name: &#39;New Material Collection Launch&#39;,
+  template_id: announcementTemplateId,
+  subject_line: &#39;Exclusive First Look: New Materials&#39;,
+  preview_text: &#39;Be the first to explore our latest collection&#39;,
+  from_name: &#39;Material Kai&#39;,
+  from_email: &#39;announcements@materialkai.com&#39;,
+  audience_filter: {
+    subscription_tier: [&#39;pro&#39;, &#39;enterprise&#39;],
+    status: &#39;active&#39;
+  },
+  tags: [&#39;product-launch&#39;, &#39;pro-users&#39;],
+});
+
+// Schedule for next week
+const launchDate = new Date();
+launchDate.setDate(launchDate.getDate() + 7);
+launchDate.setHours(10, 0, 0, 0);
+
+await campaignService.scheduleCampaign(announcement.id, launchDate);
+</code></pre>
+<h3>Example 3: Re-engagement Campaign</h3>
+<pre><code class="language-typescript">// Re-engage inactive users
+const reengagement = await campaignService.createCampaign({
+  name: &#39;We Miss You - Special Offer&#39;,
+  template_id: reengagementTemplateId,
+  subject_line: &#39;Come back and get 20% off&#39;,
+  from_name: &#39;Material Kai&#39;,
+  from_email: &#39;hello@materialkai.com&#39;,
+  audience_filter: {
+    last_login_before: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    status: &#39;active&#39;
+  },
+  tags: [&#39;re-engagement&#39;, &#39;special-offer&#39;],
+});
+
+// Send test first
+await campaignService.sendTestEmail(reengagement.id, &#39;marketing@materialkai.com&#39;);
+
+// Then send to all
+await campaignService.sendCampaign(reengagement.id);
+</code></pre>
+<hr>
+<h2>Best Practices</h2>
+<h3>Campaign Planning</h3>
+<ol>
+<li><p><strong>Define Clear Goals</strong></p>
+<ul>
+<li>What action do you want recipients to take?</li>
+<li>How will you measure success?</li>
+</ul>
+</li>
+<li><p><strong>Segment Your Audience</strong></p>
+<ul>
+<li>Use audience filters to target specific user groups</li>
+<li>Personalize content based on user attributes</li>
+</ul>
+</li>
+<li><p><strong>Test Before Sending</strong></p>
+<ul>
+<li>Always send test emails</li>
+<li>Check rendering on multiple devices</li>
+<li>Verify all links work</li>
+</ul>
+</li>
+<li><p><strong>Optimize Send Times</strong></p>
+<ul>
+<li>Schedule campaigns for optimal engagement</li>
+<li>Consider time zones for global audiences</li>
+</ul>
+</li>
+</ol>
+<h3>Content Best Practices</h3>
+<ol>
+<li><p><strong>Subject Lines</strong></p>
+<ul>
+<li>Keep under 50 characters</li>
+<li>Create urgency or curiosity</li>
+<li>Avoid spam trigger words</li>
+<li>Personalize when possible</li>
+</ul>
+</li>
+<li><p><strong>Preview Text</strong></p>
+<ul>
+<li>Complement the subject line</li>
+<li>Provide additional context</li>
+<li>Keep under 100 characters</li>
+</ul>
+</li>
+<li><p><strong>Email Body</strong></p>
+<ul>
+<li>Clear call-to-action</li>
+<li>Mobile-responsive design</li>
+<li>Use templates for consistency</li>
+<li>Include unsubscribe link</li>
+</ul>
+</li>
+</ol>
+<h3>Deliverability</h3>
+<ol>
+<li><p><strong>Maintain List Hygiene</strong></p>
+<ul>
+<li>Remove bounced emails</li>
+<li>Honor unsubscribe requests</li>
+<li>Segment engaged vs. inactive users</li>
+</ul>
+</li>
+<li><p><strong>Monitor Metrics</strong></p>
+<ul>
+<li>Keep bounce rate &lt; 5%</li>
+<li>Keep complaint rate &lt; 0.1%</li>
+<li>Aim for delivery rate &gt; 95%</li>
+</ul>
+</li>
+<li><p><strong>Warm Up New Domains</strong></p>
+<ul>
+<li>Start with small batches</li>
+<li>Gradually increase volume</li>
+<li>Monitor reputation scores</li>
+</ul>
+</li>
+</ol>
+<h3>Performance</h3>
+<ol>
+<li><p><strong>Batch Sending</strong></p>
+<ul>
+<li>Don&#39;t send to entire list at once</li>
+<li>Use scheduling to spread load</li>
+<li>Monitor SES sending limits</li>
+</ul>
+</li>
+<li><p><strong>Track and Optimize</strong></p>
+<ul>
+<li>A/B test subject lines</li>
+<li>Test different send times</li>
+<li>Analyze open and click rates</li>
+<li>Iterate based on data</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Campaign Not Sending</h3>
+<p><strong>Symptoms:</strong> Campaign stuck in &quot;sending&quot; status</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check SES sending limits</li>
+<li>Verify email domain is verified</li>
+<li>Check for errors in campaign_recipients table</li>
+<li>Review email-api Edge Function logs</li>
+</ol>
+<pre><code class="language-sql">-- Check for failed recipients
+SELECT * FROM campaign_recipients
+WHERE campaign_id = &#39;your-campaign-id&#39;
+AND status = &#39;failed&#39;;
+</code></pre>
+<h3>High Bounce Rate</h3>
+<p><strong>Symptoms:</strong> Bounce rate &gt; 5%</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Clean email list (remove invalid emails)</li>
+<li>Use double opt-in for new subscribers</li>
+<li>Check email content for spam triggers</li>
+<li>Verify SPF/DKIM records</li>
+</ol>
+<pre><code class="language-sql">-- Find bounced emails
+SELECT email, error_message, bounced_at
+FROM campaign_recipients
+WHERE status = &#39;bounced&#39;
+AND campaign_id = &#39;your-campaign-id&#39;;
+</code></pre>
+<h3>Recipients Not Receiving Emails</h3>
+<p><strong>Symptoms:</strong> Low delivery rate</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check spam folders</li>
+<li>Verify SES configuration set</li>
+<li>Check SNS webhook is working</li>
+<li>Review email_logs for errors</li>
+</ol>
+<pre><code class="language-sql">-- Check email logs
+SELECT * FROM email_logs
+WHERE to_email = &#39;recipient@example.com&#39;
+ORDER BY created_at DESC
+LIMIT 10;
+</code></pre>
+<h3>Tracking Not Working</h3>
+<p><strong>Symptoms:</strong> No open/click data</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Verify <code>track_opens</code> and <code>track_clicks</code> are enabled</li>
+<li>Check tracking pixel is in template</li>
+<li>Verify links have tracking parameters</li>
+<li>Check ses-webhook is processing events</li>
+</ol>
+<pre><code class="language-sql">-- Check if tracking is enabled
+SELECT track_opens, track_clicks
+FROM campaigns
+WHERE id = &#39;your-campaign-id&#39;;
+</code></pre>
+<h3>Webhook Not Updating Status</h3>
+<p><strong>Symptoms:</strong> campaign_recipients status not updating</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>Check ses-webhook Edge Function logs</li>
+<li>Verify SNS subscription is confirmed</li>
+<li>Check message_id is being saved in email_logs</li>
+<li>Test webhook with SES simulator emails</li>
+</ol>
+<pre><code class="language-bash"># View webhook logs
+supabase functions logs ses-webhook --tail
+
+# Send test bounce
+# Email to: bounce@simulator.amazonses.com
+</code></pre>
+<hr>
+<h2>Performance Metrics</h2>
+<h3>Target Metrics</h3>
+<ul>
+<li><strong>Delivery Rate:</strong> &gt; 95%</li>
+<li><strong>Bounce Rate:</strong> &lt; 5%</li>
+<li><strong>Complaint Rate:</strong> &lt; 0.1%</li>
+<li><strong>Open Rate:</strong> 15-25% (industry average)</li>
+<li><strong>Click Rate:</strong> 2-5% (industry average)</li>
+</ul>
+<h3>Monitoring</h3>
+<pre><code class="language-sql">-- Campaign performance summary
+SELECT
+  c.name,
+  c.status,
+  c.recipient_count,
+  COUNT(CASE WHEN cr.status = &#39;sent&#39; THEN 1 END) as sent,
+  COUNT(CASE WHEN cr.delivered_at IS NOT NULL THEN 1 END) as delivered,
+  COUNT(CASE WHEN cr.opened_at IS NOT NULL THEN 1 END) as opened,
+  COUNT(CASE WHEN cr.clicked_at IS NOT NULL THEN 1 END) as clicked,
+  COUNT(CASE WHEN cr.status = &#39;bounced&#39; THEN 1 END) as bounced,
+  COUNT(CASE WHEN cr.status = &#39;complained&#39; THEN 1 END) as complained,
+  ROUND(100.0 * COUNT(CASE WHEN cr.delivered_at IS NOT NULL THEN 1 END) / NULLIF(c.recipient_count, 0), 2) as delivery_rate,
+  ROUND(100.0 * COUNT(CASE WHEN cr.status = &#39;bounced&#39; THEN 1 END) / NULLIF(c.recipient_count, 0), 2) as bounce_rate
+FROM campaigns c
+LEFT JOIN campaign_recipients cr ON c.id = cr.campaign_id
+WHERE c.status = &#39;sent&#39;
+GROUP BY c.id, c.name, c.status, c.recipient_count
+ORDER BY c.sent_at DESC;
+</code></pre>
+<hr>
+<h2>Security</h2>
+<h3>Row Level Security (RLS)</h3>
+<p>All campaign tables have RLS enabled with admin-only access:</p>
+<pre><code class="language-sql">-- Only admins can access campaigns
+CREATE POLICY &quot;Admins can manage campaigns&quot;
+ON campaigns FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles up
+    JOIN roles r ON up.role_id = r.id
+    WHERE up.user_id = auth.uid() AND r.name = &#39;admin&#39;
+  )
+);
+</code></pre>
+<h3>Data Protection</h3>
+<ul>
+<li>Email addresses encrypted in transit (HTTPS)</li>
+<li>Sensitive data stored in Supabase (SOC 2 compliant)</li>
+<li>AWS credentials stored as Supabase Secrets</li>
+<li>Audit trail via created_by/updated_by fields</li>
+</ul>
+<h3>Compliance</h3>
+<ul>
+<li><strong>GDPR:</strong> Unsubscribe links required</li>
+<li><strong>CAN-SPAM:</strong> Physical address in footer</li>
+<li><strong>CASL:</strong> Consent tracking (future)</li>
+</ul>
+<hr>
+<h2>Related Systems</h2>
+<h3>Email Actions</h3>
+<p>Trigger-based emails that send automatically on events:</p>
+<pre><code class="language-typescript">// Example: Send welcome email on user signup
+// This is handled automatically by email_actions table
+// No campaign needed - just link action to template
+</code></pre>
+<h3>Email Templates</h3>
+<p>React Email templates used by campaigns:</p>
+<pre><code class="language-typescript">// Templates are managed in /admin/emails → Templates tab
+// Each campaign references a template_id
+// Variables are substituted per recipient
+</code></pre>
+<h3>SES Webhooks</h3>
+<p>Automatic bounce/complaint handling:</p>
+<pre><code class="language-typescript">// Webhooks update campaign_recipients automatically
+// No manual intervention needed
+// See docs/ses-webhook-setup.md for configuration
+</code></pre>
+<hr>
+<h2>API Integration</h2>
+<h3>REST API (Future)</h3>
+<p>Campaign management via REST API:</p>
+<pre><code class="language-bash"># Get campaigns
+GET /api/campaigns
+
+# Create campaign
+POST /api/campaigns
+
+# Send campaign
+POST /api/campaigns/{id}/send
+
+# Get campaign stats
+GET /api/campaigns/{id}/stats
+</code></pre>
+<h3>Webhooks (Future)</h3>
+<p>Campaign event webhooks:</p>
+<pre><code class="language-json">{
+  &quot;event&quot;: &quot;campaign.sent&quot;,
+  &quot;campaign_id&quot;: &quot;uuid&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-15T10:00:00Z&quot;,
+  &quot;stats&quot;: {
+    &quot;total_recipients&quot;: 1000,
+    &quot;sent&quot;: 1000,
+    &quot;delivered&quot;: 950
+  }
+}
+</code></pre>
+<hr>
+<h2>Roadmap</h2>
+<h3>Phase 1 (Complete) ✅</h3>
+<ul>
+<li>Campaign creation and management</li>
+<li>Recipient tracking</li>
+<li>Basic analytics</li>
+<li>Admin dashboard</li>
+<li>SES webhook integration</li>
+</ul>
+<h3>Phase 2 (Planned)</h3>
+<ul>
+<li>A/B testing</li>
+<li>Advanced segmentation</li>
+<li>Drip campaigns</li>
+<li>Email builder</li>
+<li>Suppression list management</li>
+</ul>
+<h3>Phase 3 (Future)</h3>
+<ul>
+<li>Marketing automation</li>
+<li>Lead scoring</li>
+<li>CRM integration</li>
+<li>SMS campaigns</li>
+<li>Advanced analytics</li>
+</ul>
+<hr>
+<h2>Support</h2>
+<p>For questions or issues:</p>
+<ul>
+<li>Check <a href="./email-system.md">Email System</a> documentation</li>
+<li>Review <a href="./ses-webhook-setup.md">SES Webhook Setup</a> guide</li>
+<li>Check <a href="#troubleshooting">Troubleshooting</a> section</li>
+<li>Contact: <a href="mailto:support@materialkaivision.com">support@materialkaivision.com</a></li>
+</ul>
+<hr>
+<p><strong>Last Updated:</strong> December 25, 2024
+<strong>Version:</strong> 1.0.0
+<strong>Status:</strong> Production Ready
+<strong>Maintainer:</strong> Development Team</p>
+
+</div></body></html>
