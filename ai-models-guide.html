@@ -24,9 +24,10 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>AI Models Integration Guide</h1>
-<p>Complete reference of 12 AI models used across the platform.</p>
+<p><strong>Last Updated:</strong> 2025-12-26</p>
+<p>Complete reference of all AI models used across the Material KAI Vision Platform.</p>
 <hr>
-<h2>🤖 AI Models Overview</h2>
+<h2>AI Models Overview</h2>
 <table>
 <thead>
 <tr>
@@ -34,96 +35,152 @@
 <th>Provider</th>
 <th>Purpose</th>
 <th>Capability</th>
-<th>Cost</th>
+<th>Cost (per 1M tokens)</th>
 </tr>
 </thead>
 <tbody><tr>
+<td><strong>Text Generation</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>Claude Sonnet 4.5</td>
 <td>Anthropic</td>
 <td>Product discovery, enrichment</td>
 <td>95%+ accuracy</td>
-<td>$3/1M input</td>
+<td>$3 input / $15 output</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
 <td>Anthropic</td>
 <td>Fast validation</td>
 <td>Real-time</td>
-<td>$0.80/1M input</td>
+<td>$0.80 input / $4 output</td>
+</tr>
+<tr>
+<td>Claude Opus 4.5</td>
+<td>Anthropic</td>
+<td>Complex reasoning</td>
+<td>Highest accuracy</td>
+<td>$15 input / $75 output</td>
 </tr>
 <tr>
 <td>GPT-4o</td>
 <td>OpenAI</td>
 <td>Alternative discovery</td>
 <td>94%+ accuracy</td>
-<td>$5/1M input</td>
+<td>$2.50 input / $10 output</td>
+</tr>
+<tr>
+<td>GPT-4o Mini</td>
+<td>OpenAI</td>
+<td>Lightweight tasks</td>
+<td>Fast &amp; cheap</td>
+<td>$0.15 input / $0.60 output</td>
+</tr>
+<tr>
+<td>Qwen3-VL 17B</td>
+<td>Together AI</td>
+<td>Open-source alternative</td>
+<td>Good performance</td>
+<td>$0.20 input / $0.20 output</td>
+</tr>
+<tr>
+<td><strong>Text Embeddings</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Voyage-3</td>
+<td>Voyage AI</td>
+<td><strong>PRIMARY</strong> Text embeddings</td>
+<td>1024D vectors</td>
+<td>$0.06 input</td>
+</tr>
+<tr>
+<td>Voyage-3 Lite</td>
+<td>Voyage AI</td>
+<td>Lightweight embeddings</td>
+<td>512D vectors</td>
+<td>$0.02 input</td>
 </tr>
 <tr>
 <td>text-embedding-3-small</td>
 <td>OpenAI</td>
-<td>Text embeddings</td>
+<td>Legacy text embeddings</td>
 <td>1536D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>$0.02 input</td>
 </tr>
 <tr>
-<td>Llama 4 Scout 17B Vision</td>
+<td>text-embedding-3-large</td>
+<td>OpenAI</td>
+<td>Large text embeddings</td>
+<td>3072D vectors</td>
+<td>$0.13 input</td>
+</tr>
+<tr>
+<td><strong>Vision Models</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Qwen3-VL-32B</td>
 <td>Together AI</td>
-<td>Image analysis, OCR</td>
-<td>69.4% MMMU</td>
-<td>$0.40/1M tokens</td>
+<td><strong>PRIMARY</strong> Vision analysis</td>
+<td>State-of-the-art</td>
+<td>$0.50 input / $1.50 output</td>
+</tr>
+<tr>
+<td>Qwen3-VL-8B</td>
+<td>Together AI</td>
+<td>Lightweight vision</td>
+<td>Fast vision</td>
+<td>$0.08 input / $0.50 output</td>
 </tr>
 <tr>
 <td>CLIP (Visual)</td>
 <td>OpenAI</td>
 <td>Visual embeddings</td>
 <td>512D vectors</td>
-<td>$0.02/1M tokens</td>
-</tr>
-<tr>
-<td>CLIP (Large)</td>
-<td>OpenAI</td>
-<td>Large visual embeddings</td>
-<td>1536D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>Free</td>
 </tr>
 <tr>
 <td>CLIP (Color)</td>
 <td>OpenAI</td>
 <td>Color analysis</td>
-<td>256D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>512D vectors</td>
+<td>Free</td>
 </tr>
 <tr>
 <td>CLIP (Texture)</td>
 <td>OpenAI</td>
 <td>Texture analysis</td>
-<td>256D vectors</td>
-<td>$0.02/1M tokens</td>
-</tr>
-<tr>
-<td>CLIP (Application)</td>
-<td>OpenAI</td>
-<td>Application classification</td>
 <td>512D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>Free</td>
 </tr>
 <tr>
-<td>Anthropic Semantic Chunking</td>
-<td>Anthropic</td>
-<td>Text segmentation</td>
-<td>Semantic boundaries</td>
-<td>Included</td>
+<td>CLIP (Style)</td>
+<td>OpenAI</td>
+<td>Style analysis</td>
+<td>512D vectors</td>
+<td>Free</td>
 </tr>
 <tr>
-<td>LlamaIndex</td>
-<td>LlamaIndex</td>
-<td>RAG system</td>
-<td>Document indexing</td>
-<td>Open source</td>
+<td>CLIP (Material)</td>
+<td>OpenAI</td>
+<td>Material classification</td>
+<td>512D vectors</td>
+<td>Free</td>
 </tr>
 </tbody></table>
 <hr>
-<h2>🔍 Model Details</h2>
+<h2>Model Details</h2>
 <h3>1. Claude Sonnet 4.5 (Anthropic)</h3>
 <p><strong>Purpose</strong>: Product discovery, enrichment, validation</p>
 <p><strong>Capabilities</strong>:</p>
@@ -254,7 +311,7 @@ embedding = response[&#39;data&#39;][0][&#39;embedding&#39;]  # 1536D vector
 <li>Similarity comparison</li>
 </ul>
 <hr>
-<h3>5. Llama 4 Scout 17B Vision (Together AI)</h3>
+<h3>5. Qwen3-VL 17B Vision (Together AI)</h3>
 <p><strong>Purpose</strong>: Image analysis, OCR, material recognition</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
@@ -273,7 +330,7 @@ embedding = response[&#39;data&#39;][0][&#39;embedding&#39;]  # 1536D vector
 <pre><code class="language-python">import together
 
 response = together.Complete.create(
-    model=&quot;meta-llama/Llama-4-Scout-17B-16E-Instruct&quot;,
+    model=&quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
     prompt=&quot;Analyze this material image...&quot;,
     image_url=&quot;https://...&quot;
 )
@@ -386,28 +443,31 @@ chunks = chunker.chunk_text(
 <li>Cost: Included in Anthropic API</li>
 </ul>
 <hr>
-<h3>12. LlamaIndex RAG System</h3>
-<p><strong>Purpose</strong>: Retrieval-Augmented Generation</p>
+<h3>12. Direct Vector DB RAG System (Claude 4.5)</h3>
+<p><strong>Purpose</strong>: Retrieval-Augmented Generation with Multi-Vector Search</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
-<li>Document indexing</li>
-<li>Semantic search</li>
-<li>Chat interface</li>
-<li>Multi-document retrieval</li>
+<li>Direct vector database queries (no intermediate indexing)</li>
+<li>6-way parallel multi-vector search</li>
+<li>Claude 4.5 synthesis (200K context)</li>
+<li>Intelligent embedding fusion</li>
 </ul>
 <p><strong>Usage</strong>:</p>
-<pre><code class="language-python">from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+<pre><code class="language-python">from app.services.rag_service import RAGService
 
-documents = SimpleDirectoryReader(&quot;data&quot;).load_data()
-index = VectorStoreIndex.from_documents(documents)
-query_engine = index.as_query_engine()
-response = query_engine.query(&quot;What materials are available?&quot;)
+rag = RAGService()
+result = await rag.search(
+    query=&quot;What materials are available?&quot;,
+    strategy=&quot;multi_vector&quot;,
+    top_k=10
+)
+response = result[&#39;answer&#39;]  # Claude 4.5 synthesis
 </code></pre>
 <p><strong>Performance</strong>:</p>
 <ul>
-<li>Retrieval latency: 200-500ms</li>
-<li>Accuracy: 85%+</li>
-<li>Scalability: 100K+ documents</li>
+<li>Retrieval latency: 300-500ms (parallel execution)</li>
+<li>Accuracy: 90%+ (multi-vector fusion)</li>
+<li>Scalability: 1M+ documents</li>
 </ul>
 <hr>
 <h2>📊 Model Usage by Pipeline Stage</h2>
@@ -440,7 +500,7 @@ response = query_engine.query(&quot;What materials are available?&quot;)
 </tr>
 <tr>
 <td>6</td>
-<td>Llama 4 Scout 17B</td>
+<td>Qwen3-VL 17B</td>
 <td>-</td>
 <td>Image analysis</td>
 </tr>
@@ -491,7 +551,7 @@ MODELS = {
     &quot;discovery&quot;: &quot;claude-sonnet-4-5&quot;,
     &quot;validation&quot;: &quot;claude-haiku-4-5&quot;,
     &quot;embeddings&quot;: &quot;text-embedding-3-small&quot;,
-    &quot;vision&quot;: &quot;meta-llama/Llama-4-Scout-17B-16E-Instruct&quot;
+    &quot;vision&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;
 }
 </code></pre>
 <hr>
@@ -517,6 +577,155 @@ MODELS = {
 <li>Per image: $0.05-$0.20</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+<h2>New Models (2025-12-26)</h2>
+<h3>Voyage-3 (Voyage AI) - PRIMARY TEXT EMBEDDINGS</h3>
+<p><strong>Purpose</strong>: High-quality text embeddings for semantic search and retrieval</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Generate 1024-dimensional text embeddings</li>
+<li>Superior semantic understanding vs OpenAI</li>
+<li>Optimized for retrieval tasks</li>
+<li>Better performance on domain-specific content</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">import voyageai
+
+vo = voyageai.Client(api_key=VOYAGE_API_KEY)
+result = vo.embed(
+    texts=[&quot;Product description text...&quot;],
+    model=&quot;voyage-3&quot;,
+    input_type=&quot;document&quot;
+)
+embeddings = result.embeddings
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimensions: 1024D</li>
+<li>Latency: 100-300ms</li>
+<li>Cost: $0.06 per 1M tokens</li>
+<li>Quality: Superior to text-embedding-3-small</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li><strong>PRIMARY</strong> choice for all text embeddings</li>
+<li>Product descriptions</li>
+<li>Material specifications</li>
+<li>Document chunks</li>
+<li>Semantic search</li>
+</ul>
+<p><strong>Migration</strong>: Replaced text-embedding-3-small (1536D → 1024D)</p>
+<hr>
+<h3>Qwen3-VL-32B (Together AI) - PRIMARY VISION MODEL</h3>
+<p><strong>Purpose</strong>: State-of-the-art vision-language model for image analysis</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Advanced image understanding</li>
+<li>OCR and text extraction</li>
+<li>Material identification</li>
+<li>Color and texture analysis</li>
+<li>Multi-image reasoning</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">from together import Together
+
+client = Together(api_key=TOGETHER_API_KEY)
+response = client.chat.completions.create(
+    model=&quot;Qwen/Qwen3-VL-32B-Instruct&quot;,
+    messages=[{
+        &quot;role&quot;: &quot;user&quot;,
+        &quot;content&quot;: [
+            {&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: {&quot;url&quot;: image_url}},
+            {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;Analyze this material image...&quot;}
+        ]
+    }]
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: State-of-the-art vision understanding</li>
+<li>Latency: 2-5 seconds</li>
+<li>Cost: $0.50 input / $1.50 output per 1M tokens</li>
+<li>Quality: Superior to GPT-4V and Qwen Vision</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li><strong>PRIMARY</strong> choice for vision tasks</li>
+<li>Material image analysis</li>
+<li>PDF image extraction</li>
+<li>Product photo analysis</li>
+<li>Quality assessment</li>
+</ul>
+<p><strong>Migration</strong>: Replaced Qwen3-VL 90B Vision and GPT-4V</p>
+<hr>
+<h3>Qwen3-VL-8B (Together AI) - LIGHTWEIGHT VISION</h3>
+<p><strong>Purpose</strong>: Fast, cost-effective vision model for simple tasks</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Basic image understanding</li>
+<li>Fast OCR</li>
+<li>Simple material identification</li>
+<li>Quick validation</li>
+</ul>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Accuracy: Good for simple tasks</li>
+<li>Latency: 500ms-2s</li>
+<li>Cost: $0.08 input / $0.50 output per 1M tokens</li>
+<li>Quality: 6x cheaper than Qwen3-VL-32B</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Simple image validation</li>
+<li>Fast OCR tasks</li>
+<li>Cost-sensitive operations</li>
+<li>Batch processing</li>
+</ul>
+<hr>
+<h3>Voyage-3-Lite (Voyage AI) - LIGHTWEIGHT EMBEDDINGS</h3>
+<p><strong>Purpose</strong>: Fast, cost-effective embeddings for simple tasks</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Generate 512-dimensional embeddings</li>
+<li>Faster than Voyage-3</li>
+<li>Lower cost</li>
+</ul>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimensions: 512D</li>
+<li>Latency: 50-150ms</li>
+<li>Cost: $0.02 per 1M tokens</li>
+<li>Quality: Good for simple tasks</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Simple semantic search</li>
+<li>Fast lookups</li>
+<li>Cost-sensitive operations</li>
+<li>Non-critical embeddings</li>
+</ul>
+<hr>
+<h2>Model Selection Guide</h2>
+<h3>Text Embeddings</h3>
+<ol>
+<li><strong>Voyage-3</strong> (PRIMARY) - All production text embeddings</li>
+<li><strong>Voyage-3-Lite</strong> - Simple/fast tasks only</li>
+<li><strong>text-embedding-3-small</strong> - Legacy (being phased out)</li>
+</ol>
+<h3>Vision Analysis</h3>
+<ol>
+<li><strong>Qwen3-VL-32B</strong> (PRIMARY) - All production vision tasks</li>
+<li><strong>Qwen3-VL-8B</strong> - Simple/fast vision tasks</li>
+<li><strong>CLIP models</strong> - Visual embeddings only (not analysis)</li>
+</ol>
+<h3>Text Generation</h3>
+<ol>
+<li><strong>Claude Sonnet 4.5</strong> (PRIMARY) - Complex reasoning</li>
+<li><strong>Claude Haiku 4.5</strong> - Fast validation</li>
+<li><strong>GPT-4o</strong> - Alternative/fallback</li>
+</ol>
+<hr>
+<p><strong>Last Updated</strong>: December 26, 2025
+<strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Production</p>
 
 </div></body></html>
