@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>🏗️ SpaceFormer Architecture - Complete System Overview</h1>
+<h2>📊 System Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND (React)                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │              AgentHub Component                         │    │
+│  │  - Interior Designer Agent selected                     │    │
+│  │  - Detects design keywords in user input               │    │
+│  │  - Triggers 3D generation + SpaceFormer                 │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                           │                                      │
+│                           ▼                                      │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │      MaterialAgent3DGenerationAPI                       │    │
+│  │  - generate3D(prompt, room_type, style)                 │    │
+│  │  - Calls BrowserApiIntegrationService                   │    │
+│  │  - Calls spaceformerAnalysisService                     │    │
+│  └────────────────────────────────────────────────────────┘    │
+│              │                              │                    │
+│              ▼                              ▼                    │
+│  ┌─────────────────────┐      ┌──────────────────────────┐     │
+│  │ BrowserApiService   │      │ SpaceFormerService       │     │
+│  │ - Replicate API     │      │ - mivaaApi.analyze()     │     │
+│  │ - Hugging Face API  │      │                          │     │
+│  └─────────────────────┘      └──────────────────────────┘     │
+│              │                              │                    │
+└──────────────┼──────────────────────────────┼───────────────────┘
+               │                              │
+               ▼                              ▼
+┌─────────────────────────┐    ┌──────────────────────────────────┐
+│   External AI APIs      │    │      MIVAA Backend (Python)      │
+│  - Replicate            │    │                                  │
+│  - Hugging Face         │    │  POST /api/spaceformer/analyze   │
+│  - Stable Diffusion     │    │                                  │
+└─────────────────────────┘    │  ┌────────────────────────────┐ │
+                               │  │  SpaceformerService        │ │
+                               │  │  - analyze_space()         │ │
+                               │  │  - _build_prompt()         │ │
+                               │  │  - _analyze_with_claude()  │ │
+                               │  └────────────────────────────┘ │
+                               │              │                   │
+                               └──────────────┼───────────────────┘
+                                              ▼
+                               ┌──────────────────────────────────┐
+                               │    Anthropic Claude API          │
+                               │    - Claude Sonnet 4.5 Vision    │
+                               │    - Analyzes room images        │
+                               │    - Returns spatial analysis    │
+                               └──────────────────────────────────┘
+                                              │
+                                              ▼
+                               ┌──────────────────────────────────┐
+                               │      Supabase Database           │
+                               │  - spatial_analysis table        │
+                               │  - generation_3d table           │
+                               │  - agent_chat_messages table     │
+                               └──────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>🔄 Data Flow</h2>
+<h3>1. User Input → Agent Response</h3>
+<pre><code class="language-typescript">User: &quot;Design a modern bedroom&quot;
+  ↓
+AgentHub detects keywords: [&quot;design&quot;, &quot;bedroom&quot;, &quot;modern&quot;]
+  ↓
+Extracts: room_type=&quot;bedroom&quot;, style=&quot;modern&quot;
+  ↓
+Calls: MaterialAgent3DGenerationAPI.generate3D({
+  prompt: &quot;Design a modern bedroom&quot;,
+  room_type: &quot;bedroom&quot;,
+  style: &quot;modern&quot;,
+  enable_spatial_analysis: true
+})
+</code></pre>
+<h3>2. 3D Image Generation</h3>
+<pre><code class="language-typescript">BrowserApiIntegrationService.generateInteriorDesign()
+  ↓
+Calls Replicate/Hugging Face API
+  ↓
+Returns: image_urls = [&quot;https://replicate.delivery/...&quot;]
+</code></pre>
+<h3>3. SpaceFormer Analysis</h3>
+<pre><code class="language-typescript">spaceformerAnalysisService.analyzeSpace({
+  image_url: image_urls[0],
+  room_type: &quot;bedroom&quot;,
+  analysis_type: &quot;full&quot;
+})
+  ↓
+POST /api/spaceformer/analyze
+  ↓
+SpaceformerService.analyze_space()
+  ↓
+Claude Vision API analyzes image
+  ↓
+Returns: {
+  layout_analysis: {...},
+  material_suggestions: [...],
+  accessibility_report: {...},
+  spatial_metrics: {...}
+}
+</code></pre>
+<h3>4. Combined Result</h3>
+<pre><code class="language-typescript">{
+  success: true,
+  image_urls: [&quot;https://...&quot;],
+  spatial_analysis: {
+    layout_analysis: {...},
+    material_suggestions: [...],
+    accessibility_report: {...},
+    spatial_metrics: {...}
+  },
+  parsed_request: {...},
+  quality_assessment: {...}
+}
+</code></pre>
+<h3>5. Display in UI</h3>
+<pre><code class="language-typescript">designData = {
+  images: image_urls,
+  spatialAnalysis: spatial_analysis,
+  ...
+}
+  ↓
+&lt;DesignCanvas
+  images={designData.images}
+  spatialAnalysis={designData.spatialAnalysis}
+  ...
+/&gt;
+</code></pre>
+<hr>
+<h2>📁 File Structure</h2>
+<pre><code>material-kai-vision-platform/
+├── src/
+│   ├── services/
+│   │   ├── materialAgent3DGenerationAPI.ts      ← 3D generation + SpaceFormer integration
+│   │   ├── spaceformerAnalysisService.ts        ← SpaceFormer API client
+│   │   ├── mivaaApiClient.ts                    ← MIVAA API wrapper
+│   │   └── apiGateway/
+│   │       └── browserApiIntegrationService.ts  ← Replicate/HF integration
+│   │
+│   └── components/
+│       └── AI/
+│           ├── AgentHub.tsx                     ← Main agent interface
+│           ├── DesignCanvas.tsx                 ← Display 3D + spatial analysis
+│           └── MaterialAgentSearchInterface.tsx ← Alternative interface
+│
+└── mivaa-pdf-extractor/
+    └── app/
+        ├── api/
+        │   └── spaceformer_routes.py            ← API endpoint
+        └── services/
+            └── spaceformer_service.py           ← Core SpaceFormer logic
+</code></pre>
+<hr>
+<h2>🔑 Key Components</h2>
+<h3>Frontend Services</h3>
+<h4>1. MaterialAgent3DGenerationAPI</h4>
+<p><strong>Purpose:</strong> Orchestrates 3D generation + SpaceFormer analysis
+<strong>Key Methods:</strong></p>
+<ul>
+<li><code>generate3D(request)</code> - Main entry point</li>
+<li>Returns combined result with images + spatial analysis</li>
+</ul>
+<h4>2. spaceformerAnalysisService</h4>
+<p><strong>Purpose:</strong> Client for SpaceFormer API
+<strong>Key Methods:</strong></p>
+<ul>
+<li><code>analyzeSpace(request)</code> - Full spatial analysis</li>
+<li><code>quickLayoutAnalysis()</code> - Layout only</li>
+<li><code>optimizeMaterialPlacements()</code> - Materials only</li>
+<li><code>analyzeAccessibility()</code> - Accessibility only</li>
+</ul>
+<h4>3. BrowserApiIntegrationService</h4>
+<p><strong>Purpose:</strong> Manages external AI APIs (Replicate, Hugging Face)
+<strong>Key Methods:</strong></p>
+<ul>
+<li><code>generateInteriorDesign()</code> - Generate 3D images</li>
+<li><code>generateImageWithReplicate()</code> - Replicate API</li>
+<li><code>generateImageWithHuggingFace()</code> - Hugging Face API</li>
+</ul>
+<h3>Backend Services</h3>
+<h4>1. SpaceformerService (Python)</h4>
+<p><strong>Purpose:</strong> Core spatial analysis using Claude Vision
+<strong>Key Methods:</strong></p>
+<ul>
+<li><code>analyze_space()</code> - Main analysis method</li>
+<li><code>_build_analysis_prompt()</code> - Prompt engineering</li>
+<li><code>_analyze_with_claude()</code> - Claude API integration</li>
+<li><code>_save_analysis()</code> - Database persistence</li>
+</ul>
+<hr>
+<h2>🗄️ Database Schema</h2>
+<h3>spatial_analysis Table</h3>
+<pre><code class="language-sql">CREATE TABLE spatial_analysis (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  workspace_id UUID REFERENCES workspaces(id),
+  image_url TEXT,
+  room_type TEXT,
+  analysis_type TEXT,
+  layout_analysis JSONB,
+  material_suggestions JSONB,
+  accessibility_report JSONB,
+  spatial_metrics JSONB,
+  processing_time_ms INTEGER,
+  created_at TIMESTAMP
+);
+</code></pre>
+<h3>generation_3d Table</h3>
+<pre><code class="language-sql">CREATE TABLE generation_3d (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  generation_type TEXT,
+  input_data JSONB,
+  output_data JSONB,  -- Includes spatial_analysis
+  file_urls JSONB,
+  processing_time_ms INTEGER,
+  created_at TIMESTAMP
+);
+</code></pre>
+<hr>
+<h2>🔐 Security &amp; Authentication</h2>
+<ul>
+<li>All API calls require user authentication</li>
+<li>Workspace context enforced</li>
+<li>Rate limiting on external APIs</li>
+<li>Error handling with graceful degradation</li>
+</ul>
+<hr>
+<h2>⚡ Performance Considerations</h2>
+<p><strong>Parallel Processing:</strong></p>
+<ul>
+<li>3D generation and SpaceFormer run sequentially (SpaceFormer needs the image)</li>
+<li>Total time: 5-13 seconds</li>
+</ul>
+<p><strong>Caching:</strong></p>
+<ul>
+<li>3D generation results cached in database</li>
+<li>SpaceFormer results cached in database</li>
+<li>Conversation history includes design data</li>
+</ul>
+<p><strong>Optimization Opportunities:</strong></p>
+<ul>
+<li>Batch multiple images for analysis</li>
+<li>Pre-generate common room types</li>
+<li>Cache SpaceFormer prompts</li>
+</ul>
+<hr>
+<h2>🎯 Design Decisions</h2>
+<h3>Why Sequential (not Parallel)?</h3>
+<p>SpaceFormer needs the generated image to analyze, so it must run after 3D generation.</p>
+<h3>Why Frontend Integration?</h3>
+<ul>
+<li>3D generation uses browser APIs (Replicate/HF)</li>
+<li>Keeps backend lightweight</li>
+<li>Better error handling and user feedback</li>
+</ul>
+<h3>Why Not Match Products?</h3>
+<ul>
+<li>SpaceFormer provides generic suggestions</li>
+<li>Product matching is a separate concern</li>
+<li>Existing relevancy system handles product search</li>
+</ul>
+<h3>Why Graceful Degradation?</h3>
+<ul>
+<li>3D generation can fail (API limits, errors)</li>
+<li>SpaceFormer can fail (Claude API issues)</li>
+<li>User should still get agent response</li>
+</ul>
+
+</div></body></html>
