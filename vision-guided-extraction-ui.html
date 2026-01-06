@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Vision-Guided Extraction UI Implementation</h1>
+<h2>Overview</h2>
+<p>This document describes the UI components and features added to display vision-guided extraction metadata for product images in the Material KAI platform.</p>
+<h2>Components Created</h2>
+<h3>1. ExtractionMethodBadge Component</h3>
+<p><strong>Location:</strong> <code>src/components/Images/ExtractionMethodBadge.tsx</code></p>
+<p>A reusable badge component that visually indicates how an image was extracted from a PDF:</p>
+<h4>Features:</h4>
+<ul>
+<li><strong>Vision-Guided Badge</strong>: Green badge with eye icon for AI-detected images</li>
+<li><strong>PyMuPDF Badge</strong>: Gray badge with document icon for traditional extraction</li>
+<li><strong>Confidence Display</strong>: Shows detection confidence percentage for vision-guided images</li>
+<li><strong>Tooltip</strong>: Detailed information on hover including:<ul>
+<li>Extraction method name</li>
+<li>Vision provider (e.g., &quot;openai&quot;)</li>
+<li>Vision model (e.g., &quot;gpt-4o-mini&quot;)</li>
+<li>Detection confidence score</li>
+</ul>
+</li>
+<li><strong>Size Variants</strong>: <code>sm</code>, <code>md</code>, <code>lg</code> for different contexts</li>
+<li><strong>Compact Icon Version</strong>: <code>ExtractionMethodIcon</code> for minimal spaces</li>
+</ul>
+<h4>Props:</h4>
+<pre><code class="language-typescript">interface ExtractionMethodBadgeProps {
+  extractionMethod?: string | null;      // &#39;vision_guided&#39; or &#39;pymupdf&#39;
+  detectionConfidence?: number | null;   // 0.0 to 1.0
+  visionProvider?: string | null;        // e.g., &#39;openai&#39;
+  visionModel?: string | null;           // e.g., &#39;gpt-4o-mini&#39;
+  size?: &#39;sm&#39; | &#39;md&#39; | &#39;lg&#39;;
+  showConfidence?: boolean;
+  className?: string;
+}
+</code></pre>
+<h2>Integration Points</h2>
+<h3>1. ImagesTab Component</h3>
+<p><strong>Location:</strong> <code>src/components/Admin/MaterialsData/ImagesTab.tsx</code></p>
+<h4>Image Grid View:</h4>
+<ul>
+<li>Added <code>ExtractionMethodBadge</code> to each image card</li>
+<li>Displays alongside image type and source badges</li>
+<li>Shows extraction method and confidence at a glance</li>
+</ul>
+<h4>Image Detail Modal:</h4>
+<ul>
+<li><strong>Classification Section</strong>: Shows extraction method badge prominently</li>
+<li><strong>New Vision-Guided Extraction Card</strong>: Displays when <code>extraction_method === &#39;vision_guided&#39;</code><ul>
+<li>Product name (if available)</li>
+<li>Detection confidence percentage</li>
+<li>Bounding box coordinates</li>
+<li>Vision provider</li>
+<li>Vision model</li>
+</ul>
+</li>
+</ul>
+<h3>2. MaterialKnowledgeBase Component</h3>
+<p><strong>Location:</strong> <code>src/components/Admin/MaterialKnowledgeBase.tsx</code></p>
+<h4>Images Tab - Grid View:</h4>
+<ul>
+<li>Added <code>ExtractionMethodBadge</code> to image cards</li>
+<li>Positioned with image type and confidence badges</li>
+</ul>
+<h4>Image Detail Modal:</h4>
+<ul>
+<li>Added extraction method badge to &quot;Basic Information&quot; section</li>
+<li>Shows extraction method alongside type, page, and confidence</li>
+</ul>
+<h2>Visual Design</h2>
+<h3>Color Scheme:</h3>
+<ul>
+<li><strong>Vision-Guided</strong>: Green theme (<code>bg-green-100</code>, <code>text-green-800</code>, <code>border-green-300</code>)<ul>
+<li>Indicates AI-powered, intelligent extraction</li>
+<li>Eye icon for visual recognition</li>
+</ul>
+</li>
+<li><strong>PyMuPDF</strong>: Gray theme (<code>bg-gray-100</code>, <code>text-gray-700</code>, <code>border-gray-300</code>)<ul>
+<li>Indicates traditional PDF extraction</li>
+<li>Document icon for standard processing</li>
+</ul>
+</li>
+</ul>
+<h3>Icons:</h3>
+<ul>
+<li><strong>Vision-Guided</strong>: <code>Eye</code> icon from lucide-react</li>
+<li><strong>PyMuPDF</strong>: <code>FileText</code> icon from lucide-react</li>
+<li><strong>Confidence</strong>: <code>Sparkles</code> icon for AI confidence scores</li>
+</ul>
+<h2>Database Fields Used</h2>
+<p>The components read the following fields from the <code>product_images</code> table:</p>
+<pre><code class="language-sql">- extraction_method: text          -- &#39;vision_guided&#39; or &#39;pymupdf&#39;
+- detection_confidence: numeric    -- 0.0 to 1.0
+- vision_provider: text            -- e.g., &#39;openai&#39;
+- vision_model: text               -- e.g., &#39;gpt-4o-mini&#39;
+- product_name: text               -- Detected product name
+- bbox: jsonb                      -- Bounding box coordinates
+</code></pre>
+<h2>User Benefits</h2>
+<ol>
+<li><strong>Transparency</strong>: Users can see exactly how each image was extracted</li>
+<li><strong>Quality Indicators</strong>: Confidence scores help assess extraction reliability</li>
+<li><strong>Debugging</strong>: Easy to identify which images used AI vs traditional extraction</li>
+<li><strong>Trust</strong>: Detailed metadata builds confidence in the extraction process</li>
+<li><strong>Filtering</strong>: Future enhancement could allow filtering by extraction method</li>
+</ol>
+<h2>Future Enhancements</h2>
+<ol>
+<li><strong>Filtering</strong>: Add filter dropdown to show only vision-guided or PyMuPDF images</li>
+<li><strong>Statistics</strong>: Dashboard showing % of images extracted via each method</li>
+<li><strong>Comparison View</strong>: Side-by-side comparison of extraction methods</li>
+<li><strong>Confidence Threshold</strong>: Highlight low-confidence extractions for review</li>
+<li><strong>Re-extraction</strong>: Button to re-process images with different method</li>
+<li><strong>Batch Operations</strong>: Bulk re-classify or re-extract images</li>
+</ol>
+<h2>Testing Checklist</h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Badge displays correctly for vision-guided images</li>
+<li><input checked="" disabled="" type="checkbox"> Badge displays correctly for PyMuPDF images</li>
+<li><input checked="" disabled="" type="checkbox"> Confidence score shows when available</li>
+<li><input checked="" disabled="" type="checkbox"> Tooltip shows detailed information</li>
+<li><input checked="" disabled="" type="checkbox"> Badge integrates into ImagesTab grid view</li>
+<li><input checked="" disabled="" type="checkbox"> Badge integrates into ImagesTab detail modal</li>
+<li><input checked="" disabled="" type="checkbox"> Badge integrates into MaterialKnowledgeBase grid view</li>
+<li><input checked="" disabled="" type="checkbox"> Badge integrates into MaterialKnowledgeBase detail modal</li>
+<li><input checked="" disabled="" type="checkbox"> Vision-Guided Extraction card shows in detail modal</li>
+<li><input checked="" disabled="" type="checkbox"> All metadata fields display correctly</li>
+</ul>
+<h2>Code Quality</h2>
+<ul>
+<li>✅ TypeScript types defined</li>
+<li>✅ Reusable component design</li>
+<li>✅ Consistent with existing UI patterns</li>
+<li>✅ Accessible (tooltips, semantic HTML)</li>
+<li>✅ Responsive design</li>
+<li>✅ Dark mode compatible</li>
+<li>✅ No breaking changes to existing code</li>
+</ul>
+
+</div></body></html>

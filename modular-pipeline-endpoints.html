@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Modular PDF Processing Pipeline - API Endpoints Documentation</h1>
+<h2>Overview</h2>
+<p>The PDF processing pipeline has been refactored into <strong>6 modular internal API endpoints</strong> that work together in sequence. Each endpoint receives the output from the previous stage and processes it further. All endpoints support <strong>dynamic AI model configuration</strong> via optional <code>ai_config</code> parameter.</p>
+<p><strong>Key Concept</strong>: Each endpoint knows what to process because it receives <strong>filtered/processed data</strong> from the previous endpoint, not raw data.</p>
+<hr>
+<h2>🔄 Data Flow Between Endpoints</h2>
+<pre><code>10. classify-images      → Receives: ALL extracted images
+    ↓                      Returns: material_images + non_material_images
+
+20. upload-images        → Receives: ONLY material_images (from step 10)
+    ↓                      Returns: uploaded_images with storage URLs
+
+30. save-images-db       → Receives: ONLY uploaded material images (from step 20)
+    ↓                      Returns: images_saved + visual embeddings count (SigLIP/CLIP)
+
+40. extract-metadata     → Receives: product_ids + PDF text
+    ↓                      Returns: enriched products with extracted metadata
+
+50. create-chunks        → Receives: Full extracted text + product_ids
+    ↓                      Returns: chunks + text embeddings + relationships
+
+60. create-relationships → Receives: document_id + product_ids
+                           Returns: chunk-image + product-image relationships
+</code></pre>
+<p><strong>Important</strong>: Each endpoint receives <strong>pre-filtered data</strong> from the orchestrator, which calls them in sequence and passes the output of one as input to the next.</p>
+<hr>
+<h2>🤖 AI Model Configuration</h2>
+<p>All endpoints support <strong>dynamic AI model configuration</strong> via the optional <code>ai_config</code> parameter. This allows you to customize which AI models are used for different stages of the pipeline.</p>
+<h3>Configuration Parameters</h3>
+<pre><code class="language-typescript">interface AIModelConfig {
+  // Visual Embedding Models (SigLIP2 primary, CLIP fallback)
+  visual_embedding_primary?: string;          // Default: &quot;google/siglip2-so400m-patch14-384&quot;
+  visual_embedding_fallback?: string;         // Default: &quot;openai/clip-vit-base-patch32&quot;
+
+  // Text Embedding Model
+  text_embedding_model?: string;              // Default: &quot;text-embedding-3-small&quot;
+
+  // Image Classification Models
+  classification_primary_model?: string;      // Default: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;
+  classification_validation_model?: string;   // Default: &quot;claude-sonnet-4-20250514&quot;
+  classification_confidence_threshold?: number; // Default: 0.7
+
+  // Product Discovery Model
+  discovery_model?: &quot;claude-sonnet-4-20250514&quot; | &quot;gpt-5&quot; | &quot;gpt-4o&quot;; // Default: &quot;claude-sonnet-4-20250514&quot;
+
+  // Metadata Extraction Model
+  metadata_extraction_model?: &quot;claude&quot; | &quot;gpt&quot;; // Default: &quot;claude&quot;
+
+  // Chunking Model
+  chunking_model?: string;                    // Default: &quot;gpt-4o&quot;
+
+  // Temperature Settings
+  discovery_temperature?: number;             // Default: 0.1
+  classification_temperature?: number;        // Default: 0.1
+  metadata_temperature?: number;              // Default: 0.1
+
+  // Max Tokens
+  discovery_max_tokens?: number;              // Default: 4096
+  classification_max_tokens?: number;         // Default: 512
+  metadata_max_tokens?: number;               // Default: 4096
+}
+</code></pre>
+<h3>Pre-configured Profiles</h3>
+<p><strong>DEFAULT_AI_CONFIG</strong> (Balanced):</p>
+<ul>
+<li>Best overall accuracy and reliability</li>
+<li>Uses Claude Sonnet 4.5 for discovery and metadata</li>
+<li>Uses SigLIP for visual embeddings with CLIP fallback</li>
+<li>Uses Qwen Vision for fast classification with Claude validation</li>
+</ul>
+<p><strong>FAST_CONFIG</strong> (Speed Optimized):</p>
+<ul>
+<li>Uses GPT-4o instead of Claude for faster processing</li>
+<li>Uses Claude Haiku for validation (faster than Sonnet)</li>
+<li>Reduced max tokens for faster responses</li>
+</ul>
+<p><strong>HIGH_ACCURACY_CONFIG</strong> (Quality Optimized):</p>
+<ul>
+<li>Uses GPT-5 for discovery (most accurate)</li>
+<li>Higher confidence threshold (0.8) for better quality</li>
+<li>Increased max tokens for more context</li>
+</ul>
+<p><strong>COST_OPTIMIZED_CONFIG</strong> (Budget Friendly):</p>
+<ul>
+<li>Uses GPT-4o and Claude Haiku (cheaper models)</li>
+<li>Lower confidence threshold (0.6) to reduce validation calls</li>
+<li>Reduced max tokens to minimize costs</li>
+</ul>
+<h3>Usage Example</h3>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;extracted_images&quot;: [...],
+  &quot;ai_config&quot;: {
+    &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.8,
+    &quot;visual_embedding_primary&quot;: &quot;google/siglip-so400m-patch14-384&quot;
+  }
+}
+</code></pre>
+<p>If <code>ai_config</code> is not provided, the endpoint uses <code>DEFAULT_AI_CONFIG</code>.</p>
+<hr>
+<h2>🏗️ Architecture</h2>
+<h3>Main Orchestrator</h3>
+<ul>
+<li><strong>Endpoint</strong>: <code>POST /api/rag/documents/upload</code></li>
+<li><strong>Purpose</strong>: Main entry point that orchestrates the complete pipeline</li>
+<li><strong>Calls</strong>: All 6 internal endpoints sequentially</li>
+<li><strong>Infrastructure</strong>: Manages ProgressTracker, CheckpointRecoveryService, job_storage, heartbeat monitoring</li>
+</ul>
+<h3>Internal Endpoints</h3>
+<p>All internal endpoints are prefixed with <code>/api/internal/</code> and tagged as &quot;Internal Pipeline Stages&quot; in OpenAPI docs.</p>
+<hr>
+<h2>📋 Endpoint Details</h2>
+<h3>10. POST /api/internal/classify-images/{job_id} (10-20%)</h3>
+<p><strong>Purpose</strong>: Classify ALL extracted images as material or non-material using two-stage AI classification</p>
+<p><strong>What It Receives</strong>:</p>
+<ul>
+<li><code>extracted_images</code>: ALL images extracted from the PDF (no filtering)</li>
+<li>Each image has: filename, path, page_number, width, height</li>
+</ul>
+<p><strong>How It Knows What to Process</strong>:</p>
+<ul>
+<li>It receives ALL images and classifies each one</li>
+<li>Uses AI to determine if each image is material-related or not</li>
+</ul>
+<p><strong>AI Processing</strong>:</p>
+<ul>
+<li><p><strong>Stage 1 - Qwen Vision (Fast &amp; Cheap)</strong>:</p>
+<ul>
+<li>Model: <code>Qwen/Qwen3-VL-8B-Instruct</code> (TogetherAI)</li>
+<li>Classifies images into 3 categories:<ul>
+<li><code>material_closeup</code>: Close-up of material texture/surface/pattern</li>
+<li><code>material_in_situ</code>: Material shown in application/context</li>
+<li><code>non_material</code>: NOT material-related (faces, logos, charts, text)</li>
+</ul>
+</li>
+<li>Returns confidence score (0-1)</li>
+<li>Concurrency: 5 parallel calls</li>
+</ul>
+</li>
+<li><p><strong>Stage 2 - Claude Validation (High Quality)</strong>:</p>
+<ul>
+<li>Model: <code>Claude Sonnet 4.5</code> (Anthropic)</li>
+<li>Only validates images with confidence &lt; threshold (default: 0.7)</li>
+<li>Provides detailed reasoning for classification</li>
+<li>Improves accuracy for edge cases</li>
+<li>Concurrency: 2 parallel calls</li>
+</ul>
+</li>
+</ul>
+<p><strong>AI Configuration</strong> (Optional):
+All endpoints accept an optional <code>ai_config</code> parameter to customize AI models:</p>
+<pre><code class="language-json">{
+  &quot;visual_embedding_primary&quot;: &quot;google/siglip-so400m-patch14-384&quot;,
+  &quot;visual_embedding_fallback&quot;: &quot;openai/clip-vit-base-patch32&quot;,
+  &quot;text_embedding_model&quot;: &quot;text-embedding-3-small&quot;,
+  &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
+  &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+  &quot;classification_confidence_threshold&quot;: 0.7,
+  &quot;discovery_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+  &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+  &quot;chunking_model&quot;: &quot;gpt-4o&quot;
+}
+</code></pre>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;string&quot;,
+  &quot;extracted_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;image1.jpg&quot;,
+      &quot;path&quot;: &quot;/tmp/image1.jpg&quot;,
+      &quot;page_number&quot;: 5,
+      &quot;width&quot;: 800,
+      &quot;height&quot;: 600
+    }
+  ],
+  &quot;ai_config&quot;: {
+    &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.7
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;material_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;material1.jpg&quot;,
+      &quot;path&quot;: &quot;/tmp/material1.jpg&quot;,
+      &quot;page_number&quot;: 5,
+      &quot;classification&quot;: &quot;material_closeup&quot;,
+      &quot;confidence&quot;: 0.92
+    }
+  ],
+  &quot;non_material_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;logo.jpg&quot;,
+      &quot;path&quot;: &quot;/tmp/logo.jpg&quot;,
+      &quot;page_number&quot;: 1,
+      &quot;classification&quot;: &quot;non_material&quot;,
+      &quot;confidence&quot;: 0.88,
+      &quot;reason&quot;: &quot;Company logo, not material-related&quot;
+    }
+  ],
+  &quot;total_classified&quot;: 100,
+  &quot;material_count&quot;: 65,
+  &quot;non_material_count&quot;: 35
+}
+</code></pre>
+<p><strong>Defaults</strong>:</p>
+<ul>
+<li>Uses <code>DEFAULT_AI_CONFIG</code> if <code>ai_config</code> not provided</li>
+<li>Timeout: 600s (10 minutes)</li>
+</ul>
+<p><strong>Progress</strong>: Updates job to 10-20%</p>
+<p><strong>What Happens Next</strong>: The <code>material_images</code> list is passed to the next endpoint (upload-images)</p>
+<hr>
+<h3>20. POST /api/internal/upload-images/{job_id} (20-30%)</h3>
+<p><strong>Purpose</strong>: Upload material images to Supabase Storage</p>
+<p><strong>What It Receives</strong>:</p>
+<ul>
+<li><code>material_images</code>: ONLY the images classified as material-related by endpoint #1</li>
+<li>Each image has: filename, path, page_number (from classification step)</li>
+</ul>
+<p><strong>How It Knows to Process ONLY Material Images</strong>:</p>
+<ul>
+<li>It doesn&#39;t decide - it receives a <strong>pre-filtered list</strong> from the orchestrator</li>
+<li>The orchestrator passes only the <code>material_images</code> output from classify-images endpoint</li>
+<li>Non-material images are never sent to this endpoint</li>
+</ul>
+<p><strong>Processing</strong>:</p>
+<ul>
+<li>Uploads each image to Supabase Storage</li>
+<li>Storage bucket: <code>material-images</code></li>
+<li>Path format: <code>{document_id}/{filename}</code></li>
+<li>Parallel uploads with rate limiting</li>
+<li>Generates public URLs for each image</li>
+</ul>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;string&quot;,
+  &quot;material_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;material1.jpg&quot;,
+      &quot;path&quot;: &quot;/tmp/material1.jpg&quot;,
+      &quot;page_number&quot;: 5
+    }
+  ],
+  &quot;document_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;uploaded_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;material1.jpg&quot;,
+      &quot;storage_url&quot;: &quot;https://...supabase.co/storage/v1/object/public/material-images/...&quot;,
+      &quot;page_number&quot;: 5
+    }
+  ],
+  &quot;uploaded_count&quot;: 65,
+  &quot;failed_count&quot;: 0
+}
+</code></pre>
+<p><strong>Defaults</strong>:</p>
+<ul>
+<li>Concurrency: 5 parallel uploads</li>
+<li>Timeout: 600s (10 minutes)</li>
+<li>Retry: 3 attempts with exponential backoff</li>
+</ul>
+<p><strong>Progress</strong>: Updates job to 20-30%</p>
+<p><strong>What Happens Next</strong>: The <code>uploaded_images</code> list (with storage URLs) is passed to the next endpoint (save-images-db)</p>
+<hr>
+<h3>30. POST /api/internal/save-images-db/{job_id} (30-50%)</h3>
+<p><strong>Purpose</strong>: Save images to database and generate visual embeddings</p>
+<p><strong>What It Receives</strong>:</p>
+<ul>
+<li><code>material_images</code>: ONLY the successfully uploaded material images from endpoint #2</li>
+<li>Each image has: filename, storage_url, page_number</li>
+</ul>
+<p><strong>How It Knows to Process ONLY Material Images</strong>:</p>
+<ul>
+<li>It receives a <strong>pre-filtered list</strong> from the orchestrator</li>
+<li>The orchestrator passes only the <code>uploaded_images</code> output from upload-images endpoint</li>
+<li>These are already filtered twice: (1) AI classification, (2) successful upload</li>
+</ul>
+<p><strong>AI Processing - Visual Embeddings (SigLIP2 Exclusive)</strong>:</p>
+<ul>
+<li><strong>Model</strong>: Google SigLIP2 ViT-SO400M (<code>google/siglip2-so400m-patch14-384</code>)<ul>
+<li>+19-29% accuracy improvement over CLIP</li>
+<li>Better visual understanding for material search</li>
+<li>Exclusive model - no CLIP fallback for dimensional consistency</li>
+</ul>
+</li>
+<li><strong>Embedding Dimension</strong>: 1152D per embedding</li>
+<li><strong>5 Embedding Types Per Image</strong>:<ol>
+<li><strong>Visual</strong> (1152D): General visual features from SigLIP2 image encoder</li>
+<li><strong>Color</strong> (1152D): Text-guided SigLIP2 embedding optimized for color matching</li>
+<li><strong>Texture</strong> (1152D): Text-guided SigLIP2 embedding optimized for texture matching</li>
+<li><strong>Style</strong> (1152D): Text-guided SigLIP2 embedding optimized for style matching</li>
+<li><strong>Material</strong> (1152D): Text-guided SigLIP2 embedding optimized for material type matching</li>
+</ol>
+</li>
+</ul>
+<p><strong>Technical Details</strong>:</p>
+<ul>
+<li>Uses SigLIP exclusively for all visual embeddings</li>
+<li>Generates base visual embedding (1152D) using SigLIP image encoder</li>
+<li>Creates 4 text-guided specialized embeddings using SigLIP with text prompts</li>
+<li>Each embedding is normalized to unit vector (L2 normalization)</li>
+<li>Total: 5 × 1152D = 5,760 dimensions per image</li>
+<li>All embeddings use siglip-so400m-patch14-384 model</li>
+</ul>
+<p><strong>Storage</strong>:</p>
+<ul>
+<li>Saves to <code>document_images</code> table (PostgreSQL) with embedding columns:<ul>
+<li>visual_clip_512 (CLIP base embedding)</li>
+<li>color_siglip_1152 (SigLIP color embedding)</li>
+<li>texture_siglip_1152 (SigLIP texture embedding)</li>
+<li>style_siglip_1152 (SigLIP style embedding)</li>
+<li>material_siglip_1152 (SigLIP material embedding)</li>
+</ul>
+</li>
+</ul>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;string&quot;,
+  &quot;material_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;material1.jpg&quot;,
+      &quot;storage_url&quot;: &quot;https://...&quot;,
+      &quot;page_number&quot;: 5
+    }
+  ],
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;images_saved&quot;: 65,
+  &quot;clip_embeddings_generated&quot;: 325
+}
+</code></pre>
+<p><strong>Calculation</strong>: 65 images × 5 embeddings = 325 total CLIP embeddings</p>
+<p><strong>Defaults</strong>:</p>
+<ul>
+<li>Embeddings per image: 5 (visual, color, texture, style, material)</li>
+<li>Timeout: 600s (10 minutes)</li>
+<li>Batch processing: All embeddings generated in parallel</li>
+</ul>
+<p><strong>Progress</strong>: Updates job to 30-50%</p>
+<p><strong>What Happens Next</strong>: Images and embeddings are now in the database, ready for relationship creation</p>
+<hr>
+<h3>40. POST /api/internal/extract-metadata/{job_id} (50-60%)</h3>
+<p><strong>Purpose</strong>: Extract comprehensive metadata from PDF text for products using AI</p>
+<p><strong>What It Receives</strong>:</p>
+<ul>
+<li><code>product_ids</code>: List of product IDs to enrich with metadata</li>
+<li><code>pdf_text</code>: Full PDF text content</li>
+<li><code>document_id</code>: ID of the document being processed</li>
+</ul>
+<p><strong>How It Knows What to Process</strong>:</p>
+<ul>
+<li>It receives <strong>product IDs</strong> from product discovery stage</li>
+<li>Extracts product-specific text based on page ranges</li>
+<li>Uses AI to extract structured metadata from text</li>
+</ul>
+<p><strong>AI Processing</strong>:</p>
+<ul>
+<li><strong>Model</strong>: Configurable via <code>ai_config.metadata_extraction_model</code><ul>
+<li>Default: <code>claude</code> (Claude Sonnet 4.5)</li>
+<li>Alternative: <code>gpt</code> (GPT-4o or GPT-5)</li>
+</ul>
+</li>
+<li><strong>Temperature</strong>: Configurable via <code>ai_config.metadata_temperature</code> (default: 0.1)</li>
+<li><strong>Max Tokens</strong>: Configurable via <code>ai_config.metadata_max_tokens</code> (default: 4096)</li>
+<li><strong>Extraction Method</strong>: Dynamic metadata extraction with category hints</li>
+<li><strong>Metadata Fields</strong>: Dimensions, colors, patterns, materials, finishes, applications, certifications, etc.</li>
+</ul>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;string&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;product_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+  &quot;pdf_text&quot;: &quot;Full PDF text content...&quot;,
+  &quot;ai_config&quot;: {
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;metadata_temperature&quot;: 0.1,
+    &quot;metadata_max_tokens&quot;: 4096
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;products_enriched&quot;: 7,
+  &quot;metadata_fields_extracted&quot;: 42,
+  &quot;extraction_method&quot;: &quot;ai_dynamic_claude&quot;,
+  &quot;model_used&quot;: &quot;claude&quot;
+}
+</code></pre>
+<p><strong>Defaults</strong>:</p>
+<ul>
+<li><code>metadata_extraction_model</code>: &quot;claude&quot;</li>
+<li><code>metadata_temperature</code>: 0.1</li>
+<li><code>metadata_max_tokens</code>: 4096</li>
+<li>Timeout: 600s (10 minutes)</li>
+</ul>
+<p><strong>Progress</strong>: Updates job to 50-60%</p>
+<p><strong>What Happens Next</strong>: Products are enriched with metadata, ready for chunking</p>
+<hr>
+<h3>50. POST /api/internal/create-chunks/{job_id} (60-80%)</h3>
+<p><strong>Purpose</strong>: Create semantic chunks from extracted text and generate text embeddings</p>
+<p><strong>What It Receives</strong>:</p>
+<ul>
+<li><code>extracted_text</code>: Full text content extracted from the PDF</li>
+<li><code>product_ids</code>: List of product IDs discovered in the PDF</li>
+<li><code>chunk_size</code>: Size of each chunk in characters</li>
+<li><code>chunk_overlap</code>: Overlap between chunks in characters</li>
+</ul>
+<p><strong>How It Knows What to Process</strong>:</p>
+<ul>
+<li>It receives the <strong>full extracted text</strong> from the PDF</li>
+<li>Uses <code>product_ids</code> to create chunk-to-product relationships</li>
+<li>Respects product boundaries (doesn&#39;t mix content from different products)</li>
+</ul>
+<p><strong>AI Processing</strong>:</p>
+<ul>
+<li><p><strong>Text Chunking</strong>:</p>
+<ul>
+<li>Method: Semantic chunking with overlap</li>
+<li>Respects product boundaries (doesn&#39;t mix content from different products)</li>
+<li>Excludes index/navigation pages</li>
+<li>Creates chunks of specified size with overlap</li>
+</ul>
+</li>
+<li><p><strong>Text Embeddings</strong>:</p>
+<ul>
+<li>Model: OpenAI <code>text-embedding-3-small</code></li>
+<li>Dimension: 1536D</li>
+<li>One embedding per chunk</li>
+<li>Uses OpenAI API (not HuggingFace)</li>
+</ul>
+</li>
+<li><p><strong>Relationships</strong>:</p>
+<ul>
+<li>Creates chunk-to-product relationships</li>
+<li>Links chunks to products based on page ranges</li>
+</ul>
+</li>
+</ul>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;string&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;extracted_text&quot;: &quot;Full PDF text content...&quot;,
+  &quot;product_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+  &quot;chunk_size&quot;: 512,
+  &quot;chunk_overlap&quot;: 50
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;chunks_created&quot;: 107,
+  &quot;embeddings_generated&quot;: 107,
+  &quot;relationships_created&quot;: 163
+}
+</code></pre>
+<p><strong>Defaults</strong>:</p>
+<ul>
+<li><code>chunk_size</code>: 512 characters</li>
+<li><code>chunk_overlap</code>: 50 characters</li>
+<li>Timeout: 600s (10 minutes)</li>
+<li>Batch processing: All embeddings generated in parallel</li>
+</ul>
+<p><strong>Progress</strong>: Updates job to 60-80%</p>
+<p><strong>What Happens Next</strong>: Chunks and text embeddings are in the database, ready for relationship creation</p>
+<hr>
+<h3>60. POST /api/internal/create-relationships/{job_id} (80-100%)</h3>
+<p><strong>Purpose</strong>: Create chunk-image and product-image relationships</p>
+<p><strong>What It Receives</strong>:</p>
+<ul>
+<li><code>document_id</code>: ID of the document being processed</li>
+<li><code>product_ids</code>: List of product IDs discovered in the PDF</li>
+<li><code>similarity_threshold</code>: Minimum similarity score for relationships</li>
+</ul>
+<p><strong>How It Knows What to Process</strong>:</p>
+<ul>
+<li>It queries the database for all chunks and images belonging to this document</li>
+<li>Uses the <code>document_id</code> to find all relevant entities</li>
+<li>Creates relationships based on similarity and page ranges</li>
+</ul>
+<p><strong>Processing</strong>:</p>
+<ul>
+<li><p><strong>Chunk-Image Relationships</strong>:</p>
+<ul>
+<li>Method: Cosine similarity between chunk text embeddings (1536D) and image CLIP embeddings (512D)</li>
+<li>Threshold: 0.5 (default)</li>
+<li>Links semantically related chunks and images</li>
+<li>Example: A chunk describing &quot;oak wood texture&quot; links to images of oak textures</li>
+</ul>
+</li>
+<li><p><strong>Product-Image Relationships</strong>:</p>
+<ul>
+<li>Method: Page range matching</li>
+<li>Links images to products based on page numbers</li>
+<li>Uses product page ranges from discovery</li>
+<li>Example: Product on pages 5-8 links to all images on those pages</li>
+</ul>
+</li>
+</ul>
+<p><strong>Request</strong>:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;string&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;product_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+  &quot;similarity_threshold&quot;: 0.5
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;chunk_image_relationships&quot;: 245,
+  &quot;product_image_relationships&quot;: 132
+}
+</code></pre>
+<p><strong>Defaults</strong>:</p>
+<ul>
+<li><code>similarity_threshold</code>: 0.5 (50% minimum similarity)</li>
+<li>Timeout: 600s (10 minutes)</li>
+</ul>
+<p><strong>Progress</strong>: Updates job to 80-100%</p>
+<p><strong>What Happens Next</strong>: Pipeline complete! All data is in the database with relationships.</p>
+<hr>
+<h2>🎯 Default Behavior</h2>
+<h3>Focused Extraction (Default: ENABLED)</h3>
+<ul>
+<li><strong>Purpose</strong>: Process ONLY material-related images, skip non-material content</li>
+<li><strong>Default</strong>: <code>focused_extraction=True</code></li>
+<li><strong>Categories</strong>: <code>[&#39;products&#39;]</code> (only product-related content)</li>
+<li><strong>Behavior</strong>:<ul>
+<li>Classifies ALL images with AI</li>
+<li>Uploads ONLY material images to storage</li>
+<li>Saves ONLY material images to database</li>
+<li>Generates CLIP embeddings ONLY for material images</li>
+<li>Skips non-material images (faces, logos, charts, text)</li>
+</ul>
+</li>
+</ul>
+<h3>Extract Categories</h3>
+<ul>
+<li><strong>Options</strong>: <code>[&#39;products&#39;, &#39;certificates&#39;, &#39;logos&#39;, &#39;specifications&#39;, &#39;all&#39;]</code></li>
+<li><strong>Default</strong>: <code>[&#39;products&#39;]</code></li>
+<li><strong>Behavior</strong>:<ul>
+<li><code>products</code>: Only product pages and images</li>
+<li><code>certificates</code>: Only certificate pages and images</li>
+<li><code>logos</code>: Only logo pages and images</li>
+<li><code>specifications</code>: Only specification pages and images</li>
+<li><code>all</code>: Process entire PDF (disables focused extraction)</li>
+</ul>
+</li>
+</ul>
+<h3>AI Models Used</h3>
+<ol>
+<li><strong>Product Discovery</strong>: Claude Sonnet 4.5 or GPT-5 (configurable)</li>
+<li><strong>Image Classification</strong>: Qwen3-VL 17B Vision → Claude Sonnet 4.5 (validation)</li>
+<li><strong>Visual Embeddings</strong>: Google SigLIP ViT-SO400M (primary) / OpenAI CLIP ViT-B/32 (fallback) - 5 types per image, 512D each</li>
+<li><strong>Text Embeddings</strong>: OpenAI text-embedding-3-small (1536D)</li>
+</ol>
+<h3>Thresholds</h3>
+<ul>
+<li><strong>Image Classification Confidence</strong>: 0.7 (70% minimum)</li>
+<li><strong>Relationship Similarity</strong>: 0.5 (50% minimum)</li>
+<li><strong>Chunk Size</strong>: 512 characters</li>
+<li><strong>Chunk Overlap</strong>: 50 characters</li>
+</ul>
+<h3>Retry &amp; Timeout</h3>
+<ul>
+<li><strong>Max Retries</strong>: 3 attempts per endpoint</li>
+<li><strong>Timeout</strong>: 600s (10 minutes) per endpoint</li>
+<li><strong>Backoff</strong>: Exponential (2^attempt seconds)</li>
+</ul>
+<hr>
+<h2>📊 Progress Tracking</h2>
+<h3>Pipeline Stages (50-100%)</h3>
+<ul>
+<li><strong>50-60%</strong>: Image Classification (Qwen + Claude)</li>
+<li><strong>60-65%</strong>: Image Upload (Supabase Storage)</li>
+<li><strong>65-75%</strong>: Save Images &amp; CLIP Embeddings (5 per image)</li>
+<li><strong>75-85%</strong>: Chunking &amp; Text Embeddings</li>
+<li><strong>85-100%</strong>: Relationships (chunk-image, product-image)</li>
+</ul>
+<h3>Infrastructure Integration</h3>
+<ul>
+<li><strong>ProgressTracker</strong>: Real-time progress updates, heartbeat monitoring (30s interval)</li>
+<li><strong>CheckpointRecoveryService</strong>: Checkpoint creation at each stage for recovery</li>
+<li><strong>JobTracker</strong>: Database sync after each stage</li>
+<li><strong>job_storage</strong>: In-memory tracking for fast access</li>
+<li><strong>Sentry</strong>: Error tracking and monitoring</li>
+</ul>
+<hr>
+<h2>✅ Summary</h2>
+<h3>What Each Endpoint Does</h3>
+<ol>
+<li><strong>classify-images</strong>: AI classification (Qwen → Claude) to filter material vs non-material images</li>
+<li><strong>upload-images</strong>: Upload material images to Supabase Storage (receives pre-filtered list)</li>
+<li><strong>save-images-db</strong>: Save to DB + generate 5 visual embeddings per image (SigLIP primary / CLIP fallback)</li>
+<li><strong>create-chunks</strong>: Semantic chunking + text embeddings (OpenAI text-embedding-3-small)</li>
+<li><strong>create-relationships</strong>: Chunk-image and product-image relationships via similarity</li>
+</ol>
+<h3>Default Processing Flow</h3>
+<ol>
+<li>Extract ALL images from PDF</li>
+<li>Classify ALL images with AI (Qwen + Claude) → <strong>material_images</strong> + non_material_images</li>
+<li>Upload ONLY <strong>material_images</strong> to storage → <strong>uploaded_images</strong></li>
+<li>Save ONLY <strong>uploaded_images</strong> to database</li>
+<li>Generate 5 visual embeddings per saved image (SigLIP primary / CLIP fallback)</li>
+<li>Create semantic chunks from text</li>
+<li>Generate text embeddings for chunks (OpenAI text-embedding-3-small)</li>
+<li>Create relationships between chunks, images, and products</li>
+</ol>
+<h3>Key Features</h3>
+<ul>
+<li>✅ <strong>Focused extraction by default</strong> (only material images)</li>
+<li>✅ <strong>Two-stage AI classification</strong> (Qwen fast, Claude validation)</li>
+<li>✅ <strong>5 visual embeddings per image</strong> (SigLIP ViT-SO400M primary / CLIP ViT-B/32 fallback: visual, color, texture, style, material)</li>
+<li>✅ <strong>Semantic chunking</strong> with product boundary respect</li>
+<li>✅ <strong>Comprehensive progress tracking</strong> (5% increments)</li>
+<li>✅ <strong>Checkpoint creation</strong> at each stage for recovery</li>
+<li>✅ <strong>Retry logic</strong> with exponential backoff</li>
+<li>✅ <strong>Error handling</strong> with Sentry integration</li>
+<li>✅ <strong>Real-time database sync</strong> after each stage</li>
+<li>✅ <strong>Pre-filtered data flow</strong> (each endpoint receives processed output from previous stage)</li>
+</ul>
+
+</div></body></html>
