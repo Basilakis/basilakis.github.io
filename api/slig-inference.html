@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>SigLIP2-base-patch16-512 API Specification</h1>
+<h2>Endpoint</h2>
+<pre><code>POST https://&lt;your-endpoint&gt;.endpoints.huggingface.cloud
+</code></pre>
+<h2>Authentication</h2>
+<pre><code>Authorization: Bearer &lt;HF_TOKEN&gt;
+Content-Type: application/json
+</code></pre>
+<hr>
+<h2>Modes</h2>
+<p>The API supports 4 modes: <code>zero_shot</code>, <code>image_embedding</code>, <code>text_embedding</code>, <code>similarity</code>. Mode is auto-detected from input structure or can be explicitly set via <code>parameters.mode</code>.</p>
+<hr>
+<h2>Mode 1: Zero-Shot Classification</h2>
+<p>Classify an image against a list of candidate text labels.</p>
+<h3>Request</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: &quot;&lt;image_url_or_base64&gt;&quot;,
+    &quot;parameters&quot;: {
+        &quot;candidate_labels&quot;: [&quot;label1&quot;, &quot;label2&quot;, &quot;label3&quot;]
+    }
+}
+</code></pre>
+<h3>Request (Batch)</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: [&quot;&lt;image1_url&gt;&quot;, &quot;&lt;image2_url&gt;&quot;],
+    &quot;parameters&quot;: {
+        &quot;candidate_labels&quot;: [&quot;label1&quot;, &quot;label2&quot;, &quot;label3&quot;]
+    }
+}
+</code></pre>
+<h3>Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputs</code></td>
+<td>string | string[]</td>
+<td>Yes</td>
+<td>Image URL (http/https) or base64-encoded image string. Can be array for batch.</td>
+</tr>
+<tr>
+<td><code>parameters.candidate_labels</code></td>
+<td>string[]</td>
+<td>Yes</td>
+<td>List of text labels to classify against.</td>
+</tr>
+<tr>
+<td><code>parameters.mode</code></td>
+<td>string</td>
+<td>No</td>
+<td>Explicitly set to <code>&quot;zero_shot&quot;</code>. Auto-detected if <code>candidate_labels</code> present.</td>
+</tr>
+</tbody></table>
+<h3>Response (Single Image)</h3>
+<pre><code class="language-json">[
+    {&quot;label&quot;: &quot;ceramic tile&quot;, &quot;score&quot;: 0.8234},
+    {&quot;label&quot;: &quot;porcelain tile&quot;, &quot;score&quot;: 0.1521},
+    {&quot;label&quot;: &quot;natural stone&quot;, &quot;score&quot;: 0.0245}
+]
+</code></pre>
+<h3>Response (Batch)</h3>
+<pre><code class="language-json">[
+    [
+        {&quot;label&quot;: &quot;ceramic tile&quot;, &quot;score&quot;: 0.8234},
+        {&quot;label&quot;: &quot;porcelain tile&quot;, &quot;score&quot;: 0.1521}
+    ],
+    [
+        {&quot;label&quot;: &quot;wood flooring&quot;, &quot;score&quot;: 0.7891},
+        {&quot;label&quot;: &quot;laminate&quot;, &quot;score&quot;: 0.2109}
+    ]
+]
+</code></pre>
+<h3>Response Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>label</code></td>
+<td>string</td>
+<td>The candidate label</td>
+</tr>
+<tr>
+<td><code>score</code></td>
+<td>float</td>
+<td>Probability score (0-1), softmax normalized. All scores sum to 1.</td>
+</tr>
+</tbody></table>
+<p>Results are sorted by score descending.</p>
+<hr>
+<h2>Mode 2: Image Embedding</h2>
+<p>Extract normalized 768-dimensional embedding vectors from images.</p>
+<h3>Request</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: &quot;&lt;image_url_or_base64&gt;&quot;,
+    &quot;parameters&quot;: {
+        &quot;mode&quot;: &quot;image_embedding&quot;
+    }
+}
+</code></pre>
+<h3>Request (Batch)</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: [&quot;&lt;image1_url&gt;&quot;, &quot;&lt;image2_url&gt;&quot;, &quot;&lt;image3_url&gt;&quot;],
+    &quot;parameters&quot;: {
+        &quot;mode&quot;: &quot;image_embedding&quot;
+    }
+}
+</code></pre>
+<h3>Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputs</code></td>
+<td>string | string[]</td>
+<td>Yes</td>
+<td>Image URL or base64 string. Array for batch processing.</td>
+</tr>
+<tr>
+<td><code>parameters.mode</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Must be <code>&quot;image_embedding&quot;</code></td>
+</tr>
+</tbody></table>
+<h3>Response</h3>
+<pre><code class="language-json">[
+    {&quot;embedding&quot;: [0.0234, -0.0891, 0.1234, ..., -0.0567]}
+]
+</code></pre>
+<h3>Response (Batch)</h3>
+<pre><code class="language-json">[
+    {&quot;embedding&quot;: [0.0234, -0.0891, ...]},
+    {&quot;embedding&quot;: [0.1123, -0.0456, ...]},
+    {&quot;embedding&quot;: [-0.0789, 0.0234, ...]}
+]
+</code></pre>
+<h3>Response Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>embedding</code></td>
+<td>float[768]</td>
+<td>L2-normalized embedding vector. Dimension is always 768.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Mode 3: Text Embedding</h2>
+<p>Extract normalized 768-dimensional embedding vectors from text.</p>
+<h3>Request</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: &quot;a photo of ceramic floor tiles&quot;,
+    &quot;parameters&quot;: {
+        &quot;mode&quot;: &quot;text_embedding&quot;
+    }
+}
+</code></pre>
+<h3>Request (Batch)</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: [
+        &quot;ceramic tile with matte finish&quot;,
+        &quot;glossy porcelain tile&quot;,
+        &quot;natural wood flooring&quot;
+    ],
+    &quot;parameters&quot;: {
+        &quot;mode&quot;: &quot;text_embedding&quot;
+    }
+}
+</code></pre>
+<h3>Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputs</code></td>
+<td>string | string[]</td>
+<td>Yes</td>
+<td>Text string or array of text strings.</td>
+</tr>
+<tr>
+<td><code>parameters.mode</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Must be <code>&quot;text_embedding&quot;</code></td>
+</tr>
+</tbody></table>
+<h3>Response</h3>
+<pre><code class="language-json">[
+    {&quot;embedding&quot;: [0.0567, -0.1234, 0.0891, ..., 0.0345]}
+]
+</code></pre>
+<h3>Response (Batch)</h3>
+<pre><code class="language-json">[
+    {&quot;embedding&quot;: [0.0567, -0.1234, ...]},
+    {&quot;embedding&quot;: [0.0891, -0.0456, ...]},
+    {&quot;embedding&quot;: [-0.0234, 0.0789, ...]}
+]
+</code></pre>
+<h3>Response Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>embedding</code></td>
+<td>float[768]</td>
+<td>L2-normalized embedding vector. Dimension is always 768.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Mode 4: Similarity Scoring</h2>
+<p>Calculate cosine similarity scores between image(s) and text(s).</p>
+<h3>Request</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: {
+        &quot;image&quot;: &quot;&lt;image_url_or_base64&gt;&quot;,
+        &quot;texts&quot;: [&quot;description 1&quot;, &quot;description 2&quot;, &quot;description 3&quot;]
+    },
+    &quot;parameters&quot;: {
+        &quot;mode&quot;: &quot;similarity&quot;
+    }
+}
+</code></pre>
+<h3>Request (Multiple Images)</h3>
+<pre><code class="language-json">{
+    &quot;inputs&quot;: {
+        &quot;images&quot;: [&quot;&lt;image1_url&gt;&quot;, &quot;&lt;image2_url&gt;&quot;],
+        &quot;texts&quot;: [&quot;ceramic tile&quot;, &quot;wood flooring&quot;, &quot;heat pump&quot;]
+    },
+    &quot;parameters&quot;: {
+        &quot;mode&quot;: &quot;similarity&quot;
+    }
+}
+</code></pre>
+<h3>Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputs.image</code></td>
+<td>string</td>
+<td>Yes*</td>
+<td>Single image URL or base64. Use <code>image</code> or <code>images</code>.</td>
+</tr>
+<tr>
+<td><code>inputs.images</code></td>
+<td>string[]</td>
+<td>Yes*</td>
+<td>Array of image URLs or base64 strings. Use <code>image</code> or <code>images</code>.</td>
+</tr>
+<tr>
+<td><code>inputs.text</code></td>
+<td>string</td>
+<td>Yes*</td>
+<td>Single text string. Use <code>text</code> or <code>texts</code>.</td>
+</tr>
+<tr>
+<td><code>inputs.texts</code></td>
+<td>string[]</td>
+<td>Yes*</td>
+<td>Array of text strings. Use <code>text</code> or <code>texts</code>.</td>
+</tr>
+<tr>
+<td><code>parameters.mode</code></td>
+<td>string</td>
+<td>No</td>
+<td>Set to <code>&quot;similarity&quot;</code>. Auto-detected if inputs has <code>image</code> and <code>texts</code> keys.</td>
+</tr>
+</tbody></table>
+<h3>Response</h3>
+<pre><code class="language-json">{
+    &quot;similarity_scores&quot;: [[0.8912, 0.2345, 0.1234]],
+    &quot;image_count&quot;: 1,
+    &quot;text_count&quot;: 3
+}
+</code></pre>
+<h3>Response (Multiple Images)</h3>
+<pre><code class="language-json">{
+    &quot;similarity_scores&quot;: [
+        [0.8912, 0.2345, 0.1234],
+        [0.1567, 0.8901, 0.0987]
+    ],
+    &quot;image_count&quot;: 2,
+    &quot;text_count&quot;: 3
+}
+</code></pre>
+<h3>Response Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>similarity_scores</code></td>
+<td>float[][]</td>
+<td>Matrix of shape [image_count, text_count]. Each value is cosine similarity (-1 to 1, typically 0 to 1 for this model).</td>
+</tr>
+<tr>
+<td><code>image_count</code></td>
+<td>int</td>
+<td>Number of images processed</td>
+</tr>
+<tr>
+<td><code>text_count</code></td>
+<td>int</td>
+<td>Number of texts processed</td>
+</tr>
+</tbody></table>
+<p>Matrix interpretation: <code>similarity_scores[i][j]</code> = similarity between image i and text j.</p>
+<hr>
+<h2>Image Input Formats</h2>
+<p>The API accepts images in three formats:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HTTP URL</td>
+<td><code>&quot;https://example.com/image.jpg&quot;</code></td>
+<td>Direct URL to image. Must be publicly accessible.</td>
+</tr>
+<tr>
+<td>HTTPS URL</td>
+<td><code>&quot;https://cdn.example.com/image.png&quot;</code></td>
+<td>Secure URL to image.</td>
+</tr>
+<tr>
+<td>Base64</td>
+<td><code>&quot;iVBORw0KGgoAAAANSUhEUgAA...&quot;</code></td>
+<td>Raw base64-encoded image bytes (no data URI prefix).</td>
+</tr>
+</tbody></table>
+<p>Supported image formats: JPEG, PNG, GIF, WebP, BMP</p>
+<hr>
+<h2>Auto-Detection Logic</h2>
+<p>If <code>parameters.mode</code> is not specified, the API auto-detects:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Detected Mode</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputs</code> has keys <code>image</code>/<code>images</code> AND <code>text</code>/<code>texts</code></td>
+<td><code>similarity</code></td>
+</tr>
+<tr>
+<td><code>parameters.candidate_labels</code> is present</td>
+<td><code>zero_shot</code></td>
+</tr>
+<tr>
+<td><code>inputs</code> is array of short strings (&lt; 500 chars, no http prefix)</td>
+<td><code>text_embedding</code></td>
+</tr>
+<tr>
+<td>Otherwise</td>
+<td><code>image_embedding</code></td>
+</tr>
+</tbody></table>
+<p>Recommendation: Always explicitly set <code>mode</code> for predictable behavior.</p>
+<hr>
+<h2>Error Responses</h2>
+<h3>Missing Required Field</h3>
+<pre><code class="language-json">{
+    &quot;error&quot;: &quot;candidate_labels is required for zero-shot classification&quot;
+}
+</code></pre>
+<h3>Invalid Image</h3>
+<pre><code class="language-json">{
+    &quot;error&quot;: &quot;Unsupported image input type: &lt;class &#39;NoneType&#39;&gt;&quot;
+}
+</code></pre>
+<h3>Unknown Mode</h3>
+<pre><code class="language-json">{
+    &quot;error&quot;: &quot;Unknown mode: invalid_mode. Supported: zero_shot, image_embedding, text_embedding, similarity&quot;
+}
+</code></pre>
+<hr>
+<h2>Complete Examples</h2>
+<h3>Example 1: Classify Product Image</h3>
+<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
+  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;inputs&quot;: &quot;https://catalog.example.com/products/tile-001.jpg&quot;,
+    &quot;parameters&quot;: {
+      &quot;candidate_labels&quot;: [
+        &quot;ceramic floor tile&quot;,
+        &quot;porcelain wall tile&quot;,
+        &quot;natural stone slab&quot;,
+        &quot;mosaic tile sheet&quot;,
+        &quot;wood laminate plank&quot;,
+        &quot;vinyl flooring&quot;,
+        &quot;heat pump outdoor unit&quot;,
+        &quot;heat pump indoor unit&quot;,
+        &quot;technical diagram&quot;,
+        &quot;company logo&quot;
+      ]
+    }
+  }&#39;
+</code></pre>
+<h3>Example 2: Build Product Search Index</h3>
+<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
+  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;inputs&quot;: [
+      &quot;https://catalog.example.com/products/tile-001.jpg&quot;,
+      &quot;https://catalog.example.com/products/tile-002.jpg&quot;,
+      &quot;https://catalog.example.com/products/tile-003.jpg&quot;
+    ],
+    &quot;parameters&quot;: {
+      &quot;mode&quot;: &quot;image_embedding&quot;
+    }
+  }&#39;
+</code></pre>
+<h3>Example 3: Embed Product Descriptions</h3>
+<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
+  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;inputs&quot;: [
+      &quot;matte finish ceramic tile 60x60cm&quot;,
+      &quot;glossy white porcelain tile&quot;,
+      &quot;rustic oak wood flooring&quot;,
+      &quot;inverter heat pump 12kW&quot;
+    ],
+    &quot;parameters&quot;: {
+      &quot;mode&quot;: &quot;text_embedding&quot;
+    }
+  }&#39;
+</code></pre>
+<h3>Example 4: Match Image to Descriptions</h3>
+<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
+  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;inputs&quot;: {
+      &quot;image&quot;: &quot;https://catalog.example.com/products/unknown-product.jpg&quot;,
+      &quot;texts&quot;: [
+        &quot;beige ceramic floor tile with matte finish&quot;,
+        &quot;white glossy porcelain wall tile&quot;,
+        &quot;gray natural stone tile with rough texture&quot;,
+        &quot;colorful mosaic glass tile&quot;
+      ]
+    },
+    &quot;parameters&quot;: {
+      &quot;mode&quot;: &quot;similarity&quot;
+    }
+  }&#39;
+</code></pre>
+<h3>Example 5: Python Client</h3>
+<pre><code class="language-python">import requests
+import base64
+
+API_URL = &quot;https://your-endpoint.endpoints.huggingface.cloud&quot;
+HEADERS = {&quot;Authorization&quot;: &quot;Bearer hf_xxxxx&quot;}
+
+# Zero-shot classification
+def classify_product(image_url: str, labels: list[str]) -&gt; list[dict]:
+    response = requests.post(API_URL, headers=HEADERS, json={
+        &quot;inputs&quot;: image_url,
+        &quot;parameters&quot;: {&quot;candidate_labels&quot;: labels}
+    })
+    return response.json()
+
+# Get image embedding
+def get_image_embedding(image_url: str) -&gt; list[float]:
+    response = requests.post(API_URL, headers=HEADERS, json={
+        &quot;inputs&quot;: image_url,
+        &quot;parameters&quot;: {&quot;mode&quot;: &quot;image_embedding&quot;}
+    })
+    return response.json()[0][&quot;embedding&quot;]
+
+# Get text embedding
+def get_text_embedding(text: str) -&gt; list[float]:
+    response = requests.post(API_URL, headers=HEADERS, json={
+        &quot;inputs&quot;: text,
+        &quot;parameters&quot;: {&quot;mode&quot;: &quot;text_embedding&quot;}
+    })
+    return response.json()[0][&quot;embedding&quot;]
+
+# Similarity scoring
+def get_similarity(image_url: str, texts: list[str]) -&gt; list[float]:
+    response = requests.post(API_URL, headers=HEADERS, json={
+        &quot;inputs&quot;: {&quot;image&quot;: image_url, &quot;texts&quot;: texts},
+        &quot;parameters&quot;: {&quot;mode&quot;: &quot;similarity&quot;}
+    })
+    return response.json()[&quot;similarity_scores&quot;][0]
+
+# From local file (base64)
+def classify_local_image(file_path: str, labels: list[str]) -&gt; list[dict]:
+    with open(file_path, &quot;rb&quot;) as f:
+        image_b64 = base64.b64encode(f.read()).decode()
+    response = requests.post(API_URL, headers=HEADERS, json={
+        &quot;inputs&quot;: image_b64,
+        &quot;parameters&quot;: {&quot;candidate_labels&quot;: labels}
+    })
+    return response.json()
+</code></pre>
+<hr>
+<h2>Model Specifications</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Model</td>
+<td>google/siglip2-base-patch16-512</td>
+</tr>
+<tr>
+<td>Parameters</td>
+<td>~400M</td>
+</tr>
+<tr>
+<td>Input Resolution</td>
+<td>512 x 512 pixels</td>
+</tr>
+<tr>
+<td>Embedding Dimension</td>
+<td>768</td>
+</tr>
+<tr>
+<td>Normalization</td>
+<td>L2 (embeddings are unit vectors)</td>
+</tr>
+<tr>
+<td>Similarity Metric</td>
+<td>Cosine similarity (dot product of normalized vectors)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Rate Limits &amp; Performance</h2>
+<p>Depends on your Inference Endpoint instance type. Typical latencies:</p>
+<table>
+<thead>
+<tr>
+<th>Instance</th>
+<th>Single Image</th>
+<th>Batch (10 images)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GPU (T4)</td>
+<td>~50-100ms</td>
+<td>~200-400ms</td>
+</tr>
+<tr>
+<td>GPU (A10G)</td>
+<td>~30-60ms</td>
+<td>~100-200ms</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>~500-2000ms</td>
+<td>~2000-5000ms</td>
+</tr>
+</tbody></table>
+<p>GPU recommended for production workloads.</p>
+
+</div></body></html>

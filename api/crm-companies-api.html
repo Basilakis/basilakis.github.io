@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>CRM Companies API</h1>
+<h2>Overview</h2>
+<p>The CRM Companies API manages company records in the CRM system.</p>
+<p><strong>Edge Function:</strong> <code>crm-companies-api</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/crm-companies-api</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth:</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Endpoints</h2>
+<h3>1. Create Company</h3>
+<p>Create a new company record.</p>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  name: string,              // Required
+  website?: string,
+  industry?: string,
+  employee_count?: number,
+  annual_revenue?: number,
+  email?: string,
+  phone?: string,
+  address?: string,
+  city?: string,
+  state?: string,
+  postal_code?: string,
+  country?: string,
+  linkedin?: string,
+  twitter?: string,
+  facebook?: string,
+  description?: string,
+  notes?: string
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    name: string,
+    website: string | null,
+    industry: string | null,
+    employee_count: number | null,
+    annual_revenue: number | null,
+    email: string | null,
+    phone: string | null,
+    address: string | null,
+    city: string | null,
+    state: string | null,
+    postal_code: string | null,
+    country: string | null,
+    linkedin: string | null,
+    twitter: string | null,
+    facebook: string | null,
+    description: string | null,
+    notes: string | null,
+    created_by: string,
+    created_at: string,
+    updated_at: string
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(`${API_BASE}/crm-companies-api`, {
+  method: &#39;POST&#39;,
+  headers: {
+    &#39;Authorization&#39;: `Bearer ${session.access_token}`,
+    &#39;Content-Type&#39;: &#39;application/json&#39;
+  },
+  body: JSON.stringify({
+    name: &#39;Acme Corporation&#39;,
+    website: &#39;https://acme.com&#39;,
+    industry: &#39;Technology&#39;,
+    employee_count: 500,
+    email: &#39;contact@acme.com&#39;,
+    country: &#39;USA&#39;
+  })
+});
+</code></pre>
+<h3>2. List Companies</h3>
+<p>Get a paginated list of companies with optional search.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional): Number of records to return (default: 50)</li>
+<li><code>offset</code> (optional): Number of records to skip (default: 0)</li>
+<li><code>search</code> (optional): Search term (searches name, email, website)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: Company[],
+  count: number
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">// List all companies
+const response = await fetch(
+  `${API_BASE}/crm-companies-api?limit=20&amp;offset=0`,
+  {
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+
+// Search companies
+const searchResponse = await fetch(
+  `${API_BASE}/crm-companies-api?search=acme`,
+  {
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h3>3. Get Company</h3>
+<p>Get a specific company by ID with associated contacts.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/{companyId}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    name: string,
+    // ... all company fields
+    crm_company_contacts: Array&lt;{
+      id: string,
+      contact_id: string,
+      role: string,
+      is_primary: boolean,
+      created_at: string
+    }&gt;
+  }
+}
+</code></pre>
+<h3>4. Update Company</h3>
+<p>Update an existing company.</p>
+<p><strong>Method:</strong> <code>PATCH</code><br><strong>Path:</strong> <code>/{companyId}</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  name?: string,
+  website?: string,
+  industry?: string,
+  employee_count?: number,
+  annual_revenue?: number,
+  // ... any other company fields
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: Company  // Updated company
+}
+</code></pre>
+<h3>5. Delete Company</h3>
+<p>Delete a company.</p>
+<p><strong>Method:</strong> <code>DELETE</code><br><strong>Path:</strong> <code>/{companyId}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  message: &#39;Company deleted successfully&#39;
+}
+</code></pre>
+<h3>6. Link Contact to Company</h3>
+<p>Associate a contact with a company.</p>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/{companyId}/contacts</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  contactId: string,
+  role?: string,          // e.g., &#39;CEO&#39;, &#39;Manager&#39;, &#39;Sales Rep&#39;
+  isPrimary?: boolean     // Mark as primary contact
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    company_id: string,
+    contact_id: string,
+    role: string,
+    is_primary: boolean,
+    created_at: string
+  }
+}
+</code></pre>
+<h3>7. Unlink Contact from Company</h3>
+<p>Remove a contact-company association.</p>
+<p><strong>Method:</strong> <code>DELETE</code><br><strong>Path:</strong> <code>/{companyId}/contacts/{contactId}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  message: &#39;Contact unlinked from company successfully&#39;
+}
+</code></pre>
+<h2>Error Handling</h2>
+<p>All errors return a standard format:</p>
+<pre><code class="language-typescript">{
+  error: string  // Error message
+}
+</code></pre>
+<p><strong>Common Error Codes:</strong></p>
+<ul>
+<li><code>401</code> - Unauthorized (missing or invalid token)</li>
+<li><code>404</code> - Company not found</li>
+<li><code>400</code> - Bad request (validation error, e.g., missing company name)</li>
+<li><code>500</code> - Internal server error</li>
+</ul>
+
+</div></body></html>

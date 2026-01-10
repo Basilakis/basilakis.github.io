@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Monitoring &amp; Analytics System</h1>
+<p>Comprehensive real-time monitoring and analytics infrastructure for the Material Kai Vision Platform.</p>
+<hr>
+<h2>🎯 Overview</h2>
+<p>The platform includes a complete monitoring and analytics system that tracks:</p>
+<ul>
+<li><strong>PDF Processing Jobs</strong> - Real-time job tracking with 9 checkpoint stages</li>
+<li><strong>AI Model Usage</strong> - Cost tracking, model performance, and usage statistics</li>
+<li><strong>Search Analytics</strong> - Query patterns, response times, and user behavior</li>
+<li><strong>System Performance</strong> - API latency, error rates, and uptime metrics</li>
+<li><strong>Agent Chat Analytics</strong> - Agent responses, quality ratings, and costs</li>
+</ul>
+<hr>
+<h2>📊 Admin Dashboards</h2>
+<h3>1. PDF Processing Monitor (<code>/admin/async-queue-monitor</code>)</h3>
+<p><strong>Purpose</strong>: Real-time monitoring of PDF processing jobs and pipeline stages</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Real-time job status updates (no refresh needed)</li>
+<li>✅ 4 overview cards: Total Documents, Products Created, Success Rate, Avg Processing Time</li>
+<li>✅ Job status breakdown (Pending, Processing, Completed, Failed, Retrying)</li>
+<li>✅ Recent jobs list with progress percentages</li>
+<li>✅ Processing stages analytics</li>
+<li>✅ Failed jobs section with error details</li>
+<li>✅ Auto-refresh with Supabase real-time subscriptions</li>
+</ul>
+<p><strong>Data Sources</strong>:</p>
+<ul>
+<li><code>background_jobs</code> table - Main job tracking</li>
+<li><code>job_checkpoints</code> table - Stage-by-stage progress</li>
+</ul>
+<p><strong>Metrics Tracked</strong>:</p>
+<pre><code class="language-typescript">{
+  pdf_processing: {
+    pending: number,
+    processing: number,
+    completed: number,
+    failed: number,
+    retrying: number,
+    total: number,
+    success_rate: number,
+    avg_processing_time: number
+  },
+  total_documents: number,
+  total_products_created: number,
+  total_chunks_created: number,
+  total_images_extracted: number
+}
+</code></pre>
+<p><strong>Real-Time Updates</strong>:</p>
+<ul>
+<li>Supabase real-time subscription on <code>background_jobs</code> table</li>
+<li>Automatic UI updates when job status changes</li>
+<li>Backup polling every 10 seconds</li>
+</ul>
+<hr>
+<h3>2. Analytics Dashboard (<code>/admin/analytics</code>)</h3>
+<p><strong>Purpose</strong>: Comprehensive analytics across search, API usage, PDF processing, and quality metrics</p>
+<p><strong>Tabs</strong>:</p>
+<p><strong>Search Analytics</strong>:</p>
+<ul>
+<li>Total searches performed</li>
+<li>Average response time</li>
+<li>Top search queries</li>
+<li>Search success rate</li>
+<li>Query patterns and trends</li>
+</ul>
+<p><strong>API Usage</strong>:</p>
+<ul>
+<li>Total API calls</li>
+<li>Calls by endpoint</li>
+<li>Response time distribution</li>
+<li>Error rate tracking</li>
+<li>Rate limit monitoring</li>
+</ul>
+<p><strong>Agent Chat Analytics</strong>:</p>
+<ul>
+<li>Total chat interactions</li>
+<li>Average response time</li>
+<li>Positive/negative ratings</li>
+<li>Estimated costs per model</li>
+<li>Agent performance metrics</li>
+</ul>
+<p><strong>Quality Metrics</strong>:</p>
+<ul>
+<li>Chunk quality scores (92%)</li>
+<li>Search precision (87%)</li>
+<li>Data stability (99.2%)</li>
+<li>User satisfaction (4.2/5)</li>
+</ul>
+<p><strong>PDF Processing</strong>:</p>
+<ul>
+<li>Documents processed</li>
+<li>Products extracted</li>
+<li>Processing success rate</li>
+<li>Average processing time</li>
+</ul>
+<hr>
+<h3>3. AI Monitoring Dashboard (<code>/admin/ai-monitoring</code>)</h3>
+<p><strong>Purpose</strong>: Track AI model usage, costs, and performance</p>
+<p><strong>Metrics</strong>:</p>
+<ul>
+<li><strong>Cost Tracking</strong>: Real-time cost per model (Claude, GPT, Qwen)</li>
+<li><strong>Model Usage</strong>: API calls by model and endpoint</li>
+<li><strong>Confidence Scores</strong>: Distribution of AI confidence scores</li>
+<li><strong>Latency Metrics</strong>: Response times per model</li>
+<li><strong>Fallback Rates</strong>: When primary models fail and fallbacks are used</li>
+</ul>
+<p><strong>Time Periods</strong>: 24h, 7d, 30d, 90d</p>
+<p><strong>Models Tracked</strong>:</p>
+<ul>
+<li>Claude Sonnet 4.5</li>
+<li>Claude Haiku 4.5</li>
+<li>GPT-4o</li>
+<li>GPT-5</li>
+<li>Qwen3-VL 17B Vision</li>
+<li>OpenAI text-embedding-3-small</li>
+</ul>
+<hr>
+<h2>🔄 Real-Time Job Tracking</h2>
+<h3>Background Jobs System</h3>
+<p><strong>Table</strong>: <code>background_jobs</code></p>
+<p><strong>Columns</strong>:</p>
+<pre><code class="language-sql">id: UUID
+workspace_id: UUID
+document_id: UUID
+job_type: TEXT (pdf_processing, image_analysis, etc.)
+status: TEXT (pending, processing, completed, failed, retrying, cancelled)
+progress: INTEGER (0-100)
+created_at: TIMESTAMP
+started_at: TIMESTAMP
+completed_at: TIMESTAMP
+failed_at: TIMESTAMP
+error: TEXT
+metadata: JSONB
+</code></pre>
+<p><strong>Metadata Fields</strong>:</p>
+<pre><code class="language-json">{
+  &quot;filename&quot;: &quot;harmony.pdf&quot;,
+  &quot;stage&quot;: &quot;IMAGES_EXTRACTED&quot;,
+  &quot;products_discovered&quot;: 14,
+  &quot;chunks_created&quot;: 229,
+  &quot;images_extracted&quot;: 249,
+  &quot;embeddings_generated&quot;: 750,
+  &quot;processing_time_ms&quot;: 180000,
+  &quot;ai_model&quot;: &quot;claude-sonnet-4-5&quot;,
+  &quot;retry_count&quot;: 0
+}
+</code></pre>
+<hr>
+<h2>📈 Monitoring Integration</h2>
+<h3>Stage 0: Product Discovery</h3>
+<p><strong>Metrics Tracked</strong>:</p>
+<ul>
+<li><code>products_discovered</code> - Number of products found</li>
+<li><code>certificates_discovered</code> - Number of certificates found</li>
+<li><code>logos_discovered</code> - Number of logos found</li>
+<li><code>specifications_discovered</code> - Number of specifications found</li>
+<li><code>total_entities</code> - Total entities across all categories</li>
+<li><code>discovery_time_ms</code> - Processing time</li>
+<li><code>discovery_model</code> - AI model used</li>
+<li><code>confidence_score</code> - Overall confidence</li>
+</ul>
+<p><strong>Logging</strong>:</p>
+<pre><code class="language-python">logger.info(f&quot;✅ [STAGE 0] Discovery Complete:&quot;)
+logger.info(f&quot;   Products: {products_discovered}&quot;)
+logger.info(f&quot;   Total Entities: {total_entities}&quot;)
+logger.info(f&quot;   Model: {discovery_model}&quot;)
+logger.info(f&quot;   Time: {discovery_time_ms}ms&quot;)
+</code></pre>
+<p><strong>Checkpoint Metadata</strong>:</p>
+<pre><code class="language-json">{
+  &quot;products_discovered&quot;: 14,
+  &quot;certificates_discovered&quot;: 2,
+  &quot;logos_discovered&quot;: 3,
+  &quot;specifications_discovered&quot;: 1,
+  &quot;total_entities&quot;: 20,
+  &quot;discovery_time_ms&quot;: 5000,
+  &quot;discovery_model&quot;: &quot;claude-sonnet-4-5&quot;,
+  &quot;confidence_score&quot;: 0.95
+}
+</code></pre>
+<hr>
+<h3>Stage 1: Focused Extraction</h3>
+<p><strong>Metrics Tracked</strong>:</p>
+<ul>
+<li><code>extracted_pages_count</code> - Number of pages extracted</li>
+<li><code>total_pages_count</code> - Total pages in PDF</li>
+<li><code>text_length</code> - Length of extracted text</li>
+<li><code>extraction_rate</code> - Percentage of pages extracted</li>
+<li><code>focused_extraction</code> - Boolean flag</li>
+</ul>
+<p><strong>Logging</strong>:</p>
+<pre><code class="language-python">logger.info(f&quot;✅ [STAGE 1] Focused Extraction Complete:&quot;)
+logger.info(f&quot;   Pages Extracted: {extracted_pages_count}/{total_pages_count}&quot;)
+logger.info(f&quot;   Extraction Rate: {extraction_rate}%&quot;)
+logger.info(f&quot;   Text Length: {text_length} chars&quot;)
+</code></pre>
+<hr>
+<h3>Stage 3.5: Embedding-to-Text Conversion</h3>
+<p><strong>Purpose</strong>: Convert visual embeddings to text descriptions for enhanced search</p>
+<p><strong>Metrics Tracked</strong>:</p>
+<ul>
+<li><code>embedding_to_text_count</code> - Successful conversions</li>
+<li><code>embedding_to_text_failed</code> - Failed conversions</li>
+<li><code>embedding_to_text_ai_calls</code> - AI API calls made</li>
+<li><code>visual_metadata_extracted</code> - Boolean flag</li>
+</ul>
+<p><strong>Logging</strong>:</p>
+<pre><code class="language-python">logger.info(f&quot;✅ [STAGE 3.5] Embedding-to-Text Complete:&quot;)
+logger.info(f&quot;   Successful: {embedding_to_text_count}&quot;)
+logger.info(f&quot;   Failed: {embedding_to_text_failed}&quot;)
+logger.info(f&quot;   AI Calls: {embedding_to_text_ai_calls}&quot;)
+</code></pre>
+<hr>
+<h3>Stage 4: Metadata Consolidation</h3>
+<p><strong>Purpose</strong>: Consolidate metadata from all sources (discovery, extraction, embeddings)</p>
+<p><strong>Metrics Tracked</strong>:</p>
+<ul>
+<li><code>metadata_consolidation_count</code> - Products consolidated</li>
+<li><code>metadata_consolidation_failed</code> - Failed consolidations</li>
+<li><code>metadata_consolidation_ai_calls</code> - AI API calls made</li>
+<li><code>metadata_sources_merged</code> - Number of sources merged</li>
+</ul>
+<p><strong>Logging</strong>:</p>
+<pre><code class="language-python">logger.info(f&quot;✅ [STAGE 4] Metadata Consolidation Complete:&quot;)
+logger.info(f&quot;   Products Consolidated: {metadata_consolidation_count}&quot;)
+logger.info(f&quot;   Sources Merged: {metadata_sources_merged}&quot;)
+logger.info(f&quot;   AI Calls: {metadata_consolidation_ai_calls}&quot;)
+</code></pre>
+<hr>
+<h2>🎯 Checkpoint System</h2>
+<h3>9 Processing Checkpoints</h3>
+<p>All stages save comprehensive metrics to checkpoints for recovery:</p>
+<ol>
+<li><strong>INITIALIZED</strong> - Job created</li>
+<li><strong>PDF_EXTRACTED</strong> - Stage 1 complete (focused extraction)</li>
+<li><strong>CHUNKS_CREATED</strong> - Stage 2 complete (chunking)</li>
+<li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Stage 3 complete (text embeddings)</li>
+<li><strong>IMAGES_EXTRACTED</strong> - Stage 5 complete (image extraction)</li>
+<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - Stage 7 complete (CLIP embeddings)</li>
+<li><strong>PRODUCTS_DETECTED</strong> - Stage 0 complete (product discovery)</li>
+<li><strong>PRODUCTS_CREATED</strong> - Stage 9 complete (product creation)</li>
+<li><strong>COMPLETED</strong> - All stages complete</li>
+</ol>
+<p><strong>Checkpoint Data Structure</strong>:</p>
+<pre><code class="language-json">{
+  &quot;stage&quot;: &quot;IMAGES_EXTRACTED&quot;,
+  &quot;checkpoint_data&quot;: {
+    &quot;document_id&quot;: &quot;uuid&quot;,
+    &quot;images_extracted&quot;: 249,
+    &quot;material_images&quot;: 150
+  },
+  &quot;metadata&quot;: {
+    &quot;processing_time_ms&quot;: 120000,
+    &quot;ai_model&quot;: &quot;qwen3-vl-8b&quot;,
+    &quot;success_rate&quot;: 0.98
+  }
+}
+</code></pre>
+<hr>
+<h2>📊 Sentry Integration</h2>
+<h3>Exception Tracking</h3>
+<p>All stages integrate with Sentry for exception capture:</p>
+<pre><code class="language-python">try:
+    # Processing logic
+    result = await process_stage()
+except Exception as e:
+    sentry_sdk.capture_exception(e)
+    logger.error(f&quot;❌ Stage failed: {e}&quot;)
+    raise
+</code></pre>
+<p><strong>Sentry Context</strong>:</p>
+<ul>
+<li>Job ID</li>
+<li>Document ID</li>
+<li>Current stage</li>
+<li>Processing metrics</li>
+<li>Error stack trace</li>
+</ul>
+<hr>
+<h2>🔍 Search Analytics</h2>
+<h3>Query Tracking</h3>
+<p><strong>Table</strong>: <code>search_queries</code></p>
+<p><strong>Metrics</strong>:</p>
+<ul>
+<li>Query text</li>
+<li>Response time</li>
+<li>Results count</li>
+<li>User satisfaction</li>
+<li>Filters applied</li>
+<li>Search strategy used</li>
+</ul>
+<p><strong>Analytics</strong>:</p>
+<ul>
+<li>Top search queries</li>
+<li>Average response time</li>
+<li>Success rate</li>
+<li>Query patterns</li>
+<li>User behavior</li>
+</ul>
+<hr>
+<h2>💰 Cost Tracking</h2>
+<h3>AI Model Costs</h3>
+<p><strong>Per Model Pricing</strong>:</p>
+<ul>
+<li>Claude Sonnet 4.5: $3.00 / 1M input tokens, $15.00 / 1M output tokens</li>
+<li>Claude Haiku 4.5: $0.80 / 1M input tokens, $4.00 / 1M output tokens</li>
+<li>GPT-4o: $2.50 / 1M input tokens, $10.00 / 1M output tokens</li>
+<li>Qwen3-VL 17B: $0.30 / 1M tokens</li>
+<li>text-embedding-3-small: $0.02 / 1M tokens</li>
+</ul>
+<p><strong>Cost Calculation</strong>:</p>
+<pre><code class="language-typescript">const calculateCost = (model: string, inputTokens: number, outputTokens: number) =&gt; {
+  const pricing = MODEL_PRICING[model];
+  const inputCost = (inputTokens / 1_000_000) * pricing.input;
+  const outputCost = (outputTokens / 1_000_000) * pricing.output;
+  return inputCost + outputCost;
+};
+</code></pre>
+<hr>
+<h2>📈 Performance Metrics</h2>
+<h3>System-Wide Metrics</h3>
+<p><strong>Uptime</strong>: 99.5%+
+<strong>Users</strong>: 5,000+
+<strong>Search Response</strong>: 200-800ms
+<strong>PDF Processing</strong>: 1-15 minutes (size-dependent)
+<strong>Concurrent Jobs</strong>: Unlimited queue</p>
+<p><strong>Accuracy</strong>:</p>
+<ul>
+<li>Product Detection: 95%+</li>
+<li>Search Accuracy: 85%+</li>
+<li>Material Recognition: 90%+</li>
+<li>Image Classification: 88%+</li>
+</ul>
+<hr>
+<h2>🔔 Alerts &amp; Notifications</h2>
+<h3>Alert Types</h3>
+<p><strong>Critical Alerts</strong>:</p>
+<ul>
+<li>API down (&gt;5 minutes)</li>
+<li>Database connection lost</li>
+<li>OOM errors</li>
+<li>Job stuck (&gt;30 minutes)</li>
+</ul>
+<p><strong>Warning Alerts</strong>:</p>
+<ul>
+<li>High error rate (&gt;5%)</li>
+<li>Slow response times (&gt;2s)</li>
+<li>Low success rate (&lt;90%)</li>
+<li>High AI costs (&gt;$100/day)</li>
+</ul>
+<p><strong>Notification Channels</strong>:</p>
+<ul>
+<li>Sentry (exception tracking)</li>
+<li>Email (critical alerts)</li>
+<li>Dashboard (real-time metrics)</li>
+</ul>
+<hr>
+<h2>🏥 System Health Monitoring</h2>
+<h3>Overview</h3>
+<p>Comprehensive health monitoring system that tracks database performance, job monitoring service, and system reliability.</p>
+<p><strong>Access</strong>: <code>/admin/analytics</code> → System Health tab</p>
+<h3>Features</h3>
+<h4>1. <strong>Database Health Monitoring</strong></h4>
+<ul>
+<li>✅ Connection pool health checks every 30 seconds</li>
+<li>✅ Query performance tracking</li>
+<li>✅ Slow query detection (&gt;1000ms threshold)</li>
+<li>✅ Error count and consecutive failure tracking</li>
+<li>✅ Uptime monitoring</li>
+</ul>
+<p><strong>Metrics</strong>:</p>
+<pre><code class="language-typescript">{
+  healthy: boolean,
+  connection_test_ms: number,
+  query_test_ms: number,
+  error_count: number,
+  consecutive_failures: number,
+  uptime_seconds: number,
+  performance: {
+    avg_query_time_ms: number,
+    max_query_time_ms: number,
+    slow_query_count: number,
+    slow_query_threshold_ms: 1000
+  }
+}
+</code></pre>
+<h4>2. <strong>Job Monitor Health</strong></h4>
+<ul>
+<li>✅ Monitor service status (running/stopped)</li>
+<li>✅ Stuck job detection</li>
+<li>✅ Health status (healthy/degraded/unhealthy)</li>
+</ul>
+<p><strong>Metrics</strong>:</p>
+<pre><code class="language-typescript">{
+  monitor_running: boolean,
+  stuck_jobs_count: number,
+  health: &#39;healthy&#39; | &#39;degraded&#39; | &#39;unhealthy&#39;
+}
+</code></pre>
+<h4>3. <strong>Query Performance Metrics</strong></h4>
+<ul>
+<li>✅ Total queries executed</li>
+<li>✅ Slow query percentage</li>
+<li>✅ Average/min/max query times</li>
+<li>✅ Per-table statistics</li>
+<li>✅ Recent slow queries log</li>
+</ul>
+<p><strong>Metrics</strong>:</p>
+<pre><code class="language-typescript">{
+  total_queries: number,
+  slow_queries: number,
+  slow_query_percentage: number,
+  avg_query_time_ms: number,
+  max_query_time_ms: number,
+  table_metrics: {
+    [table: string]: {
+      count: number,
+      avg_time_ms: number,
+      max_time_ms: number,
+      slow_count: number
+    }
+  }
+}
+</code></pre>
+<h4>4. <strong>Circuit Breaker Status</strong></h4>
+<ul>
+<li>✅ Prevents cascading failures</li>
+<li>✅ Automatic recovery detection</li>
+<li>✅ Fail-fast when database is down</li>
+</ul>
+<p><strong>States</strong>:</p>
+<ul>
+<li><strong>CLOSED</strong>: Normal operation</li>
+<li><strong>OPEN</strong>: Failing fast (database down)</li>
+<li><strong>HALF_OPEN</strong>: Testing recovery</li>
+</ul>
+<p><strong>Metrics</strong>:</p>
+<pre><code class="language-typescript">{
+  state: &#39;closed&#39; | &#39;open&#39; | &#39;half_open&#39;,
+  failure_count: number
+}
+</code></pre>
+<h3>Health Check API Endpoints</h3>
+<h4><code>GET /health/</code></h4>
+<p>Basic health check - returns 200 if service is running.</p>
+<h4><code>GET /health/detailed</code></h4>
+<p>Comprehensive health status with all subsystems:</p>
+<pre><code class="language-json">{
+  &quot;overall_status&quot;: &quot;healthy&quot;,
+  &quot;database&quot;: { ... },
+  &quot;job_monitor&quot;: { ... },
+  &quot;query_metrics&quot;: { ... },
+  &quot;circuit_breaker&quot;: { ... },
+  &quot;timestamp&quot;: &quot;2025-01-20T10:30:00Z&quot;
+}
+</code></pre>
+<h4><code>GET /health/database</code></h4>
+<p>Database connection health only.</p>
+<h4><code>GET /health/job-monitor</code></h4>
+<p>Job monitoring service health only.</p>
+<h4><code>GET /health/metrics</code></h4>
+<p>Query performance metrics only.</p>
+<h4><code>GET /health/circuit-breakers</code></h4>
+<p>Circuit breaker status for all protected services.</p>
+<h4><code>POST /health/metrics/reset</code></h4>
+<p>Reset query performance metrics (useful for testing).</p>
+<h3>Database Performance Optimizations</h3>
+<h4>Indexes Added (2025-01-20)</h4>
+<p>Six critical indexes to optimize job monitoring queries:</p>
+<ol>
+<li><p><strong>Stuck Job Detection</strong> (<code>idx_background_jobs_status_updated_at</code>)</p>
+<ul>
+<li>Query: <code>WHERE status = &#39;processing&#39; AND updated_at &lt; cutoff_time</code></li>
+<li>Performance: 500-900ms → 5-20ms (95-98% faster)</li>
+</ul>
+</li>
+<li><p><strong>Heartbeat Timeout Detection</strong> (<code>idx_background_jobs_status_heartbeat</code>)</p>
+<ul>
+<li>Query: <code>WHERE status = &#39;processing&#39; AND last_heartbeat &lt; cutoff_time</code></li>
+<li>Performance: 500-900ms → 5-20ms (95-98% faster)</li>
+</ul>
+</li>
+<li><p><strong>Workspace + Status Queries</strong> (<code>idx_background_jobs_workspace_status</code>)</p>
+<ul>
+<li>Query: <code>WHERE workspace_id = ? AND status = ?</code></li>
+<li>Composite index on (workspace_id, status, created_at DESC)</li>
+</ul>
+</li>
+<li><p><strong>Job Cleanup</strong> (<code>idx_background_jobs_status_completed_at</code>)</p>
+<ul>
+<li>Query: <code>WHERE status = &#39;completed&#39; AND completed_at &lt; cutoff_time</code></li>
+<li>Partial index for completed jobs only</li>
+</ul>
+</li>
+<li><p><strong>Checkpoint Queries</strong> (<code>idx_job_checkpoints_job_created</code>)</p>
+<ul>
+<li>Query: <code>WHERE job_id = ? ORDER BY created_at DESC</code></li>
+<li>Composite index on (job_id, created_at DESC)</li>
+</ul>
+</li>
+<li><p><strong>Progress Tracking</strong> (<code>idx_job_progress_document_updated</code>)</p>
+<ul>
+<li>Query: <code>WHERE document_id = ? ORDER BY updated_at DESC</code></li>
+<li>Composite index on (document_id, updated_at DESC)</li>
+</ul>
+</li>
+</ol>
+<p><strong>Impact</strong>:</p>
+<ul>
+<li>Before: Queries scanning 1000s of rows → 500-900ms (timeout)</li>
+<li>After: Index scan → 5-20ms</li>
+<li><strong>Overall improvement: 95-98% faster queries</strong></li>
+</ul>
+<h3>Resilience Features</h3>
+<h4>1. <strong>Retry Logic with Exponential Backoff</strong></h4>
+<ul>
+<li>Automatic retry for transient failures</li>
+<li>Exponential backoff: 2s → 4s → 8s</li>
+<li>Random jitter to prevent thundering herd</li>
+<li>Configurable retry conditions</li>
+</ul>
+<h4>2. <strong>Circuit Breaker Pattern</strong></h4>
+<ul>
+<li>Prevents cascading failures when database is down</li>
+<li>Failure threshold: 5 failures → OPEN</li>
+<li>Recovery timeout: 60 seconds</li>
+<li>Success threshold: 2 successes → CLOSED</li>
+</ul>
+<h4>3. <strong>Graceful Degradation</strong></h4>
+<ul>
+<li>Job monitor failures don&#39;t crash API</li>
+<li>Automatic recovery when database is healthy</li>
+<li>Fail-fast behavior reduces resource waste</li>
+</ul>
+<h3>Monitoring &amp; Alerts</h3>
+<h4>Recommended Alerts</h4>
+<ol>
+<li><p><strong>Database Health</strong></p>
+<ul>
+<li>Alert if <code>database.healthy = false</code> for &gt; 5 minutes</li>
+<li>Alert if <code>avg_query_time_ms &gt; 500</code> for &gt; 10 minutes</li>
+</ul>
+</li>
+<li><p><strong>Circuit Breaker</strong></p>
+<ul>
+<li>Alert if <code>circuit_breaker.state = &quot;open&quot;</code> for &gt; 5 minutes</li>
+</ul>
+</li>
+<li><p><strong>Slow Queries</strong></p>
+<ul>
+<li>Alert if <code>slow_query_percentage &gt; 20%</code></li>
+</ul>
+</li>
+<li><p><strong>Job Monitor</strong></p>
+<ul>
+<li>Alert if <code>stuck_jobs_count &gt; 5</code></li>
+<li>Alert if <code>monitor_running = false</code></li>
+</ul>
+</li>
+</ol>
+<h4>Sentry Issues Fixed</h4>
+<ul>
+<li><strong>MIVAA-4Z</strong>: Database timeout errors (12 occurrences) - Fixed with indexes</li>
+<li><strong>MIVAA-51</strong>: Cloudflare gateway errors - Fixed with retry logic</li>
+<li><strong>MIVAA-50</strong>: JSON generation errors - Fixed with circuit breaker</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: 2025-01-20
+<strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Production
+<strong>Coverage</strong>: All pipeline stages, admin dashboards, monitoring systems, and health checks</p>
+
+</div></body></html>
