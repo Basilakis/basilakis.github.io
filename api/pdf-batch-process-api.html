@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>PDF Batch Process API</h1>
+<h2>Overview</h2>
+<p>The PDF Batch Process API handles batch processing of PDF documents for extraction and analysis.</p>
+<p><strong>Edge Function:</strong> <code>pdf-batch-process</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/pdf-batch-process</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth:</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Endpoints</h2>
+<h3>1. Create Batch Job</h3>
+<p>Create a new batch processing job for multiple documents.</p>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  documents: Array&lt;{
+    documentId: string,
+    extractionType: &#39;markdown&#39; | &#39;tables&#39; | &#39;images&#39; | &#39;all&#39;,
+    priority?: &#39;low&#39; | &#39;normal&#39; | &#39;high&#39;
+  }&gt;,
+  workspaceId?: string,
+  userId?: string,
+  options?: {
+    includeImages?: boolean,
+    includeMetadata?: boolean,
+    chunkSize?: number,
+    overlapSize?: number,
+    outputFormat?: &#39;json&#39; | &#39;markdown&#39;,
+    maxConcurrent?: number,
+    notifyOnComplete?: boolean,
+    webhookUrl?: string
+  }
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  data: {
+    batchId: string,
+    status: &#39;queued&#39;,
+    totalDocuments: number,
+    processedDocuments: 0,
+    failedDocuments: 0,
+    estimatedCompletionTime?: string,
+    results: Array&lt;{
+      documentId: string,
+      status: &#39;pending&#39;,
+      extractionId?: string,
+      error?: string,
+      processingTime?: number
+    }&gt;
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;pdf-batch-process&#39;, {
+  body: {
+    documents: [
+      {
+        documentId: &#39;doc-123&#39;,
+        extractionType: &#39;all&#39;,
+        priority: &#39;high&#39;
+      },
+      {
+        documentId: &#39;doc-456&#39;,
+        extractionType: &#39;markdown&#39;,
+        priority: &#39;normal&#39;
+      }
+    ],
+    workspaceId: &#39;workspace-789&#39;,
+    options: {
+      includeImages: true,
+      includeMetadata: true,
+      chunkSize: 1000,
+      overlapSize: 200,
+      outputFormat: &#39;json&#39;,
+      maxConcurrent: 3,
+      notifyOnComplete: true
+    }
+  }
+});
+</code></pre>
+<h3>2. Get Batch Status</h3>
+<p>Get the status of a batch processing job.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/?batchId={batchId}</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>batchId</code> (required): Batch job ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  data: {
+    batchId: string,
+    status: &#39;queued&#39; | &#39;processing&#39; | &#39;completed&#39; | &#39;failed&#39; | &#39;partial&#39;,
+    totalDocuments: number,
+    processedDocuments: number,
+    failedDocuments: number,
+    createdAt: string,
+    updatedAt: string,
+    completedAt?: string,
+    results: Array&lt;{
+      documentId: string,
+      status: &#39;pending&#39; | &#39;processing&#39; | &#39;completed&#39; | &#39;failed&#39;,
+      extractionId?: string,
+      error?: string,
+      processingTime?: number
+    }&gt;
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/pdf-batch-process?batchId=batch-123`,
+  {
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h3>3. Cancel Batch Job</h3>
+<p>Cancel a running or queued batch job.</p>
+<p><strong>Method:</strong> <code>DELETE</code><br><strong>Path:</strong> <code>/?batchId={batchId}</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>batchId</code> (required): Batch job ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  message: &#39;Batch job cancelled successfully&#39;,
+  data: {
+    batchId: string,
+    status: &#39;cancelled&#39;,
+    processedDocuments: number,
+    cancelledDocuments: number
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/pdf-batch-process?batchId=batch-123`,
+  {
+    method: &#39;DELETE&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h2>Extraction Types</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>markdown</code></td>
+<td>Extract text content as markdown</td>
+</tr>
+<tr>
+<td><code>tables</code></td>
+<td>Extract tables from PDF</td>
+</tr>
+<tr>
+<td><code>images</code></td>
+<td>Extract images from PDF</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>Extract everything (markdown + tables + images)</td>
+</tr>
+</tbody></table>
+<h2>Priority Levels</h2>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Description</th>
+<th>Processing Order</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>high</code></td>
+<td>Urgent processing</td>
+<td>Processed first</td>
+</tr>
+<tr>
+<td><code>normal</code></td>
+<td>Standard processing</td>
+<td>Default queue</td>
+</tr>
+<tr>
+<td><code>low</code></td>
+<td>Background processing</td>
+<td>Processed last</td>
+</tr>
+</tbody></table>
+<h2>Batch Status Flow</h2>
+<pre><code>queued → processing → completed
+                   ↘ failed
+                   ↘ partial (some docs failed)
+</code></pre>
+<h2>Options</h2>
+<h3>includeImages</h3>
+<p>Include image extraction in the processing (default: <code>true</code>)</p>
+<h3>includeMetadata</h3>
+<p>Include document metadata in results (default: <code>true</code>)</p>
+<h3>chunkSize</h3>
+<p>Size of text chunks for processing (default: <code>1000</code>)</p>
+<h3>overlapSize</h3>
+<p>Overlap between chunks (default: <code>200</code>)</p>
+<h3>outputFormat</h3>
+<p>Output format for results: <code>json</code> or <code>markdown</code> (default: <code>json</code>)</p>
+<h3>maxConcurrent</h3>
+<p>Maximum concurrent document processing (default: <code>5</code>)</p>
+<h3>notifyOnComplete</h3>
+<p>Send notification when batch completes (default: <code>false</code>)</p>
+<h3>webhookUrl</h3>
+<p>Webhook URL to call when batch completes</p>
+<h2>Webhook Payload</h2>
+<p>If <code>webhookUrl</code> is provided, a POST request will be sent on completion:</p>
+<pre><code class="language-typescript">{
+  batchId: string,
+  status: &#39;completed&#39; | &#39;failed&#39; | &#39;partial&#39;,
+  totalDocuments: number,
+  processedDocuments: number,
+  failedDocuments: number,
+  completedAt: string,
+  results: Array&lt;{
+    documentId: string,
+    status: string,
+    extractionId?: string,
+    error?: string
+  }&gt;
+}
+</code></pre>
+<h2>Error Handling</h2>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string,
+  statusCode?: number
+}
+</code></pre>
+<p><strong>Common Error Codes:</strong></p>
+<ul>
+<li><code>400</code> - Bad request (invalid documents array, missing documentId)</li>
+<li><code>401</code> - Unauthorized</li>
+<li><code>404</code> - Batch job not found</li>
+<li><code>500</code> - Internal server error</li>
+</ul>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
+<li><a href="../data-import-system.md">Data Import System</a></li>
+</ul>
+
+</div></body></html>
