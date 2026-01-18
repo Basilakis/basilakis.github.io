@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AI Usage Pricing &amp; Monitoring System</h1>
+<h2>Overview</h2>
+<p>This document explains how the platform tracks and converts AI service costs into platform credits.</p>
+<h2>Platform Credit System</h2>
+<p><strong>1 Platform Credit = $0.01 USD</strong></p>
+<p>All AI service costs are converted to platform credits using this formula:</p>
+<pre><code>Platform Credits = USD Cost × 100
+</code></pre>
+<p>Example: A $0.15 USD API call = <strong>15 platform credits</strong></p>
+<hr>
+<h2>Supported AI Services</h2>
+<h3>1. <strong>OpenAI Models (GPT)</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per million tokens</li>
+<li><strong>Models Tracked</strong>:<ul>
+<li>GPT-4o, GPT-4o-mini</li>
+<li>GPT-4-turbo, GPT-3.5-turbo</li>
+<li>o1-preview, o1-mini</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>:<pre><code>USD Cost = (input_tokens / 1M × input_price) + (output_tokens / 1M × output_price)
+Platform Credits = USD Cost × 100
+</code></pre>
+</li>
+</ul>
+<h3>2. <strong>Anthropic Models (Claude)</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per million tokens</li>
+<li><strong>Models Tracked</strong>:<ul>
+<li>Claude 3.5 Sonnet (with prompt caching)</li>
+<li>Claude 3 Opus, Sonnet, Haiku</li>
+</ul>
+</li>
+<li><strong>Special Features</strong>:<ul>
+<li>Prompt caching support (reduced cost for cached tokens)</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>:<pre><code>USD Cost = (input_tokens / 1M × input_price) + 
+           (output_tokens / 1M × output_price) +
+           (cached_tokens / 1M × cached_price)
+Platform Credits = USD Cost × 100
+</code></pre>
+</li>
+</ul>
+<h3>3. <strong>TogetherAI Models (Qwen Vision)</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per million tokens</li>
+<li><strong>Models Tracked</strong>:<ul>
+<li>Qwen3-VL-32B, Qwen3-VL-8B (vision models)</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>: Same as OpenAI</li>
+</ul>
+<h3>4. <strong>Embedding Models</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per million tokens</li>
+<li><strong>Models Tracked</strong>:<ul>
+<li>text-embedding-3-small/large</li>
+<li>text-embedding-ada-002</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>:<pre><code>USD Cost = (tokens / 1M × price)
+Platform Credits = USD Cost × 100
+</code></pre>
+</li>
+</ul>
+<h3>5. <strong>Vision Models</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per image</li>
+<li><strong>Models Tracked</strong>:<ul>
+<li>GPT-4o vision</li>
+<li>Claude 3.5 Sonnet vision</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>:<pre><code>USD Cost = image_count × price_per_image
+Platform Credits = USD Cost × 100
+</code></pre>
+</li>
+</ul>
+<h3>6. <strong>Firecrawl Web Scraping</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per credit</li>
+<li><strong>Firecrawl System</strong>:<ul>
+<li>1 Firecrawl credit = 15 tokens</li>
+<li>Pricing varies by plan</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>:<pre><code>USD Cost = firecrawl_credits × cost_per_credit
+Platform Credits = USD Cost × 100
+</code></pre>
+</li>
+<li><strong>Default Estimate</strong>: $0.001 per Firecrawl credit</li>
+</ul>
+<hr>
+<h2>Database Schema</h2>
+<h3><code>ai_usage_logs</code> Table</h3>
+<p>Tracks all AI API calls with detailed cost breakdown:</p>
+<pre><code class="language-sql">CREATE TABLE ai_usage_logs (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES auth.users,
+    model_name VARCHAR(255),           -- e.g., &quot;gpt-4o&quot;, &quot;claude-3-5-sonnet&quot;
+    provider VARCHAR(100),              -- e.g., &quot;openai&quot;, &quot;anthropic&quot;, &quot;firecrawl&quot;
+    operation_type VARCHAR(100),        -- e.g., &quot;chat&quot;, &quot;embedding&quot;, &quot;scrape&quot;
+    
+    -- Token usage
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    cached_tokens INTEGER,
+    total_tokens INTEGER,
+    
+    -- Firecrawl specific
+    firecrawl_credits INTEGER,
+    
+    -- Cost tracking
+    cost_usd DECIMAL(10, 6),           -- Cost in USD
+    platform_credits INTEGER,           -- Cost in platform credits (USD × 100)
+    
+    -- Metadata
+    request_metadata JSONB,
+    response_metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+</code></pre>
+<hr>
+<h2>Usage Examples</h2>
+<h3>Example 1: GPT-4o API Call</h3>
+<pre><code class="language-python"># API call details
+input_tokens = 1000
+output_tokens = 500
+
+# Pricing (from config)
+input_price = $2.50 per 1M tokens
+output_price = $10.00 per 1M tokens
+
+# Cost calculation
+usd_cost = (1000/1M × $2.50) + (500/1M × $10.00)
+         = $0.0025 + $0.005
+         = $0.0075
+
+platform_credits = $0.0075 × 100 = 0.75 credits (rounded to 1)
+</code></pre>
+<h3>Example 2: Firecrawl Scrape</h3>
+<pre><code class="language-python"># API call details
+firecrawl_credits = 5
+
+# Pricing (estimated)
+cost_per_credit = $0.001
+
+# Cost calculation
+usd_cost = 5 × $0.001 = $0.005
+
+platform_credits = $0.005 × 100 = 0.5 credits (rounded to 1)
+</code></pre>
+<hr>
+<h2>Monitoring &amp; Reporting</h2>
+<h3>Query Total Usage by User</h3>
+<pre><code class="language-sql">SELECT 
+    user_id,
+    SUM(platform_credits) as total_credits,
+    SUM(cost_usd) as total_usd,
+    COUNT(*) as api_calls
+FROM ai_usage_logs
+WHERE created_at &gt;= NOW() - INTERVAL &#39;30 days&#39;
+GROUP BY user_id;
+</code></pre>
+<h3>Query Usage by Model</h3>
+<pre><code class="language-sql">SELECT 
+    model_name,
+    provider,
+    COUNT(*) as calls,
+    SUM(total_tokens) as total_tokens,
+    SUM(platform_credits) as total_credits
+FROM ai_usage_logs
+WHERE created_at &gt;= NOW() - INTERVAL &#39;7 days&#39;
+GROUP BY model_name, provider
+ORDER BY total_credits DESC;
+</code></pre>
+<hr>
+<h2>Configuration</h2>
+<p>All pricing is centralized in <code>app/config/ai_pricing.py</code>:</p>
+<ul>
+<li>Prices are stored as <code>Decimal</code> for precision</li>
+<li>Each model includes <code>last_verified</code> date and <code>source</code> URL</li>
+<li>Prices should be updated when providers change rates</li>
+</ul>
+<h2>Notes</h2>
+<ul>
+<li>Platform credits are always rounded up to nearest integer</li>
+<li>Firecrawl pricing is estimated and should be adjusted based on actual plan</li>
+<li>All costs are logged in both USD and platform credits for transparency</li>
+</ul>
+
+</div></body></html>
