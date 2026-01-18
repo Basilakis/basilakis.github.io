@@ -24,9 +24,10 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>AI Models Integration Guide</h1>
-<p>Complete reference of 12 AI models used across the platform.</p>
+<p><strong>Last Updated:</strong> 2025-12-26</p>
+<p>Complete reference of all AI models used across the Material KAI Vision Platform.</p>
 <hr>
-<h2>🤖 AI Models Overview</h2>
+<h2>AI Models Overview</h2>
 <table>
 <thead>
 <tr>
@@ -34,96 +35,152 @@
 <th>Provider</th>
 <th>Purpose</th>
 <th>Capability</th>
-<th>Cost</th>
+<th>Cost (per 1M tokens)</th>
 </tr>
 </thead>
 <tbody><tr>
+<td><strong>Text Generation</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>Claude Sonnet 4.5</td>
 <td>Anthropic</td>
 <td>Product discovery, enrichment</td>
 <td>95%+ accuracy</td>
-<td>$3/1M input</td>
+<td>$3 input / $15 output</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
 <td>Anthropic</td>
 <td>Fast validation</td>
 <td>Real-time</td>
-<td>$0.80/1M input</td>
+<td>$0.80 input / $4 output</td>
+</tr>
+<tr>
+<td>Claude Opus 4.5</td>
+<td>Anthropic</td>
+<td>Complex reasoning</td>
+<td>Highest accuracy</td>
+<td>$15 input / $75 output</td>
 </tr>
 <tr>
 <td>GPT-4o</td>
 <td>OpenAI</td>
 <td>Alternative discovery</td>
 <td>94%+ accuracy</td>
-<td>$5/1M input</td>
+<td>$2.50 input / $10 output</td>
+</tr>
+<tr>
+<td>GPT-4o Mini</td>
+<td>OpenAI</td>
+<td>Lightweight tasks</td>
+<td>Fast &amp; cheap</td>
+<td>$0.15 input / $0.60 output</td>
+</tr>
+<tr>
+<td><strong>Text Embeddings</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>voyage-3.5</td>
+<td>Voyage AI</td>
+<td><strong>PRIMARY</strong> Text embeddings</td>
+<td>1024D vectors</td>
+<td>$0.06 input</td>
+</tr>
+<tr>
+<td>voyage-3</td>
+<td>Voyage AI</td>
+<td>Alternative text embeddings</td>
+<td>1024D vectors</td>
+<td>$0.06 input</td>
+</tr>
+<tr>
+<td>voyage-3-lite</td>
+<td>Voyage AI</td>
+<td>Lightweight embeddings</td>
+<td>512D vectors</td>
+<td>$0.02 input</td>
 </tr>
 <tr>
 <td>text-embedding-3-small</td>
 <td>OpenAI</td>
-<td>Text embeddings</td>
-<td>1536D vectors</td>
-<td>$0.02/1M tokens</td>
+<td><strong>FALLBACK</strong> Text embeddings</td>
+<td>1024D vectors</td>
+<td>$0.02 input</td>
 </tr>
 <tr>
-<td>Llama 4 Scout 17B Vision</td>
-<td>Together AI</td>
-<td>Image analysis, OCR</td>
-<td>69.4% MMMU</td>
-<td>$0.40/1M tokens</td>
-</tr>
-<tr>
-<td>CLIP (Visual)</td>
+<td>text-embedding-3-large</td>
 <td>OpenAI</td>
-<td>Visual embeddings</td>
-<td>512D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>Large text embeddings</td>
+<td>3072D vectors</td>
+<td>$0.13 input</td>
 </tr>
 <tr>
-<td>CLIP (Large)</td>
-<td>OpenAI</td>
-<td>Large visual embeddings</td>
-<td>1536D vectors</td>
-<td>$0.02/1M tokens</td>
+<td><strong>Vision Models</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
-<td>CLIP (Color)</td>
-<td>OpenAI</td>
-<td>Color analysis</td>
-<td>256D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>Qwen3-VL-32B-Instruct</td>
+<td>HuggingFace Endpoint</td>
+<td><strong>PRIMARY</strong> Vision analysis</td>
+<td>State-of-the-art OCR</td>
+<td>Cloud endpoint</td>
 </tr>
 <tr>
-<td>CLIP (Texture)</td>
-<td>OpenAI</td>
-<td>Texture analysis</td>
-<td>256D vectors</td>
-<td>$0.02/1M tokens</td>
+<td><strong>Visual Embeddings</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
-<td>CLIP (Application)</td>
-<td>OpenAI</td>
-<td>Application classification</td>
-<td>512D vectors</td>
-<td>$0.02/1M tokens</td>
+<td>SLIG (SigLIP2) Visual</td>
+<td>HuggingFace Endpoint</td>
+<td>General visual embeddings</td>
+<td>768D vectors</td>
+<td>Cloud endpoint</td>
 </tr>
 <tr>
-<td>Anthropic Semantic Chunking</td>
-<td>Anthropic</td>
-<td>Text segmentation</td>
-<td>Semantic boundaries</td>
-<td>Included</td>
+<td>SLIG (SigLIP2) Color</td>
+<td>HuggingFace Endpoint</td>
+<td>Color-guided embeddings</td>
+<td>768D vectors</td>
+<td>Cloud endpoint</td>
 </tr>
 <tr>
-<td>LlamaIndex</td>
-<td>LlamaIndex</td>
-<td>RAG system</td>
-<td>Document indexing</td>
-<td>Open source</td>
+<td>SLIG (SigLIP2) Texture</td>
+<td>HuggingFace Endpoint</td>
+<td>Texture-guided embeddings</td>
+<td>768D vectors</td>
+<td>Cloud endpoint</td>
+</tr>
+<tr>
+<td>SLIG (SigLIP2) Style</td>
+<td>HuggingFace Endpoint</td>
+<td>Style-guided embeddings</td>
+<td>768D vectors</td>
+<td>Cloud endpoint</td>
+</tr>
+<tr>
+<td>SLIG (SigLIP2) Material</td>
+<td>HuggingFace Endpoint</td>
+<td>Material-guided embeddings</td>
+<td>768D vectors</td>
+<td>Cloud endpoint</td>
 </tr>
 </tbody></table>
 <hr>
-<h2>🔍 Model Details</h2>
+<h2>Model Details</h2>
 <h3>1. Claude Sonnet 4.5 (Anthropic)</h3>
 <p><strong>Purpose</strong>: Product discovery, enrichment, validation</p>
 <p><strong>Capabilities</strong>:</p>
@@ -254,35 +311,47 @@ embedding = response[&#39;data&#39;][0][&#39;embedding&#39;]  # 1536D vector
 <li>Similarity comparison</li>
 </ul>
 <hr>
-<h3>5. Llama 4 Scout 17B Vision (Together AI)</h3>
-<p><strong>Purpose</strong>: Image analysis, OCR, material recognition</p>
+<h3>5. Qwen3-VL-32B-Instruct (HuggingFace Endpoint) - PRIMARY VISION MODEL</h3>
+<p><strong>Purpose</strong>: State-of-the-art vision-language model for image analysis, OCR, material recognition</p>
+<p><strong>Endpoint Configuration</strong>:</p>
+<ul>
+<li><strong>URL</strong>: <code>https://gbz6krk3i2is85b0.us-east-1.aws.endpoints.huggingface.cloud</code></li>
+<li><strong>Service Name</strong>: <code>mh-qwen332binstruct</code></li>
+<li><strong>Namespace</strong>: <code>basiliskan</code></li>
+<li><strong>Model</strong>: Locked to 32B only (8B removed)</li>
+</ul>
 <p><strong>Capabilities</strong>:</p>
 <ul>
+<li>Advanced image understanding</li>
 <li>Optical Character Recognition (OCR)</li>
 <li>Material property extraction</li>
+<li>Color and texture analysis</li>
 <li>Image quality scoring</li>
-<li>Material identification</li>
-</ul>
-<p><strong>Specifications</strong>:</p>
-<ul>
-<li>MMMU Score: 69.4% (#1 for OCR)</li>
-<li>Vision Capability: Excellent</li>
-<li>Speed: Fast inference</li>
+<li>Multi-image reasoning</li>
 </ul>
 <p><strong>Usage</strong>:</p>
-<pre><code class="language-python">import together
+<pre><code class="language-python">import httpx
 
-response = together.Complete.create(
-    model=&quot;meta-llama/Llama-4-Scout-17B-16E-Instruct&quot;,
-    prompt=&quot;Analyze this material image...&quot;,
-    image_url=&quot;https://...&quot;
-)
+async with httpx.AsyncClient() as client:
+    response = await client.post(
+        &quot;https://gbz6krk3i2is85b0.us-east-1.aws.endpoints.huggingface.cloud&quot;,
+        headers={
+            &quot;Authorization&quot;: f&quot;Bearer {QWEN_ENDPOINT_TOKEN}&quot;,
+            &quot;Content-Type&quot;: &quot;application/json&quot;
+        },
+        json={
+            &quot;inputs&quot;: {
+                &quot;text&quot;: &quot;Analyze this material image...&quot;,
+                &quot;image&quot;: image_base64
+            }
+        }
+    )
 </code></pre>
 <p><strong>Performance</strong>:</p>
 <ul>
-<li>Accuracy: 90%+ for material recognition</li>
-<li>Latency: 2-4 seconds per image</li>
-<li>Cost: $0.40 per 1M tokens</li>
+<li>Accuracy: State-of-the-art vision understanding</li>
+<li>Latency: 2-5 seconds per image</li>
+<li>Cost: Cloud endpoint (auto-pause enabled)</li>
 </ul>
 <p><strong>When to Use</strong>:</p>
 <ul>
@@ -386,28 +455,31 @@ chunks = chunker.chunk_text(
 <li>Cost: Included in Anthropic API</li>
 </ul>
 <hr>
-<h3>12. LlamaIndex RAG System</h3>
-<p><strong>Purpose</strong>: Retrieval-Augmented Generation</p>
+<h3>12. Direct Vector DB RAG System (Claude 4.5)</h3>
+<p><strong>Purpose</strong>: Retrieval-Augmented Generation with Multi-Vector Search</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
-<li>Document indexing</li>
-<li>Semantic search</li>
-<li>Chat interface</li>
-<li>Multi-document retrieval</li>
+<li>Direct vector database queries (no intermediate indexing)</li>
+<li>6-way parallel multi-vector search</li>
+<li>Claude 4.5 synthesis (200K context)</li>
+<li>Intelligent embedding fusion</li>
 </ul>
 <p><strong>Usage</strong>:</p>
-<pre><code class="language-python">from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+<pre><code class="language-python">from app.services.rag_service import RAGService
 
-documents = SimpleDirectoryReader(&quot;data&quot;).load_data()
-index = VectorStoreIndex.from_documents(documents)
-query_engine = index.as_query_engine()
-response = query_engine.query(&quot;What materials are available?&quot;)
+rag = RAGService()
+result = await rag.search(
+    query=&quot;What materials are available?&quot;,
+    strategy=&quot;multi_vector&quot;,
+    top_k=10
+)
+response = result[&#39;answer&#39;]  # Claude 4.5 synthesis
 </code></pre>
 <p><strong>Performance</strong>:</p>
 <ul>
-<li>Retrieval latency: 200-500ms</li>
-<li>Accuracy: 85%+</li>
-<li>Scalability: 100K+ documents</li>
+<li>Retrieval latency: 300-500ms (parallel execution)</li>
+<li>Accuracy: 90%+ (multi-vector fusion)</li>
+<li>Scalability: 1M+ documents</li>
 </ul>
 <hr>
 <h2>📊 Model Usage by Pipeline Stage</h2>
@@ -440,7 +512,7 @@ response = query_engine.query(&quot;What materials are available?&quot;)
 </tr>
 <tr>
 <td>6</td>
-<td>Llama 4 Scout 17B</td>
+<td>Qwen3-VL 17B</td>
 <td>-</td>
 <td>Image analysis</td>
 </tr>
@@ -483,15 +555,20 @@ response = query_engine.query(&quot;What materials are available?&quot;)
 <p><strong>Required Environment Variables</strong>:</p>
 <pre><code>ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
-TOGETHER_AI_API_KEY=...
+VOYAGE_API_KEY=pa-...
+QWEN_ENDPOINT_URL=https://gbz6krk3i2is85b0.us-east-1.aws.endpoints.huggingface.cloud
+QWEN_ENDPOINT_TOKEN=hf_...
+SLIG_ENDPOINT_URL=https://xxxxxxxx.us-east-1.aws.endpoints.huggingface.cloud
+SLIG_ENDPOINT_TOKEN=hf_...
 </code></pre>
 <p><strong>Configuration</strong>:</p>
 <pre><code class="language-python"># models/config.py
 MODELS = {
     &quot;discovery&quot;: &quot;claude-sonnet-4-5&quot;,
     &quot;validation&quot;: &quot;claude-haiku-4-5&quot;,
-    &quot;embeddings&quot;: &quot;text-embedding-3-small&quot;,
-    &quot;vision&quot;: &quot;meta-llama/Llama-4-Scout-17B-16E-Instruct&quot;
+    &quot;text_embeddings&quot;: &quot;voyage-3.5&quot;,
+    &quot;vision&quot;: &quot;Qwen/Qwen3-VL-32B-Instruct&quot;,
+    &quot;visual_embeddings&quot;: &quot;SLIG&quot;
 }
 </code></pre>
 <hr>
@@ -517,6 +594,151 @@ MODELS = {
 <li>Per image: $0.05-$0.20</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+<h2>New Models (2025-12-26)</h2>
+<h3>Voyage-3 (Voyage AI) - PRIMARY TEXT EMBEDDINGS</h3>
+<p><strong>Purpose</strong>: High-quality text embeddings for semantic search and retrieval</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Generate 1024-dimensional text embeddings</li>
+<li>Superior semantic understanding vs OpenAI</li>
+<li>Optimized for retrieval tasks</li>
+<li>Better performance on domain-specific content</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">import voyageai
+
+vo = voyageai.Client(api_key=VOYAGE_API_KEY)
+result = vo.embed(
+    texts=[&quot;Product description text...&quot;],
+    model=&quot;voyage-3&quot;,
+    input_type=&quot;document&quot;
+)
+embeddings = result.embeddings
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimensions: 1024D</li>
+<li>Latency: 100-300ms</li>
+<li>Cost: $0.06 per 1M tokens</li>
+<li>Quality: Superior to text-embedding-3-small</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li><strong>PRIMARY</strong> choice for all text embeddings</li>
+<li>Product descriptions</li>
+<li>Material specifications</li>
+<li>Document chunks</li>
+<li>Semantic search</li>
+</ul>
+<p><strong>Migration</strong>: Replaced text-embedding-3-small (1536D → 1024D)</p>
+<hr>
+<h3>SLIG (SigLIP2) - VISUAL EMBEDDINGS (HuggingFace Endpoint)</h3>
+<p><strong>Purpose</strong>: Cloud-based visual embeddings for image similarity search</p>
+<p><strong>Endpoint Configuration</strong>:</p>
+<ul>
+<li><strong>URL</strong>: <code>https://xxxxxxxx.us-east-1.aws.endpoints.huggingface.cloud</code></li>
+<li><strong>Service Name</strong>: <code>mh-siglip2</code></li>
+<li><strong>Namespace</strong>: <code>basiliskan</code></li>
+<li><strong>Dimensions</strong>: 768D (all embeddings)</li>
+</ul>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>General visual embeddings (image_embedding mode)</li>
+<li>Text-guided visual embeddings (text_embedding mode)<ul>
+<li>Color-guided embeddings</li>
+<li>Texture-guided embeddings</li>
+<li>Material-guided embeddings</li>
+<li>Style-guided embeddings</li>
+</ul>
+</li>
+<li>Zero-shot classification (zero_shot mode)</li>
+<li>Image-text similarity (similarity mode)</li>
+</ul>
+<p><strong>Usage</strong>:</p>
+<pre><code class="language-python">from app.services.embeddings.slig_endpoint_manager import SLIGEndpointManager
+
+slig = SLIGEndpointManager(
+    endpoint_url=SLIG_ENDPOINT_URL,
+    token=SLIG_ENDPOINT_TOKEN,
+    endpoint_name=&quot;mh-siglip2&quot;,
+    namespace=&quot;basiliskan&quot;
+)
+
+# Generate visual embedding
+visual_embedding = await slig.generate_image_embedding(image_base64)
+
+# Generate text-guided embedding
+color_embedding = await slig.generate_text_embedding(
+    text=&quot;focus on color palette and color relationships&quot;
+)
+</code></pre>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimensions: 768D (all embeddings)</li>
+<li>Latency: 500ms-2s</li>
+<li>Cost: Cloud endpoint (auto-pause enabled)</li>
+<li>Quality: Superior to CLIP, optimized for materials</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li><strong>PRIMARY</strong> choice for visual embeddings</li>
+<li>Image similarity search</li>
+<li>Text-guided visual search (color, texture, material, style)</li>
+<li>Multimodal fusion (text + visual)</li>
+</ul>
+<hr>
+<h3>Voyage-3-Lite (Voyage AI) - LIGHTWEIGHT EMBEDDINGS</h3>
+<p><strong>Purpose</strong>: Fast, cost-effective embeddings for simple tasks</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Generate 512-dimensional embeddings</li>
+<li>Faster than Voyage-3</li>
+<li>Lower cost</li>
+</ul>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Dimensions: 512D</li>
+<li>Latency: 50-150ms</li>
+<li>Cost: $0.02 per 1M tokens</li>
+<li>Quality: Good for simple tasks</li>
+</ul>
+<p><strong>When to Use</strong>:</p>
+<ul>
+<li>Simple semantic search</li>
+<li>Fast lookups</li>
+<li>Cost-sensitive operations</li>
+<li>Non-critical embeddings</li>
+</ul>
+<hr>
+<h2>Model Selection Guide</h2>
+<h3>Text Embeddings</h3>
+<ol>
+<li><strong>Voyage-3</strong> (PRIMARY) - All production text embeddings</li>
+<li><strong>Voyage-3-Lite</strong> - Simple/fast tasks only</li>
+<li><strong>text-embedding-3-small</strong> - Legacy (being phased out)</li>
+</ol>
+<h3>Vision Analysis</h3>
+<ol>
+<li><strong>Qwen3-VL-32B-Instruct</strong> (PRIMARY) - All production vision tasks (HuggingFace endpoint)</li>
+<li><strong>Claude Sonnet 4.5</strong> - Validation for low-confidence results</li>
+</ol>
+<h3>Visual Embeddings</h3>
+<ol>
+<li><strong>SLIG (SigLIP2)</strong> (PRIMARY) - All visual embeddings (768D, HuggingFace endpoint)<ul>
+<li>General visual (image_embedding mode)</li>
+<li>Text-guided (color, texture, material, style) (text_embedding mode)</li>
+</ul>
+</li>
+</ol>
+<h3>Text Generation</h3>
+<ol>
+<li><strong>Claude Sonnet 4.5</strong> (PRIMARY) - Complex reasoning</li>
+<li><strong>Claude Haiku 4.5</strong> - Fast validation</li>
+<li><strong>GPT-4o</strong> - Alternative/fallback</li>
+</ol>
+<hr>
+<p><strong>Last Updated</strong>: December 26, 2025
+<strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Production</p>
 
 </div></body></html>

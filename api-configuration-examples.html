@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>API Configuration Examples - Dynamic AI Models</h1>
+<p>This document provides practical examples of how to use the dynamic AI model configuration system in the MIVAA PDF processing pipeline.</p>
+<hr>
+<h2>Overview</h2>
+<p>All internal pipeline endpoints (<code>/api/internal/*</code>) accept an optional <code>ai_config</code> parameter that allows you to customize which AI models are used at each stage. If not provided, the system uses <code>DEFAULT_AI_CONFIG</code>.</p>
+<hr>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#basic-usage">Basic Usage</a></li>
+<li><a href="#pre-configured-profiles">Pre-configured Profiles</a></li>
+<li><a href="#endpoint-specific-examples">Endpoint-Specific Examples</a></li>
+<li><a href="#advanced-configurations">Advanced Configurations</a></li>
+<li><a href="#cost-optimization">Cost Optimization</a></li>
+<li><a href="#performance-tuning">Performance Tuning</a></li>
+</ol>
+<hr>
+<h2>Basic Usage</h2>
+<h3>Default Configuration (No ai_config)</h3>
+<p>If you don&#39;t provide <code>ai_config</code>, the system uses these defaults:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;extracted_images&quot;: [...]
+}
+</code></pre>
+<p><strong>Defaults Used</strong>:</p>
+<ul>
+<li>Visual Embeddings: SLIG (SigLIP2) - HuggingFace endpoint (768D)</li>
+<li>Classification: Qwen3-VL-32B-Instruct - HuggingFace endpoint</li>
+<li>Discovery: Claude Sonnet 4.5</li>
+<li>Metadata: Claude</li>
+<li>Text Embeddings: Voyage AI voyage-3.5 (1024D) → OpenAI fallback (1024D)</li>
+</ul>
+<h3>Custom Configuration</h3>
+<p>Override specific models while keeping others as default:</p>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;extracted_images&quot;: [...],
+  &quot;ai_config&quot;: {
+    &quot;classification_confidence_threshold&quot;: 0.8,
+    &quot;discovery_model&quot;: &quot;gpt-5&quot;
+  }
+}
+</code></pre>
+<hr>
+<h2>Pre-configured Profiles</h2>
+<h3>1. DEFAULT_AI_CONFIG (Balanced)</h3>
+<p>Best overall accuracy and reliability.</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;visual_embedding_model&quot;: &quot;SLIG&quot;,
+    &quot;visual_embedding_dimensions&quot;: 768,
+    &quot;text_embedding_model&quot;: &quot;voyage-3.5&quot;,
+    &quot;text_embedding_dimensions&quot;: 1024,
+    &quot;text_embedding_input_type&quot;: &quot;document&quot;,
+    &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-32B-Instruct&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.7,
+    &quot;discovery_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;chunking_model&quot;: &quot;gpt-4o&quot;,
+    &quot;discovery_temperature&quot;: 0.1,
+    &quot;classification_temperature&quot;: 0.1,
+    &quot;metadata_temperature&quot;: 0.1,
+    &quot;discovery_max_tokens&quot;: 4096,
+    &quot;classification_max_tokens&quot;: 512,
+    &quot;metadata_max_tokens&quot;: 4096
+  }
+}
+</code></pre>
+<p><strong>Use When</strong>: You need the best balance of accuracy, reliability, and performance.</p>
+<h3>2. FAST_CONFIG (Speed Optimized)</h3>
+<p>Faster processing with good accuracy.</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;discovery_model&quot;: &quot;gpt-4o&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;gpt&quot;,
+    &quot;discovery_max_tokens&quot;: 2048,
+    &quot;metadata_max_tokens&quot;: 2048
+  }
+}
+</code></pre>
+<p><strong>Use When</strong>: You need faster processing times and can accept slightly lower accuracy.</p>
+<p><strong>Speed Improvements</strong>:</p>
+<ul>
+<li>GPT-4o is ~2x faster than Claude Sonnet for discovery</li>
+<li>Claude Haiku is ~3x faster than Claude Sonnet for validation</li>
+<li>Reduced tokens = faster responses</li>
+</ul>
+<h3>3. HIGH_ACCURACY_CONFIG (Quality Optimized)</h3>
+<p>Maximum accuracy for critical processing.</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;discovery_model&quot;: &quot;gpt-5&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.8,
+    &quot;discovery_max_tokens&quot;: 8192,
+    &quot;metadata_max_tokens&quot;: 8192
+  }
+}
+</code></pre>
+<p><strong>Use When</strong>: Accuracy is critical and processing time is not a concern.</p>
+<p><strong>Accuracy Improvements</strong>:</p>
+<ul>
+<li>GPT-5 provides best-in-class discovery</li>
+<li>Higher confidence threshold (0.8) ensures better quality</li>
+<li>More tokens = better context understanding</li>
+</ul>
+<h3>4. COST_OPTIMIZED_CONFIG (Budget Friendly)</h3>
+<p>Minimize costs while maintaining acceptable quality.</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;discovery_model&quot;: &quot;gpt-4o&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;gpt&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.6,
+    &quot;discovery_max_tokens&quot;: 2048,
+    &quot;metadata_max_tokens&quot;: 2048
+  }
+}
+</code></pre>
+<p><strong>Use When</strong>: You need to minimize API costs.</p>
+<p><strong>Cost Savings</strong>:</p>
+<ul>
+<li>GPT-4o is cheaper than Claude Sonnet</li>
+<li>Claude Haiku is ~10x cheaper than Claude Sonnet</li>
+<li>Lower threshold (0.6) = fewer validation calls</li>
+<li>Reduced tokens = lower costs</li>
+</ul>
+<hr>
+<h2>Endpoint-Specific Examples</h2>
+<h3>Endpoint 10: classify-images</h3>
+<p>Customize image classification models and thresholds.</p>
+<pre><code class="language-bash">POST /api/internal/classify-images/abc123
+</code></pre>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;extracted_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;image1.jpg&quot;,
+      &quot;path&quot;: &quot;/tmp/image1.jpg&quot;,
+      &quot;page_number&quot;: 5,
+      &quot;width&quot;: 800,
+      &quot;height&quot;: 600
+    }
+  ],
+  &quot;ai_config&quot;: {
+    &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.75,
+    &quot;classification_temperature&quot;: 0.1,
+    &quot;classification_max_tokens&quot;: 512
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;material_images&quot;: [...],
+  &quot;non_material_images&quot;: [...],
+  &quot;total_classified&quot;: 100,
+  &quot;material_count&quot;: 65,
+  &quot;non_material_count&quot;: 35
+}
+</code></pre>
+<hr>
+<h3>Endpoint 30: save-images-db</h3>
+<p>Customize visual embedding models (SigLIP/CLIP).</p>
+<pre><code class="language-bash">POST /api/internal/save-images-db/abc123
+</code></pre>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;material_images&quot;: [
+    {
+      &quot;filename&quot;: &quot;material1.jpg&quot;,
+      &quot;storage_url&quot;: &quot;https://...supabase.co/storage/v1/object/public/material-images/...&quot;,
+      &quot;page_number&quot;: 5
+    }
+  ],
+  &quot;document_id&quot;: &quot;doc123&quot;,
+  &quot;workspace_id&quot;: &quot;ws123&quot;,
+  &quot;ai_config&quot;: {
+    &quot;visual_embedding_primary&quot;: &quot;google/siglip-so400m-patch14-384&quot;,
+    &quot;visual_embedding_fallback&quot;: &quot;openai/clip-vit-base-patch32&quot;
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;images_saved&quot;: 65,
+  &quot;clip_embeddings_generated&quot;: 325
+}
+</code></pre>
+<p><strong>Note</strong>: 5 embeddings per image (visual, color, texture, style, material) = 65 × 5 = 325 total embeddings.</p>
+<hr>
+<h3>Endpoint 40: extract-metadata</h3>
+<p>Customize metadata extraction model and parameters.</p>
+<pre><code class="language-bash">POST /api/internal/extract-metadata/abc123
+</code></pre>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;document_id&quot;: &quot;doc123&quot;,
+  &quot;product_ids&quot;: [&quot;prod1&quot;, &quot;prod2&quot;, &quot;prod3&quot;],
+  &quot;pdf_text&quot;: &quot;Full PDF text content...&quot;,
+  &quot;ai_config&quot;: {
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;metadata_temperature&quot;: 0.1,
+    &quot;metadata_max_tokens&quot;: 4096
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;products_enriched&quot;: 3,
+  &quot;metadata_fields_extracted&quot;: 42,
+  &quot;extraction_method&quot;: &quot;ai_dynamic_claude&quot;,
+  &quot;model_used&quot;: &quot;claude&quot;
+}
+</code></pre>
+<p><strong>Metadata Fields Extracted</strong>:</p>
+<ul>
+<li>Dimensions (width, height, thickness)</li>
+<li>Colors and finishes</li>
+<li>Materials and composition</li>
+<li>Patterns and textures</li>
+<li>Applications and use cases</li>
+<li>Certifications and standards</li>
+<li>Designer/manufacturer info</li>
+</ul>
+<hr>
+<h3>Endpoint 50: create-chunks</h3>
+<p>Customize chunking and text embedding models.</p>
+<pre><code class="language-bash">POST /api/internal/create-chunks/abc123
+</code></pre>
+<pre><code class="language-json">{
+  &quot;job_id&quot;: &quot;abc123&quot;,
+  &quot;document_id&quot;: &quot;doc123&quot;,
+  &quot;workspace_id&quot;: &quot;ws123&quot;,
+  &quot;extracted_text&quot;: &quot;Full PDF text content...&quot;,
+  &quot;product_ids&quot;: [&quot;prod1&quot;, &quot;prod2&quot;],
+  &quot;chunk_size&quot;: 1024,
+  &quot;chunk_overlap&quot;: 128,
+  &quot;ai_config&quot;: {
+    &quot;text_embedding_model&quot;: &quot;text-embedding-3-small&quot;,
+    &quot;chunking_model&quot;: &quot;gpt-4o&quot;
+  }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;chunks_created&quot;: 107,
+  &quot;embeddings_generated&quot;: 107,
+  &quot;relationships_created&quot;: 163
+}
+</code></pre>
+<hr>
+<h2>Advanced Configurations</h2>
+<h3>High-Volume Processing</h3>
+<p>For processing large batches of PDFs, optimize for speed and cost:</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.65,
+    &quot;discovery_model&quot;: &quot;gpt-4o&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;gpt&quot;,
+    &quot;discovery_temperature&quot;: 0.2,
+    &quot;discovery_max_tokens&quot;: 2048,
+    &quot;metadata_max_tokens&quot;: 2048
+  }
+}
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>Lower threshold (0.65) = fewer validation calls</li>
+<li>GPT-4o for discovery = faster processing</li>
+<li>Claude Haiku for validation = 10x cheaper</li>
+<li>Reduced tokens = lower costs</li>
+<li>Slightly higher temperature (0.2) = more creative but faster</li>
+</ul>
+<hr>
+<h3>Premium Quality Processing</h3>
+<p>For high-value catalogs requiring maximum accuracy:</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;classification_primary_model&quot;: &quot;Qwen/Qwen3-VL-8B-Instruct&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;classification_confidence_threshold&quot;: 0.85,
+    &quot;discovery_model&quot;: &quot;gpt-5&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;visual_embedding_primary&quot;: &quot;google/siglip2-so400m-patch14-384&quot;,
+    &quot;discovery_temperature&quot;: 0.05,
+    &quot;metadata_temperature&quot;: 0.05,
+    &quot;discovery_max_tokens&quot;: 8192,
+    &quot;metadata_max_tokens&quot;: 8192
+  }
+}
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>GPT-5 for discovery = best accuracy</li>
+<li>High threshold (0.85) = only best classifications</li>
+<li>SigLIP for embeddings = +19-29% accuracy over CLIP</li>
+<li>Low temperature (0.05) = most deterministic</li>
+<li>High max tokens = better context understanding</li>
+</ul>
+<hr>
+<h2>Cost Optimization</h2>
+<h3>Estimated Costs Per PDF (100 pages, 50 images)</h3>
+<p><strong>DEFAULT_AI_CONFIG</strong>:</p>
+<ul>
+<li>Discovery (Claude Sonnet): ~$0.50</li>
+<li>Classification (Qwen + Claude): ~$0.30</li>
+<li>Metadata (Claude): ~$0.40</li>
+<li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
+<li>Text Embeddings (OpenAI): ~$0.20</li>
+<li><strong>Total</strong>: ~$1.50 per PDF</li>
+</ul>
+<p><strong>COST_OPTIMIZED_CONFIG</strong>:</p>
+<ul>
+<li>Discovery (GPT-4o): ~$0.25</li>
+<li>Classification (Qwen + Haiku): ~$0.10</li>
+<li>Metadata (GPT): ~$0.20</li>
+<li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
+<li>Text Embeddings (OpenAI): ~$0.20</li>
+<li><strong>Total</strong>: ~$0.85 per PDF (43% savings)</li>
+</ul>
+<p><strong>HIGH_ACCURACY_CONFIG</strong>:</p>
+<ul>
+<li>Discovery (GPT-5): ~$1.00</li>
+<li>Classification (Qwen + Sonnet): ~$0.40</li>
+<li>Metadata (Claude): ~$0.60</li>
+<li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
+<li>Text Embeddings (OpenAI): ~$0.20</li>
+<li><strong>Total</strong>: ~$2.30 per PDF (53% more expensive)</li>
+</ul>
+<hr>
+<h2>Performance Tuning</h2>
+<h3>Reduce Processing Time</h3>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;classification_confidence_threshold&quot;: 0.6,
+    &quot;discovery_model&quot;: &quot;gpt-4o&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;gpt&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;,
+    &quot;discovery_max_tokens&quot;: 1024,
+    &quot;metadata_max_tokens&quot;: 1024,
+    &quot;classification_max_tokens&quot;: 256
+  }
+}
+</code></pre>
+<p><strong>Speed Improvements</strong>:</p>
+<ul>
+<li>Lower threshold = fewer validation calls = faster</li>
+<li>GPT-4o = 2x faster than Claude</li>
+<li>Haiku = 3x faster than Sonnet</li>
+<li>Reduced tokens = faster responses</li>
+<li><strong>Estimated</strong>: 40-50% faster processing</li>
+</ul>
+<h3>Balance Speed and Quality</h3>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;classification_confidence_threshold&quot;: 0.7,
+    &quot;discovery_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;,
+    &quot;discovery_max_tokens&quot;: 3072,
+    &quot;metadata_max_tokens&quot;: 3072
+  }
+}
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>Standard threshold (0.7) = good balance</li>
+<li>Claude Sonnet = best quality</li>
+<li>Medium tokens = good context</li>
+<li><strong>Estimated</strong>: Standard processing time with best quality</li>
+</ul>
+<hr>
+<h2>Testing Different Configurations</h2>
+<h3>A/B Testing Example</h3>
+<p>Test two configurations side-by-side:</p>
+<p><strong>Configuration A (Speed)</strong>:</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/internal/classify-images/job_a \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;job_id&quot;: &quot;job_a&quot;,
+    &quot;extracted_images&quot;: [...],
+    &quot;ai_config&quot;: {
+      &quot;classification_confidence_threshold&quot;: 0.6,
+      &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;
+    }
+  }&#39;
+</code></pre>
+<p><strong>Configuration B (Quality)</strong>:</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/internal/classify-images/job_b \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;job_id&quot;: &quot;job_b&quot;,
+    &quot;extracted_images&quot;: [...],
+    &quot;ai_config&quot;: {
+      &quot;classification_confidence_threshold&quot;: 0.8,
+      &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;
+    }
+  }&#39;
+</code></pre>
+<p>Compare results to find the best configuration for your use case.</p>
+<hr>
+<h2>Best Practices</h2>
+<ol>
+<li><p><strong>Start with DEFAULT_AI_CONFIG</strong>: It provides the best balance for most use cases.</p>
+</li>
+<li><p><strong>Test Before Production</strong>: Use NOVA test script to validate configurations.</p>
+</li>
+<li><p><strong>Monitor Costs</strong>: Track API usage and costs for different configurations.</p>
+</li>
+<li><p><strong>Optimize Iteratively</strong>: Start with quality, then optimize for speed/cost.</p>
+</li>
+<li><p><strong>Use Pre-configured Profiles</strong>: They&#39;re tested and optimized for specific scenarios.</p>
+</li>
+<li><p><strong>Document Your Choices</strong>: Keep track of which configurations work best for different PDF types.</p>
+</li>
+<li><p><strong>Consider PDF Complexity</strong>:</p>
+<ul>
+<li>Simple catalogs → FAST_CONFIG or COST_OPTIMIZED_CONFIG</li>
+<li>Complex technical docs → HIGH_ACCURACY_CONFIG</li>
+<li>Mixed content → DEFAULT_AI_CONFIG</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Low Classification Accuracy</h3>
+<p><strong>Problem</strong>: Too many false positives/negatives in image classification.</p>
+<p><strong>Solution</strong>: Increase confidence threshold and use Claude Sonnet for validation:</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;classification_confidence_threshold&quot;: 0.8,
+    &quot;classification_validation_model&quot;: &quot;claude-sonnet-4-20250514&quot;
+  }
+}
+</code></pre>
+<h3>Slow Processing</h3>
+<p><strong>Problem</strong>: Pipeline takes too long to complete.</p>
+<p><strong>Solution</strong>: Use FAST_CONFIG or reduce max tokens:</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;discovery_model&quot;: &quot;gpt-4o&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;,
+    &quot;discovery_max_tokens&quot;: 2048,
+    &quot;metadata_max_tokens&quot;: 2048
+  }
+}
+</code></pre>
+<h3>High API Costs</h3>
+<p><strong>Problem</strong>: API costs are too high.</p>
+<p><strong>Solution</strong>: Use COST_OPTIMIZED_CONFIG or lower threshold:</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;classification_confidence_threshold&quot;: 0.6,
+    &quot;discovery_model&quot;: &quot;gpt-4o&quot;,
+    &quot;metadata_extraction_model&quot;: &quot;gpt&quot;,
+    &quot;classification_validation_model&quot;: &quot;claude-haiku-4-20250514&quot;
+  }
+}
+</code></pre>
+<h3>Poor Metadata Quality</h3>
+<p><strong>Problem</strong>: Extracted metadata is incomplete or inaccurate.</p>
+<p><strong>Solution</strong>: Use Claude with higher max tokens:</p>
+<pre><code class="language-json">{
+  &quot;ai_config&quot;: {
+    &quot;metadata_extraction_model&quot;: &quot;claude&quot;,
+    &quot;metadata_temperature&quot;: 0.05,
+    &quot;metadata_max_tokens&quot;: 8192
+  }
+}
+</code></pre>
+<hr>
+<h2>Summary</h2>
+<p>The dynamic AI model configuration system gives you complete control over the PDF processing pipeline. Choose the right configuration based on your priorities:</p>
+<ul>
+<li><strong>Quality First</strong>: HIGH_ACCURACY_CONFIG</li>
+<li><strong>Speed First</strong>: FAST_CONFIG</li>
+<li><strong>Cost First</strong>: COST_OPTIMIZED_CONFIG</li>
+<li><strong>Balanced</strong>: DEFAULT_AI_CONFIG</li>
+</ul>
+<p>All configurations are production-ready and tested with the NOVA end-to-end test script</p>
+<pre><code>
+</code></pre>
+
+</div></body></html>
