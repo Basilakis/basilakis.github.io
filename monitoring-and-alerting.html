@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Monitoring and Alerting System</h1>
+<h2>Overview</h2>
+<p>The Material KAI Vision Platform now has comprehensive monitoring and alerting across all job types:</p>
+<ul>
+<li><strong>PDF Processing Jobs</strong> - Full checkpoint recovery and heartbeat monitoring</li>
+<li><strong>Web Scraping Sessions</strong> - Stuck session detection and recovery</li>
+<li><strong>XML Import Jobs</strong> - Timeout detection and failure alerts</li>
+</ul>
+<p>All failures are automatically reported to <strong>Sentry</strong> for real-time alerting and debugging.</p>
+<hr>
+<h2>🚨 Sentry Integration</h2>
+<h3>Sentry Project</h3>
+<ul>
+<li><strong>Project</strong>: Material KAI Vision Platform</li>
+<li><strong>DSN</strong>: <code>https://3f930a475eb29d63b5e78b1ebabaef78@o4509716458045440.ingest.de.sentry.io/4510301517316176</code></li>
+<li><strong>Region</strong>: EU (Germany)</li>
+</ul>
+<h3>What Gets Reported to Sentry</h3>
+<h4>1. PDF Processing Failures</h4>
+<ul>
+<li><strong>Trigger</strong>: Job fails during processing</li>
+<li><strong>Tags</strong>: <code>job_id</code>, <code>document_id</code>, <code>job_type</code>, <code>error_type</code>, <code>stage</code></li>
+<li><strong>Context</strong>: Full job details, progress, stage information, error message</li>
+<li><strong>Fingerprint</strong>: <code>[&#39;pdf-processing-failed&#39;, stage]</code></li>
+</ul>
+<h4>2. Stuck PDF Jobs</h4>
+<ul>
+<li><strong>Trigger</strong>: Job monitor detects stuck job (no heartbeat for 15min OR no update for 5min)</li>
+<li><strong>Tags</strong>: <code>job_id</code>, <code>document_id</code>, <code>error_type: stuck_job</code>, <code>failure_reason</code></li>
+<li><strong>Context</strong>: Job details, progress, timestamps, stuck duration</li>
+<li><strong>Fingerprint</strong>: <code>[&#39;stuck-job&#39;, reason]</code></li>
+</ul>
+<h4>3. Stuck Scraping Sessions</h4>
+<ul>
+<li><strong>Trigger</strong>: Job monitor detects stuck scraping session (no update for 30min)</li>
+<li><strong>Tags</strong>: <code>session_id</code>, <code>job_type: web_scraping</code>, <code>error_type: stuck_scraping_session</code>, <code>source_url</code></li>
+<li><strong>Context</strong>: Session details, page counts, stuck duration</li>
+<li><strong>Fingerprint</strong>: <code>[&#39;stuck-scraping-session&#39;, source_url]</code></li>
+</ul>
+<h4>4. Scraping Session Failures</h4>
+<ul>
+<li><strong>Trigger</strong>: Edge Function scrape-session-manager encounters error</li>
+<li><strong>Tags</strong>: <code>function: scrape-session-manager</code>, <code>error_type: scraping_session_failed</code>, <code>session_id</code>, <code>source_url</code></li>
+<li><strong>Context</strong>: Session details, page counts, error message</li>
+<li><strong>Fingerprint</strong>: <code>[&#39;scraping-session-failed&#39;, source_url]</code></li>
+</ul>
+<h4>5. Stuck XML Import Jobs</h4>
+<ul>
+<li><strong>Trigger</strong>: Job monitor detects stuck import job (no update for 20min)</li>
+<li><strong>Tags</strong>: <code>import_job_id</code>, <code>job_type: xml_import</code>, <code>error_type: stuck_import_job</code>, <code>source_name</code></li>
+<li><strong>Context</strong>: Job details, product counts, stuck duration</li>
+<li><strong>Fingerprint</strong>: <code>[&#39;stuck-import-job&#39;, source_name]</code></li>
+</ul>
+<h4>6. XML Import Job Failures</h4>
+<ul>
+<li><strong>Trigger</strong>: Edge Function xml-import-orchestrator encounters error</li>
+<li><strong>Tags</strong>: <code>function: xml-import-orchestrator</code>, <code>error_type: xml_import_job_failed</code>, <code>job_id</code>, <code>source_name</code></li>
+<li><strong>Context</strong>: Job details, product counts, retry count, error message</li>
+<li><strong>Fingerprint</strong>: <code>[&#39;xml-import-job-failed&#39;, source_name]</code></li>
+</ul>
+<hr>
+<h2>📊 Job Monitor Service</h2>
+<h3>Location</h3>
+<p><code>mivaa-pdf-extractor/app/services/job_monitor_service.py</code></p>
+<h3>Features</h3>
+<h4>1. Multi-Job Type Monitoring</h4>
+<ul>
+<li><strong>PDF Processing Jobs</strong>: Heartbeat + timeout detection</li>
+<li><strong>Web Scraping Sessions</strong>: Timeout detection (30min)</li>
+<li><strong>XML Import Jobs</strong>: Timeout detection (20min)</li>
+</ul>
+<h4>2. Detection Methods</h4>
+<p><strong>PDF Jobs:</strong></p>
+<ul>
+<li><strong>Heartbeat Timeout</strong>: No heartbeat for 15 minutes (crash detection)</li>
+<li><strong>Update Timeout</strong>: No update for 5 minutes (stuck detection)</li>
+</ul>
+<p><strong>Scraping Sessions:</strong></p>
+<ul>
+<li><strong>Update Timeout</strong>: No update for 30 minutes</li>
+<li><strong>Status</strong>: <code>processing</code> or <code>scraping</code></li>
+</ul>
+<p><strong>Import Jobs:</strong></p>
+<ul>
+<li><strong>Update Timeout</strong>: No update for 20 minutes</li>
+<li><strong>Status</strong>: <code>processing</code></li>
+</ul>
+<h4>3. Recovery Strategies</h4>
+<p><strong>PDF Jobs:</strong></p>
+<ol>
+<li>Check for valid checkpoint</li>
+<li>If checkpoint exists and is valid → Auto-restart from checkpoint</li>
+<li>If no checkpoint or invalid → Mark as failed + Sentry alert</li>
+</ol>
+<p><strong>Scraping Sessions:</strong></p>
+<ol>
+<li>Mark session as failed</li>
+<li>Send Sentry alert with session details</li>
+<li>Update linked background_job if exists</li>
+</ol>
+<p><strong>Import Jobs:</strong></p>
+<ol>
+<li>Mark job as failed</li>
+<li>Send Sentry alert with job details</li>
+<li>Update linked background_job if exists</li>
+</ol>
+<h4>4. Configuration</h4>
+<pre><code class="language-python">job_monitor = JobMonitorService(
+    check_interval=60,        # Check every 60 seconds
+    stuck_timeout=5,          # PDF jobs: 5min timeout
+    auto_restart=True,        # Enable auto-restart for PDF jobs
+    max_restart_attempts=3    # Max 3 restart attempts per job
+)
+</code></pre>
+<hr>
+<h2>🔄 Checkpoint Recovery System</h2>
+<h3>Location</h3>
+<p><code>mivaa-pdf-extractor/app/services/checkpoint_recovery_service.py</code></p>
+<h3>Features</h3>
+<ul>
+<li><strong>Automatic Checkpointing</strong>: Save progress after each stage</li>
+<li><strong>Crash Recovery</strong>: Resume from last successful checkpoint</li>
+<li><strong>Data Validation</strong>: Verify checkpoint data before resuming</li>
+<li><strong>Retry Logic</strong>: Exponential backoff with max 3 attempts</li>
+</ul>
+<h3>Checkpoint Stages</h3>
+<ol>
+<li><code>pdf_loaded</code> - PDF file loaded and validated</li>
+<li><code>text_extracted</code> - Text extraction completed</li>
+<li><code>tiles_generated</code> - Image tiles generated</li>
+<li><code>embeddings_created</code> - Vector embeddings created</li>
+<li><code>materials_extracted</code> - Materials extracted and saved</li>
+</ol>
+<hr>
+<h2>🌐 Edge Function Monitoring</h2>
+<h3>Sentry Helper</h3>
+<p><strong>Location</strong>: <code>supabase/functions/_shared/sentry.ts</code></p>
+<p><strong>Functions</strong>:</p>
+<ul>
+<li><code>captureException(error, context)</code> - Report errors</li>
+<li><code>captureMessage(message, level, context)</code> - Report messages</li>
+</ul>
+<p><strong>Usage Example</strong>:</p>
+<pre><code class="language-typescript">import { captureException } from &#39;../_shared/sentry.ts&#39;;
+
+try {
+  // ... processing logic
+} catch (error) {
+  await captureException(error, {
+    tags: {
+      function: &#39;my-function&#39;,
+      error_type: &#39;processing_failed&#39;,
+    },
+    extra: {
+      job_id: jobId,
+      error_message: error.message,
+    },
+    fingerprint: [&#39;my-function&#39;, &#39;error&#39;],
+  });
+  throw error;
+}
+</code></pre>
+<h3>Monitored Edge Functions</h3>
+<ol>
+<li><strong>scrape-session-manager</strong> - Web scraping orchestration</li>
+<li><strong>xml-import-orchestrator</strong> - XML import processing</li>
+</ol>
+<hr>
+<h2>📈 Monitoring Dashboard</h2>
+<h3>Sentry Dashboard</h3>
+<p>Access at: <a href="https://sentry.io/organizations/basilis-kanonidis/issues/">https://sentry.io/organizations/basilis-kanonidis/issues/</a></p>
+<p><strong>Key Metrics</strong>:</p>
+<ul>
+<li>Error rate by job type</li>
+<li>Stuck job frequency</li>
+<li>Recovery success rate</li>
+<li>Average processing time</li>
+<li>Failure patterns by stage</li>
+</ul>
+<h3>Database Tables</h3>
+<p><strong>background_jobs</strong>:</p>
+<ul>
+<li><code>status</code>: pending, processing, completed, failed</li>
+<li><code>last_heartbeat</code>: Updated every 30 seconds during processing</li>
+<li><code>progress</code>: 0-100 percentage</li>
+<li><code>current_stage</code>: Current processing stage</li>
+<li><code>error</code>: Error message if failed</li>
+</ul>
+<p><strong>scraping_sessions</strong>:</p>
+<ul>
+<li><code>status</code>: pending, processing, scraping, completed, failed</li>
+<li><code>total_pages</code>, <code>completed_pages</code>, <code>failed_pages</code></li>
+<li><code>error_message</code>: Error details if failed</li>
+</ul>
+<p><strong>data_import_jobs</strong>:</p>
+<ul>
+<li><code>status</code>: pending, processing, completed, failed</li>
+<li><code>total_products</code>, <code>processed_products</code>, <code>failed_products</code></li>
+<li><code>error_message</code>: Error details if failed</li>
+</ul>
+<hr>
+<h2>🔧 Troubleshooting</h2>
+<h3>Common Issues</h3>
+<p><strong>1. Stuck Jobs Not Recovering</strong></p>
+<ul>
+<li>Check job monitor logs: <code>docker logs mivaa-pdf-extractor</code></li>
+<li>Verify checkpoint data exists in database</li>
+<li>Check Sentry for detailed error context</li>
+</ul>
+<p><strong>2. Sentry Alerts Not Appearing</strong></p>
+<ul>
+<li>Verify SENTRY_DSN is set correctly</li>
+<li>Check Sentry project quota</li>
+<li>Review Edge Function logs for Sentry errors</li>
+</ul>
+<p><strong>3. High Failure Rate</strong></p>
+<ul>
+<li>Review Sentry dashboard for patterns</li>
+<li>Check resource usage (CPU, memory)</li>
+<li>Verify external service availability (Firecrawl, Claude API)</li>
+</ul>
+<hr>
+<h2>📝 Best Practices</h2>
+<ol>
+<li><strong>Monitor Sentry Daily</strong>: Check for new error patterns</li>
+<li><strong>Review Stuck Jobs</strong>: Investigate why jobs get stuck</li>
+<li><strong>Optimize Timeouts</strong>: Adjust based on actual processing times</li>
+<li><strong>Test Recovery</strong>: Periodically test checkpoint recovery</li>
+<li><strong>Update Fingerprints</strong>: Keep Sentry fingerprints unique for proper grouping</li>
+</ol>
+
+</div></body></html>
