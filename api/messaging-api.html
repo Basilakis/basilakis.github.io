@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Messaging API</h1>
+<h2>Overview</h2>
+<p>The Messaging API is a Supabase Edge Function that handles multi-channel messaging (SMS, WhatsApp, Viber) using Infobip as the unified provider.</p>
+<p><strong>Edge Function:</strong> <code>messaging-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/messaging-api</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth:</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Actions</h2>
+<p>The API uses an action-based routing system. All requests are POST with an <code>action</code> parameter.</p>
+<h3>1. Send Message</h3>
+<p>Send a single message via SMS, WhatsApp, or Viber.</p>
+<p><strong>Action:</strong> <code>send</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;send&#39;,
+  channel: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,  // Channel type (required)
+  to: string,                               // Recipient phone number (E.164 format)
+  from?: string,                            // Sender ID (uses default if not provided)
+  content?: string,                         // Message content (required if no template)
+  templateSlug?: string,                    // Template slug from messaging_templates
+  variables?: Record&lt;string, string&gt;,       // Variables for template rendering
+  mediaUrl?: string,                        // Media URL for MMS/rich messages
+  buttons?: Array&lt;{                         // Interactive buttons (WhatsApp/Viber)
+    type: &#39;url&#39; | &#39;call&#39; | &#39;reply&#39;,
+    text: string,
+    url?: string
+  }&gt;,
+  messageType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;otp&#39;,
+  callbackData?: string,                    // Custom data for delivery reports
+  tags?: Record&lt;string, string&gt;,            // Custom tags for tracking
+  scheduledAt?: string                      // ISO date for scheduled sending
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  messageId: string,    // Infobip message ID
+  logId: string         // messaging_logs record ID
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;messaging-api&#39;, {
+  body: {
+    action: &#39;send&#39;,
+    channel: &#39;sms&#39;,
+    to: &#39;+306912345678&#39;,
+    content: &#39;Your order #12345 has been shipped!&#39;,
+    messageType: &#39;transactional&#39;
+  }
+});
+</code></pre>
+<h3>2. Send Bulk Messages</h3>
+<p>Send messages to multiple recipients.</p>
+<p><strong>Action:</strong> <code>send-bulk</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;send-bulk&#39;,
+  channel: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,
+  to: string[],                             // Array of phone numbers
+  from?: string,
+  content?: string,
+  templateSlug?: string,
+  variables?: Record&lt;string, string&gt;,       // Applied to all messages
+  recipientVariables?: Array&lt;{              // Per-recipient variables
+    to: string,
+    variables: Record&lt;string, string&gt;
+  }&gt;,
+  messageType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;otp&#39;,
+  tags?: Record&lt;string, string&gt;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  bulkId: string,          // Infobip bulk ID
+  totalSent: number,
+  messages: Array&lt;{
+    to: string,
+    messageId: string,
+    status: &#39;pending&#39; | &#39;sent&#39; | &#39;failed&#39;
+  }&gt;
+}
+</code></pre>
+<h3>3. Get Channels</h3>
+<p>Retrieve configured messaging channels.</p>
+<p><strong>Action:</strong> <code>channels</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;channels&#39;,
+  channelType?: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;  // Filter by type
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  channels: Array&lt;{
+    id: string,
+    channelType: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,
+    senderId: string,
+    displayName: string,
+    isActive: boolean,
+    isDefault: boolean,
+    dailyQuota: number,
+    maxSendRate: number
+  }&gt;
+}
+</code></pre>
+<h3>4. Get Templates</h3>
+<p>Retrieve messaging templates.</p>
+<p><strong>Action:</strong> <code>templates</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;templates&#39;,
+  channelType?: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,  // Filter by channel
+  category?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;otp&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  templates: Array&lt;{
+    id: string,
+    name: string,
+    slug: string,
+    channelType: string,
+    content: string,
+    variables: string[],
+    category: string,
+    isApproved: boolean,        // For WhatsApp templates
+    isActive: boolean,
+    createdAt: string,
+    updatedAt: string
+  }&gt;
+}
+</code></pre>
+<h3>5. Get Message Logs</h3>
+<p>Retrieve message delivery logs.</p>
+<p><strong>Action:</strong> <code>logs</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;logs&#39;,
+  channelType?: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,
+  status?: &#39;queued&#39; | &#39;sent&#39; | &#39;delivered&#39; | &#39;read&#39; | &#39;failed&#39; | &#39;rejected&#39;,
+  startDate?: string,           // ISO date string
+  endDate?: string,             // ISO date string
+  toNumber?: string,            // Filter by recipient
+  limit?: number,               // Default: 50, max: 200
+  offset?: number
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  logs: Array&lt;{
+    id: string,
+    channelType: string,
+    fromNumber: string,
+    toNumber: string,
+    content: string,
+    status: string,
+    sentAt: string | null,
+    deliveredAt: string | null,
+    readAt: string | null,
+    failedAt: string | null,
+    errorCode: string | null,
+    errorMessage: string | null,
+    cost: number | null,
+    currency: string,
+    createdAt: string
+  }&gt;,
+  total: number,
+  hasMore: boolean
+}
+</code></pre>
+<h3>6. Get Analytics</h3>
+<p>Retrieve messaging analytics and statistics.</p>
+<p><strong>Action:</strong> <code>analytics</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;analytics&#39;,
+  channelType?: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,
+  startDate?: string,           // ISO date string
+  endDate?: string,             // ISO date string
+  groupBy?: &#39;day&#39; | &#39;week&#39; | &#39;month&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  analytics: {
+    summary: {
+      totalSent: number,
+      totalDelivered: number,
+      totalRead: number,
+      totalFailed: number,
+      totalCost: number,
+      deliveryRate: number,
+      readRate: number
+    },
+    byChannel: {
+      sms: { sent: number, delivered: number, failed: number, cost: number },
+      whatsapp: { sent: number, delivered: number, read: number, failed: number, cost: number },
+      viber: { sent: number, delivered: number, read: number, failed: number, cost: number }
+    },
+    timeSeries: Array&lt;{
+      date: string,
+      sent: number,
+      delivered: number,
+      read: number,
+      failed: number,
+      cost: number
+    }&gt;
+  }
+}
+</code></pre>
+<h3>7. Get Account Balance</h3>
+<p>Check Infobip account balance and quota.</p>
+<p><strong>Action:</strong> <code>balance</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;balance&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  balance: {
+    amount: number,
+    currency: string,
+    creditLimit: number | null
+  },
+  quota: {
+    sms: { daily: number, used: number, remaining: number },
+    whatsapp: { daily: number, used: number, remaining: number },
+    viber: { daily: number, used: number, remaining: number }
+  }
+}
+</code></pre>
+<h3>8. Sync Senders</h3>
+<p>Synchronize sender IDs from Infobip.</p>
+<p><strong>Action:</strong> <code>sync-senders</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;sync-senders&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  synced: {
+    sms: number,
+    whatsapp: number,
+    viber: number
+  },
+  total: number
+}
+</code></pre>
+<h3>9. Get WhatsApp Templates</h3>
+<p>Retrieve WhatsApp Business template status from Infobip/Meta.</p>
+<p><strong>Action:</strong> <code>whatsapp-templates</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;whatsapp-templates&#39;,
+  status?: &#39;APPROVED&#39; | &#39;PENDING&#39; | &#39;REJECTED&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  templates: Array&lt;{
+    name: string,
+    namespace: string,
+    status: &#39;APPROVED&#39; | &#39;PENDING&#39; | &#39;REJECTED&#39;,
+    category: string,
+    language: string,
+    components: Array&lt;{
+      type: &#39;HEADER&#39; | &#39;BODY&#39; | &#39;FOOTER&#39; | &#39;BUTTONS&#39;,
+      text?: string,
+      format?: string
+    }&gt;
+  }&gt;
+}
+</code></pre>
+<h3>10. Send Test Message</h3>
+<p>Send a test message for template preview.</p>
+<p><strong>Action:</strong> <code>send-test</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;send-test&#39;,
+  channel: &#39;sms&#39; | &#39;whatsapp&#39; | &#39;viber&#39;,
+  to: string,                   // Test phone number
+  templateSlug?: string,
+  content?: string,
+  variables?: Record&lt;string, string&gt;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  messageId: string,
+  preview: {
+    renderedContent: string,
+    characterCount: number,
+    segmentCount: number      // For SMS only
+  }
+}
+</code></pre>
+<h2>Webhook Endpoint</h2>
+<p>The <code>messaging-webhook</code> edge function handles delivery reports from Infobip.</p>
+<p><strong>Edge Function:</strong> <code>messaging-webhook</code>
+<strong>URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/messaging-webhook</code></p>
+<h3>Supported Events</h3>
+<ul>
+<li><strong>DELIVERED</strong> - Message delivered to recipient</li>
+<li><strong>SEEN</strong> / <strong>READ</strong> - Message read (WhatsApp/Viber)</li>
+<li><strong>FAILED</strong> - Delivery failed</li>
+<li><strong>REJECTED</strong> - Message rejected</li>
+<li><strong>UNDELIVERED</strong> - Could not be delivered</li>
+</ul>
+<h3>Webhook Payload</h3>
+<pre><code class="language-typescript">{
+  results: Array&lt;{
+    messageId: string,
+    to: string,
+    status: {
+      groupName: &#39;DELIVERED&#39; | &#39;UNDELIVERED&#39; | &#39;SEEN&#39; | &#39;REJECTED&#39;,
+      name: string,
+      description: string
+    },
+    error?: {
+      groupName: string,
+      name: string,
+      description: string
+    },
+    doneAt: string,
+    price?: {
+      pricePerMessage: number,
+      currency: string
+    }
+  }]
+}
+</code></pre>
+<h2>Database Schema</h2>
+<h3>messaging_channels</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>channel_type</td>
+<td>TEXT</td>
+<td>&#39;sms&#39;, &#39;whatsapp&#39;, or &#39;viber&#39;</td>
+</tr>
+<tr>
+<td>provider</td>
+<td>TEXT</td>
+<td>Default: &#39;infobip&#39;</td>
+</tr>
+<tr>
+<td>sender_id</td>
+<td>TEXT</td>
+<td>Phone number or sender name</td>
+</tr>
+<tr>
+<td>display_name</td>
+<td>TEXT</td>
+<td>Friendly name</td>
+</tr>
+<tr>
+<td>is_active</td>
+<td>BOOLEAN</td>
+<td>Whether channel is active</td>
+</tr>
+<tr>
+<td>is_default</td>
+<td>BOOLEAN</td>
+<td>Default channel for type</td>
+</tr>
+<tr>
+<td>config</td>
+<td>JSONB</td>
+<td>Channel-specific config</td>
+</tr>
+<tr>
+<td>daily_quota</td>
+<td>INTEGER</td>
+<td>Daily sending limit</td>
+</tr>
+<tr>
+<td>max_send_rate</td>
+<td>INTEGER</td>
+<td>Messages per minute</td>
+</tr>
+</tbody></table>
+<h3>messaging_templates</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>name</td>
+<td>TEXT</td>
+<td>Template name</td>
+</tr>
+<tr>
+<td>slug</td>
+<td>TEXT</td>
+<td>Unique slug</td>
+</tr>
+<tr>
+<td>channel_type</td>
+<td>TEXT</td>
+<td>Channel type</td>
+</tr>
+<tr>
+<td>content</td>
+<td>TEXT</td>
+<td>Message body with {{variables}}</td>
+</tr>
+<tr>
+<td>media_url</td>
+<td>TEXT</td>
+<td>Media URL for rich messages</td>
+</tr>
+<tr>
+<td>buttons</td>
+<td>JSONB</td>
+<td>Interactive buttons</td>
+</tr>
+<tr>
+<td>variables</td>
+<td>TEXT[]</td>
+<td>List of variable names</td>
+</tr>
+<tr>
+<td>category</td>
+<td>TEXT</td>
+<td>&#39;transactional&#39;, &#39;marketing&#39;, &#39;otp&#39;</td>
+</tr>
+<tr>
+<td>whatsapp_template_name</td>
+<td>TEXT</td>
+<td>Meta template name</td>
+</tr>
+<tr>
+<td>is_approved</td>
+<td>BOOLEAN</td>
+<td>WhatsApp approval status</td>
+</tr>
+<tr>
+<td>is_active</td>
+<td>BOOLEAN</td>
+<td>Whether template is active</td>
+</tr>
+</tbody></table>
+<h3>messaging_logs</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>channel_type</td>
+<td>TEXT</td>
+<td>Channel used</td>
+</tr>
+<tr>
+<td>template_id</td>
+<td>UUID</td>
+<td>FK to messaging_templates</td>
+</tr>
+<tr>
+<td>channel_id</td>
+<td>UUID</td>
+<td>FK to messaging_channels</td>
+</tr>
+<tr>
+<td>provider_message_id</td>
+<td>TEXT</td>
+<td>Infobip message ID</td>
+</tr>
+<tr>
+<td>bulk_id</td>
+<td>TEXT</td>
+<td>Infobip bulk ID</td>
+</tr>
+<tr>
+<td>from_number</td>
+<td>TEXT</td>
+<td>Sender</td>
+</tr>
+<tr>
+<td>to_number</td>
+<td>TEXT</td>
+<td>Recipient</td>
+</tr>
+<tr>
+<td>content</td>
+<td>TEXT</td>
+<td>Message content</td>
+</tr>
+<tr>
+<td>status</td>
+<td>TEXT</td>
+<td>Delivery status</td>
+</tr>
+<tr>
+<td>sent_at</td>
+<td>TIMESTAMPTZ</td>
+<td>When sent</td>
+</tr>
+<tr>
+<td>delivered_at</td>
+<td>TIMESTAMPTZ</td>
+<td>When delivered</td>
+</tr>
+<tr>
+<td>read_at</td>
+<td>TIMESTAMPTZ</td>
+<td>When read</td>
+</tr>
+<tr>
+<td>failed_at</td>
+<td>TIMESTAMPTZ</td>
+<td>When failed</td>
+</tr>
+<tr>
+<td>error_code</td>
+<td>TEXT</td>
+<td>Error code</td>
+</tr>
+<tr>
+<td>error_message</td>
+<td>TEXT</td>
+<td>Error description</td>
+</tr>
+<tr>
+<td>cost</td>
+<td>DECIMAL</td>
+<td>Message cost</td>
+</tr>
+<tr>
+<td>currency</td>
+<td>TEXT</td>
+<td>Cost currency</td>
+</tr>
+<tr>
+<td>variables</td>
+<td>JSONB</td>
+<td>Variables used</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>JSONB</td>
+<td>Custom tags</td>
+</tr>
+</tbody></table>
+<h3>messaging_optouts</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>phone_number</td>
+<td>TEXT</td>
+<td>Opted-out number</td>
+</tr>
+<tr>
+<td>channel_type</td>
+<td>TEXT</td>
+<td>Channel type</td>
+</tr>
+<tr>
+<td>opted_out_at</td>
+<td>TIMESTAMPTZ</td>
+<td>When opted out</td>
+</tr>
+<tr>
+<td>reason</td>
+<td>TEXT</td>
+<td>Opt-out reason</td>
+</tr>
+</tbody></table>
+<h2>Error Handling</h2>
+<p>All errors return a standard format:</p>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string,       // Error message
+  code?: string,       // Error code (e.g., &#39;INVALID_PHONE&#39;, &#39;QUOTA_EXCEEDED&#39;)
+  details?: object     // Additional error details
+}
+</code></pre>
+<h3>Common Error Codes</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INVALID_PHONE</td>
+<td>Invalid phone number format</td>
+</tr>
+<tr>
+<td>OPTED_OUT</td>
+<td>Recipient has opted out</td>
+</tr>
+<tr>
+<td>QUOTA_EXCEEDED</td>
+<td>Daily quota reached</td>
+</tr>
+<tr>
+<td>TEMPLATE_NOT_FOUND</td>
+<td>Template slug not found</td>
+</tr>
+<tr>
+<td>TEMPLATE_NOT_APPROVED</td>
+<td>WhatsApp template not approved</td>
+</tr>
+<tr>
+<td>CHANNEL_NOT_FOUND</td>
+<td>Channel not configured</td>
+</tr>
+<tr>
+<td>INFOBIP_ERROR</td>
+<td>Error from Infobip API</td>
+</tr>
+<tr>
+<td>INSUFFICIENT_BALANCE</td>
+<td>Account balance too low</td>
+</tr>
+</tbody></table>
+<h2>Infobip API Reference</h2>
+<p>The API wraps the following Infobip endpoints:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Infobip Endpoint</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SMS</td>
+<td><code>/sms/2/text/advanced</code></td>
+</tr>
+<tr>
+<td>WhatsApp</td>
+<td><code>/whatsapp/1/message/template</code></td>
+</tr>
+<tr>
+<td>WhatsApp Text</td>
+<td><code>/whatsapp/1/message/text</code></td>
+</tr>
+<tr>
+<td>Viber</td>
+<td><code>/viber/1/message/text</code></td>
+</tr>
+<tr>
+<td>Delivery Reports</td>
+<td>Webhook callback</td>
+</tr>
+<tr>
+<td>Balance</td>
+<td><code>/account/1/balance</code></td>
+</tr>
+</tbody></table>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="./email-api.md">Email API</a> - Similar pattern for email</li>
+<li><a href="../campaign-system.md">Campaign System</a> - Multi-channel campaigns</li>
+<li><a href="../api-endpoints.md">API Endpoints</a> - Complete API reference</li>
+</ul>
+<h2>Environment Variables</h2>
+<p>Required secrets in Supabase:</p>
+<pre><code>INFOBIP_API_KEY=your_api_key
+INFOBIP_BASE_URL=https://api.infobip.com
+INFOBIP_WEBHOOK_SECRET=webhook_signing_secret
+</code></pre>
+
+</div></body></html>
