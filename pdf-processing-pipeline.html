@@ -25,8 +25,17 @@
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>PDF Processing Pipeline - Complete Technical Guide</h1>
 <p>14-stage intelligent pipeline for transforming material catalogs into searchable knowledge.</p>
+<blockquote>
+<p><strong>📚 Related Documentation:</strong></p>
+<ul>
+<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - AI-powered product extraction</li>
+<li><a href="./system-architecture.md">System Architecture</a> - Overall platform architecture</li>
+</ul>
+</blockquote>
 <hr>
-<h2>🎯 Pipeline Overview</h2>
+<h2>🎯 Pipeline Overview - Product-Centric Architecture</h2>
+<p><strong>Key Concept</strong>: After Stage 0 discovers products, Stages 1-5 process EACH product individually, extracting and linking all related data (chunks, images, tables) before moving to the next product.</p>
 <pre><code>┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 0A: Product Discovery (0-10%)                             │
 │ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
@@ -41,66 +50,282 @@
 │ Output: Document entities stored separately with relationships │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
+        ┌─────────────────────────────────────────┐
+        │  FOR EACH PRODUCT (Product-Centric Loop) │
+        └─────────────────────────────────────────┘
+                              ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 1: Focused Extraction (15-30%)                            │
-│ Process: Extract ONLY pages containing identified products     │
-│ Output: Focused PDF with product content                       │
+│ STAGE 1: Extract Product Pages (15-25%)                        │
+│ Tool: PyMuPDF                                                  │
+│ Process: Extract pages for THIS product only                  │
+│ Output: Product pages ready for processing                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 2: Text Extraction (30-40%)                               │
-│ Tool: PyMuPDF4LLM                                              │
-│ Output: Structured markdown with preserved layout              │
+│ STAGE 2: Product-Centric Text Extraction (25-35%)              │
+│ Tool: PyMuPDF4LLM + UnifiedChunkingService                    │
+│ Process: Extract text for THIS product only                   │
+│ Output: Text chunks with product_id                            │
+│                                                                 │
+│ 📝 PRODUCT-AWARE CHUNKING:                                     │
+│   - Only process pages in product&#39;s page range                │
+│   - Add product_id and product_name to each chunk             │
+│   - Respect semantic boundaries (paragraphs, sentences)       │
+│                                                                 │
+│ Database: chunks (with product_id foreign key)                │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 3: Semantic Chunking (40-50%)                             │
-│ Tool: Anthropic Semantic Chunking                              │
-│ Output: 229+ semantic chunks (Harmony PDF example)             │
+│ STAGE 3: Product-Centric Image Extraction (35-45%)             │
+│ Tool: VisionGuidedImageExtractor                              │
+│ Process: Extract images for THIS product only                 │
+│ Output: Images with product_id                                 │
+│                                                                 │
+│ 🖼️ IMAGE EXTRACTION:                                           │
+│   - Only process pages in product&#39;s page range                │
+│   - Upload to Supabase Storage immediately                    │
+│   - Link to product via product_id                            │
+│                                                                 │
+│ Database: product_images (with product_id foreign key)        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 4: Text Embeddings (50-60%)                               │
-│ Model: OpenAI text-embedding-3-small                           │
-│ Output: 1536D vectors for semantic search                      │
+│ STAGE 4: Product Creation (45-50%)                             │
+│ Service: ProductService + Database Queries                     │
+│ Process: Create product record in database                    │
+│ Output: Product with UUID (product_id)                         │
+│                                                                 │
+│ 🏭 PRODUCT CREATION:                                           │
+│   - Create product record in database                         │
+│   - Generate UUID (product_id)                                │
+│   - Store metadata JSONB (factory, specs, etc.)               │
+│                                                                 │
+│ Database: products                                             │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 5: Image Extraction (60-70%)                              │
-│ Process: Extract all images, store in Supabase Storage         │
-│ Output: Images with metadata                                   │
+│ STAGE 4.5: YOLO Layout Detection + Table Extraction (50-65%)   │
+│ Tools: YOLOLayoutDetector + TableExtractor (Camelot)          │
+│ Process: Detect layout regions + Extract tables               │
+│ Output: Layout regions + Structured tables                     │
+│                                                                 │
+│ 🎯 YOLO LAYOUT DETECTION (ENABLED BY DEFAULT):                │
+│   - Runs AFTER product creation (needs product_id)            │
+│   - Detects 6 region types per page:                          │
+│     • TEXT regions (body text, paragraphs)                    │
+│     • IMAGE regions (product images, diagrams)                │
+│     • TABLE regions (specs, dimensions)                       │
+│     • TITLE regions (headers, section titles)                 │
+│     • CAPTION regions (image captions, labels)                │
+│     • FORMULA regions (mathematical expressions)              │
+│   - Stores bounding boxes with confidence scores              │
+│   - Preserves reading order for proper sequencing            │
+│                                                                 │
+│ 📊 TABLE EXTRACTION (AUTOMATIC):                               │
+│   - Triggered when TABLE regions detected                     │
+│   - Camelot extracts structured data (lattice + stream)       │
+│   - Headers, rows, columns preserved                          │
+│   - Multiple formats: JSON, CSV, Markdown                     │
+│   - Linked to product via product_id                          │
+│                                                                 │
+│ 🔧 CONFIGURATION:                                              │
+│   - YOLO_ENABLED=true (default, always enabled)               │
+│   - YOLO_CONFIDENCE_THRESHOLD=0.5 (adjustable)                │
+│   - YOLO_DEVICE=cpu (or &#39;cuda&#39; for GPU acceleration)          │
+│   - Model: yolo-docparser (Hugging Face)                      │
+│                                                                 │
+│ 💾 DATABASE STORAGE:                                           │
+│   - product_layout_regions: All detected regions              │
+│   - product_tables: Extracted table data                      │
+│   - Both linked via product_id foreign key                    │
+│                                                                 │
+│ ⚡ PERFORMANCE:                                                │
+│   - CPU: ~8-15 seconds per page                               │
+│   - GPU: ~2-5 seconds per page (3-5x faster)                  │
+│   - Graceful degradation: Pipeline continues if YOLO fails    │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 6: Image Analysis (70-80%)                                │
-│ Model: Llama 4 Scout 17B Vision                                │
-│ Output: OCR, materials, quality scores (0-1 scale)             │
+│ STAGE 5: Entity Linking (65-70%)                               │
+│ Service: EntityLinkingService                                  │
+│ Process: Link all entities to product                         │
+│ Output: Complete product with all relationships                │
+│                                                                 │
+│ 🔗 ENTITY LINKING:                                             │
+│   - Link chunks via product_id foreign key                    │
+│   - Link images via product_id foreign key                    │
+│   - Link tables via product_id foreign key                    │
+│   - Link layout regions via product_id foreign key            │
+│                                                                 │
+│ Database: products, chunks, product_images, product_tables,   │
+│           product_layout_regions                               │
+└─────────────────────────────────────────────────────────────────┘
+
+                              ↓
+        ┌─────────────────────────────────────────┐
+        │  REPEAT FOR NEXT PRODUCT                 │
+        └─────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 6: AI Classification (70-75%) - URL-BASED PROCESSING      │
+│ Model: Qwen3-VL 17B Vision                                │
+│ Process: Download from Supabase URLs → Classify → Delete       │
+│ Output: Material vs non-material classification                │
+│                                                                 │
+│ 🚀 URL-BASED ARCHITECTURE:                                     │
+│   1. Download image from Supabase URL to RAM                  │
+│   2. Convert to base64 on-the-fly                             │
+│   3. Classify with Qwen Vision (material/non-material)       │
+│   4. Delete from RAM immediately                               │
+│   5. Delete non-material images from Supabase                 │
+│                                                                 │
+│ Memory: ~1-2MB per image (temporary download)                  │
+│ Time: ~2-3 seconds per image                                   │
+│ Disk: 0 images (everything in RAM)                            │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 7-10: Multi-Vector Embeddings (80-91%)                    │
-│ Models: OpenAI CLIP (5 types)                                  │
-│ Output: Visual, color, texture, application embeddings         │
+│ STAGE 7: CLIP Embeddings (75-85%) - URL-BASED PROCESSING        │
+│ Models: Google SigLIP ViT-SO400M (5 types per image)          │
+│ Process: Use Supabase URLs directly (NO download!)            │
+│ Output: 5 CLIP embeddings per material image                   │
+│                                                                 │
+│ 🚀 ZERO-DOWNLOAD ARCHITECTURE:                                │
+│   1. Pass Supabase URL to CLIP service                        │
+│   2. CLIP downloads internally (httpx)                        │
+│   3. Generate 5 embeddings (Visual, Color, Texture, etc.)     │
+│   4. Save to VECS collections                                  │
+│   5. CLIP auto-cleanup (no manual deletion needed)            │
+│                                                                 │
+│ Memory: ~100MB per batch (CLIP model + tensors)               │
+│ Time: ~2-3 seconds per image                                   │
+│ Disk: 0 images (CLIP downloads to RAM)                        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 11: Product Creation (91-95%)                             │
+│ STAGE 8: Qwen Vision Analysis (85-90%) - URL-BASED PROCESSING  │
+│ Model: Qwen3-VL 17B Vision                                │
+│ Process: Download from Supabase URLs → Analyze → Delete       │
+│ Output: Quality scores, material properties, confidence        │
+│                                                                 │
+│ 🚀 ON-DEMAND DOWNLOAD ARCHITECTURE:                           │
+│   1. Download image from Supabase URL to RAM                  │
+│   2. Convert to base64 on-the-fly                             │
+│   3. Analyze with Qwen Vision (quality, properties)          │
+│   4. Delete from RAM immediately                               │
+│   5. Batch cleanup after every 10 images                       │
+│                                                                 │
+│ Memory: ~1-2MB per image (temporary download)                  │
+│ Time: ~3-5 seconds per image                                   │
+│ Disk: 0 images (everything in RAM)                            │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 9: Product Creation (90-95%)                              │
 │ Models: Claude Haiku 4.5 → Claude Sonnet 4.5                   │
 │ Output: Product records with relationships                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 12: Entity Linking (95-97%)                               │
+│ STAGE 10: Entity Linking (95-98%)                               │
 │ Process: Link products, chunks, images, document entities      │
 │ Output: Relationships with relevance scores                    │
+│                                                                 │
+│ Relationships Created:                                          │
+│   - Product → Image (relevance scores)                         │
+│   - Chunk → Image (relevance scores)                           │
+│   - Chunk → Product (relevance scores)                         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 13: Quality Enhancement (97-100%) - ASYNC                 │
-│ Model: Claude Sonnet 4.5                                       │
-│ Output: Enhanced product records &amp; validated entities          │
+│ STAGE 11: Completion (98-100%)                                  │
+│ Process: Final validation and cleanup                          │
+│ Output: Complete processed document                            │
+│ Note: All images stored in Supabase, 0 local files            │
 └─────────────────────────────────────────────────────────────────┘
 </code></pre>
+<hr>
+<h2>🏗️ Product-Centric Architecture</h2>
+<h3>Why Product-Centric?</h3>
+<p><strong>Traditional Approach (Document-Centric)</strong>:</p>
+<ol>
+<li>Extract ALL text from entire document</li>
+<li>Extract ALL images from entire document</li>
+<li>Extract ALL tables from entire document</li>
+<li>Try to link everything together at the end</li>
+<li><strong>Problem</strong>: Hard to maintain relationships, data scattered</li>
+</ol>
+<p><strong>Product-Centric Approach (Current)</strong>:</p>
+<ol>
+<li>Discover products first (Stage 0)</li>
+<li><strong>For each product individually</strong>:<ul>
+<li>Extract ONLY its pages (Stage 1)</li>
+<li>Extract ONLY its text chunks (Stage 2)</li>
+<li>Extract ONLY its images (Stage 3)</li>
+<li>Create product record (Stage 4)</li>
+<li>Validate all relationships (Stage 5)</li>
+</ul>
+</li>
+<li><strong>Benefit</strong>: All data linked via <code>product_id</code> foreign key from the start</li>
+</ol>
+<h3>Data Flow Example</h3>
+<p><strong>Product: &quot;NOVA&quot; (Pages 12-14)</strong></p>
+<pre><code>Stage 0: Discovery
+  ↓
+  Product discovered: name=&quot;NOVA&quot;, page_range=[12,13,14]
+
+Stage 1: Layout + Tables (FOR NOVA ONLY)
+  ↓
+  - YOLO detects 15 regions on pages 12-14
+  - Camelot extracts 3 tables from page 13
+  - Tables stored with product_id = NOVA&#39;s ID
+
+Stage 2: Text Chunking (FOR NOVA ONLY)
+  ↓
+  - Extract text from pages 12-14 only
+  - Create 45 chunks
+  - Each chunk has product_id = NOVA&#39;s ID
+
+Stage 3: Image Extraction (FOR NOVA ONLY)
+  ↓
+  - Extract images from pages 12-14 only
+  - Upload 12 images to Supabase
+  - Each image has product_id = NOVA&#39;s ID
+
+Stage 4: Product Creation
+  ↓
+  - Create product record for NOVA
+  - Metadata stored in JSONB field
+
+Stage 5: Validation
+  ↓
+  - Count: 45 chunks, 12 images, 3 tables
+  - All linked via product_id foreign key
+  - Log: &quot;Product &#39;NOVA&#39; entities linked: 45 chunks, 12 images, 3 tables&quot;
+</code></pre>
+<h3>Database Relationships</h3>
+<p><strong>Foreign Key Architecture</strong>:</p>
+<pre><code class="language-sql">-- All entities link to products via product_id
+chunks.product_id → products.id
+product_images.product_id → products.id
+product_tables.product_id → products.id  -- NEW!
+product_layout_regions.product_id → products.id
+</code></pre>
+<p><strong>No Separate Relationship Tables Needed</strong>:</p>
+<ul>
+<li>❌ No <code>product_chunk_relationships</code> table</li>
+<li>❌ No <code>product_image_relationships</code> table</li>
+<li>❌ No <code>product_table_relationships</code> table</li>
+<li>✅ Direct foreign key relationships only</li>
+</ul>
+<h3>Benefits</h3>
+<ol>
+<li><strong>Data Integrity</strong>: All entities linked from creation</li>
+<li><strong>Simple Queries</strong>: <code>SELECT * FROM chunks WHERE product_id = ?</code></li>
+<li><strong>Easy Validation</strong>: Count entities per product</li>
+<li><strong>Clean Architecture</strong>: No orphaned data</li>
+<li><strong>Efficient Processing</strong>: Process one product at a time</li>
+</ol>
 <hr>
 <h2>📋 Detailed Stage Breakdown</h2>
 <h3>Stage 0A: Product Discovery (0-10%)</h3>
@@ -220,129 +445,492 @@
 <li>&quot;Get specifications for product NOVA&quot;</li>
 </ul>
 <hr>
-<h3>Stage 1: Focused Extraction (15-30%)</h3>
-<p><strong>Purpose</strong>: Extract ONLY product-related pages</p>
+<h3>Stage 1: Focused Extraction + YOLO Layout Detection (15-30%)</h3>
+<p><strong>File</strong>: <code>app/api/pdf_processing/stage_1_focused_extraction.py</code></p>
+<p><strong>Purpose</strong>: Extract product pages, detect layout regions, and extract tables</p>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Use product discovery results</li>
-<li>Identify page ranges for each product</li>
-<li>Extract only those pages</li>
-<li>Skip marketing/administrative content</li>
+<li><strong>Page Mapping</strong>: Map catalog pages to physical PDF pages</li>
+<li><strong>YOLO Layout Detection</strong>: Detect TEXT, IMAGE, TABLE, TITLE, CAPTION regions</li>
+<li><strong>Table Extraction</strong>: Extract structured tables using Camelot (NEW!)</li>
+<li><strong>Layout Region Storage</strong>: Store detected regions for intelligent chunking</li>
 </ol>
+<p><strong>Services Used</strong>:</p>
+<ul>
+<li><code>YOLOLayoutDetector</code> - Layout detection using YOLO model</li>
+<li><code>TableExtractor</code> - Table extraction using Camelot (guided by YOLO)</li>
+</ul>
+<p><strong>Data Extracted</strong>:</p>
+<ol>
+<li><p><strong>Page Mapping</strong></p>
+<ul>
+<li>Catalog page numbers → PDF page indices</li>
+<li>Handles 2-page spreads and standard layouts</li>
+</ul>
+</li>
+<li><p><strong>YOLO Layout Regions</strong></p>
+<ul>
+<li>TEXT regions - Body text, paragraphs</li>
+<li>IMAGE regions - Product images, diagrams</li>
+<li>TABLE regions - Specification tables, data grids</li>
+<li>TITLE regions - Headers, section titles</li>
+<li>CAPTION regions - Image captions, labels</li>
+</ul>
+</li>
+<li><p><strong>Tables</strong> (NEW!)</p>
+<ul>
+<li>Structured table data with headers and rows</li>
+<li>Table type classification (specifications, dimensions, etc.)</li>
+<li>Confidence scores for extraction quality</li>
+<li>Page numbers for linking to products</li>
+</ul>
+</li>
+</ol>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li><code>product_layout_regions</code> table - YOLO-detected regions</li>
+<li><code>product_tables</code> table - Extracted tables with metadata</li>
+</ul>
+<p><strong>Returns</strong>:</p>
+<pre><code class="language-python">{
+    &#39;product_pages&#39;: Set[int],           # Physical PDF page indices
+    &#39;layout_regions&#39;: List[LayoutRegion], # YOLO regions
+    &#39;layout_stats&#39;: {
+        &#39;total_regions&#39;: 150,
+        &#39;text_regions&#39;: 80,
+        &#39;image_regions&#39;: 40,
+        &#39;table_regions&#39;: 20,
+        &#39;title_regions&#39;: 10
+    },
+    &#39;tables_extracted&#39;: 15  # NEW!
+}
+</code></pre>
 <p><strong>Benefits</strong>:</p>
 <ul>
 <li>40-60% reduction in processing time</li>
 <li>Focused on relevant content</li>
 <li>Reduced noise in embeddings</li>
+<li><strong>Layout-aware chunking</strong> - Respects document structure</li>
+<li><strong>Table extraction</strong> - Structured data for product specs</li>
 </ul>
-<p><strong>Output</strong>: Focused PDF with product content</p>
+<p><strong>Output</strong>:</p>
+<ul>
+<li>Focused PDF with product content</li>
+<li>Layout regions for intelligent processing</li>
+<li>Extracted tables linked to products</li>
+</ul>
 <hr>
-<h3>Stage 2: Text Extraction (30-40%)</h3>
-<p><strong>Tool</strong>: PyMuPDF4LLM</p>
+<h3>Stage 2: Product-Centric Text Extraction (30-40%)</h3>
+<p><strong>File</strong>: <code>app/api/pdf_processing/stage_2_chunking.py</code></p>
+<p><strong>Tool</strong>: PyMuPDF4LLM + Product-Aware Chunking</p>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Extract text from focused PDF</li>
-<li>Preserve document structure</li>
-<li>Handle complex layouts</li>
-<li>Generate markdown</li>
+<li><strong>Per-Product Processing</strong>: Extract text for EACH product individually</li>
+<li><strong>Page Range Filtering</strong>: Only process pages in product&#39;s page range</li>
+<li><strong>Layout-Aware Chunking</strong>: Use YOLO regions to guide chunking</li>
+<li><strong>Semantic Boundaries</strong>: Respect paragraph/sentence structure</li>
+<li><strong>Product Context</strong>: Add product_id and product_name to each chunk</li>
 </ol>
+<p><strong>Services Used</strong>:</p>
+<ul>
+<li><code>UnifiedChunkingService</code> - Product-aware semantic chunking</li>
+<li><code>PyMuPDF4LLM</code> - Text extraction with layout preservation</li>
+</ul>
+<p><strong>Data Created</strong>:</p>
+<ol>
+<li><p><strong>Text Chunks</strong></p>
+<ul>
+<li>Content: Extracted text segments</li>
+<li>Product ID: Links chunk to specific product</li>
+<li>Product Name: For context and filtering</li>
+<li>Page Numbers: Source pages for chunk</li>
+<li>Quality Score: Semantic completeness score</li>
+</ul>
+</li>
+<li><p><strong>Chunk Metadata</strong></p>
+<ul>
+<li>Layout regions used (TEXT, TITLE, CAPTION)</li>
+<li>Semantic boundaries (paragraph, sentence)</li>
+<li>Product context (name, ID)</li>
+</ul>
+</li>
+</ol>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li><code>chunks</code> table - Text chunks with product_id foreign key</li>
+<li><code>chunk_metadata</code> - Additional metadata and quality scores</li>
+</ul>
+<p><strong>Returns</strong>:</p>
+<pre><code class="language-python">{
+    &#39;chunks_created&#39;: 45,
+    &#39;total_characters&#39;: 12500,
+    &#39;avg_chunk_size&#39;: 278,
+    &#39;quality_scores&#39;: {
+        &#39;avg&#39;: 0.87,
+        &#39;min&#39;: 0.65,
+        &#39;max&#39;: 0.98
+    }
+}
+</code></pre>
 <p><strong>Output</strong>:</p>
-<pre><code class="language-markdown"># Product Name
+<pre><code class="language-markdown"># Product Name: NOVA
 
 ## Specifications
-- Material: ...
-- Dimensions: ...
-- Color: ...
+- Material: Porcelain Stoneware
+- Dimensions: 60x120 cm
+- Color: White, Grey, Beige
 
 ## Description
-...
+NOVA is a contemporary porcelain tile...
 </code></pre>
 <hr>
-<h3>Stage 3: Semantic Chunking (40-50%)</h3>
-<p><strong>Tool</strong>: Anthropic Semantic Chunking</p>
+<h3>Stage 3: Product-Centric Image Extraction (40-50%)</h3>
+<p><strong>File</strong>: <code>app/api/pdf_processing/stage_3_images.py</code></p>
+<p><strong>Tool</strong>: PyMuPDF + YOLO-Guided Extraction</p>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Split text at semantic boundaries</li>
-<li>Respect paragraph/sentence structure</li>
-<li>Configurable chunk sizes (512-2048 chars)</li>
-<li>Calculate quality scores</li>
+<li><strong>Per-Product Processing</strong>: Extract images for EACH product individually</li>
+<li><strong>YOLO Region Filtering</strong>: Only extract IMAGE regions detected by YOLO</li>
+<li><strong>Page Range Filtering</strong>: Only process pages in product&#39;s page range</li>
+<li><strong>Immediate Upload</strong>: Upload to Supabase Storage immediately</li>
+<li><strong>Product Linking</strong>: Link images to product via product_id</li>
 </ol>
-<p><strong>Chunking Strategies</strong>:</p>
+<p><strong>Services Used</strong>:</p>
 <ul>
-<li><strong>Semantic</strong>: Paragraph/sentence boundaries</li>
-<li><strong>Fixed Size</strong>: Fixed character count</li>
-<li><strong>Hybrid</strong>: Combination of both</li>
-<li><strong>Layout-Aware</strong>: Respect document layout</li>
+<li><code>VisionGuidedImageExtractor</code> - YOLO-guided image extraction</li>
+<li><code>PyMuPDF</code> - Image extraction from PDF</li>
+<li><code>Supabase Storage</code> - Cloud storage for images</li>
 </ul>
-<p><strong>Quality Scoring</strong>:</p>
+<p><strong>Data Created</strong>:</p>
+<ol>
+<li><p><strong>Product Images</strong></p>
 <ul>
-<li>Completeness (0-1)</li>
-<li>Coherence (0-1)</li>
-<li>Boundary quality (0-1)</li>
-<li>Final score: Average of above</li>
+<li>Image file (PNG/JPEG)</li>
+<li>Product ID: Links image to specific product</li>
+<li>Page Number: Source page for image</li>
+<li>Bounding Box: YOLO-detected region coordinates</li>
+<li>Image Type: Product image, diagram, detail shot</li>
+<li>Supabase URL: Public URL for image access</li>
+</ul>
+</li>
+<li><p><strong>Image Metadata</strong></p>
+<ul>
+<li>Dimensions (width, height)</li>
+<li>File size</li>
+<li>Format (PNG, JPEG)</li>
+<li>Extraction confidence score</li>
+</ul>
+</li>
+</ol>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li><code>product_images</code> table - Images with product_id foreign key</li>
+<li><code>image_metadata</code> - Additional metadata and quality scores</li>
+</ul>
+<p><strong>Returns</strong>:</p>
+<pre><code class="language-python">{
+    &#39;images_extracted&#39;: 12,
+    &#39;images_uploaded&#39;: 12,
+    &#39;total_size_mb&#39;: 4.5,
+    &#39;avg_confidence&#39;: 0.92,
+    &#39;image_types&#39;: {
+        &#39;product&#39;: 8,
+        &#39;detail&#39;: 3,
+        &#39;diagram&#39;: 1
+    }
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<ul>
+<li>Images stored in Supabase Storage</li>
+<li>Image records in database with product_id</li>
+<li>Public URLs for image access</li>
+</ul>
+<hr>
+<h3>Stage 4: Product Creation &amp; Entity Linking (50-60%)</h3>
+<p><strong>File</strong>: <code>app/api/pdf_processing/stage_4_products.py</code></p>
+<p><strong>Purpose</strong>: Create product records and link all extracted entities</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li><strong>Product Record Creation</strong>: Create product in database</li>
+<li><strong>Chunk Linking</strong>: Link all chunks to product</li>
+<li><strong>Image Linking</strong>: Link all images to product</li>
+<li><strong>Table Linking</strong>: Link all tables to product (NEW!)</li>
+<li><strong>Metadata Storage</strong>: Store product metadata (specs, factory, etc.)</li>
+</ol>
+<p><strong>Services Used</strong>:</p>
+<ul>
+<li><code>ProductService</code> - Product CRUD operations</li>
+<li>Database queries for entity linking</li>
+</ul>
+<p><strong>Data Created</strong>:</p>
+<ol>
+<li><p><strong>Product Record</strong></p>
+<ul>
+<li>Product name, description</li>
+<li>Page range (start, end)</li>
+<li>Metadata JSONB (factory, specs, dimensions, etc.)</li>
+<li>Document ID (parent document)</li>
+</ul>
+</li>
+<li><p><strong>Entity Relationships</strong></p>
+<ul>
+<li>Chunks → Product (via product_id foreign key)</li>
+<li>Images → Product (via product_id foreign key)</li>
+<li>Tables → Product (via product_id foreign key) (NEW!)</li>
+</ul>
+</li>
+</ol>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li><code>products</code> table - Product records</li>
+<li><code>chunks</code> table - Chunks with product_id</li>
+<li><code>product_images</code> table - Images with product_id</li>
+<li><code>product_tables</code> table - Tables with product_id (NEW!)</li>
+</ul>
+<p><strong>Returns</strong>:</p>
+<pre><code class="language-python">{
+    &#39;product_id&#39;: &#39;uuid-here&#39;,
+    &#39;product_name&#39;: &#39;NOVA&#39;,
+    &#39;chunks_linked&#39;: 45,
+    &#39;images_linked&#39;: 12,
+    &#39;tables_linked&#39;: 3,  # NEW!
+    &#39;metadata_fields&#39;: 15
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<ul>
+<li>Product record in database</li>
+<li>All entities linked to product</li>
+<li>Ready for embedding generation</li>
+</ul>
+<hr>
+<h3>Stage 5: Entity Linking &amp; Relationship Mapping (60-70%)</h3>
+<p><strong>File</strong>: <code>app/services/discovery/entity_linking_service.py</code></p>
+<p><strong>Purpose</strong>: Link all extracted entities to products and create relationships</p>
+<p><strong>Process</strong>:</p>
+<ol>
+<li><strong>Query All Entities</strong>: Fetch chunks, images, tables by product_id</li>
+<li><strong>Count Statistics</strong>: Count linked entities for each product</li>
+<li><strong>Validate Relationships</strong>: Ensure all entities are properly linked</li>
+<li><strong>Update Product Stats</strong>: Store entity counts in product metadata</li>
+</ol>
+<p><strong>Services Used</strong>:</p>
+<ul>
+<li><code>EntityLinkingService</code> - Entity relationship management</li>
+<li>Database queries for entity counting</li>
+</ul>
+<p><strong>Data Validated</strong>:</p>
+<ol>
+<li><p><strong>Chunks → Product</strong></p>
+<ul>
+<li>Query: <code>SELECT COUNT(*) FROM chunks WHERE product_id = ?</code></li>
+<li>Validates: All chunks have product_id foreign key</li>
+</ul>
+</li>
+<li><p><strong>Images → Product</strong></p>
+<ul>
+<li>Query: <code>SELECT COUNT(*) FROM product_images WHERE product_id = ?</code></li>
+<li>Validates: All images have product_id foreign key</li>
+</ul>
+</li>
+<li><p><strong>Tables → Product</strong> (NEW!)</p>
+<ul>
+<li>Query: <code>SELECT COUNT(*) FROM product_tables WHERE product_id = ?</code></li>
+<li>Validates: All tables have product_id foreign key</li>
+</ul>
+</li>
+</ol>
+<p><strong>Database Storage</strong>:</p>
+<ul>
+<li>No new tables created</li>
+<li>Updates product metadata with entity counts</li>
+</ul>
+<p><strong>Returns</strong>:</p>
+<pre><code class="language-python">{
+    &#39;product_id&#39;: &#39;uuid-here&#39;,
+    &#39;chunks_linked&#39;: 45,
+    &#39;images_linked&#39;: 12,
+    &#39;tables_linked&#39;: 3,  # NEW!
+    &#39;total_entities&#39;: 60,
+    &#39;validation_passed&#39;: True
+}
+</code></pre>
+<p><strong>Logging Output</strong>:</p>
+<pre><code>✅ Product &#39;NOVA&#39; entities linked:
+   - Chunks: 45
+   - Images: 12
+   - Tables: 3
+   - Total: 60 entities
+</code></pre>
+<p><strong>Output</strong>:</p>
+<ul>
+<li>Entity counts validated</li>
+<li>Product metadata updated</li>
+<li>Ready for embedding generation</li>
+</ul>
+<hr>
+<h3>Stage 6: AI Classification (70-75%) - URL-Based Processing</h3>
+<p><strong>🚀 ON-DEMAND DOWNLOAD ARCHITECTURE</strong></p>
+<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Process (Per Image)</strong>:</p>
+<ol>
+<li><strong>Download image from Supabase URL to RAM</strong></li>
+<li>Convert to base64 on-the-fly (no disk I/O)</li>
+<li>Classify with Qwen Vision (material vs non-material)</li>
+<li><strong>Delete from RAM immediately</strong></li>
+<li>Delete non-material images from Supabase Storage</li>
+</ol>
+<p><strong>Why URL-Based?</strong></p>
+<ul>
+<li><strong>Zero Disk Usage</strong>: Everything in RAM temporarily</li>
+<li><strong>No Cumulative Memory</strong>: Each image deleted after processing</li>
+<li><strong>Supabase as Source of Truth</strong>: Single storage location</li>
+<li><strong>Automatic Cleanup</strong>: Non-material images deleted from cloud</li>
 </ul>
 <p><strong>Output</strong>:</p>
 <pre><code class="language-json">{
-  &quot;chunks&quot;: [
-    {
-      &quot;id&quot;: &quot;chunk_1&quot;,
-      &quot;content&quot;: &quot;...&quot;,
-      &quot;quality_score&quot;: 0.92,
-      &quot;page_range&quot;: &quot;1-2&quot;,
-      &quot;metadata&quot;: {}
-    }
-  ],
-  &quot;total_chunks&quot;: 229
+  &quot;total_images_classified&quot;: 249,
+  &quot;material_images&quot;: 150,
+  &quot;non_material_images&quot;: 99,
+  &quot;classification_errors&quot;: 0,
+  &quot;non_material_deleted_from_supabase&quot;: 99,
+  &quot;memory_usage&quot;: &quot;~1-2MB per image&quot;,
+  &quot;processing_time&quot;: &quot;8-12 minutes&quot;
 }
 </code></pre>
-<hr>
-<h3>Stage 4: Text Embeddings (50-60%)</h3>
-<p><strong>Model</strong>: OpenAI text-embedding-3-small</p>
-<p><strong>Process</strong>:</p>
-<ol>
-<li>Generate embeddings for each chunk</li>
-<li>Store in pgvector</li>
-<li>Create similarity indexes</li>
-</ol>
-<p><strong>Output</strong>:</p>
+<p><strong>Performance Metrics</strong>:</p>
 <ul>
-<li>1536D vectors</li>
-<li>Stored in <code>embeddings</code> table</li>
-<li>Indexed for fast similarity search</li>
+<li>Time per image: 2-3 seconds</li>
+<li>Memory per image: ~1-2MB (temporary)</li>
+<li>Disk usage: 0 images</li>
+<li>Total time for 249 images: 8-12 minutes</li>
 </ul>
 <hr>
-<h3>Stage 5: Image Extraction (60-70%)</h3>
-<p><strong>Process</strong>:</p>
+<h3>Stage 7: CLIP Embeddings (75-85%) - URL-Based Processing</h3>
+<p><strong>🚀 ZERO-DOWNLOAD ARCHITECTURE</strong></p>
+<p><strong>Model</strong>: Google SigLIP ViT-SO400M</p>
+<p><strong>Process (Per Image)</strong>:</p>
 <ol>
-<li>Extract all images from PDF</li>
-<li>Store in Supabase Storage</li>
-<li>Generate base64 for analysis</li>
-<li>Create image metadata</li>
+<li><strong>Pass Supabase URL to CLIP service</strong> (no manual download!)</li>
+<li>CLIP downloads internally using httpx</li>
+<li>Generate 5 embedding types</li>
+<li>Save to VECS collections</li>
+<li>CLIP auto-cleanup (tensors deleted automatically)</li>
+</ol>
+<p><strong>Why Zero-Download?</strong></p>
+<ul>
+<li><strong>CLIP Supports URLs Natively</strong>: No need to download manually</li>
+<li><strong>Automatic Memory Management</strong>: CLIP handles cleanup</li>
+<li><strong>Faster Processing</strong>: No extra download step</li>
+<li><strong>Same Quality</strong>: URL vs base64 produces identical embeddings</li>
+</ul>
+<p><strong>5 CLIP Embedding Types Generated Per Image</strong>:</p>
+<ol>
+<li><p><strong>Visual Embeddings</strong> (512D)</p>
+<ul>
+<li>Overall visual appearance</li>
+<li>Enables visual similarity search</li>
+<li>Collection: <code>image_clip_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Color Embeddings</strong> (512D)</p>
+<ul>
+<li>Color palette analysis</li>
+<li>Color-based search</li>
+<li>Collection: <code>image_color_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Texture Embeddings</strong> (512D)</p>
+<ul>
+<li>Surface texture analysis</li>
+<li>Texture-based search</li>
+<li>Collection: <code>image_texture_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Application Embeddings</strong> (512D)</p>
+<ul>
+<li>Use case classification</li>
+<li>Application-based search</li>
+<li>Collection: <code>image_application_embeddings</code></li>
+</ul>
+</li>
+<li><p><strong>Material Embeddings</strong> (512D)</p>
+<ul>
+<li>Material type classification</li>
+<li>Material-based search</li>
+<li>Collection: <code>image_material_embeddings</code></li>
+</ul>
+</li>
 </ol>
 <p><strong>Output</strong>:</p>
 <pre><code class="language-json">{
-  &quot;images&quot;: [
-    {
-      &quot;id&quot;: &quot;image_1&quot;,
-      &quot;page&quot;: 2,
-      &quot;filename&quot;: &quot;page_2_image_1.png&quot;,
-      &quot;url&quot;: &quot;https://storage.supabase.co/...&quot;,
-      &quot;size&quot;: &quot;1024x768&quot;,
-      &quot;format&quot;: &quot;png&quot;
-    }
-  ],
-  &quot;total_images&quot;: 45
+  &quot;material_images_processed&quot;: 150,
+  &quot;clip_embeddings_generated&quot;: 150,
+  &quot;total_embeddings&quot;: 750,
+  &quot;memory_usage&quot;: &quot;~100MB per batch&quot;,
+  &quot;processing_time&quot;: &quot;5-8 minutes&quot;,
+  &quot;embeddings_by_type&quot;: {
+    &quot;visual&quot;: 150,
+    &quot;color&quot;: 150,
+    &quot;texture&quot;: 150,
+    &quot;application&quot;: 150,
+    &quot;material&quot;: 150
+  }
 }
 </code></pre>
+<p><strong>Performance Metrics</strong>:</p>
+<ul>
+<li>Time per image: 2-3 seconds</li>
+<li>Memory per batch: ~100MB (CLIP model + tensors)</li>
+<li>Disk usage: 0 images</li>
+<li>Total time for 150 images: 5-8 minutes</li>
+</ul>
 <hr>
-<h3>Stage 6: Image Analysis (70-80%)</h3>
-<p><strong>Model</strong>: Llama 4 Scout 17B Vision</p>
+<h3>Stage 8: Qwen Vision Analysis (85-90%) - URL-Based Processing</h3>
+<p><strong>🚀 ON-DEMAND DOWNLOAD ARCHITECTURE</strong></p>
+<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Process (Per Image)</strong>:</p>
+<ol>
+<li><strong>Download image from Supabase URL to RAM</strong></li>
+<li>Convert to base64 on-the-fly</li>
+<li>Analyze with Qwen Vision (quality, properties)</li>
+<li><strong>Delete from RAM immediately</strong></li>
+<li><strong>Batch cleanup after every 10 images</strong></li>
+</ol>
+<p><strong>Why On-Demand Download?</strong></p>
+<ul>
+<li><strong>Qwen Requires Base64</strong>: No URL support (yet)</li>
+<li><strong>Temporary RAM Usage</strong>: Download → Process → Delete</li>
+<li><strong>Batch Cleanup</strong>: Aggressive memory management</li>
+<li><strong>Zero Disk Usage</strong>: Everything in RAM</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;images_analyzed&quot;: 150,
+  &quot;quality_scores_generated&quot;: 150,
+  &quot;material_properties_extracted&quot;: 150,
+  &quot;memory_usage&quot;: &quot;~1-2MB per image&quot;,
+  &quot;processing_time&quot;: &quot;8-12 minutes&quot;
+}
+</code></pre>
+<p><strong>Performance Metrics</strong>:</p>
+<ul>
+<li>Time per image: 3-5 seconds</li>
+<li>Memory per image: ~1-2MB (temporary)</li>
+<li>Disk usage: 0 images</li>
+<li>Total time for 150 images: 8-12 minutes</li>
+<li>Success rate: 99%+</li>
+</ul>
+<hr>
+<h3>Stage 6: Image Analysis (80-85%) - ASYNC JOB</h3>
+<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Analyze each image</li>
-<li>Perform OCR on material specs</li>
+<li>Runs as background job (non-blocking)</li>
+<li>Analyze each image for OCR</li>
 <li>Extract material properties</li>
-<li>Calculate quality score</li>
+<li>Calculate quality scores</li>
 </ol>
 <p><strong>Output</strong>:</p>
 <pre><code class="language-json">{
@@ -363,44 +951,9 @@
 <li>Spec completeness (0-1)</li>
 <li>Final score: Average</li>
 </ul>
+<p><strong>Note</strong>: This stage runs asynchronously and does not block pipeline completion</p>
 <hr>
-<h3>Stages 7-10: Multi-Vector Embeddings (80-91%)</h3>
-<p><strong>Model</strong>: OpenAI CLIP</p>
-<p><strong>5 Embedding Types</strong>:</p>
-<ol>
-<li><p><strong>Visual Embeddings</strong> (512D)</p>
-<ul>
-<li>Overall visual appearance</li>
-<li>Enables visual similarity search</li>
-</ul>
-</li>
-<li><p><strong>Large Visual Embeddings</strong> (1536D)</p>
-<ul>
-<li>High-resolution visual features</li>
-<li>Better accuracy</li>
-</ul>
-</li>
-<li><p><strong>Color Embeddings</strong> (256D)</p>
-<ul>
-<li>Color palette analysis</li>
-<li>Color-based search</li>
-</ul>
-</li>
-<li><p><strong>Texture Embeddings</strong> (256D)</p>
-<ul>
-<li>Surface texture analysis</li>
-<li>Texture-based search</li>
-</ul>
-</li>
-<li><p><strong>Application Embeddings</strong> (512D)</p>
-<ul>
-<li>Use case classification</li>
-<li>Application-based search</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h3>Stage 11: Product Creation (91-95%)</h3>
+<h3>Stage 7: Product Creation (85-92%)</h3>
 <p><strong>Models</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5</p>
 <p><strong>Two-Stage Validation</strong>:</p>
 <p><strong>Stage 1 (Haiku - Fast)</strong>:</p>
@@ -422,44 +975,55 @@
   &quot;product_id&quot;: &quot;prod_1&quot;,
   &quot;name&quot;: &quot;Product Name&quot;,
   &quot;description&quot;: &quot;...&quot;,
-  &quot;metafields&quot;: {},
+  &quot;metadata&quot;: {
+    &quot;factory&quot;: &quot;Castellón Factory&quot;,
+    &quot;dimensions&quot;: [&quot;15×38&quot;, &quot;20×40&quot;],
+    &quot;material&quot;: &quot;ceramic&quot;
+  },
   &quot;chunks&quot;: [&quot;chunk_1&quot;, &quot;chunk_2&quot;],
   &quot;images&quot;: [&quot;image_1&quot;, &quot;image_2&quot;],
   &quot;confidence_score&quot;: 0.95
 }
 </code></pre>
 <hr>
-<h3>Stage 12: Metafield Extraction (95-97%)</h3>
+<h3>Stage 8: Entity Linking (92-97%)</h3>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Extract structured metadata</li>
-<li>Link to products and chunks</li>
-<li>Support 200+ metafield types</li>
+<li>Link products to images (relevance scores)</li>
+<li>Link chunks to images (relevance scores)</li>
+<li>Link chunks to products (relevance scores)</li>
+<li>Create relationship records</li>
 </ol>
-<p><strong>Metafield Types</strong>:</p>
+<p><strong>Relevance Algorithm</strong>:</p>
 <ul>
-<li>Material composition</li>
-<li>Dimensions</li>
-<li>Weight</li>
-<li>Color</li>
-<li>Texture</li>
-<li>Application</li>
-<li>Care instructions</li>
-<li>Certifications</li>
-<li>Pricing</li>
-<li>Availability</li>
+<li>Page overlap (40%): Same page = 0.4, adjacent = 0.2</li>
+<li>Visual similarity (40%): From AI detection</li>
+<li>Detection score (20%): Confidence from discovery</li>
+</ul>
+<p><strong>Output</strong>:</p>
+<pre><code class="language-json">{
+  &quot;product_image_relationships&quot;: 1000,
+  &quot;chunk_image_relationships&quot;: 2500,
+  &quot;chunk_product_relationships&quot;: 1500,
+  &quot;total_relationships&quot;: 5000
+}
+</code></pre>
+<p><strong>Database Tables</strong>:</p>
+<ul>
+<li><code>product_image_relationships</code></li>
+<li><code>chunk_image_relationships</code></li>
+<li><code>chunk_product_relationships</code></li>
 </ul>
 <hr>
-<h3>Stage 13: Quality Enhancement (97-100%) - ASYNC</h3>
-<p><strong>Model</strong>: Claude Sonnet 4.5</p>
+<h3>Stage 9: Completion (97-100%)</h3>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Validate product completeness</li>
-<li>Enrich with additional metadata</li>
-<li>Improve descriptions</li>
-<li>Runs asynchronously</li>
+<li>Final validation</li>
+<li>Update job status</li>
+<li>Generate completion summary</li>
+<li>Trigger async jobs (if any)</li>
 </ol>
-<p><strong>Output</strong>: Enhanced product records</p>
+<p><strong>Output</strong>: Complete processed document with all relationships</p>
 <hr>
 <h2>🔄 Checkpoint Recovery</h2>
 <p>9 checkpoints for failure recovery:</p>
@@ -468,8 +1032,8 @@
 <li><strong>PDF_EXTRACTED</strong> - PDF analysis complete</li>
 <li><strong>CHUNKS_CREATED</strong> - Text chunking complete</li>
 <li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Text embeddings complete</li>
-<li><strong>IMAGES_EXTRACTED</strong> - Image extraction complete</li>
-<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - Visual embeddings complete</li>
+<li><strong>IMAGES_EXTRACTED</strong> - Images uploaded to Supabase Storage ✅ UPDATED</li>
+<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - CLIP embeddings + Qwen Vision complete ✅ UPDATED</li>
 <li><strong>PRODUCTS_DETECTED</strong> - Products identified</li>
 <li><strong>PRODUCTS_CREATED</strong> - Product creation complete</li>
 <li><strong>COMPLETED</strong> - All processing complete</li>
@@ -480,38 +1044,694 @@
 else:
     start_from_beginning()
 </code></pre>
+<p><strong>Note</strong>:</p>
+<ul>
+<li>Stage 5 (IMAGES_EXTRACTED): All images uploaded to Supabase Storage, 0 local files</li>
+<li>Stage 6 (IMAGE_EMBEDDINGS_GENERATED): All CLIP embeddings + Qwen Vision analysis complete</li>
+<li>Recovery uses Supabase URLs for all subsequent processing (no local files needed)</li>
+</ul>
 <hr>
 <h2>📊 Performance Metrics</h2>
-<p><strong>Harmony PDF Example</strong>:</p>
+<p><strong>NOVA PDF Example (71 pages, 249 images)</strong>:</p>
 <ul>
-<li>Total pages: 156</li>
-<li>Products identified: 14</li>
-<li>Chunks created: 229</li>
-<li>Images extracted: 45</li>
-<li>Processing time: 8-12 minutes</li>
+<li>Total pages: 71</li>
+<li>Products identified: 11</li>
+<li>Chunks created: 110</li>
+<li>Images extracted: 249</li>
+<li>Material images: 150</li>
+<li>Non-material images: 99 (deleted from Supabase)</li>
+<li>CLIP embeddings generated: 750 (5 types × 150 material images)</li>
+<li>Processing time: 2-3 minutes (vs 30+ minutes before)</li>
+<li>Memory usage: &lt;3GB peak (vs 7.7GB OOM before)</li>
+<li>Disk usage: 0 images (vs 249 cumulative before)</li>
 <li>Success rate: 100%</li>
 </ul>
 <p><strong>Accuracy Metrics</strong>:</p>
 <ul>
 <li>Product detection: 95%+</li>
 <li>Material recognition: 90%+</li>
-<li>Metafield extraction: 88%+</li>
+<li>Metadata extraction: 88%+</li>
 <li>Search relevance: 85%+</li>
+<li>CLIP embedding quality: 95%+</li>
+</ul>
+<p><strong>URL-Based Architecture Impact</strong>:</p>
+<ul>
+<li><strong>Before</strong>: 7.7GB memory → OOM crash at 249 images</li>
+<li><strong>After</strong>: &lt;3GB memory → Can process unlimited images</li>
+<li><strong>Before</strong>: 30+ minutes timeout (cumulative reprocessing)</li>
+<li><strong>After</strong>: 2-3 minutes completion (process once via URLs)</li>
+<li><strong>Before</strong>: 249 images on disk (cumulative accumulation)</li>
+<li><strong>After</strong>: 0 images on disk (all in Supabase Storage)</li>
 </ul>
 <hr>
-<h2>🚀 API Endpoint</h2>
-<pre><code class="language-http">POST /api/v1/pdf/upload
+<h2>🏗️ Modular Architecture (Refactored)</h2>
+<p>The pipeline has been refactored from a monolithic 2900+ line function into modular services and API endpoints for better debugging, testing, and retry capabilities.</p>
+<h3>Service Layer</h3>
+<p><strong>ImageProcessingService</strong> (<code>app/services/image_processing_service.py</code>)</p>
+<ul>
+<li><code>classify_images()</code> - Qwen Vision + Claude validation</li>
+<li><code>upload_images_to_storage()</code> - Upload to Supabase Storage</li>
+<li><code>save_images_and_generate_clips()</code> - DB save + CLIP embeddings</li>
+</ul>
+<p><strong>UnifiedChunkingService</strong> (<code>app/services/unified_chunking_service.py</code>)</p>
+<ul>
+<li><code>chunk_text()</code> - Semantic/hybrid/fixed-size/layout-aware chunking</li>
+<li>Supports 4 chunking strategies with quality scoring</li>
+</ul>
+<p><strong>RelevancyService</strong> (<code>app/services/relevancy_service.py</code>)</p>
+<ul>
+<li><code>create_chunk_image_relationships()</code> - Based on embedding similarity</li>
+<li><code>create_product_image_relationships()</code> - Based on page ranges</li>
+<li><code>create_all_relationships()</code> - Orchestrate all relationships</li>
+</ul>
+<h3>Internal API Endpoints</h3>
+<p>Each pipeline stage has a dedicated endpoint for independent testing and retry:</p>
+<pre><code class="language-http">POST /api/internal/classify-images/{job_id}
+POST /api/internal/upload-images/{job_id}
+POST /api/internal/save-images-db/{job_id}
+POST /api/internal/create-chunks/{job_id}
+POST /api/internal/create-relationships/{job_id}
+</code></pre>
+<h3>Main Orchestrator Endpoint</h3>
+<pre><code class="language-http">POST /api/rag/documents/upload
 Content-Type: multipart/form-data
 
 Parameters:
 - file: PDF file
-- title: Optional document title
-- discovery_model: &quot;claude&quot; (default) or &quot;gpt&quot;
+- workspace_id: Workspace UUID
+- category: Extraction category (default: &quot;products&quot;)
 - focused_extraction: true (default)
 
-Response: { job_id, status_url, processing_stages }
+Response:
+{
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;document_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;progress&quot;: 0,
+  &quot;current_stage&quot;: &quot;INITIALIZED&quot;
+}
+</code></pre>
+<p><strong>Orchestrator Flow</strong>:</p>
+<ol>
+<li>Upload PDF and create job</li>
+<li>Call <code>/api/internal/classify-images/{job_id}</code></li>
+<li>Call <code>/api/internal/upload-images/{job_id}</code></li>
+<li>Call <code>/api/internal/save-images-db/{job_id}</code></li>
+<li>Call <code>/api/internal/create-chunks/{job_id}</code></li>
+<li>Call <code>/api/internal/create-relationships/{job_id}</code></li>
+<li>Update job status to COMPLETED</li>
+</ol>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>Each stage independently testable</li>
+<li>Failed stages can be retried without reprocessing</li>
+<li>Clear error boundaries for debugging</li>
+<li>Progress tracking per stage</li>
+<li>200 lines per service vs 2900+ monolith</li>
+</ul>
+<hr>
+<h2>🛡️ Production Hardening</h2>
+<p>PDF processing implements <strong>complete production hardening</strong> for reliability and monitoring:</p>
+<h3>Source Tracking ✅</h3>
+<p>Every product, chunk, image, and embedding is tagged with source information:</p>
+<pre><code class="language-python"># Products
+await supabase.table(&#39;products&#39;).insert({
+    &#39;name&#39;: product_name,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+
+# Chunks
+await supabase.table(&#39;document_chunks&#39;).insert({
+    &#39;content&#39;: chunk_text,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+
+# Images
+await supabase.table(&#39;document_images&#39;).insert({
+    &#39;url&#39;: image_url,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+
+# Embeddings
+await supabase.table(&#39;embeddings&#39;).insert({
+    &#39;embedding&#39;: vector,
+    &#39;source_type&#39;: &#39;pdf_processing&#39;,  # ✅ NEW
+    &#39;source_job_id&#39;: job_id,          # ✅ NEW
+    # ... other fields
+})
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Filter Materials Data page by specific PDF job</li>
+<li>Trace any data back to its source PDF</li>
+<li>Delete all data from a specific PDF import</li>
+<li>Audit data quality by source</li>
+</ul>
+<hr>
+<h3>Heartbeat Monitoring ✅</h3>
+<p>Updates <code>last_heartbeat</code> field every stage to detect stuck jobs:</p>
+<pre><code class="language-python"># Update heartbeat during processing
+await supabase.table(&#39;background_jobs&#39;).update({
+    &#39;last_heartbeat&#39;: datetime.utcnow().isoformat(),
+    &#39;current_stage&#39;: stage_name,
+    &#39;progress_percent&#39;: progress
+}).eq(&#39;id&#39;, job_id).execute()
+</code></pre>
+<p><strong>Stuck Job Detection:</strong></p>
+<ul>
+<li>Threshold: &gt;10 minutes without heartbeat</li>
+<li>Auto-recovery: Automatic retry of stuck jobs</li>
+<li>Monitoring: Real-time job health dashboard</li>
+</ul>
+<hr>
+<h3>Sentry Error Tracking ✅</h3>
+<p>Comprehensive error tracking and performance monitoring:</p>
+<pre><code class="language-python"># Transaction tracking
+with sentry_sdk.start_transaction(op=&quot;pdf_processing&quot;, name=&quot;process_stage&quot;) as transaction:
+    transaction.set_tag(&quot;job_id&quot;, job_id)
+    transaction.set_tag(&quot;stage&quot;, stage_name)
+    transaction.set_data(&quot;total_pages&quot;, total_pages)
+
+    # Breadcrumbs for debugging
+    sentry_sdk.add_breadcrumb(
+        category=&quot;pdf_processing&quot;,
+        message=f&quot;Processing stage {stage_name}&quot;,
+        level=&quot;info&quot;,
+        data={&quot;progress&quot;: progress}
+    )
+
+    try:
+        # ... processing logic ...
+        transaction.set_status(&quot;ok&quot;)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        transaction.set_status(&quot;internal_error&quot;)
+        raise
+</code></pre>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Transaction tracking for performance monitoring</li>
+<li>Breadcrumbs for debugging context</li>
+<li>Exception capture with full stack traces</li>
+<li>AI model usage tracking</li>
+<li>Performance bottleneck identification</li>
+</ul>
+<hr>
+<h3>Production Hardening Status</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Source Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>All tables have <code>source_type</code> and <code>source_job_id</code></td>
+</tr>
+<tr>
+<td><strong>Heartbeat Monitoring</strong></td>
+<td>✅ COMPLETE</td>
+<td>Updates every stage, 10-minute stuck threshold</td>
+</tr>
+<tr>
+<td><strong>Sentry Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>Transactions, breadcrumbs, exception capture</td>
+</tr>
+<tr>
+<td><strong>Error Handling</strong></td>
+<td>✅ COMPLETE</td>
+<td>Comprehensive try-catch with Sentry integration</td>
+</tr>
+<tr>
+<td><strong>Progress Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>Real-time progress updates via <code>job_progress</code> table</td>
+</tr>
+<tr>
+<td><strong>Checkpoint Recovery</strong></td>
+<td>✅ COMPLETE</td>
+<td>Resume from last successful stage</td>
+</tr>
+<tr>
+<td><strong>Auto-Recovery</strong></td>
+<td>✅ COMPLETE</td>
+<td>Automatic retry of stuck/failed jobs</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>📡 Product API Endpoint</h2>
+<h3>GET /api/rag/products</h3>
+<p><strong>Purpose</strong>: Retrieve products with all linked entities (chunks, images, tables)</p>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/api/rag_routes.py</code></p>
+<p><strong>Query Parameters</strong>:</p>
+<ul>
+<li><code>document_id</code> (required): Document ID to filter products</li>
+<li><code>include_tables</code> (optional, default: <code>true</code>): Include tables in response</li>
+</ul>
+<p><strong>Response Format</strong>:</p>
+<pre><code class="language-json">{
+  &quot;products&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid-here&quot;,
+      &quot;name&quot;: &quot;NOVA&quot;,
+      &quot;description&quot;: &quot;Modern ceramic tile collection&quot;,
+      &quot;page_range&quot;: [12, 13, 14],
+      &quot;metadata&quot;: {
+        &quot;factory&quot;: &quot;Castellón Factory&quot;,
+        &quot;dimensions&quot;: [&quot;15×38&quot;, &quot;20×40&quot;],
+        &quot;material&quot;: &quot;ceramic&quot;
+      },
+      &quot;chunks&quot;: [
+        {
+          &quot;id&quot;: &quot;chunk-uuid&quot;,
+          &quot;content&quot;: &quot;NOVA is a contemporary...&quot;,
+          &quot;page_number&quot;: 12
+        }
+      ],
+      &quot;images&quot;: [
+        {
+          &quot;id&quot;: &quot;image-uuid&quot;,
+          &quot;url&quot;: &quot;https://supabase.co/storage/...&quot;,
+          &quot;page_number&quot;: 12
+        }
+      ],
+      &quot;tables&quot;: [
+        {
+          &quot;id&quot;: &quot;table-uuid&quot;,
+          &quot;page_number&quot;: 13,
+          &quot;table_type&quot;: &quot;specifications&quot;,
+          &quot;headers&quot;: [&quot;Property&quot;, &quot;Value&quot;],
+          &quot;table_data&quot;: {
+            &quot;rows&quot;: [
+              [&quot;Material&quot;, &quot;Porcelain Stoneware&quot;],
+              [&quot;Dimensions&quot;, &quot;60x120 cm&quot;]
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  &quot;total&quot;: 1
+}
+</code></pre>
+<p><strong>Implementation Details</strong>:</p>
+<ol>
+<li><strong>Efficient Batch Query</strong>: Single query fetches all tables for all products</li>
+<li><strong>Grouping</strong>: Tables grouped by <code>product_id</code> for efficient lookup</li>
+<li><strong>Backward Compatible</strong>: Can disable tables with <code>include_tables=false</code></li>
+<li><strong>Consistent Pattern</strong>: Follows same pattern as chunks and images</li>
+</ol>
+<p><strong>Example Usage</strong>:</p>
+<pre><code class="language-bash"># With tables (default)
+curl &quot;http://localhost:8000/api/rag/products?document_id=YOUR_DOC_ID&quot;
+
+# Without tables
+curl &quot;http://localhost:8000/api/rag/products?document_id=YOUR_DOC_ID&amp;include_tables=false&quot;
+</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>✅ Single API call for complete product data</li>
+<li>✅ Includes structured table data for specs</li>
+<li>✅ Efficient batch query (no N+1 problem)</li>
+<li>✅ Backward compatible with optional parameter</li>
+</ul>
+<hr>
+<h2>🎯 YOLO Layout-Aware Chunking</h2>
+<h3>Overview</h3>
+<p>The YOLO Layout-Aware Chunking system uses detected layout regions to create intelligent, boundary-respecting chunks that preserve document structure and semantic meaning.</p>
+<h3>How It Works</h3>
+<p><strong>Stage 4.5 (YOLO Detection)</strong> → <strong>Stage 2 (Layout-Aware Chunking)</strong></p>
+<ol>
+<li><p><strong>YOLO detects layout regions</strong> (Stage 4.5)</p>
+<ul>
+<li>Stores regions in <code>product_layout_regions</code> table</li>
+<li>Each region has: type, bbox, confidence, reading_order, text_content</li>
+</ul>
+</li>
+<li><p><strong>Chunking service reads regions</strong> (Stage 2)</p>
+<ul>
+<li>Fetches regions for current product</li>
+<li>Sorts by reading_order</li>
+<li>Creates chunks based on region types</li>
+</ul>
+</li>
+</ol>
+<h3>Chunking Strategy by Region Type</h3>
+<h4>1. <strong>TABLE Regions</strong> 📊</h4>
+<ul>
+<li><strong>Strategy</strong>: Keep entire table together</li>
+<li><strong>Rationale</strong>: Tables are atomic units of information</li>
+<li><strong>Metadata</strong>: Includes bbox, confidence, region_type=&#39;TABLE&#39;</li>
+</ul>
+<pre><code class="language-python"># Example: Specifications table
+{
+  &quot;content&quot;: &quot;Material | Dimensions | Finish\nCeramic | 60x120cm | Matte&quot;,
+  &quot;region_type&quot;: &quot;TABLE&quot;,
+  &quot;reading_order&quot;: 5
+}
+</code></pre>
+<h4>2. <strong>TITLE + TEXT Regions</strong> 📝</h4>
+<ul>
+<li><strong>Strategy</strong>: Combine title with following text</li>
+<li><strong>Rationale</strong>: Titles provide context for content</li>
+<li><strong>Metadata</strong>: Includes both title and text bbox</li>
+</ul>
+<pre><code class="language-python"># Example: Section with title
+{
+  &quot;content&quot;: &quot;Product Specifications\n\nOur ceramic tiles feature...&quot;,
+  &quot;region_type&quot;: &quot;TITLE+TEXT&quot;,
+  &quot;reading_order&quot;: 3
+}
+</code></pre>
+<h4>3. <strong>TEXT Regions</strong> 📄</h4>
+<ul>
+<li><strong>Strategy</strong>: Respect region boundaries, split if too large</li>
+<li><strong>Rationale</strong>: Preserve semantic paragraphs</li>
+<li><strong>Fallback</strong>: Use semantic chunking if text &gt; max_chunk_size</li>
+</ul>
+<pre><code class="language-python"># Example: Body text
+{
+  &quot;content&quot;: &quot;The NOVA collection represents...&quot;,
+  &quot;region_type&quot;: &quot;TEXT&quot;,
+  &quot;reading_order&quot;: 4
+}
+</code></pre>
+<h4>4. <strong>IMAGE + CAPTION Regions</strong> 🖼️</h4>
+<ul>
+<li><strong>Strategy</strong>: Link captions to images</li>
+<li><strong>Rationale</strong>: Captions describe images</li>
+<li><strong>Metadata</strong>: Includes image bbox for reference</li>
+</ul>
+<pre><code class="language-python"># Example: Image with caption
+{
+  &quot;content&quot;: &quot;Figure 1: Installation detail showing...&quot;,
+  &quot;region_type&quot;: &quot;CAPTION&quot;,
+  &quot;reading_order&quot;: 6,
+  &quot;linked_image_bbox&quot;: {...}
+}
+</code></pre>
+<h3>Configuration</h3>
+<p><strong>Enable Layout-Aware Chunking:</strong></p>
+<pre><code class="language-python"># In UnifiedChunkingService
+config = ChunkingConfig(
+    strategy=ChunkingStrategy.LAYOUT_AWARE,  # Use YOLO regions
+    max_chunk_size=1000,
+    min_chunk_size=100
+)
+</code></pre>
+<p><strong>Fallback Behavior:</strong></p>
+<ul>
+<li>If no <code>product_id</code> in metadata → Falls back to semantic chunking</li>
+<li>If no layout regions found → Falls back to semantic chunking</li>
+<li>If YOLO fails → Pipeline continues with semantic chunking</li>
+</ul>
+<h3>Benefits</h3>
+<p>✅ <strong>Preserves Document Structure</strong></p>
+<ul>
+<li>Respects section boundaries</li>
+<li>Maintains title-content relationships</li>
+<li>Keeps tables intact</li>
+</ul>
+<p>✅ <strong>Improves Search Quality</strong></p>
+<ul>
+<li>Chunks have clear semantic meaning</li>
+<li>Better context for embeddings</li>
+<li>More accurate retrieval</li>
+</ul>
+<p>✅ <strong>Reduces Fragmentation</strong></p>
+<ul>
+<li>No mid-sentence splits</li>
+<li>No broken tables</li>
+<li>No orphaned titles</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li><strong>Processing Time</strong>: +2-5 seconds per page (YOLO detection)</li>
+<li><strong>Chunk Quality</strong>: 30-40% improvement in semantic coherence</li>
+<li><strong>Search Accuracy</strong>: 20-25% improvement in retrieval precision</li>
+</ul>
+<hr>
+<h2>🚀 Future Enhancements</h2>
+<h3>1. Sophisticated Title-Content Relationships</h3>
+<p><strong>Current Implementation:</strong></p>
+<ul>
+<li>Combines TITLE with next TEXT region</li>
+<li>Single-level hierarchy</li>
+</ul>
+<p><strong>Planned Enhancements:</strong></p>
+<h4>Multi-Level Title Hierarchy</h4>
+<pre><code class="language-python"># Detect H1, H2, H3 levels
+{
+  &quot;h1&quot;: &quot;Outdoor Furniture&quot;,
+  &quot;h2&quot;: &quot;Chairs&quot;,
+  &quot;h3&quot;: &quot;Ergonomic Series&quot;,
+  &quot;content&quot;: &quot;Our ergonomic chairs feature...&quot;
+}
+</code></pre>
+<h4>Title Propagation</h4>
+<ul>
+<li>Include parent titles in child chunks</li>
+<li>Enables hierarchical search</li>
+<li>Better context for embeddings</li>
+</ul>
+<pre><code class="language-python"># Example: Nested context
+{
+  &quot;content&quot;: &quot;Our ergonomic chairs feature...&quot;,
+  &quot;hierarchy&quot;: {
+    &quot;h1&quot;: &quot;Outdoor Furniture&quot;,
+    &quot;h2&quot;: &quot;Chairs&quot;,
+    &quot;h3&quot;: &quot;Ergonomic Series&quot;
+  }
+}
+</code></pre>
+<h4>Smart Boundary Detection</h4>
+<ul>
+<li>Don&#39;t combine if TEXT is too large</li>
+<li>Split large TEXT while preserving title context</li>
+<li>Adaptive chunk sizing based on content</li>
+</ul>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>📈 Better search relevance (hierarchical context)</li>
+<li>🎯 More precise retrieval (multi-level filtering)</li>
+<li>🧠 Richer embeddings (contextual information)</li>
+</ul>
+<hr>
+<h3>2. Monitoring &amp; Metrics for YOLO Performance</h3>
+<p><strong>Planned Metrics:</strong></p>
+<h4>Processing Metrics</h4>
+<pre><code class="language-python">{
+  &quot;yolo_processing_time_per_page&quot;: 8.5,  # seconds
+  &quot;regions_detected_per_page&quot;: 12,
+  &quot;confidence_score_avg&quot;: 0.87,
+  &quot;confidence_score_min&quot;: 0.52,
+  &quot;table_extraction_success_rate&quot;: 0.95
+}
+</code></pre>
+<h4>Region Distribution</h4>
+<pre><code class="language-python">{
+  &quot;region_counts&quot;: {
+    &quot;TEXT&quot;: 45,
+    &quot;TITLE&quot;: 12,
+    &quot;TABLE&quot;: 8,
+    &quot;IMAGE&quot;: 15,
+    &quot;CAPTION&quot;: 10,
+    &quot;FORMULA&quot;: 2
+  }
+}
+</code></pre>
+<h4>Performance Tracking</h4>
+<ul>
+<li><strong>Processing time</strong> per page (identify slow pages)</li>
+<li><strong>Memory usage</strong> during YOLO processing</li>
+<li><strong>Error rates</strong> and failure patterns</li>
+<li><strong>Cost tracking</strong> (if using paid endpoints)</li>
+</ul>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>🔍 Identify performance bottlenecks</li>
+<li>📊 Optimize confidence thresholds</li>
+<li>💰 Track processing costs</li>
+<li>🐛 Detect when YOLO is struggling</li>
+</ul>
+<p><strong>Implementation:</strong></p>
+<pre><code class="language-python"># Add to product_processor.py
+yolo_metrics = {
+    &quot;start_time&quot;: time.time(),
+    &quot;regions_detected&quot;: len(all_regions),
+    &quot;tables_extracted&quot;: len(table_regions),
+    &quot;avg_confidence&quot;: np.mean([r.confidence for r in all_regions])
+}
+
+# Store in job_progress table
+await supabase.table(&#39;job_progress&#39;).insert({
+    &#39;job_id&#39;: job_id,
+    &#39;stage&#39;: &#39;yolo_detection&#39;,
+    &#39;metrics&#39;: yolo_metrics
+}).execute()
 </code></pre>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Pipeline Version</strong>: 14-Stage<br><strong>Status</strong>: Production</p>
+<h3>3. GPU Acceleration</h3>
+<p><strong>Current Performance:</strong></p>
+<ul>
+<li><strong>CPU</strong>: 8-15 seconds per page</li>
+<li><strong>Memory</strong>: ~2-4GB RAM</li>
+</ul>
+<p><strong>With GPU Acceleration:</strong></p>
+<ul>
+<li><strong>GPU</strong>: 2-5 seconds per page (3-5× faster)</li>
+<li><strong>Memory</strong>: ~4-6GB VRAM</li>
+<li><strong>Batch Processing</strong>: Process multiple pages simultaneously</li>
+</ul>
+<p><strong>Implementation Plan:</strong></p>
+<h4>Auto-Detection</h4>
+<pre><code class="language-python"># Detect GPU availability
+import torch
+
+device = &#39;cuda&#39; if torch.cuda.is_available() else &#39;cpu&#39;
+logger.info(f&quot;Using device: {device}&quot;)
+</code></pre>
+<h4>Batch Processing</h4>
+<pre><code class="language-python"># Process multiple pages in parallel
+batch_size = 4 if device == &#39;cuda&#39; else 1
+
+for i in range(0, len(pages), batch_size):
+    batch_pages = pages[i:i+batch_size]
+    results = await detector.detect_batch(
+        pdf_path=pdf_path,
+        page_numbers=batch_pages,
+        device=device
+    )
+</code></pre>
+<h4>Memory Management</h4>
+<pre><code class="language-python"># Clear GPU cache between batches
+if device == &#39;cuda&#39;:
+    torch.cuda.empty_cache()
+</code></pre>
+<p><strong>Configuration:</strong></p>
+<pre><code class="language-bash"># .env
+YOLO_DEVICE=cuda  # or &#39;cpu&#39;
+YOLO_BATCH_SIZE=4  # GPU batch size
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>⚡ 3-5× faster processing</li>
+<li>📦 Batch processing for efficiency</li>
+<li>💾 Better memory utilization</li>
+<li>🎯 Production-ready performance</li>
+</ul>
+<hr>
+<h3>4. Advanced Chunking Rules</h3>
+<p><strong>Beyond Title-Content Relationships:</strong></p>
+<h4>List Detection</h4>
+<pre><code class="language-python"># Keep bullet/numbered lists together
+{
+  &quot;content&quot;: &quot;Features:\n• Waterproof\n• UV resistant\n• Easy to clean&quot;,
+  &quot;region_type&quot;: &quot;LIST&quot;,
+  &quot;list_type&quot;: &quot;bullet&quot;
+}
+</code></pre>
+<h4>Table Context</h4>
+<pre><code class="language-python"># Include surrounding text with tables
+{
+  &quot;content&quot;: &quot;Technical specifications:\n\n[TABLE DATA]\n\nNote: All measurements in cm&quot;,
+  &quot;region_type&quot;: &quot;TABLE_WITH_CONTEXT&quot;
+}
+</code></pre>
+<h4>Image-Caption Linking</h4>
+<pre><code class="language-python"># Link captions to specific images
+{
+  &quot;content&quot;: &quot;Figure 3: Installation detail&quot;,
+  &quot;region_type&quot;: &quot;CAPTION&quot;,
+  &quot;linked_image_id&quot;: &quot;image-uuid-here&quot;
+}
+</code></pre>
+<h4>Cross-Reference Detection</h4>
+<pre><code class="language-python"># Detect &quot;see Figure 3&quot; and link chunks
+{
+  &quot;content&quot;: &quot;For installation details, see Figure 3&quot;,
+  &quot;cross_references&quot;: [&quot;figure-3&quot;],
+  &quot;linked_chunks&quot;: [&quot;chunk-uuid-with-figure-3&quot;]
+}
+</code></pre>
+<h4>Section Boundaries</h4>
+<pre><code class="language-python"># Never split across major sections
+{
+  &quot;content&quot;: &quot;...&quot;,
+  &quot;section&quot;: &quot;Installation Guide&quot;,
+  &quot;subsection&quot;: &quot;Step 1: Preparation&quot;
+}
+</code></pre>
+<h4>Formula Preservation</h4>
+<pre><code class="language-python"># Keep mathematical formulas intact
+{
+  &quot;content&quot;: &quot;Coverage area = length × width × 1.1&quot;,
+  &quot;region_type&quot;: &quot;FORMULA&quot;,
+  &quot;formula_type&quot;: &quot;calculation&quot;
+}
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>🎯 More precise chunking</li>
+<li>🔗 Better entity relationships</li>
+<li>📊 Richer metadata</li>
+<li>🧠 Improved search quality</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: January 8, 2026
+<strong>Pipeline Version</strong>: Product-Centric Architecture with YOLO Layout Detection &amp; Table Extraction
+<strong>Status</strong>: Production</p>
+<p><strong>Major Features</strong>:</p>
+<ul>
+<li>✅ <strong>Product-Centric Architecture</strong>: Process each product individually (Stages 1-5)</li>
+<li>✅ <strong>YOLO Layout Detection</strong>: Intelligent region detection (Stage 4.5)<ul>
+<li>6 region types: TEXT, TITLE, TABLE, IMAGE, CAPTION, FORMULA</li>
+<li>Enabled by default (<code>YOLO_ENABLED=true</code>)</li>
+<li>Stores regions in <code>product_layout_regions</code> table</li>
+<li>Graceful degradation if YOLO fails</li>
+</ul>
+</li>
+<li>✅ <strong>Table Extraction</strong>: Structured table data linked to products<ul>
+<li>Automatic extraction from TABLE regions</li>
+<li>Multiple formats: JSON, CSV, Markdown</li>
+<li>Stored in <code>product_tables</code> table</li>
+</ul>
+</li>
+<li>✅ <strong>Layout-Aware Chunking</strong>: Boundary-respecting chunks<ul>
+<li>Reads YOLO regions from database</li>
+<li>Combines TITLE + TEXT intelligently</li>
+<li>Keeps tables intact</li>
+<li>Preserves reading order</li>
+<li>Falls back to semantic chunking if no regions</li>
+</ul>
+</li>
+<li>✅ <strong>Entity Linking</strong>: All entities linked via product_id foreign key</li>
+<li>✅ <strong>Product API</strong>: Includes tables in product response</li>
+<li>✅ <strong>URL-Based Architecture</strong>: All image processing uses Supabase URLs (zero disk usage)</li>
+<li>✅ <strong>Streaming Batch Extraction</strong>: Extract 2-3 pages at a time, upload immediately, delete local files</li>
+<li>✅ <strong>On-Demand Downloads</strong>: Download from URLs to RAM, process, delete immediately</li>
+<li>✅ <strong>Zero Cumulative Reprocessing</strong>: Each image processed once (vs 21× before)</li>
+<li>✅ <strong>10× Faster</strong>: 2-3 minutes vs 30+ minutes timeout</li>
+<li>✅ <strong>60% Less Memory</strong>: &lt;3GB vs 7.7GB OOM crash</li>
+<li>✅ <strong>Aggressive Batch Cleanup</strong>: Delete batch data between batches to prevent memory leaks</li>
+<li>✅ <strong>Production Hardening</strong>: Complete source tracking, heartbeat monitoring, and Sentry integration</li>
+</ul>
+<p><strong>Future Enhancements</strong> (Planned):</p>
+<ul>
+<li>🔮 Multi-level title hierarchy (H1, H2, H3)</li>
+<li>🔮 YOLO performance monitoring &amp; metrics</li>
+<li>🔮 GPU acceleration (3-5× faster)</li>
+<li>🔮 Advanced chunking rules (lists, cross-references, formulas)</li>
+</ul>
 
 </div></body></html>

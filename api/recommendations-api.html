@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Recommendations API</h1>
+<h2>Overview</h2>
+<p>The Recommendations API provides collaborative filtering recommendations and tracks user interactions with materials.</p>
+<p><strong>Edge Function:</strong> <code>recommendations-api</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/recommendations-api</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth:</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Endpoints</h2>
+<h3>1. Track Interaction</h3>
+<p>Track a user interaction with a material.</p>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/track-interaction</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  workspace_id: string,                    // Required
+  material_id: string,                     // Required
+  interaction_type: string,                // Required - see valid types below
+  interaction_value?: number,              // Optional (default: 1.0)
+  session_id?: string,                     // Optional session identifier
+  metadata?: Record&lt;string, any&gt;           // Optional metadata
+}
+</code></pre>
+<p><strong>Valid Interaction Types:</strong></p>
+<ul>
+<li><code>view</code> - User viewed the material</li>
+<li><code>click</code> - User clicked on the material</li>
+<li><code>save</code> - User saved/bookmarked the material</li>
+<li><code>purchase</code> - User purchased the material</li>
+<li><code>rate</code> - User rated the material</li>
+<li><code>add_to_quote</code> - User added material to quote</li>
+<li><code>share</code> - User shared the material</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    user_id: string,
+    workspace_id: string,
+    material_id: string,
+    interaction_type: string,
+    interaction_value: number,
+    session_id: string | null,
+    metadata: object,
+    created_at: string
+  },
+  message: &#39;Interaction tracked successfully&#39;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/recommendations-api/track-interaction`,
+  {
+    method: &#39;POST&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`,
+      &#39;Content-Type&#39;: &#39;application/json&#39;
+    },
+    body: JSON.stringify({
+      workspace_id: &#39;workspace-123&#39;,
+      material_id: &#39;material-456&#39;,
+      interaction_type: &#39;view&#39;,
+      interaction_value: 1.0,
+      session_id: &#39;session-789&#39;
+    })
+  }
+);
+</code></pre>
+<h3>2. Get Recommendations for User</h3>
+<p>Get personalized recommendations for the current user.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/for-user</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required): Workspace ID</li>
+<li><code>limit</code> (optional): Number of recommendations (default: 20)</li>
+<li><code>algorithm</code> (optional): Algorithm to use (default: &#39;user_user&#39;)<ul>
+<li><code>user_user</code> - User-based collaborative filtering</li>
+<li><code>item_item</code> - Item-based collaborative filtering</li>
+</ul>
+</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: Array&lt;{
+    material_id: string,
+    score: number,
+    confidence: number,
+    algorithm: string,
+    metadata: object
+  }&gt;,
+  cached: boolean
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/recommendations-api/for-user?workspace_id=workspace-123&amp;limit=10`,
+  {
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h3>3. Get Similar Materials</h3>
+<p>Get materials similar to a specific material.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/similar-materials/{materialId}</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required): Workspace ID</li>
+<li><code>limit</code> (optional): Number of similar materials (default: 10)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: Array&lt;{
+    material_id: string,
+    similarity_score: number,
+    common_users: number
+  }&gt;,
+  message?: string  // If insufficient data
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/recommendations-api/similar-materials/material-456?workspace_id=workspace-123&amp;limit=5`,
+  {
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h3>4. Get Recommendation Analytics</h3>
+<p>Get analytics about recommendations for a workspace.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/analytics/{workspaceId}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    total_interactions: number,
+    unique_users: number,
+    unique_materials: number,
+    interaction_breakdown: {
+      view: number,
+      click: number,
+      save: number,
+      purchase: number,
+      rate: number,
+      add_to_quote: number,
+      share: number
+    },
+    top_materials: Array&lt;{
+      material_id: string,
+      interaction_count: number
+    }&gt;,
+    active_users: Array&lt;{
+      user_id: string,
+      interaction_count: number
+    }&gt;
+  }
+}
+</code></pre>
+<h3>5. Invalidate Cache</h3>
+<p>Invalidate the recommendation cache for a workspace.</p>
+<p><strong>Method:</strong> <code>DELETE</code><br><strong>Path:</strong> <code>/cache</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required): Workspace ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  message: &#39;Cache invalidated successfully&#39;,
+  deleted_count: number
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/recommendations-api/cache?workspace_id=workspace-123`,
+  {
+    method: &#39;DELETE&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h2>Interaction Value Guidelines</h2>
+<p>The <code>interaction_value</code> parameter allows you to weight different interactions:</p>
+<table>
+<thead>
+<tr>
+<th>Interaction Type</th>
+<th>Suggested Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>view</code></td>
+<td>1.0</td>
+<td>Basic view/impression</td>
+</tr>
+<tr>
+<td><code>click</code></td>
+<td>2.0</td>
+<td>User clicked for details</td>
+</tr>
+<tr>
+<td><code>save</code></td>
+<td>3.0</td>
+<td>User bookmarked</td>
+</tr>
+<tr>
+<td><code>add_to_quote</code></td>
+<td>4.0</td>
+<td>Strong purchase intent</td>
+</tr>
+<tr>
+<td><code>rate</code></td>
+<td>1.0-5.0</td>
+<td>User rating (1-5 stars)</td>
+</tr>
+<tr>
+<td><code>purchase</code></td>
+<td>5.0</td>
+<td>Actual purchase</td>
+</tr>
+<tr>
+<td><code>share</code></td>
+<td>3.0</td>
+<td>User shared with others</td>
+</tr>
+</tbody></table>
+<h2>Error Handling</h2>
+<p>All errors return a standard format:</p>
+<pre><code class="language-typescript">{
+  error: string  // Error message
+}
+</code></pre>
+<p><strong>Common Error Codes:</strong></p>
+<ul>
+<li><code>401</code> - Unauthorized</li>
+<li><code>400</code> - Bad request (missing required fields, invalid interaction type)</li>
+<li><code>500</code> - Internal server error</li>
+</ul>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../collaborative-filtering-recommendations.md">Collaborative Filtering System</a></li>
+</ul>
+
+</div></body></html>

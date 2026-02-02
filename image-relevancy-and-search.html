@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Image Search &amp; Recognition</h1>
+<h2>Overview</h2>
+<p>The Material KAI Vision Platform uses advanced AI to understand and search through material images. When you upload a PDF catalog or search with an image, the system automatically analyzes every image to help you find exactly what you&#39;re looking for.</p>
+<h2>What It Does</h2>
+<h3>Intelligent Image Understanding</h3>
+<p>Every image in your catalogs is analyzed using state-of-the-art AI to understand:</p>
+<ul>
+<li><strong>Visual Appearance</strong> - Overall look and style of the material</li>
+<li><strong>Colors</strong> - Dominant colors and color palettes</li>
+<li><strong>Textures</strong> - Surface patterns and textures</li>
+<li><strong>Material Type</strong> - What kind of material it is (fabric, tile, wood, etc.)</li>
+<li><strong>Application</strong> - Where and how the material is typically used</li>
+</ul>
+<p>This multi-dimensional understanding allows the platform to find materials that match your needs in different ways.</p>
+<h3>Smart Image Search</h3>
+<p>Upload any image to find similar materials in your catalog:</p>
+<ol>
+<li><strong>Visual Similarity</strong> - Find materials that look similar overall</li>
+<li><strong>Color Matching</strong> - Find materials with similar color schemes</li>
+<li><strong>Texture Matching</strong> - Find materials with similar surface patterns</li>
+<li><strong>Material Type</strong> - Find materials of the same type</li>
+<li><strong>Application</strong> - Find materials suitable for similar uses</li>
+</ol>
+<h3>Automatic Product Linking</h3>
+<p>The system automatically connects images to the products they represent:</p>
+<ul>
+<li><strong>Product Images</strong> - Images showing the actual product</li>
+<li><strong>Detail Shots</strong> - Close-up images of product features</li>
+<li><strong>Application Examples</strong> - Images showing the product in use</li>
+<li><strong>Variants</strong> - Images showing different colors or patterns</li>
+</ul>
+<p>This ensures that when you search or browse, you see all relevant images for each product.</p>
+<h2>How It Works</h2>
+<h3>AI-Powered Analysis</h3>
+<p>The platform uses two advanced AI systems working together:</p>
+<p><strong>Primary Analysis</strong> - Fast, accurate material detection using Qwen3-VL Vision AI</p>
+<ul>
+<li>Identifies material types, colors, and textures</li>
+<li>Provides quality scores for each analysis</li>
+<li>Processes images quickly and efficiently</li>
+</ul>
+<p><strong>Quality Validation</strong> - Claude AI validates uncertain results</p>
+<ul>
+<li>Reviews images that need additional analysis</li>
+<li>Provides enhanced descriptions and corrections</li>
+<li>Ensures high-quality results</li>
+</ul>
+<h3>Multi-Vector Search Architecture</h3>
+<p>The platform uses a sophisticated <strong>6-embedding fusion system</strong> that combines multiple AI models in parallel for maximum search accuracy:</p>
+<p><strong>Embedding Types &amp; Weights:</strong></p>
+<ul>
+<li><strong>Text Embedding (20%)</strong> - Semantic understanding from product names, descriptions, and metadata</li>
+<li><strong>Visual Embedding (20%)</strong> - General visual similarity using SigLIP 1152D embeddings</li>
+<li><strong>Color Embedding (15%)</strong> - Specialized color palette matching</li>
+<li><strong>Texture Embedding (15%)</strong> - Surface pattern and texture recognition</li>
+<li><strong>Style Embedding (15%)</strong> - Design aesthetic and style matching</li>
+<li><strong>Material Embedding (15%)</strong> - Material type and category classification</li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li><strong>Query Processing</strong> - Your search query is converted into a visual embedding</li>
+<li><strong>Parallel Search</strong> - All 5 visual embedding collections are searched simultaneously using async processing</li>
+<li><strong>Text Scoring</strong> - Keyword matching is performed on product metadata in parallel</li>
+<li><strong>Score Fusion</strong> - Results from all 6 embeddings are combined with intelligent weighting</li>
+<li><strong>Metadata Filtering</strong> - Your filters are applied as soft boosts to improve relevance</li>
+<li><strong>Final Ranking</strong> - Products are sorted by combined score and returned</li>
+</ol>
+<p><strong>Performance:</strong></p>
+<ul>
+<li>Typical search time: 300-500ms</li>
+<li>All searches run in parallel using <code>asyncio.gather()</code> and thread pools</li>
+<li>Handles thousands of products efficiently</li>
+</ul>
+<p>This multi-dimensional approach ensures you get the most relevant results by considering all aspects of material similarity simultaneously.</p>
+<h3>Intelligent Relevancy</h3>
+<p>Images are automatically linked to products and descriptions based on:</p>
+<ul>
+<li><strong>Page Location</strong> - Images on the same page as product descriptions</li>
+<li><strong>Visual Similarity</strong> - How well the image matches the product</li>
+<li><strong>AI Confidence</strong> - How certain the AI is about the connection</li>
+</ul>
+<p>The system assigns relevancy scores to help you find the most important images first.</p>
+<h2>Using Image Search</h2>
+<h3>Search by Uploading an Image</h3>
+<p>When you have a material image and want to find similar materials in your catalog:</p>
+<ol>
+<li><strong>Upload Your Image</strong> - Upload any image of a material you&#39;re looking for</li>
+<li><strong>AI Analysis</strong> - The system analyzes the image to understand its characteristics</li>
+<li><strong>Find Matches</strong> - Get a list of similar materials from your catalog</li>
+<li><strong>View Results</strong> - See matching products with images and details</li>
+</ol>
+<p>The search can find materials based on:</p>
+<ul>
+<li>Overall visual similarity</li>
+<li>Matching colors</li>
+<li>Similar textures</li>
+<li>Same material type</li>
+<li>Similar applications</li>
+</ul>
+<h3>Search from 3D Visualizations</h3>
+<p>When working with 3D room visualizations:</p>
+<ol>
+<li><strong>Generate 3D Scene</strong> - Create a 3D visualization with materials</li>
+<li><strong>Identify Materials</strong> - The system automatically identifies materials in the scene</li>
+<li><strong>Find Alternatives</strong> - Get suggestions for similar or alternative materials</li>
+<li><strong>Compare Options</strong> - View different material options in context</li>
+</ol>
+<p>This helps you explore material options and find alternatives that work with your design.</p>
+<h2>Benefits</h2>
+<h3>For Designers and Architects</h3>
+<ul>
+<li><strong>Quick Material Discovery</strong> - Find materials faster than browsing catalogs</li>
+<li><strong>Visual Search</strong> - Search using images instead of keywords</li>
+<li><strong>Explore Alternatives</strong> - Discover similar materials you might not have considered</li>
+<li><strong>Confident Selections</strong> - See all relevant images and details before deciding</li>
+</ul>
+<h3>For Material Suppliers</h3>
+<ul>
+<li><strong>Better Product Visibility</strong> - Your products are found through visual search</li>
+<li><strong>Automatic Organization</strong> - Images are automatically linked to products</li>
+<li><strong>Rich Product Pages</strong> - All product images are organized and accessible</li>
+<li><strong>Enhanced Search</strong> - Customers can find your products in multiple ways</li>
+</ul>
+<h2>Search Accuracy</h2>
+<p>The platform uses advanced AI to ensure accurate results:</p>
+<ul>
+<li><strong>Multi-Dimensional Analysis</strong> - Considers visual appearance, color, texture, and more</li>
+<li><strong>Quality Validation</strong> - AI validates uncertain results for accuracy</li>
+<li><strong>Relevancy Scoring</strong> - Results are ranked by how well they match your search</li>
+<li><strong>Continuous Improvement</strong> - The system learns and improves over time</li>
+</ul>
+<h2>Performance</h2>
+<p>The image search system is designed for speed and accuracy:</p>
+<ul>
+<li><strong>Fast Search</strong> - Multi-vector search returns results in 300-500ms</li>
+<li><strong>Parallel Processing</strong> - All 5 visual embeddings searched simultaneously</li>
+<li><strong>Efficient Storage</strong> - Images are optimized and cached for quick loading</li>
+<li><strong>Scalable</strong> - Handles thousands of images without slowing down</li>
+<li><strong>Reliable</strong> - Built on enterprise-grade infrastructure</li>
+</ul>
+<h2>Technical Implementation</h2>
+<h3>True Async Parallel Execution</h3>
+<p>The multi-vector search uses advanced async programming to achieve maximum performance:</p>
+<p><strong>Architecture:</strong></p>
+<pre><code>Query → Generate Embedding → Search 5 Collections in Parallel
+                              ├─ Visual (SigLIP 1152D)
+                              ├─ Color (CLIP 512D)
+                              ├─ Texture (CLIP 512D)
+                              ├─ Style (CLIP 512D)
+                              └─ Material (CLIP 512D)
+                              ↓
+                         Combine Scores → Apply Filters → Return Results
+</code></pre>
+<p><strong>Key Technologies:</strong></p>
+<ul>
+<li><strong>asyncio.gather()</strong> - Executes all searches simultaneously</li>
+<li><strong>asyncio.to_thread()</strong> - Runs blocking VECS queries in thread pool</li>
+<li><strong>VECS (pgvector)</strong> - Vector similarity search on PostgreSQL</li>
+<li><strong>SigLIP &amp; CLIP</strong> - State-of-the-art vision-language models</li>
+</ul>
+<p><strong>Performance Benefits:</strong></p>
+<ul>
+<li>3-4x faster than sequential execution</li>
+<li>Non-blocking event loop for concurrent requests</li>
+<li>Efficient thread pool utilization</li>
+<li>Optimized database queries</li>
+</ul>
+<h3>Specialized Endpoints</h3>
+<p>In addition to the main multi-vector search, individual embedding searches are available:</p>
+<ul>
+<li><code>POST /api/search/color</code> - Color palette matching only</li>
+<li><code>POST /api/search/texture</code> - Texture pattern matching only</li>
+<li><code>POST /api/search/style</code> - Design style matching only</li>
+<li><code>POST /api/search/material-type</code> - Material category matching only</li>
+</ul>
+<p>These are useful for:</p>
+<ul>
+<li>UI filter controls (e.g., &quot;Show only warm colors&quot;)</li>
+<li>Specialized searches when you know exactly what you want</li>
+<li>A/B testing different embedding types</li>
+<li>Debugging and analysis</li>
+</ul>
+<h3>Search Response Format</h3>
+<p>The multi-vector search returns detailed scoring information:</p>
+<pre><code class="language-json">{
+  &quot;results&quot;: [{
+    &quot;id&quot;: &quot;product_123&quot;,
+    &quot;product_name&quot;: &quot;Ceramic Tile&quot;,
+    &quot;score&quot;: 0.87,
+    &quot;text_score&quot;: 0.85,
+    &quot;visual_score&quot;: 0.92,
+    &quot;color_score&quot;: 0.88,
+    &quot;texture_score&quot;: 0.81,
+    &quot;style_score&quot;: 0.79,
+    &quot;material_score&quot;: 0.90,
+    &quot;filter_boost&quot;: 0.15
+  }],
+  &quot;total_results&quot;: 10,
+  &quot;processing_time&quot;: 0.345,
+  &quot;embeddings_used&quot;: [&quot;text&quot;, &quot;visual&quot;, &quot;color&quot;, &quot;texture&quot;, &quot;style&quot;, &quot;material&quot;]
+}
+</code></pre>
+<p>This transparency allows you to understand why each result was returned and debug search quality.</p>
+<h2>Related Features</h2>
+<ul>
+<li><strong>Material Search</strong> - Search for materials using text descriptions</li>
+<li><strong>PDF Processing</strong> - Automatic extraction of images from PDF catalogs</li>
+<li><strong>Product Discovery</strong> - Intelligent product identification and organization</li>
+</ul>
+
+</div></body></html>

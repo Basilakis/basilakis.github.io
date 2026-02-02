@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>LangGraph Implementation Guide</h1>
+<p>Technical documentation for the LangGraph-based agent execution system in Material Kai Vision Platform.</p>
+<hr>
+<h2>Overview</h2>
+<p>The platform uses <strong>LangGraph</strong> for agent orchestration, providing:</p>
+<ul>
+<li><strong>StateGraph-based execution</strong> with defined state schema</li>
+<li><strong>Checkpointing</strong> for resumable conversations</li>
+<li><strong>Long-term memory</strong> for cross-conversation context</li>
+<li><strong>Observable execution</strong> with streaming updates</li>
+<li><strong>Human-in-the-loop</strong> patterns for critical actions</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<pre><code>                        ┌─────────────────────────────────────┐
+                        │         User Request                │
+                        └──────────────┬──────────────────────┘
+                                       │
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           StateGraph                                      │
+│  ┌────────────────┐                              ┌────────────────────┐  │
+│  │   START        │                              │   END              │  │
+│  └───────┬────────┘                              └────────────────────┘  │
+│          │                                                    ▲          │
+│          ▼                                                    │          │
+│  ┌───────────────────┐    shouldContinue()      ┌────────────┴───────┐  │
+│  │   agentNode       │──────────────────────────│   toolsNode        │  │
+│  │   (LLM invoke)    │◄─────────────────────────│   (execute tools)  │  │
+│  └───────────────────┘                          └────────────────────┘  │
+│          │                                                               │
+│          │ (no tool calls)                                              │
+│          ▼                                                               │
+│  ┌───────────────────┐                                                  │
+│  │   END             │                                                  │
+│  └───────────────────┘                                                  │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                     AgentStateAnnotation                         │    │
+│  │  - messages: BaseMessage[] (reducer: append)                     │    │
+│  │  - systemPrompt: string                                          │    │
+│  │  - toolResults: any[] (reducer: append)                          │    │
+│  │  - collectedProducts: any[] (reducer: append)                    │    │
+│  │  - iteration: number                                             │    │
+│  │  - inputTokens/outputTokens: number (reducer: sum)              │    │
+│  │  - finalResponse: string | null                                  │    │
+│  │  - generationJob: any | null                                     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+              ┌────────────────────────────────────────────┐
+              │         SupabaseCheckpointer               │
+              │   (agent_checkpoints table)                │
+              └────────────────────────────────────────────┘
+                                       │
+                                       ▼
+              ┌────────────────────────────────────────────┐
+              │         LongTermMemory                     │
+              │   (agent_memories table)                   │
+              └────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>State Schema (AgentStateAnnotation)</h2>
+<p>The state schema defines what data flows through the graph:</p>
+<pre><code class="language-typescript">const AgentStateAnnotation = Annotation.Root({
+  // Messages with append reducer (accumulates all messages)
+  messages: Annotation&lt;BaseMessage[]&gt;({
+    reducer: (prev, next) =&gt; [...prev, ...next],
+    default: () =&gt; [],
+  }),
+
+  // System prompt (replace reducer)
+  systemPrompt: Annotation&lt;string&gt;({
+    reducer: (_, next) =&gt; next,
+    default: () =&gt; &#39;&#39;,
+  }),
+
+  // Tool results collected during execution
+  toolResults: Annotation&lt;any[]&gt;({
+    reducer: (prev, next) =&gt; [...prev, ...next],
+    default: () =&gt; [],
+  }),
+
+  // Products found during search/recommendations
+  collectedProducts: Annotation&lt;any[]&gt;({
+    reducer: (prev, next) =&gt; [...prev, ...next],
+    default: () =&gt; [],
+  }),
+
+  // Current iteration count
+  iteration: Annotation&lt;number&gt;({
+    reducer: (_, next) =&gt; next,
+    default: () =&gt; 0,
+  }),
+
+  // Token usage tracking (sum reducers)
+  inputTokens: Annotation&lt;number&gt;({
+    reducer: (prev, next) =&gt; prev + next,
+    default: () =&gt; 0,
+  }),
+  outputTokens: Annotation&lt;number&gt;({
+    reducer: (prev, next) =&gt; prev + next,
+    default: () =&gt; 0,
+  }),
+
+  // Turn count for billing
+  turnCount: Annotation&lt;number&gt;({
+    reducer: (prev, next) =&gt; prev + next,
+    default: () =&gt; 0,
+  }),
+
+  // Final response when agent completes
+  finalResponse: Annotation&lt;string | null&gt;({
+    reducer: (_, next) =&gt; next,
+    default: () =&gt; null,
+  }),
+
+  // 3D generation job if triggered
+  generationJob: Annotation&lt;any | null&gt;({
+    reducer: (_, next) =&gt; next,
+    default: () =&gt; null,
+  }),
+});
+</code></pre>
+<h3>Reducer Types</h3>
+<table>
+<thead>
+<tr>
+<th>Reducer</th>
+<th>Behavior</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Append</td>
+<td><code>[...prev, ...next]</code></td>
+<td>Accumulating messages, results</td>
+</tr>
+<tr>
+<td>Replace</td>
+<td><code>(_, next) =&gt; next</code></td>
+<td>Single values like systemPrompt</td>
+</tr>
+<tr>
+<td>Sum</td>
+<td><code>prev + next</code></td>
+<td>Token counts, turn counts</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Graph Construction</h2>
+<pre><code class="language-typescript">function createAgentGraph(
+  model: any,
+  tools: any[],
+  onChunk?: (chunk: any) =&gt; void
+) {
+  const maxIterations = 10;
+
+  // Build the graph
+  const graph = new StateGraph(AgentStateAnnotation)
+    .addNode(&#39;agent&#39;, agentNode)
+    .addNode(&#39;tools&#39;, toolsNode)
+    .addEdge(START, &#39;agent&#39;)
+    .addConditionalEdges(&#39;agent&#39;, shouldContinue)
+    .addEdge(&#39;tools&#39;, &#39;agent&#39;)
+    .compile();
+
+  return graph;
+}
+</code></pre>
+<h3>Nodes</h3>
+<h4>agentNode</h4>
+<ul>
+<li>Invokes the LLM with current messages</li>
+<li>Tracks token usage</li>
+<li>Sends streaming updates</li>
+<li>Extracts final response when no tool calls</li>
+</ul>
+<h4>toolsNode</h4>
+<ul>
+<li>Executes pending tool calls</li>
+<li>Collects results</li>
+<li>Sends tool execution status</li>
+<li>Extracts products from search results</li>
+</ul>
+<h3>Conditional Edge: shouldContinue</h3>
+<pre><code class="language-typescript">function shouldContinue(state: AgentState): string {
+  const lastMessage = state.messages[state.messages.length - 1];
+
+  // Check iteration limit
+  if (state.iteration &gt;= maxIterations) {
+    return END;
+  }
+
+  // Check for tool calls
+  if (lastMessage.tool_calls?.length &gt; 0) {
+    return &#39;tools&#39;;
+  }
+
+  // No tool calls = done
+  return END;
+}
+</code></pre>
+<hr>
+<h2>Checkpointing (SupabaseCheckpointer)</h2>
+<p>Enables resumable conversations by persisting state to Supabase.</p>
+<h3>Database Schema</h3>
+<pre><code class="language-sql">CREATE TABLE public.agent_checkpoints (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  thread_id TEXT NOT NULL UNIQUE,
+  checkpoint_data JSONB NOT NULL DEFAULT &#39;{}&#39;,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_checkpoints_thread ON agent_checkpoints(thread_id);
+</code></pre>
+<h3>Checkpointer Class</h3>
+<pre><code class="language-typescript">class SupabaseCheckpointer {
+  private tableName = &#39;agent_checkpoints&#39;;
+
+  async get(threadId: string): Promise&lt;any | null&gt; {
+    const { data } = await supabase
+      .from(this.tableName)
+      .select(&#39;checkpoint_data&#39;)
+      .eq(&#39;thread_id&#39;, threadId)
+      .single();
+    return data?.checkpoint_data || null;
+  }
+
+  async put(threadId: string, checkpoint: any): Promise&lt;void&gt; {
+    await supabase
+      .from(this.tableName)
+      .upsert({
+        thread_id: threadId,
+        checkpoint_data: checkpoint,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: &#39;thread_id&#39; });
+  }
+
+  async delete(threadId: string): Promise&lt;void&gt; {
+    await supabase
+      .from(this.tableName)
+      .delete()
+      .eq(&#39;thread_id&#39;, threadId);
+  }
+}
+</code></pre>
+<h3>Thread ID Generation</h3>
+<pre><code class="language-typescript">// Generate unique thread ID for conversation tracking
+const threadId = conversationId
+  ? `${agentId}-${conversationId}`
+  : `${agentId}-${crypto.randomUUID()}`;
+</code></pre>
+<hr>
+<h2>Long-Term Memory</h2>
+<p>Stores user preferences, facts, and context across conversations.</p>
+<h3>Database Schema</h3>
+<pre><code class="language-sql">CREATE TABLE public.agent_memories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  workspace_id UUID NOT NULL,
+  agent_id TEXT NOT NULL,
+  memory_type TEXT NOT NULL
+    CHECK (memory_type IN (&#39;preference&#39;, &#39;fact&#39;, &#39;context&#39;, &#39;relationship&#39;)),
+  content TEXT NOT NULL,
+  conversation_id UUID,
+  metadata JSONB DEFAULT &#39;{}&#39;,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_memories_user ON agent_memories(user_id, workspace_id);
+CREATE INDEX idx_memories_type ON agent_memories(memory_type);
+CREATE INDEX idx_memories_agent ON agent_memories(agent_id);
+</code></pre>
+<h3>Memory Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>preference</code></td>
+<td>User preferences</td>
+<td>&quot;Prefers modern minimalist style&quot;</td>
+</tr>
+<tr>
+<td><code>fact</code></td>
+<td>Factual information</td>
+<td>&quot;Working on hotel lobby project&quot;</td>
+</tr>
+<tr>
+<td><code>context</code></td>
+<td>Conversational context</td>
+<td>&quot;Previously discussed marble flooring&quot;</td>
+</tr>
+<tr>
+<td><code>relationship</code></td>
+<td>Entity relationships</td>
+<td>&quot;Client is ABC Corp&quot;</td>
+</tr>
+</tbody></table>
+<h3>LongTermMemory Class</h3>
+<pre><code class="language-typescript">class LongTermMemory {
+  async store(
+    userId: string,
+    workspaceId: string,
+    memory: {
+      agentId: string;
+      type: &#39;preference&#39; | &#39;fact&#39; | &#39;context&#39; | &#39;relationship&#39;;
+      content: string;
+      conversationId?: string;
+      metadata?: Record&lt;string, any&gt;;
+    }
+  ): Promise&lt;void&gt; {
+    await supabase.from(&#39;agent_memories&#39;).insert({
+      user_id: userId,
+      workspace_id: workspaceId,
+      agent_id: memory.agentId,
+      memory_type: memory.type,
+      content: memory.content,
+      conversation_id: memory.conversationId,
+      metadata: memory.metadata || {},
+    });
+  }
+
+  async retrieve(
+    userId: string,
+    workspaceId: string,
+    options?: {
+      agentId?: string;
+      types?: string[];
+      limit?: number;
+    }
+  ): Promise&lt;any[]&gt; {
+    let query = supabase
+      .from(&#39;agent_memories&#39;)
+      .select(&#39;*&#39;)
+      .eq(&#39;user_id&#39;, userId)
+      .eq(&#39;workspace_id&#39;, workspaceId)
+      .order(&#39;created_at&#39;, { ascending: false })
+      .limit(options?.limit || 20);
+
+    if (options?.agentId) {
+      query = query.eq(&#39;agent_id&#39;, options.agentId);
+    }
+    if (options?.types?.length) {
+      query = query.in(&#39;memory_type&#39;, options.types);
+    }
+
+    const { data } = await query;
+    return data || [];
+  }
+
+  formatForContext(memories: any[]): string {
+    if (!memories.length) return &#39;&#39;;
+
+    const grouped = memories.reduce((acc, m) =&gt; {
+      if (!acc[m.memory_type]) acc[m.memory_type] = [];
+      acc[m.memory_type].push(m.content);
+      return acc;
+    }, {} as Record&lt;string, string[]&gt;);
+
+    let context = &#39;\n\n## User Context from Previous Conversations:\n&#39;;
+
+    if (grouped.preference?.length) {
+      context += &#39;\n### Preferences:\n&#39;;
+      grouped.preference.forEach(p =&gt; { context += `- ${p}\n`; });
+    }
+    if (grouped.fact?.length) {
+      context += &#39;\n### Known Facts:\n&#39;;
+      grouped.fact.forEach(f =&gt; { context += `- ${f}\n`; });
+    }
+    if (grouped.context?.length) {
+      context += &#39;\n### Previous Context:\n&#39;;
+      grouped.context.forEach(c =&gt; { context += `- ${c}\n`; });
+    }
+
+    return context;
+  }
+}
+</code></pre>
+<h3>Automatic Memory Extraction</h3>
+<pre><code class="language-typescript">async function extractAndStoreMemories(
+  userId: string,
+  workspaceId: string,
+  agentId: string,
+  userInput: string,
+  assistantResponse: string,
+  toolResults: any[]
+): Promise&lt;void&gt; {
+  // Use LLM to extract memories from conversation
+  const extractionPrompt = `
+    Analyze this conversation and extract any memorable information.
+    Return JSON array of objects with &#39;type&#39; and &#39;content&#39; fields.
+    Types: preference, fact, context, relationship
+
+    User: ${userInput}
+    Assistant: ${assistantResponse}
+
+    Only extract truly notable information. Return empty array if nothing notable.
+  `;
+
+  // Extract and store memories asynchronously
+  // (implementation details in index.ts)
+}
+</code></pre>
+<hr>
+<h2>Execution Flow</h2>
+<pre><code class="language-typescript">async function executeAgent(
+  agentId: string,
+  userInput: string,
+  conversationId?: string,
+  previousMessages?: any[],
+  user?: any,
+  workspaceId?: string,
+  onChunk?: (chunk: any) =&gt; void
+) {
+  // 1. Load agent configuration
+  const config = AGENT_CONFIGS[agentId];
+  const systemPrompt = await getAgentSystemPrompt(agentId);
+
+  // 2. Load long-term memory
+  const memories = await longTermMemory.retrieve(user.id, workspaceId, {
+    agentId,
+    limit: 20,
+  });
+  const memoryContext = longTermMemory.formatForContext(memories);
+  const enrichedPrompt = systemPrompt + memoryContext;
+
+  // 3. Generate thread ID
+  const threadId = conversationId
+    ? `${agentId}-${conversationId}`
+    : `${agentId}-${crypto.randomUUID()}`;
+
+  // 4. Create agent graph
+  const agentGraph = createAgentGraph(selectedModel, tools, onChunk);
+
+  // 5. Build initial state
+  const initialState = {
+    messages: [new HumanMessage(userInput)],
+    systemPrompt: enrichedPrompt,
+    toolResults: [],
+    collectedProducts: [],
+    iteration: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    turnCount: 0,
+    finalResponse: null,
+    generationJob: null,
+  };
+
+  // 6. Execute graph
+  const finalState = await agentGraph.invoke(initialState);
+
+  // 7. Save checkpoint
+  await checkpointer.put(threadId, finalState);
+
+  // 8. Extract and store memories (async, non-blocking)
+  extractAndStoreMemories(
+    user.id,
+    workspaceId,
+    agentId,
+    userInput,
+    finalState.finalResponse,
+    finalState.toolResults
+  ).catch(console.error);
+
+  // 9. Return result
+  return {
+    text: finalState.finalResponse,
+    toolResults: finalState.toolResults,
+    products: finalState.collectedProducts,
+    generationJob: finalState.generationJob,
+    tokenUsage: {
+      input: finalState.inputTokens,
+      output: finalState.outputTokens,
+    },
+    turnCount: finalState.turnCount,
+    threadId,
+  };
+}
+</code></pre>
+<hr>
+<h2>Streaming Updates</h2>
+<p>The <code>onChunk</code> callback sends real-time updates during execution:</p>
+<pre><code class="language-typescript">// Iteration status
+onChunk?.({
+  type: &#39;iteration&#39;,
+  iteration: 3,
+  maxIterations: 10,
+  message: &#39;Processing step 3/10...&#39;
+});
+
+// Assistant thinking
+onChunk?.({
+  type: &#39;assistant_thinking&#39;,
+  content: response.content,
+  hasToolCalls: true
+});
+
+// Tool call
+onChunk?.({
+  type: &#39;tool_call&#39;,
+  tool: &#39;searchProducts&#39;,
+  args: { query: &#39;marble tiles&#39; },
+  message: &#39;Calling searchProducts...&#39;
+});
+
+// Tool result
+onChunk?.({
+  type: &#39;tool_result&#39;,
+  tool: &#39;searchProducts&#39;,
+  result: { products: [...] },
+  message: &#39;searchProducts completed&#39;
+});
+
+// Final text (streaming)
+onChunk?.({
+  type: &#39;text&#39;,
+  content: &#39;Based on your requirements...&#39;
+});
+</code></pre>
+<hr>
+<h2>Human-in-the-Loop (Planned)</h2>
+<p>For critical actions like 3D generation or large purchases:</p>
+<pre><code class="language-typescript">// Future implementation
+function shouldRequireApproval(state: AgentState): string {
+  const lastMessage = state.messages[state.messages.length - 1];
+
+  // Check if about to execute critical action
+  const criticalTools = [&#39;generate3D&#39;, &#39;createQuote&#39;, &#39;submitOrder&#39;];
+  const hasCriticalCall = lastMessage.tool_calls?.some(
+    tc =&gt; criticalTools.includes(tc.name)
+  );
+
+  if (hasCriticalCall) {
+    return &#39;human_approval&#39;;  // Route to approval node
+  }
+
+  return &#39;tools&#39;;  // Continue normally
+}
+</code></pre>
+<hr>
+<h2>Dependencies</h2>
+<pre><code class="language-json">// deno.json
+{
+  &quot;imports&quot;: {
+    &quot;@langchain/anthropic&quot;: &quot;npm:@langchain/anthropic&quot;,
+    &quot;@langchain/core/tools&quot;: &quot;npm:@langchain/core/tools&quot;,
+    &quot;@langchain/core/messages&quot;: &quot;npm:@langchain/core/messages&quot;,
+    &quot;@langchain/langgraph&quot;: &quot;npm:@langchain/langgraph&quot;,
+    &quot;zod&quot;: &quot;npm:zod&quot;,
+    &quot;@supabase/supabase-js&quot;: &quot;npm:@supabase/supabase-js@2&quot;
+  }
+}
+</code></pre>
+<hr>
+<h2>Token Usage Tracking</h2>
+<p>Token usage is accumulated across all iterations:</p>
+<pre><code class="language-typescript">// In agentNode
+const usage = response.response_metadata?.usage;
+const inputTokens = usage?.input_tokens || 0;
+const outputTokens = usage?.output_tokens || 0;
+
+return {
+  // ... other state
+  inputTokens,   // Will be summed by reducer
+  outputTokens,  // Will be summed by reducer
+};
+</code></pre>
+<p>Total usage available in final state:</p>
+<pre><code class="language-typescript">const totalTokens = {
+  input: finalState.inputTokens,
+  output: finalState.outputTokens,
+  total: finalState.inputTokens + finalState.outputTokens,
+};
+</code></pre>
+<hr>
+<h2>Best Practices</h2>
+<h3>State Design</h3>
+<ul>
+<li>Use append reducers for accumulating data</li>
+<li>Use replace reducers for single values</li>
+<li>Keep state serializable for checkpointing</li>
+</ul>
+<h3>Graph Structure</h3>
+<ul>
+<li>Keep nodes focused on single responsibilities</li>
+<li>Use conditional edges for branching logic</li>
+<li>Limit iterations to prevent infinite loops</li>
+</ul>
+<h3>Memory Management</h3>
+<ul>
+<li>Store only notable information</li>
+<li>Use specific memory types for categorization</li>
+<li>Clean up old memories periodically</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li>Stream updates for responsive UX</li>
+<li>Use async memory extraction (non-blocking)</li>
+<li>Cache frequently accessed data</li>
+</ul>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>State Not Persisting</h3>
+<ol>
+<li>Check <code>agent_checkpoints</code> table permissions</li>
+<li>Verify thread ID is consistent</li>
+<li>Check checkpoint data serialization</li>
+</ol>
+<h3>Memory Not Loading</h3>
+<ol>
+<li>Verify <code>agent_memories</code> table exists</li>
+<li>Check user_id and workspace_id match</li>
+<li>Review memory type filters</li>
+</ol>
+<h3>Graph Stuck in Loop</h3>
+<ol>
+<li>Check <code>maxIterations</code> limit</li>
+<li>Verify <code>shouldContinue</code> logic</li>
+<li>Review tool call responses</li>
+</ol>
+<h3>Token Counts Wrong</h3>
+<ol>
+<li>Ensure reducers are sum type</li>
+<li>Check response_metadata parsing</li>
+<li>Verify all iterations counted</li>
+</ol>
+<hr>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="agent-system.md">Agent System Architecture</a> - High-level agent overview</li>
+<li><a href="api/agent-chat-api.md">API: Agent Chat</a> - API reference</li>
+<li><a href="ai-models-guide.md">AI Models Guide</a> - Model configurations</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: January 31, 2026
+<strong>Version</strong>: 1.0.0
+<strong>Status</strong>: Production
+<strong>Maintainer</strong>: Development Team</p>
+
+</div></body></html>

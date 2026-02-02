@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Web Scraping Job Integration</h1>
+<h2>Overview</h2>
+<p>The web scraping system is fully integrated with the platform&#39;s unified job tracking infrastructure, providing:</p>
+<ul>
+<li>✅ <strong>Automatic retry</strong> with exponential backoff</li>
+<li>✅ <strong>Progress tracking</strong> with real-time updates</li>
+<li>✅ <strong>Error recovery</strong> from checkpoints</li>
+<li>✅ <strong>Stuck job detection</strong> and auto-recovery</li>
+<li>✅ <strong>Monitoring &amp; alerting</strong> via Sentry</li>
+<li>✅ <strong>Performance metrics</strong> (processing times, success rates, error rates)</li>
+</ul>
+<h2>Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    Scraping Session                          │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  scraping_sessions                                      │ │
+│  │  - id, source_url, status                              │ │
+│  │  - background_job_id  ← Links to job tracking         │ │
+│  │  - workspace_id                                        │ │
+│  │  - progress_percentage, total_pages                    │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Unified Job Tracking System                     │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  background_jobs                                        │ │
+│  │  - id, job_type: &#39;web_scraping&#39;                        │ │
+│  │  - status, progress, current_stage                     │ │
+│  │  - last_heartbeat (updated every 30s)                  │ │
+│  │  - metadata (session_id, scraping_mode, etc.)          │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  Features:                                                   │
+│  • Automatic retry (3 attempts with exponential backoff)    │
+│  • Stuck job detection (no heartbeat &gt; 5 min)               │
+│  • Dead letter queue for failed jobs                        │
+│  • Circuit breaker for external services                    │
+│  • Sentry integration for crash alerts                      │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h2>Job Lifecycle</h2>
+<h3>1. Job Creation</h3>
+<p>When a scraping session is created:</p>
+<pre><code class="language-typescript">// 1. Create background job
+const jobData = {
+  id: jobId,
+  workspace_id: workspaceId,
+  job_type: &#39;web_scraping&#39;,
+  status: &#39;pending&#39;,
+  progress: 0,
+  current_stage: &#39;initializing&#39;,
+  metadata: {
+    session_id: sessionId,
+    source_url: sourceUrl,
+    scraping_mode: scrapingMode,
+    total_pages: urls.length,
+  },
+};
+
+await supabase.from(&#39;background_jobs&#39;).insert([jobData]);
+
+// 2. Create scraping session linked to job
+const sessionData = {
+  id: sessionId,
+  background_job_id: jobId,  // ← Link to job tracking
+  workspace_id: workspaceId,
+  source_url: sourceUrl,
+  status: &#39;pending&#39;,
+  // ... other fields
+};
+
+await supabase.from(&#39;scraping_sessions&#39;).insert([sessionData]);
+</code></pre>
+<h3>2. Job Processing</h3>
+<p>The job monitor service automatically:</p>
+<ol>
+<li><strong>Detects pending jobs</strong> and starts processing</li>
+<li><strong>Updates heartbeat</strong> every 30 seconds</li>
+<li><strong>Tracks progress</strong> (0-100%)</li>
+<li><strong>Updates current_stage</strong> (scraping, extracting, creating_products)</li>
+<li><strong>Handles errors</strong> with automatic retry</li>
+</ol>
+<h3>3. Error Recovery</h3>
+<p>If a job fails or gets stuck:</p>
+<pre><code class="language-python"># Automatic retry with exponential backoff
+@retry_async(
+    max_attempts=3,
+    base_delay=2.0,
+    max_delay=30.0,
+    exceptions=(TimeoutError, ConnectionError)
+)
+async def process_scraping_session(session_id: str):
+    # Processing logic
+    pass
+</code></pre>
+<h3>4. Stuck Job Detection</h3>
+<p>The job monitor service runs continuously:</p>
+<pre><code class="language-python"># Detects jobs stuck for &gt; 5 minutes
+async def detect_stuck_jobs():
+    stuck_jobs = await db.query(&quot;&quot;&quot;
+        SELECT * FROM background_jobs
+        WHERE status = &#39;processing&#39;
+          AND last_heartbeat &lt; NOW() - INTERVAL &#39;5 minutes&#39;
+    &quot;&quot;&quot;)
+    
+    for job in stuck_jobs:
+        # Send Sentry alert
+        sentry_sdk.capture_message(f&quot;Stuck job detected: {job.id}&quot;)
+        
+        # Attempt recovery from checkpoint
+        await checkpoint_recovery_service.recover_job(job.id)
+</code></pre>
+<h2>Monitoring &amp; Observability</h2>
+<h3>Metrics Already Tracked</h3>
+<p>✅ <strong>Processing Times</strong>: Tracked per page and per session
+✅ <strong>Success Rates</strong>: Calculated from completed vs failed jobs
+✅ <strong>Error Rates</strong>: Tracked in job_history and metrics
+✅ <strong>Throughput</strong>: Jobs processed per minute
+✅ <strong>Queue Depth</strong>: Number of pending jobs</p>
+<h3>Health Checks</h3>
+<p>The system already has:</p>
+<pre><code class="language-typescript">// Get job metrics
+const metrics = batchJobQueue.getMetrics();
+// Returns:
+// {
+//   totalJobs: 150,
+//   queuedJobs: 10,
+//   processingJobs: 5,
+//   completedJobs: 130,
+//   failedJobs: 5,
+//   throughputPerMinute: 12,
+//   errorRate: 0.03,
+//   averageProcessingTime: 2500
+// }
+</code></pre>
+<h3>Alerting</h3>
+<p>Sentry alerts are automatically sent for:</p>
+<ul>
+<li>❌ Job crashes</li>
+<li>⚠️ Stuck jobs (no progress &gt; 5 min)</li>
+<li>🔥 Circuit breaker open (service unavailable)</li>
+<li>⏱️ Timeouts</li>
+<li>🔄 Max retries exceeded</li>
+</ul>
+<h2>Performance Optimizations</h2>
+<h3>Already Implemented</h3>
+<p>✅ <strong>Batch Processing</strong>: Process multiple pages concurrently
+✅ <strong>Connection Pooling</strong>: Supabase client uses connection pooling
+✅ <strong>Circuit Breaker</strong>: Prevents cascading failures
+✅ <strong>Rate Limiting</strong>: Configurable delays between batches
+✅ <strong>Timeout Protection</strong>: Prevents hanging requests</p>
+<h3>Recommended Additions</h3>
+<ol>
+<li><strong>Batch Inserts for Pages</strong>:</li>
+</ol>
+<pre><code class="language-typescript">// Instead of inserting pages one by one
+const BATCH_SIZE = 100;
+for (let i = 0; i &lt; urls.length; i += BATCH_SIZE) {
+  const batch = urls.slice(i, i + BATCH_SIZE);
+  await supabase.from(&#39;scraping_pages&#39;).insert(batch);
+}
+</code></pre>
+<ol start="2">
+<li><strong>Database Query Optimization</strong>:</li>
+</ol>
+<pre><code class="language-sql">-- Add composite index for common queries
+CREATE INDEX idx_scraping_pages_session_status 
+ON scraping_pages(session_id, status);
+</code></pre>
+<h2>Summary</h2>
+<h3>✅ What We Already Have</h3>
+<ul>
+<li>Complete job tracking infrastructure</li>
+<li>Automatic retry and error recovery</li>
+<li>Stuck job detection and alerts</li>
+<li>Performance metrics and monitoring</li>
+<li>Sentry integration for crash alerts</li>
+</ul>
+<h3>🔧 What We Just Added</h3>
+<ul>
+<li><code>background_job_id</code> link in <code>scraping_sessions</code></li>
+<li>Automatic background job creation for scraping sessions</li>
+<li>Integration with unified job tracking system</li>
+</ul>
+<h3>📊 What We Don&#39;t Need to Build</h3>
+<ul>
+<li>❌ Custom retry logic (already exists)</li>
+<li>❌ Custom monitoring (already exists)</li>
+<li>❌ Custom alerting (already exists via Sentry)</li>
+<li>❌ Custom metrics (already tracked)</li>
+</ul>
+<p>The scraping system now leverages the existing, battle-tested job infrastructure used by PDF processing!</p>
+
+</div></body></html>
