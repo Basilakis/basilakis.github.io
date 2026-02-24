@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Push Notifications Admin Guide</h1>
+<h2>Overview</h2>
+<p>The Push Notifications admin tab provides comprehensive management of web push notifications within the Messaging Management interface at <code>/admin/messaging</code>.</p>
+<h2>Features</h2>
+<h3>1. <strong>Subscription Management</strong></h3>
+<ul>
+<li>View all push subscriptions (active and inactive)</li>
+<li>See browser breakdown (Chrome, Firefox, Safari, etc.)</li>
+<li>Track subscription activity and status</li>
+<li>Remove/deactivate specific subscriptions</li>
+<li>Cleanup inactive subscriptions in bulk</li>
+</ul>
+<h3>2. <strong>Test Notifications</strong></h3>
+<ul>
+<li>Send test push notifications to your own devices</li>
+<li>Customize notification title and message</li>
+<li>Instant delivery testing</li>
+<li>Verify VAPID configuration</li>
+</ul>
+<h3>3. <strong>Analytics Dashboard</strong></h3>
+<ul>
+<li>Total subscriptions count</li>
+<li>Active vs inactive subscriptions</li>
+<li>Recent activity (last 7 days)</li>
+<li>Browser distribution statistics</li>
+</ul>
+<h3>4. <strong>VAPID Configuration Status</strong></h3>
+<ul>
+<li>Visual indicator of VAPID key configuration</li>
+<li>Public key display (for verification)</li>
+<li>Configuration alerts if VAPID is not set up</li>
+</ul>
+<h2>Setup Requirements</h2>
+<h3>1. Generate VAPID Keys</h3>
+<p>You can generate VAPID keys using the web-push library:</p>
+<pre><code class="language-bash">npm install -g web-push
+web-push generate-vapid-keys
+</code></pre>
+<p>Or use an online generator: <a href="https://vapidkeys.com/">https://vapidkeys.com/</a></p>
+<h3>2. Add VAPID Secrets to Supabase</h3>
+<p>Go to <strong>Supabase Dashboard → Project Settings → Edge Functions → Secrets</strong> and add:</p>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VAPID_PUBLIC_KEY</code></td>
+<td><code>BNxxx...</code></td>
+<td>Your VAPID public key</td>
+</tr>
+<tr>
+<td><code>VAPID_PRIVATE_KEY</code></td>
+<td><code>xxx...</code></td>
+<td>Your VAPID private key (keep secret!)</td>
+</tr>
+<tr>
+<td><code>VAPID_SUBJECT</code></td>
+<td><code>mailto:admin@yourdomain.com</code></td>
+<td>Contact email or website URL</td>
+</tr>
+</tbody></table>
+<h3>3. Redeploy Edge Functions</h3>
+<p>After adding the secrets, redeploy the notification-dispatcher Edge Function:</p>
+<pre><code class="language-bash">supabase functions deploy notification-dispatcher
+</code></pre>
+<h2>How Push Notifications Work</h2>
+<pre><code>User subscribes in browser
+       ↓
+Browser generates subscription endpoint
+       ↓
+Frontend calls notificationService.registerPushSubscription()
+       ↓
+Subscription saved to push_subscriptions table
+       ↓
+When notification is sent:
+       ↓
+notificationService.send() → checks user preferences
+       ↓
+Calls notification-dispatcher Edge Function
+       ↓
+Edge Function sends push to browser using VAPID keys
+       ↓
+User receives notification
+</code></pre>
+<h2>User Flow</h2>
+<h3>For Users (Opt-in)</h3>
+<p>Users can enable push notifications:</p>
+<ol>
+<li>Navigate to Settings → Notifications</li>
+<li>Enable &quot;Push Notifications&quot; for desired notification types</li>
+<li>Browser will prompt for permission</li>
+<li>Once granted, device is registered</li>
+</ol>
+<h3>For Admins</h3>
+<p>Admins can:</p>
+<ol>
+<li>Go to <code>/admin/messaging</code> → <strong>Push Notifications</strong> tab</li>
+<li>View all subscriptions and analytics</li>
+<li>Send test notifications</li>
+<li>Monitor subscription health</li>
+<li>Remove invalid/inactive subscriptions</li>
+</ol>
+<h2>Notification Types Supported</h2>
+<p>Push notifications can be sent for any notification type configured in the <code>notification_types</code> table:</p>
+<ul>
+<li>Quote updates</li>
+<li>Order status changes</li>
+<li>System alerts</li>
+<li>Product availability</li>
+<li>Custom notifications</li>
+</ul>
+<p>Users control which notification types trigger push notifications via their notification preferences.</p>
+<h2>Browser Support</h2>
+<table>
+<thead>
+<tr>
+<th>Browser</th>
+<th>Support</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Chrome</td>
+<td>✅ Full</td>
+<td>Best support</td>
+</tr>
+<tr>
+<td>Firefox</td>
+<td>✅ Full</td>
+<td>Excellent support</td>
+</tr>
+<tr>
+<td>Safari</td>
+<td>⚠️ Limited</td>
+<td>Requires user action</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>✅ Full</td>
+<td>Chromium-based</td>
+</tr>
+<tr>
+<td>Mobile Safari</td>
+<td>⚠️ iOS 16.4+</td>
+<td>Limited</td>
+</tr>
+</tbody></table>
+<h2>Troubleshooting</h2>
+<h3>VAPID Not Configured</h3>
+<p><strong>Symptom</strong>: Alert shows &quot;VAPID Configuration Required&quot;</p>
+<p><strong>Solution</strong>:</p>
+<ol>
+<li>Generate VAPID keys (see Setup Requirements)</li>
+<li>Add keys to Supabase Edge Function secrets</li>
+<li>Redeploy notification-dispatcher function</li>
+<li>Refresh admin page</li>
+</ol>
+<h3>Subscriptions Not Receiving</h3>
+<p><strong>Symptom</strong>: Test notifications not delivered</p>
+<p><strong>Check</strong>:</p>
+<ol>
+<li>Is subscription marked as <code>is_active: true</code>?</li>
+<li>Has user granted browser permission?</li>
+<li>Is browser still open/online?</li>
+<li>Check browser console for errors</li>
+<li>Verify VAPID keys are correct</li>
+</ol>
+<h3>Invalid/Expired Subscriptions</h3>
+<p><strong>Symptom</strong>: Many failed push deliveries</p>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li>Browser subscriptions can expire or become invalid</li>
+<li>Use <strong>Cleanup Inactive</strong> button to remove failed subscriptions</li>
+<li>Users will need to re-subscribe if needed</li>
+</ul>
+<h2>Security Best Practices</h2>
+<ol>
+<li><strong>Never expose VAPID private key</strong> - Only store in Supabase Edge Function secrets</li>
+<li><strong>Use HTTPS</strong> - Push notifications require secure context</li>
+<li><strong>Respect user preferences</strong> - Always honor opt-out settings</li>
+<li><strong>Rate limiting</strong> - Avoid spamming users with too many notifications</li>
+<li><strong>Clean up regularly</strong> - Remove expired subscriptions to save database space</li>
+</ol>
+<h2>API Integration</h2>
+<h3>Register Subscription (Client-side)</h3>
+<pre><code class="language-typescript">import { notificationService } from &#39;@/services/notifications/NotificationService&#39;;
+
+// Get push subscription from browser
+const registration = await navigator.serviceWorker.ready;
+const subscription = await registration.pushManager.subscribe({
+  userVisibleOnly: true,
+  applicationServerKey: VAPID_PUBLIC_KEY
+});
+
+// Register with backend
+await notificationService.registerPushSubscription(userId, subscription.toJSON());
+</code></pre>
+<h3>Send Notification (Server-side)</h3>
+<pre><code class="language-typescript">import { notificationService } from &#39;@/services/notifications/NotificationService&#39;;
+
+await notificationService.send({
+  userId: &#39;user-id&#39;,
+  notificationType: &#39;quote_update&#39;,
+  title: &#39;Quote Updated&#39;,
+  message: &#39;Your quote #12345 has been updated&#39;,
+  data: {
+    action_url: &#39;/quotes/12345&#39;
+  }
+});
+</code></pre>
+<h2>Monitoring</h2>
+<p>Track push notification performance:</p>
+<ol>
+<li><strong>Analytics Tab</strong> - View delivery rates and trends</li>
+<li><strong>Message Logs</strong> - Detailed log of all notifications</li>
+<li><strong>Notifications Table</strong> - Database records with status and timestamps</li>
+</ol>
+<h2>Cost Considerations</h2>
+<ul>
+<li><strong>Web Push is FREE</strong> - No per-message costs</li>
+<li><strong>VAPID keys are free</strong> - Self-managed authentication</li>
+<li>Only costs: Database storage for subscriptions (~500 bytes each)</li>
+</ul>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="./notifications-system.md">Notification Service</a></li>
+<li><a href="./messaging-admin-guide.md">Messaging Management</a></li>
+<li><a href="./deployment-guide.md">Deployment Guide</a> - VAPID configuration</li>
+<li><a href="./edge-functions.md">Edge Functions</a> - notification-dispatcher</li>
+</ul>
+
+</div></body></html>
