@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Agent System Architecture</h1>
+<p>Complete guide to the AI Agent system with database-driven prompts and configurations.</p>
+<hr>
+<h2>Overview</h2>
+<p>The Material Kai Vision Platform uses an AI Agent system powered by LangChain.js, LangGraph, and Anthropic Claude models. Agents are specialized AI assistants that help users with specific tasks like material search, B2B research, interior design, and product discovery.</p>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>LangGraph StateGraph-based execution with checkpointing</li>
+<li>Database-driven system prompts (no code deployment needed)</li>
+<li>Admin UI for prompt management</li>
+<li>Real-time prompt updates</li>
+<li>Role-based access control</li>
+<li>Tool orchestration with LangChain.js</li>
+<li>Long-term memory for cross-conversation context</li>
+<li>Skills system for domain-specific knowledge injection</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<h3>Components</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     Frontend (React)                        │
+│  - Agent Hub (/agent-hub)                                   │
+│  - Agent Configs Admin (/admin/agent-configs)              │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Supabase Edge Functions (Deno)                 │
+│  - agent-chat/index.ts                                      │
+│  - _skills/ (domain knowledge)                              │
+│  - Loads prompts from database                              │
+│  - LangGraph StateGraph orchestration                       │
+│  - Claude Sonnet 4.5 / Haiku 4.5 models                    │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Database (PostgreSQL/Supabase)                 │
+│  - prompts table (unified for all AI prompts)              │
+│  - agent_checkpoints (conversation state)                   │
+│  - agent_memories (long-term memory)                        │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>Agent Types</h2>
+<h3>1. Search Agent</h3>
+<p><strong>Agent ID</strong>: <code>search</code>
+<strong>Access</strong>: All users (viewer, member, admin, owner)
+<strong>Model</strong>: Claude Haiku 4.5 (fast responses)</p>
+<p><strong>Purpose</strong>: Help users find materials using multi-modal search capabilities.</p>
+<p><strong>Available Tools</strong>:</p>
+<ul>
+<li><code>material_search</code> - RAG-powered semantic search via MIVAA API</li>
+<li><code>image_analysis</code> - Material recognition, visual search, product identification</li>
+</ul>
+<p><strong>Key Capabilities</strong>:</p>
+<ul>
+<li>Semantic search with multi-vector strategy</li>
+<li>Image-based material identification</li>
+<li>Product recommendations</li>
+</ul>
+<h3>2. Insights Agent</h3>
+<p><strong>Agent ID</strong>: <code>insights</code>
+<strong>Access</strong>: Admin, Owner only
+<strong>Model</strong>: Claude Sonnet 4.5 (complex reasoning)</p>
+<p><strong>Purpose</strong>: Unified intelligence for research, analytics, business analysis, and B2B manufacturer discovery.</p>
+<p><strong>Available Tools</strong>:</p>
+<p><strong>Sub-agent Orchestration:</strong></p>
+<ul>
+<li><code>research_analysis</code> - Market research and trends</li>
+<li><code>analytics_analysis</code> - Data analysis and insights</li>
+<li><code>business_analysis</code> - Business intelligence</li>
+<li><code>product_analysis</code> - Product comparison and analysis</li>
+<li><code>material_search</code> - Material discovery</li>
+</ul>
+<p><strong>B2B Research Tools:</strong></p>
+<ul>
+<li><code>b2b_manufacturer_search</code> - Find manufacturers via Claude web search</li>
+<li><code>company_website_scrape</code> - Scrape company websites via Firecrawl</li>
+<li><code>company_enrichment</code> - Enrich company data via Apollo.io</li>
+<li><code>contact_discovery</code> - Find contacts via Hunter.io domain search or find a specific person&#39;s email (Hunter Email Finder + Apollo.io People Match fallback). All discovered emails are validated with ZeroBounce.</li>
+<li><code>email_validate</code> - Validate email addresses on demand via ZeroBounce (single or batch up to 10). Returns status: valid, invalid, catch-all, spamtrap, abuse, do_not_mail, unknown.</li>
+<li><code>save_to_crm</code> - Save companies/contacts to CRM</li>
+</ul>
+<h3>3. Interior Designer Agent</h3>
+<p><strong>Agent ID</strong>: <code>interior-designer</code>
+<strong>Access</strong>: All users (viewer, member, admin, owner)
+<strong>Model</strong>: Claude Sonnet 4.5</p>
+<p><strong>Purpose</strong>: AI-powered interior design with spatial analysis and material matching.</p>
+<p><strong>Available Tools</strong>:</p>
+<ul>
+<li><code>material_search</code> - Material discovery (only when user explicitly asks)</li>
+<li><code>image_analysis</code> - Room and material analysis</li>
+<li><code>generate_3d</code> - Trigger async 3D interior design generation</li>
+</ul>
+<p><strong>Special Behavior</strong>: Material search is only injected when user message contains keywords like &quot;find materials&quot;, &quot;search for materials&quot;, etc.</p>
+<h3>4. Demo Agent</h3>
+<p><strong>Agent ID</strong>: <code>demo</code>
+<strong>Access</strong>: Admin, Owner only
+<strong>Model</strong>: N/A (returns hardcoded demo data)</p>
+<p><strong>Purpose</strong>: Platform showcase with pre-defined demo responses.</p>
+<hr>
+<h2>B2B Research System</h2>
+<h3>Supported Countries (30 Markets)</h3>
+<p>The B2B manufacturer search supports 30 markets across 5 regions with native-language search optimization:</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Countries</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Central &amp; Eastern Europe</strong></td>
+<td>Poland (PL), Czech Republic (CZ), Slovakia (SK), Hungary (HU), Romania (RO), Bulgaria (BG), Ukraine (UA)</td>
+</tr>
+<tr>
+<td><strong>Balkans &amp; Turkey</strong></td>
+<td>Turkey (TR), Serbia (RS), Croatia (HR), Slovenia (SI), Bosnia and Herzegovina (BA), North Macedonia (MK), Albania (AL), Greece (GR)</td>
+</tr>
+<tr>
+<td><strong>Baltic &amp; Nordic</strong></td>
+<td>Lithuania (LT), Latvia (LV), Estonia (EE), Finland (FI), Denmark (DK)</td>
+</tr>
+<tr>
+<td><strong>Western &amp; Southern Europe</strong></td>
+<td>Germany (DE), Netherlands (NL), France (FR), Spain (ES), Italy (IT), Portugal (PT), United Kingdom (GB)</td>
+</tr>
+<tr>
+<td><strong>Global Manufacturing Hubs</strong></td>
+<td>China (CN), India (IN), Morocco (AR)</td>
+</tr>
+</tbody></table>
+<h3>Global Multi-Region Search</h3>
+<p>The B2B manufacturer search uses Claude&#39;s built-in web search. Specify a country for focused results, a region for regional scope, or omit both for a broad global search — all powered by the existing <code>ANTHROPIC_API_KEY</code>.</p>
+<p><strong>Search modes:</strong></p>
+<ul>
+<li><strong>Global</strong> (default) — broad search across Europe and major manufacturing hubs</li>
+<li><strong>By region</strong> — focused on a specific region (cee/balkans/baltic_nordic/western_southern/global)</li>
+<li><strong>By country</strong> — single-country focused results</li>
+</ul>
+<p><strong>How it works:</strong></p>
+<ol>
+<li>A natural language query is constructed with country/region scope and product category</li>
+<li>Claude performs web search using the <code>web_search_20250305</code> built-in tool</li>
+<li>Results are returned as a structured manufacturer list</li>
+<li>No separate API key required — uses <code>ANTHROPIC_API_KEY</code></li>
+</ol>
+<h3>Dual-Language Search</h3>
+<p>Each regional query includes native language search terms automatically. For example, a search for &quot;ceramic tiles&quot; in the CEE region includes:</p>
+<ul>
+<li>English: <code>&quot;ceramic tiles manufacturer Poland, Czech Republic, Slovakia...&quot;</code></li>
+<li>Native hints: <code>&quot;płytki ceramiczne&quot; (Polish), &quot;keramické dlaždice&quot; (Czech), etc.</code></li>
+</ul>
+<p>This ensures discovery of:</p>
+<ul>
+<li>International-facing manufacturers (English websites)</li>
+<li>Local-only manufacturers (native language websites only)</li>
+</ul>
+<h3>Required API Keys</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Service</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>FIRECRAWL_API_KEY</code></td>
+<td>Firecrawl</td>
+<td>Website scraping</td>
+</tr>
+<tr>
+<td><code>APOLLO_API_KEY</code></td>
+<td>Apollo.io</td>
+<td>Company enrichment + person email finder fallback</td>
+</tr>
+<tr>
+<td><code>HUNTER_API_KEY</code></td>
+<td>Hunter.io</td>
+<td>Domain search + person email finder</td>
+</tr>
+<tr>
+<td><code>ZEROBOUNCE_API_KEY</code></td>
+<td>ZeroBounce</td>
+<td>Email validation (all discovered emails)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Skills System</h2>
+<p>Skills provide domain-specific knowledge that agents can load on-demand using progressive disclosure.</p>
+<h3>Structure</h3>
+<pre><code>supabase/functions/
+├── _skills/
+│   ├── types.ts              # Type definitions
+│   ├── index.ts              # Skills loader
+│   └── [skill-slug]/
+│       └── SKILL.md          # Skill definition
+</code></pre>
+<h3>SKILL.md Format</h3>
+<pre><code class="language-markdown">---
+name: Skill Name
+slug: skill-slug
+description: Brief description for agent selection
+agents: [search, insights]    # Which agents can use this skill
+tags: [tag1, tag2]
+---
+
+## Context
+Domain expertise content...
+
+## Instructions
+How to apply this knowledge...
+</code></pre>
+<h3>When to Use Skills</h3>
+<p>Skills are for <strong>proprietary knowledge</strong> that:</p>
+<ol>
+<li>Claude doesn&#39;t know (your pricing rules, supplier tiers, business logic)</li>
+<li>Isn&#39;t needed for every query (otherwise → system prompt)</li>
+</ol>
+<h3>Adding New Skills</h3>
+<ol>
+<li>Create <code>_skills/[slug]/SKILL.md</code></li>
+<li>Add import in <code>_skills/index.ts</code>:</li>
+</ol>
+<pre><code class="language-typescript">import newSkill from &#39;./new-skill/SKILL.md&#39; with { type: &#39;text&#39; };
+
+const SKILL_FILES = {
+  &#39;new-skill&#39;: newSkill,
+};
+</code></pre>
+<hr>
+<h2>Environment Variables</h2>
+<h3>Required</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Claude API key</td>
+</tr>
+<tr>
+<td><code>SUPABASE_URL</code></td>
+<td>Supabase project URL</td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>Service role key</td>
+</tr>
+</tbody></table>
+<h3>Optional</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MIVAA_GATEWAY_URL</code></td>
+<td><code>https://v1api.materialshub.gr</code></td>
+<td>MIVAA API endpoint</td>
+</tr>
+<tr>
+<td><code>FIRECRAWL_API_KEY</code></td>
+<td>-</td>
+<td>Website scraping</td>
+</tr>
+<tr>
+<td><code>APOLLO_API_KEY</code></td>
+<td>-</td>
+<td>Company enrichment + email finder fallback</td>
+</tr>
+<tr>
+<td><code>HUNTER_API_KEY</code></td>
+<td>-</td>
+<td>Domain search + person email finder</td>
+</tr>
+<tr>
+<td><code>ZEROBOUNCE_API_KEY</code></td>
+<td>-</td>
+<td>Email validation (all discovered emails)</td>
+</tr>
+<tr>
+<td><code>SENTRY_AUTH_TOKEN</code></td>
+<td>-</td>
+<td>Error tracking</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Admin UI - Agent Configurations</h2>
+<h3>Location</h3>
+<p><code>/admin/agent-configs</code></p>
+<h3>Features</h3>
+<ul>
+<li>View all configured agents</li>
+<li>Edit system prompts (stored in database)</li>
+<li>Real-time character count</li>
+<li>Status management (active/inactive)</li>
+<li>Changes take effect immediately</li>
+</ul>
+<h3>Usage</h3>
+<ol>
+<li>Navigate to Admin Dashboard → AI &amp; Intelligence → Agent Configurations</li>
+<li>Click &quot;Edit&quot; on any agent</li>
+<li>Modify the system prompt</li>
+<li>Click &quot;Save Changes&quot;</li>
+<li>Changes apply on next agent execution</li>
+</ol>
+<hr>
+<h2>API Reference</h2>
+<h3>Endpoint</h3>
+<p><code>POST /functions/v1/agent-chat</code></p>
+<h3>Request</h3>
+<pre><code class="language-json">{
+  &quot;messages&quot;: [
+    { &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Find marble tiles&quot; }
+  ],
+  &quot;agentId&quot;: &quot;search&quot;
+}
+</code></pre>
+<h3>Response (Server-Sent Events)</h3>
+<pre><code class="language-json">{ &quot;type&quot;: &quot;iteration&quot;, &quot;iteration&quot;: 1, &quot;maxIterations&quot;: 10 }
+{ &quot;type&quot;: &quot;tool_call&quot;, &quot;tool&quot;: &quot;material_search&quot;, &quot;args&quot;: {...} }
+{ &quot;type&quot;: &quot;tool_result&quot;, &quot;tool&quot;: &quot;material_search&quot;, &quot;result&quot;: {...} }
+{ &quot;type&quot;: &quot;final_response&quot;, &quot;text&quot;: &quot;...&quot;, &quot;materialResults&quot;: {...} }
+</code></pre>
+<hr>
+<h2>Security &amp; Access Control</h2>
+<h3>Role-Based Access</h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Roles</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Search</td>
+<td>viewer, member, admin, owner</td>
+</tr>
+<tr>
+<td>Insights</td>
+<td>admin, owner</td>
+</tr>
+<tr>
+<td>Interior Designer</td>
+<td>viewer, member, admin, owner</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>admin, owner</td>
+</tr>
+</tbody></table>
+<h3>Authentication</h3>
+<p>All requests require:</p>
+<ol>
+<li>Valid Supabase session</li>
+<li>Workspace membership</li>
+<li>Appropriate role for restricted agents</li>
+</ol>
+<hr>
+<h2>Monitoring &amp; Logging</h2>
+<h3>Token Usage Tracking</h3>
+<ul>
+<li>Accumulated across all agent iterations</li>
+<li>Logged via <code>log_agent_usage()</code> RPC</li>
+<li>Integrates with pricing table for cost calculation</li>
+</ul>
+<h3>Metrics Tracked</h3>
+<ul>
+<li>Agent invocations per type</li>
+<li>Average response time</li>
+<li>Token usage (input/output)</li>
+<li>Tool execution counts</li>
+<li>Error rates</li>
+</ul>
+<hr>
+<h2>Related Documentation</h2>
+<ul>
+<li><strong><a href="langgraph-implementation.md">langgraph-implementation.md</a></strong> - LangGraph StateGraph, checkpointing, memory</li>
+<li><strong><a href="api/agent-chat-api.md">api/agent-chat-api.md</a></strong> - Full API reference</li>
+<li><strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - Model configurations</li>
+</ul>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Agent Not Responding</h3>
+<ol>
+<li>Check Edge Function logs in Supabase</li>
+<li>Verify agent status is &#39;active&#39; in database</li>
+<li>Check API keys are configured</li>
+<li>Review rate limits</li>
+</ol>
+<h3>B2B Search Failing</h3>
+<ol>
+<li>Verify <code>ANTHROPIC_API_KEY</code> is set and has sufficient quota</li>
+<li>Check that the web search beta (<code>web-search-2025-03-05</code>) is available on your Anthropic plan</li>
+</ol>
+<h3>Skills Not Loading</h3>
+<ol>
+<li>Verify SKILL.md has correct frontmatter</li>
+<li>Check <code>agents</code> array includes the agent ID</li>
+<li>Verify import in <code>_skills/index.ts</code></li>
+</ol>
+<hr>
+<p><strong>Last Updated</strong>: February 3, 2026
+<strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Production
+<strong>Maintainer</strong>: Development Team</p>
+
+</div></body></html>

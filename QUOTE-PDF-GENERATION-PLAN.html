@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Quote PDF/HTML Generation - Final Implementation Plan</h1>
+<h2>Overview</h2>
+<p>Generate branded PDF and HTML documents when a quote is published, using Supabase Edge Functions for consistent, reliable output.</p>
+<hr>
+<h2>Architecture</h2>
+<pre><code>┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│   Frontend      │────▶│  Edge Function       │────▶│  Supabase       │
+│   &quot;Publish&quot;     │     │  generate-quote-pdf  │     │  Storage        │
+│   Button        │◀────│                      │◀────│                 │
+└─────────────────┘     └──────────────────────┘     └─────────────────┘
+                                  │
+                                  ▼
+                        ┌──────────────────────┐
+                        │  Database            │
+                        │  - quotes            │
+                        │  - quote_items       │
+                        │  - quote_templates   │
+                        └──────────────────────┘
+</code></pre>
+<hr>
+<h2>Phase 1: Database Schema</h2>
+<h3>1.1 Migration: Add Quote Publishing Fields</h3>
+<pre><code class="language-sql">-- Migration: add_quote_publishing_fields
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS pdf_url TEXT,
+ADD COLUMN IF NOT EXISTS html_url TEXT,
+ADD COLUMN IF NOT EXISTS quote_number TEXT;
+
+-- Auto-generate quote numbers
+CREATE OR REPLACE FUNCTION generate_quote_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.published_at IS NOT NULL AND OLD.published_at IS NULL THEN
+    NEW.quote_number := &#39;Q-&#39; || TO_CHAR(NOW(), &#39;YYYYMMDD&#39;) || &#39;-&#39; ||
+                        LPAD(NEXTVAL(&#39;quote_number_seq&#39;)::TEXT, 4, &#39;0&#39;);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE SEQUENCE IF NOT EXISTS quote_number_seq START 1;
+
+CREATE TRIGGER set_quote_number
+  BEFORE UPDATE ON quotes
+  FOR EACH ROW
+  EXECUTE FUNCTION generate_quote_number();
+</code></pre>
+<h3>1.2 Migration: Quote Templates Table</h3>
+<pre><code class="language-sql">-- Migration: create_quote_templates
+CREATE TABLE quote_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+
+  -- Template pages (storage paths)
+  intro_pages JSONB DEFAULT &#39;[]&#39;,        -- [&quot;templates/intro-1.png&quot;, &quot;templates/intro-2.png&quot;]
+  background_page TEXT,                   -- &quot;templates/background.png&quot;
+  final_pages JSONB DEFAULT &#39;[]&#39;,         -- [&quot;templates/final-1.png&quot;]
+
+  -- Table positioning &amp; styling
+  table_config JSONB DEFAULT &#39;{
+    &quot;position&quot;: {&quot;x&quot;: 50, &quot;y&quot;: 180},
+    &quot;width&quot;: 500,
+    &quot;maxRowsPerPage&quot;: 12,
+    &quot;columns&quot;: [&quot;image&quot;, &quot;name&quot;, &quot;size&quot;, &quot;quantity&quot;, &quot;unit_price&quot;, &quot;total&quot;],
+    &quot;showHeader&quot;: true,
+    &quot;headerHeight&quot;: 30,
+    &quot;rowHeight&quot;: 45
+  }&#39;,
+
+  -- Styling
+  style_config JSONB DEFAULT &#39;{
+    &quot;headerBgColor&quot;: &quot;#1a1a2e&quot;,
+    &quot;headerTextColor&quot;: &quot;#ffffff&quot;,
+    &quot;rowBgColor&quot;: &quot;#ffffff&quot;,
+    &quot;altRowBgColor&quot;: &quot;#f8f9fa&quot;,
+    &quot;borderColor&quot;: &quot;#dee2e6&quot;,
+    &quot;fontFamily&quot;: &quot;Helvetica&quot;,
+    &quot;fontSize&quot;: 10,
+    &quot;accentColor&quot;: &quot;#3b82f6&quot;
+  }&#39;,
+
+  -- Meta
+  is_default BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+
+  UNIQUE(workspace_id, name)
+);
+
+-- RLS Policies
+ALTER TABLE quote_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY &quot;Users can view their workspace templates&quot;
+  ON quote_templates FOR SELECT
+  USING (workspace_id IN (
+    SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
+  ));
+
+CREATE POLICY &quot;Admins can manage templates&quot;
+  ON quote_templates FOR ALL
+  USING (workspace_id IN (
+    SELECT workspace_id FROM workspace_members
+    WHERE user_id = auth.uid() AND role IN (&#39;admin&#39;, &#39;owner&#39;)
+  ));
+</code></pre>
+<hr>
+<h2>Phase 2: Supabase Storage Setup</h2>
+<h3>2.1 Storage Buckets</h3>
+<pre><code>quote-templates/                    (Private bucket)
+├── {workspace_id}/
+│   ├── intro/
+│   │   ├── page-1.png
+│   │   └── page-2.png
+│   ├── backgrounds/
+│   │   └── main.png
+│   └── final/
+│       └── page-1.png
+
+quote-documents/                    (Private bucket, signed URLs for access)
+├── {workspace_id}/
+│   └── {quote_id}/
+│       ├── quote-Q-20260128-0001.pdf
+│       └── quote-Q-20260128-0001.html
+</code></pre>
+<h3>2.2 Storage Policies</h3>
+<pre><code class="language-sql">-- Templates: workspace members can read, admins can write
+CREATE POLICY &quot;Workspace members can read templates&quot;
+  ON storage.objects FOR SELECT
+  USING (bucket_id = &#39;quote-templates&#39; AND ...);
+
+-- Documents: quote owner and workspace admins can access
+CREATE POLICY &quot;Quote documents access&quot;
+  ON storage.objects FOR SELECT
+  USING (bucket_id = &#39;quote-documents&#39; AND ...);
+</code></pre>
+<hr>
+<h2>Phase 3: Edge Function - generate-quote-pdf</h2>
+<h3>3.1 Function Structure</h3>
+<pre><code>supabase/functions/generate-quote-pdf/
+├── index.ts          # Main handler
+├── pdf-generator.ts  # PDF creation logic
+├── html-generator.ts # HTML creation logic
+├── types.ts          # TypeScript interfaces
+└── deno.json         # Dependencies
+</code></pre>
+<h3>3.2 Main Handler (index.ts)</h3>
+<pre><code class="language-typescript">import { serve } from &quot;https://deno.land/std@0.168.0/http/server.ts&quot;
+import { createClient } from &quot;https://esm.sh/@supabase/supabase-js@2&quot;
+import { generatePDF } from &quot;./pdf-generator.ts&quot;
+import { generateHTML } from &quot;./html-generator.ts&quot;
+
+interface RequestBody {
+  quote_id: string
+  template_id?: string
+}
+
+serve(async (req) =&gt; {
+  try {
+    const { quote_id, template_id } = await req.json() as RequestBody
+
+    // Initialize Supabase client with service role
+    const supabase = createClient(
+      Deno.env.get(&#39;SUPABASE_URL&#39;)!,
+      Deno.env.get(&#39;SUPABASE_SERVICE_ROLE_KEY&#39;)!
+    )
+
+    // 1. Fetch quote with items
+    const { data: quote, error: quoteError } = await supabase
+      .from(&#39;quotes&#39;)
+      .select(`
+        *,
+        quote_items (
+          *,
+          products (id, name, sku, primary_image_url, base_price)
+        ),
+        quote_upsells (
+          *,
+          upsells (name, price)
+        ),
+        users (full_name, email, company_name, phone)
+      `)
+      .eq(&#39;id&#39;, quote_id)
+      .single()
+
+    if (quoteError) throw quoteError
+
+    // 2. Fetch template
+    const { data: template } = await supabase
+      .from(&#39;quote_templates&#39;)
+      .select(&#39;*&#39;)
+      .eq(&#39;id&#39;, template_id || quote.workspace_id)
+      .or(`is_default.eq.true,workspace_id.eq.${quote.workspace_id}`)
+      .order(&#39;is_default&#39;, { ascending: false })
+      .limit(1)
+      .single()
+
+    // 3. Generate PDF
+    const pdfBuffer = await generatePDF(quote, template, supabase)
+
+    // 4. Generate HTML
+    const htmlContent = await generateHTML(quote, template, supabase)
+
+    // 5. Generate quote number if not exists
+    const quoteNumber = quote.quote_number ||
+      `Q-${new Date().toISOString().slice(0,10).replace(/-/g,&#39;&#39;)}-${String(Date.now()).slice(-4)}`
+
+    // 6. Upload PDF to storage
+    const pdfPath = `${quote.workspace_id}/${quote_id}/quote-${quoteNumber}.pdf`
+    const { error: pdfUploadError } = await supabase.storage
+      .from(&#39;quote-documents&#39;)
+      .upload(pdfPath, pdfBuffer, {
+        contentType: &#39;application/pdf&#39;,
+        upsert: true
+      })
+
+    if (pdfUploadError) throw pdfUploadError
+
+    // 7. Upload HTML to storage
+    const htmlPath = `${quote.workspace_id}/${quote_id}/quote-${quoteNumber}.html`
+    const { error: htmlUploadError } = await supabase.storage
+      .from(&#39;quote-documents&#39;)
+      .upload(htmlPath, htmlContent, {
+        contentType: &#39;text/html&#39;,
+        upsert: true
+      })
+
+    if (htmlUploadError) throw htmlUploadError
+
+    // 8. Get signed URLs (valid for 7 days)
+    const { data: pdfUrl } = await supabase.storage
+      .from(&#39;quote-documents&#39;)
+      .createSignedUrl(pdfPath, 60 * 60 * 24 * 7)
+
+    const { data: htmlUrl } = await supabase.storage
+      .from(&#39;quote-documents&#39;)
+      .createSignedUrl(htmlPath, 60 * 60 * 24 * 7)
+
+    // 9. Update quote record
+    const { error: updateError } = await supabase
+      .from(&#39;quotes&#39;)
+      .update({
+        published_at: new Date().toISOString(),
+        pdf_url: pdfUrl?.signedUrl,
+        html_url: htmlUrl?.signedUrl,
+        quote_number: quoteNumber,
+        status: &#39;quoted&#39;
+      })
+      .eq(&#39;id&#39;, quote_id)
+
+    if (updateError) throw updateError
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        quote_number: quoteNumber,
+        pdf_url: pdfUrl?.signedUrl,
+        html_url: htmlUrl?.signedUrl
+      }),
+      { headers: { &#39;Content-Type&#39;: &#39;application/json&#39; } }
+    )
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { &#39;Content-Type&#39;: &#39;application/json&#39; } }
+    )
+  }
+})
+</code></pre>
+<h3>3.3 PDF Generator (pdf-generator.ts)</h3>
+<pre><code class="language-typescript">import { PDFDocument, rgb, StandardFonts } from &quot;https://esm.sh/pdf-lib@1.17.1&quot;
+
+export async function generatePDF(
+  quote: QuoteData,
+  template: TemplateConfig,
+  supabase: SupabaseClient
+): Promise&lt;Uint8Array&gt; {
+
+  const pdfDoc = await PDFDocument.create()
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+
+  // 1. Add intro pages
+  for (const introPath of template.intro_pages) {
+    const introBytes = await fetchImage(supabase, introPath)
+    const introImage = await pdfDoc.embedPng(introBytes)
+    const page = pdfDoc.addPage([introImage.width, introImage.height])
+    page.drawImage(introImage, {
+      x: 0, y: 0,
+      width: introImage.width,
+      height: introImage.height
+    })
+  }
+
+  // 2. Add table pages with background
+  const bgBytes = await fetchImage(supabase, template.background_page)
+  const bgImage = await pdfDoc.embedPng(bgBytes)
+
+  const tableConfig = template.table_config
+  const items = quote.quote_items
+  const rowsPerPage = tableConfig.maxRowsPerPage
+  const totalPages = Math.ceil(items.length / rowsPerPage)
+
+  for (let pageNum = 0; pageNum &lt; totalPages; pageNum++) {
+    const page = pdfDoc.addPage([bgImage.width, bgImage.height])
+
+    // Draw background
+    page.drawImage(bgImage, {
+      x: 0, y: 0,
+      width: bgImage.width,
+      height: bgImage.height
+    })
+
+    // Draw table
+    const startIdx = pageNum * rowsPerPage
+    const pageItems = items.slice(startIdx, startIdx + rowsPerPage)
+
+    await drawTable(page, pageItems, tableConfig, font, fontBold, pdfDoc, supabase)
+
+    // Draw totals on last table page
+    if (pageNum === totalPages - 1) {
+      await drawTotals(page, quote, tableConfig, font, fontBold)
+    }
+  }
+
+  // 3. Add final pages
+  for (const finalPath of template.final_pages) {
+    const finalBytes = await fetchImage(supabase, finalPath)
+    const finalImage = await pdfDoc.embedPng(finalBytes)
+    const page = pdfDoc.addPage([finalImage.width, finalImage.height])
+    page.drawImage(finalImage, {
+      x: 0, y: 0,
+      width: finalImage.width,
+      height: finalImage.height
+    })
+  }
+
+  return await pdfDoc.save()
+}
+
+async function drawTable(
+  page: PDFPage,
+  items: QuoteItem[],
+  config: TableConfig,
+  font: PDFFont,
+  fontBold: PDFFont,
+  pdfDoc: PDFDocument,
+  supabase: SupabaseClient
+) {
+  const { position, width, headerHeight, rowHeight, columns } = config
+  const colWidths = calculateColumnWidths(columns, width)
+
+  let y = page.getHeight() - position.y
+
+  // Draw header
+  if (config.showHeader) {
+    // Header background
+    page.drawRectangle({
+      x: position.x,
+      y: y - headerHeight,
+      width: width,
+      height: headerHeight,
+      color: rgb(0.1, 0.1, 0.18) // Dark header
+    })
+
+    // Header text
+    let x = position.x + 5
+    for (const col of columns) {
+      page.drawText(getColumnLabel(col), {
+        x, y: y - headerHeight + 10,
+        font: fontBold,
+        size: 10,
+        color: rgb(1, 1, 1)
+      })
+      x += colWidths[col]
+    }
+
+    y -= headerHeight
+  }
+
+  // Draw rows
+  for (let i = 0; i &lt; items.length; i++) {
+    const item = items[i]
+    const isAlt = i % 2 === 1
+
+    // Row background
+    page.drawRectangle({
+      x: position.x,
+      y: y - rowHeight,
+      width: width,
+      height: rowHeight,
+      color: isAlt ? rgb(0.97, 0.98, 0.99) : rgb(1, 1, 1)
+    })
+
+    // Row content
+    let x = position.x + 5
+
+    // Product image (thumbnail)
+    if (columns.includes(&#39;image&#39;) &amp;&amp; item.products?.primary_image_url) {
+      try {
+        const imgBytes = await fetch(item.products.primary_image_url).then(r =&gt; r.arrayBuffer())
+        const img = await pdfDoc.embedJpg(new Uint8Array(imgBytes))
+        page.drawImage(img, {
+          x, y: y - rowHeight + 5,
+          width: 35, height: 35
+        })
+      } catch {}
+      x += colWidths[&#39;image&#39;]
+    }
+
+    // Product name
+    if (columns.includes(&#39;name&#39;)) {
+      page.drawText(item.products?.name || &#39;N/A&#39;, {
+        x, y: y - rowHeight + 15,
+        font, size: 9
+      })
+      x += colWidths[&#39;name&#39;]
+    }
+
+    // Size/Color
+    if (columns.includes(&#39;size&#39;)) {
+      const size = [item.selected_size, item.selected_color].filter(Boolean).join(&#39; / &#39;)
+      page.drawText(size || &#39;-&#39;, {
+        x, y: y - rowHeight + 15,
+        font, size: 9
+      })
+      x += colWidths[&#39;size&#39;]
+    }
+
+    // Quantity
+    if (columns.includes(&#39;quantity&#39;)) {
+      page.drawText(String(item.quantity || 1), {
+        x, y: y - rowHeight + 15,
+        font, size: 9
+      })
+      x += colWidths[&#39;quantity&#39;]
+    }
+
+    // Unit price
+    if (columns.includes(&#39;unit_price&#39;)) {
+      const price = item.products?.base_price || 0
+      page.drawText(`€${price.toFixed(2)}`, {
+        x, y: y - rowHeight + 15,
+        font, size: 9
+      })
+      x += colWidths[&#39;unit_price&#39;]
+    }
+
+    // Total
+    if (columns.includes(&#39;total&#39;)) {
+      const total = (item.products?.base_price || 0) * (item.quantity || 1)
+      page.drawText(`€${total.toFixed(2)}`, {
+        x, y: y - rowHeight + 15,
+        fontBold, size: 9
+      })
+    }
+
+    y -= rowHeight
+  }
+
+  // Draw border
+  page.drawRectangle({
+    x: position.x,
+    y: y,
+    width: width,
+    height: page.getHeight() - position.y - y,
+    borderColor: rgb(0.87, 0.89, 0.91),
+    borderWidth: 1
+  })
+}
+</code></pre>
+<hr>
+<h2>Phase 4: Frontend Integration</h2>
+<h3>4.1 QuoteDocumentService</h3>
+<p><strong>File</strong>: <code>src/services/QuoteDocumentService.ts</code></p>
+<pre><code class="language-typescript">import { supabase } from &#39;@/lib/supabase&#39;
+
+export class QuoteDocumentService {
+
+  static async publishQuote(quoteId: string, templateId?: string): Promise&lt;{
+    success: boolean
+    quoteNumber?: string
+    pdfUrl?: string
+    htmlUrl?: string
+    error?: string
+  }&gt; {
+    const { data, error } = await supabase.functions.invoke(&#39;generate-quote-pdf&#39;, {
+      body: { quote_id: quoteId, template_id: templateId }
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return data
+  }
+
+  static async regenerateDocuments(quoteId: string): Promise&lt;...&gt; {
+    // Same as publish, but for already-published quotes
+  }
+
+  static async getDocumentUrls(quoteId: string): Promise&lt;{
+    pdfUrl: string | null
+    htmlUrl: string | null
+  }&gt; {
+    const { data } = await supabase
+      .from(&#39;quotes&#39;)
+      .select(&#39;pdf_url, html_url&#39;)
+      .eq(&#39;id&#39;, quoteId)
+      .single()
+
+    return {
+      pdfUrl: data?.pdf_url || null,
+      htmlUrl: data?.html_url || null
+    }
+  }
+}
+</code></pre>
+<h3>4.2 Publish Button Component</h3>
+<p><strong>File</strong>: <code>src/components/admin/QuotePublishButton.tsx</code></p>
+<pre><code class="language-typescript">export function QuotePublishButton({ quoteId, onPublished }: Props) {
+  const [isPublishing, setIsPublishing] = useState(false)
+
+  const handlePublish = async () =&gt; {
+    setIsPublishing(true)
+
+    const result = await QuoteDocumentService.publishQuote(quoteId)
+
+    if (result.success) {
+      toast.success(`Quote ${result.quoteNumber} published!`)
+      onPublished?.(result)
+    } else {
+      toast.error(`Failed to publish: ${result.error}`)
+    }
+
+    setIsPublishing(false)
+  }
+
+  return (
+    &lt;Button onClick={handlePublish} disabled={isPublishing}&gt;
+      {isPublishing ? (
+        &lt;&gt;
+          &lt;Loader2 className=&quot;mr-2 h-4 w-4 animate-spin&quot; /&gt;
+          Generating...
+        &lt;/&gt;
+      ) : (
+        &lt;&gt;
+          &lt;FileText className=&quot;mr-2 h-4 w-4&quot; /&gt;
+          Publish Quote
+        &lt;/&gt;
+      )}
+    &lt;/Button&gt;
+  )
+}
+</code></pre>
+<h3>4.3 Document Download Links</h3>
+<p><strong>File</strong>: <code>src/components/admin/QuoteDocumentLinks.tsx</code></p>
+<pre><code class="language-typescript">export function QuoteDocumentLinks({ quote }: { quote: Quote }) {
+  if (!quote.published_at) return null
+
+  return (
+    &lt;div className=&quot;flex gap-2&quot;&gt;
+      &lt;Badge variant=&quot;outline&quot;&gt;
+        {quote.quote_number}
+      &lt;/Badge&gt;
+
+      {quote.pdf_url &amp;&amp; (
+        &lt;Button variant=&quot;outline&quot; size=&quot;sm&quot; asChild&gt;
+          &lt;a href={quote.pdf_url} target=&quot;_blank&quot; download&gt;
+            &lt;FileDown className=&quot;mr-1 h-4 w-4&quot; /&gt;
+            PDF
+          &lt;/a&gt;
+        &lt;/Button&gt;
+      )}
+
+      {quote.html_url &amp;&amp; (
+        &lt;Button variant=&quot;outline&quot; size=&quot;sm&quot; asChild&gt;
+          &lt;a href={quote.html_url} target=&quot;_blank&quot;&gt;
+            &lt;Globe className=&quot;mr-1 h-4 w-4&quot; /&gt;
+            Web View
+          &lt;/a&gt;
+        &lt;/Button&gt;
+      )}
+    &lt;/div&gt;
+  )
+}
+</code></pre>
+<hr>
+<h2>Phase 5: Template Management UI</h2>
+<h3>5.1 Template Upload Page</h3>
+<p><strong>File</strong>: <code>src/pages/admin/QuoteTemplatesPage.tsx</code></p>
+<p>Features:</p>
+<ul>
+<li>Upload PDF pages (auto-convert to PNG)</li>
+<li>Preview template assembly</li>
+<li>Configure table position (drag &amp; drop)</li>
+<li>Set table styling (colors, fonts)</li>
+<li>Mark as default template</li>
+</ul>
+<h3>5.2 PDF to Image Conversion</h3>
+<p>Use client-side pdf.js to extract pages as images before uploading:</p>
+<pre><code class="language-typescript">import * as pdfjsLib from &#39;pdfjs-dist&#39;
+
+async function extractPdfPages(file: File): Promise&lt;Blob[]&gt; {
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument(arrayBuffer).promise
+  const pages: Blob[] = []
+
+  for (let i = 1; i &lt;= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const scale = 2 // High quality
+    const viewport = page.getViewport({ scale })
+
+    const canvas = document.createElement(&#39;canvas&#39;)
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+
+    await page.render({
+      canvasContext: canvas.getContext(&#39;2d&#39;)!,
+      viewport
+    }).promise
+
+    const blob = await new Promise&lt;Blob&gt;(resolve =&gt;
+      canvas.toBlob(b =&gt; resolve(b!), &#39;image/png&#39;, 1.0)
+    )
+    pages.push(blob)
+  }
+
+  return pages
+}
+</code></pre>
+<hr>
+<h2>Implementation Checklist</h2>
+<h3>Phase 1: Database &amp; Storage (Day 1)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create migration for quote publishing fields</li>
+<li><input disabled="" type="checkbox"> Create migration for quote_templates table</li>
+<li><input disabled="" type="checkbox"> Create quote-templates storage bucket</li>
+<li><input disabled="" type="checkbox"> Create quote-documents storage bucket</li>
+<li><input disabled="" type="checkbox"> Configure storage RLS policies</li>
+</ul>
+<h3>Phase 2: Edge Function (Day 2-3)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create generate-quote-pdf function structure</li>
+<li><input disabled="" type="checkbox"> Implement PDF generation with pdf-lib</li>
+<li><input disabled="" type="checkbox"> Implement HTML generation</li>
+<li><input disabled="" type="checkbox"> Handle template page assembly</li>
+<li><input disabled="" type="checkbox"> Handle table rendering with pagination</li>
+<li><input disabled="" type="checkbox"> Upload to storage and return URLs</li>
+<li><input disabled="" type="checkbox"> Deploy and test</li>
+</ul>
+<h3>Phase 3: Frontend Service (Day 3)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create QuoteDocumentService</li>
+<li><input disabled="" type="checkbox"> Add publishQuote method</li>
+<li><input disabled="" type="checkbox"> Add document URL helpers</li>
+</ul>
+<h3>Phase 4: UI Integration (Day 4)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Add QuotePublishButton component</li>
+<li><input disabled="" type="checkbox"> Add QuoteDocumentLinks component</li>
+<li><input disabled="" type="checkbox"> Integrate into QuoteDetailPage</li>
+<li><input disabled="" type="checkbox"> Add publish confirmation dialog</li>
+</ul>
+<h3>Phase 5: Template Management (Day 5)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create QuoteTemplatesPage</li>
+<li><input disabled="" type="checkbox"> PDF page extraction (pdf.js)</li>
+<li><input disabled="" type="checkbox"> Template upload UI</li>
+<li><input disabled="" type="checkbox"> Table position configurator</li>
+<li><input disabled="" type="checkbox"> Style customization</li>
+</ul>
+<h3>Phase 6: Testing &amp; Polish (Day 6)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Test with various quote sizes</li>
+<li><input disabled="" type="checkbox"> Test multi-page pagination</li>
+<li><input disabled="" type="checkbox"> Mobile responsiveness of HTML</li>
+<li><input disabled="" type="checkbox"> Error handling</li>
+<li><input disabled="" type="checkbox"> Loading states</li>
+</ul>
+<hr>
+<h2>Assets Required From You</h2>
+<ol>
+<li><strong>Intro PDF</strong> - First page(s) of the quote document</li>
+<li><strong>Background PDF</strong> - Single page used as background for quote tables</li>
+<li><strong>Final PDF</strong> - Last page(s) of the quote document</li>
+<li><strong>Table Example</strong> - Screenshot or description of desired table layout</li>
+<li><strong>Supabase Details</strong> - Bucket names if different from plan</li>
+</ol>
+<hr>
+<h2>Questions Resolved</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PDF Generation</td>
+<td>Edge Function with pdf-lib</td>
+</tr>
+<tr>
+<td>Table columns</td>
+<td>Configurable per template</td>
+</tr>
+<tr>
+<td>Quote number</td>
+<td>Auto-generated (Q-YYYYMMDD-NNNN)</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>Supabase storage with signed URLs</td>
+</tr>
+<tr>
+<td>Trigger</td>
+<td>Manual &quot;Publish&quot; button click</td>
+</tr>
+</tbody></table>
+<hr>
+<p>Ready to start implementation when you provide the template assets.</p>
+
+</div></body></html>
