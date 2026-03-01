@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material KAI Vision Platform - Design System</h1>
+<h2>Global Design Patterns</h2>
+<p>This document defines the consistent design patterns used across the entire platform.</p>
+<hr>
+<h2>0. Premium &quot;Rich Aesthetic&quot; Standard (2026)</h2>
+<h3>Glassmorphism (Liquid Glass)</h3>
+<ul>
+<li>✅ <strong>Opacity</strong>: Base at 0.7, hover at 0.85</li>
+<li>✅ <strong>Blur</strong>: 10px-16px range</li>
+<li>✅ <strong>Border</strong>: Subtle white translucent border for edge definition</li>
+</ul>
+<h3>Bento Grid Layout</h3>
+<p><strong>Standard for Dashboards:</strong></p>
+<ul>
+<li>✅ <strong>Gap</strong>: Use <code>gap-6</code> (24px) for distinct compartments</li>
+<li>✅ <strong>Variable Heights</strong>: Use a mix of spans to create visual interest</li>
+</ul>
+<hr>
+<h2>1. Tabs Component</h2>
+<h3>Standard Admin Page Tabs Pattern</h3>
+<p><strong>Reference:</strong> <code>src/components/Admin/MaterialsData/MaterialsDataPage.tsx</code></p>
+<p><strong>Critical Rules:</strong></p>
+<ul>
+<li>✅ <strong>TabsList</strong>: <code>className=&quot;w-full h-auto flex-wrap justify-start gap-2 p-2&quot;</code><ul>
+<li><code>w-full</code> = background spans full width</li>
+<li><code>h-auto</code> = auto height for wrapping</li>
+<li><code>flex-wrap</code> = tabs wrap to next line if needed</li>
+<li><code>justify-start</code> = tabs aligned to left (NOT stretched across)</li>
+<li><code>gap-2</code> = spacing between tab buttons</li>
+<li><code>p-2</code> = padding around tabs</li>
+</ul>
+</li>
+<li>✅ <strong>TabsTrigger</strong>: <code>className=&quot;data-[state=active]:bg-primary data-[state=active]:text-primary-foreground&quot;</code><ul>
+<li>Active state uses primary color</li>
+<li>Icons with <code>h-4 w-4 mr-2</code></li>
+</ul>
+</li>
+<li>✅ Background is <code>bg-muted</code> (from base component in tabs.tsx)</li>
+<li>❌ <strong>NEVER</strong> use <code>grid w-full grid-cols-X</code> (makes tabs stretch full width)</li>
+<li>❌ <strong>NEVER</strong> use <code>bg-transparent</code> (removes background)</li>
+</ul>
+<hr>
+<h2>2. Card Headers with Icons</h2>
+<h3>Pattern</h3>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>✅ Always include an icon in CardTitle using <code>flex items-center gap-2</code></li>
+<li>✅ Icon size: <code>h-5 w-5</code></li>
+<li>✅ Always include CardDescription for context</li>
+<li>✅ Use lucide-react icons that match the content type</li>
+</ul>
+<p><strong>Icon Guidelines:</strong></p>
+<ul>
+<li><code>Package</code> - Products, items, materials</li>
+<li><code>Grid3X3</code> - Chunks, text blocks, segments</li>
+<li><code>Image</code> - Images, photos, visuals</li>
+<li><code>Database</code> - Embeddings, vectors, data</li>
+<li><code>Link2</code> - Relations, connections, links</li>
+<li><code>FileText</code> - Documents, files, PDFs</li>
+<li><code>Globe</code> - Web scraping, external sources</li>
+</ul>
+<hr>
+<h2>3. Tables</h2>
+<h3>EXACT Pattern (Copy from ProductsTab.tsx)</h3>
+<p><strong>CRITICAL RULES - DO NOT DEVIATE:</strong></p>
+<ul>
+<li>✅ CardContent MUST have <code>className=&quot;p-0&quot;</code></li>
+<li>✅ Table is DIRECT child of ternary (NO wrapper divs!)</li>
+<li>✅ Pagination is INSIDE CardContent with <code>mt-6</code> for spacing</li>
+<li>✅ Loading/empty states have <code>py-8</code> for vertical padding</li>
+<li>✅ NO <code>&lt;div className=&quot;rounded-md border&quot;&gt;</code> wrapper</li>
+<li>✅ NO fixed column widths on TableHead</li>
+<li>✅ First column has <code>className=&quot;font-medium&quot;</code></li>
+<li>✅ Actions column has <code>className=&quot;text-right&quot;</code></li>
+</ul>
+<p><strong>Reference File:</strong> <code>src/components/Admin/MaterialsData/ProductsTab.tsx</code></p>
+<hr>
+<h2>4. Image Grids (Dashboard Card Style)</h2>
+<h3>EXACT Pattern (Copy from ImagesTab.tsx)</h3>
+<p><strong>CRITICAL RULES - DO NOT DEVIATE:</strong></p>
+<ul>
+<li>✅ Use <code>dashboard-card</code> class (NOT Card component)</li>
+<li>✅ Grid: <code>grid-cols-1 md:grid-cols-2 lg:grid-cols-4</code> with <code>gap: var(--grid-gap)</code></li>
+<li>✅ Card: <code>className=&quot;dashboard-card transition-all duration-200 hover:shadow-md cursor-pointer&quot;</code></li>
+<li>✅ Card padding: <code>style={{ padding: &#39;var(--card-padding)&#39; }}</code></li>
+<li>✅ Image container: <code>aspect-video bg-muted rounded-lg overflow-hidden</code></li>
+<li>✅ Image: <code>w-full h-full object-cover</code></li>
+<li>✅ Use CSS variables for ALL spacing: <code>var(--space-sm)</code>, <code>var(--space-xs)</code>, <code>var(--text-sm)</code>, etc.</li>
+<li>✅ Whole card is clickable with <code>onClick</code></li>
+<li>✅ NO separate button - entire card is the click target</li>
+<li>✅ Pagination INSIDE CardContent with <code>mt-6</code></li>
+</ul>
+<p><strong>Reference File:</strong> <code>src/components/Admin/MaterialsData/ImagesTab.tsx</code></p>
+<hr>
+<h2>7. Smart Pagination</h2>
+<h3>Pattern</h3>
+<p>Use the <code>SmartPagination</code> component from <code>@/components/ui/smart-pagination</code>. Wrap it in a div with <code>className=&quot;mt-6&quot;</code> and only render it when <code>totalCount &gt; ITEMS_PER_PAGE</code>.</p>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Shows: <code>Previous 1 2 3 4 ... 10 Next</code></li>
+<li>When on page 4: <code>Previous 1 ... 3 4 5 ... 10 Next</code></li>
+<li>When on page 10: <code>Previous 1 ... 8 9 10 Next</code></li>
+<li>Always shows first page, last page, current page ± 1</li>
+<li>Ellipsis (...) for gaps</li>
+</ul>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>✅ Always use SmartPagination component</li>
+<li>✅ Wrapper div with <code>className=&quot;mt-6&quot;</code></li>
+<li>✅ Calculate totalPages with <code>Math.ceil(totalCount / ITEMS_PER_PAGE)</code></li>
+<li>❌ Never create custom pagination with all page numbers</li>
+</ul>
+<p><strong>Reference File:</strong> <code>src/components/ui/smart-pagination.tsx</code></p>
+<hr>
+<h2>5. Source Badges</h2>
+<h3>Pattern</h3>
+<p>Maintain a consistent mapping from <code>sourceType</code> to badge variant: <code>pdf_processing</code> → default (primary color), <code>xml_import</code> → secondary, <code>web_scraping</code> → outline.</p>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>✅ Consistent badge variants across platform</li>
+<li>✅ PDF = default (primary color)</li>
+<li>✅ XML = secondary</li>
+<li>✅ Web = outline</li>
+</ul>
+<hr>
+<h2>6. Stat Cards</h2>
+<h3>Pattern (AdminStatCard)</h3>
+<p>Use <code>AdminStatCard</code> from <code>../AdminStatCard</code> inside a responsive grid with <code>grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4</code>.</p>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>✅ Always use AdminStatCard component for stats</li>
+<li>✅ Grid: <code>grid-cols-1 md:grid-cols-2 lg:grid-cols-4</code></li>
+<li>✅ Compact design with icon + title on same line</li>
+<li>❌ Never create custom stat cards with big icons and spacing</li>
+</ul>
+<hr>
+<h2>8. Agentic UI Patterns</h2>
+<h3>Thinking / Reasoning Logs</h3>
+<p>When an AI agent is performing a multi-step task, use the <code>ThinkingLog</code> pattern with an animated <code>Brain</code> icon and a list of log entries.</p>
+<p><strong>Reference:</strong> <code>src/pages/AgentHub.tsx</code></p>
+<h3>Source Badges (Floating)</h3>
+<p>Display PDF sources as floating glass badges near the relevant content, showing the file name and page number with a <code>FileText</code> icon.</p>
+<hr>
+<h2>Implementation Checklist</h2>
+<p>When creating new admin pages or tabs:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Use standard tabs pattern: <code>TabsList className=&quot;w-full h-auto flex-wrap justify-start gap-2 p-2&quot;</code></li>
+<li><input disabled="" type="checkbox"> Add active state to TabsTrigger: <code>className=&quot;data-[state=active]:bg-primary data-[state=active]:text-primary-foreground&quot;</code></li>
+<li><input disabled="" type="checkbox"> Add icon to CardTitle with <code>flex items-center gap-2</code></li>
+<li><input disabled="" type="checkbox"> Include CardDescription</li>
+<li><input disabled="" type="checkbox"> For tables: CardContent with <code>className=&quot;p-0&quot;</code></li>
+<li><input disabled="" type="checkbox"> For tables: NO wrapper divs, NO fixed widths</li>
+<li><input disabled="" type="checkbox"> For grids: Use responsive grid pattern</li>
+<li><input disabled="" type="checkbox"> Use consistent source badges</li>
+<li><input disabled="" type="checkbox"> Match existing icon patterns</li>
+</ul>
+<hr>
+<h2>Files to Reference</h2>
+<ul>
+<li><strong>Tabs</strong>: <code>src/components/ui/tabs.tsx</code></li>
+<li><strong>Table Example</strong>: <code>src/components/Admin/MaterialsData/ProductsTab.tsx</code></li>
+<li><strong>Grid Example</strong>: <code>src/components/Admin/MaterialsData/ImagesTab.tsx</code></li>
+<li><strong>Relations Example</strong>: <code>src/components/Admin/MaterialsData/RelationsTab.tsx</code></li>
+</ul>
+
+</div></body></html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Platform Flows &amp; User Workflows</h1>
+<p>Complete guide to all user workflows and feature flows in the Material Kai Vision Platform.</p>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#1-pdf-processing-flow">PDF Processing Flow</a></li>
+<li><a href="#2-search--discovery-flow">Search &amp; Discovery Flow</a></li>
+<li><a href="#4-data-import-flow">Data Import Flow</a></li>
+<li><a href="#5-3d-generation-flow">3D Generation Flow</a></li>
+<li><a href="#6-knowledge-base-flow">Knowledge Base Flow</a></li>
+<li><a href="#7-agent-chat-flow">Agent Chat Flow</a></li>
+<li><a href="#8-vr-world-generation-flow">VR World Generation Flow</a> ✨ NEW</li>
+</ol>
+<hr>
+<h2>1. PDF Processing Flow</h2>
+<p><strong>Purpose:</strong> Transform material catalog PDFs into searchable, intelligent knowledge</p>
+<p><strong>User Journey:</strong></p>
+<pre><code>1. User uploads PDF file
+   ↓
+2. Frontend uploads to Supabase Storage
+   ↓
+3. MIVAA API creates background job
+   ↓
+4. 14-Stage Processing Pipeline:
+   - Stage 0A: Product Discovery (Claude/GPT-4o)
+   - Stage 0B: Entity Discovery (Certificates, Logos, Specs)
+   - Stage 1: Focused Extraction (product pages only)
+   - Stage 2: Text Extraction (PyMuPDF4LLM)
+   - Stage 3: Semantic Chunking
+   - Stage 4: Text Embeddings (OpenAI 1536D)
+   - Stage 5: Image Extraction
+   - Stage 6: Image Analysis (Qwen Vision)
+   - Stages 7-10: Multi-Vector CLIP Embeddings
+   - Stage 11: Product Creation &amp; Entity Linking
+   - Stage 12: Entity Relationship Mapping
+   - Stage 13: Quality Enhancement
+   - Stage 14: Cleanup &amp; Completion
+   ↓
+5. Real-time progress updates to frontend
+   ↓
+6. Results displayed in Materials Catalog
+</code></pre>
+<p><strong>API Endpoint:</strong> <code>POST /api/rag/documents/upload</code>
+<strong>Frontend Component:</strong> <code>EnhancedPDFProcessor.tsx</code>
+<strong>Documentation:</strong> <a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></p>
+<hr>
+<h2>2. Search &amp; Discovery Flow</h2>
+<p><strong>Purpose:</strong> Find materials using text, images, or natural language</p>
+<p><strong>User Journey:</strong></p>
+<pre><code>1. User enters search query or uploads image
+   ↓
+2. Frontend calls MIVAA search API
+   ↓
+3. Query processing:
+   - Text: Generate embedding (OpenAI 1536D)
+   - Image: Generate CLIP embedding (512D)
+   - Natural language: AI query enhancement
+   ↓
+4. Multi-vector similarity search (pgvector)
+   ↓
+5. Results ranked by:
+   - Relevance (40%)
+   - Quality (30%)
+   - Semantic similarity (20%)
+   - Recency (10%)
+   ↓
+6. Optional AI re-ranking (Claude Sonnet 4.5)
+   ↓
+7. Results displayed with:
+   - Product cards
+   - Images
+   - Metadata
+   - Relevance scores
+</code></pre>
+<p><strong>API Endpoint:</strong> <code>POST /api/rag/search</code>
+<strong>Frontend Component:</strong> <code>SearchHub.tsx</code>
+<strong>Documentation:</strong> <a href="search-strategies.md">search-strategies.md</a></p>
+<hr>
+<h2>4. Data Import Flow</h2>
+<p><strong>Purpose:</strong> Import materials from XML files or web scraping</p>
+<p><strong>User Journey (XML Import):</strong></p>
+<pre><code>1. User uploads XML file
+   ↓
+2. Edge Function parses XML and detects fields
+   ↓
+3. AI suggests field mappings (Claude Sonnet 4.5)
+   ↓
+4. User reviews and confirms mappings
+   ↓
+5. Edge Function creates import job
+   ↓
+6. Python API processes job in batches:
+   - Parse XML entries
+   - Download images concurrently
+   - Create products in database
+   - Link images to products
+   - Queue text processing (async)
+   ↓
+7. Job marked as completed
+   ↓
+8. Results displayed in Import History
+</code></pre>
+<p><strong>API Endpoint:</strong> <code>POST /api/data-import/xml</code>
+<strong>Frontend Component:</strong> <code>DataImportHub.tsx</code>
+<strong>Documentation:</strong> <a href="data-import-system.md">data-import-system.md</a></p>
+<hr>
+<h2>5. 3D Designer Flow</h2>
+<p><strong>Purpose:</strong> Interactive 3D room designer for material visualization</p>
+<p><strong>User Journey:</strong></p>
+<pre><code>1. User accesses /designer route
+   ↓
+2. DesignerLayout loads with:
+   - Asset Library Panel (materials, furniture)
+   - 3D Canvas (React Three Fiber)
+   - Properties Panel (object properties)
+   - Toolbar (transform tools)
+   ↓
+3. User can:
+   - Drag and drop materials/objects
+   - Transform objects (move, rotate, scale)
+   - Adjust room dimensions
+   - Configure lighting
+   ↓
+4. Real-time 3D rendering with:
+   - Camera controls (orbit, pan, zoom)
+   - Grid snapping
+   - Material previews
+</code></pre>
+<p><strong>Frontend Component:</strong> <code>DesignerPage.tsx</code> → <code>DesignerLayout.tsx</code>
+<strong>Route:</strong> <code>/designer</code></p>
+<hr>
+<h2>6. Knowledge Base Flow</h2>
+<p><strong>Purpose:</strong> Create and manage documentation with AI assistance</p>
+<p><strong>User Journey:</strong></p>
+<pre><code>1. User creates new document or uploads PDF
+   ↓
+2. For text input:
+   - User writes content in markdown editor
+   - AI assistant provides suggestions
+   - Auto-save with version history
+   ↓
+3. For PDF upload:
+   - PyMuPDF extracts text
+   - Content converted to markdown
+   - User reviews and edits
+   ↓
+4. User attaches to products (optional)
+   ↓
+5. AI generates embeddings (OpenAI 1536D)
+   ↓
+6. Document saved to knowledge_base table
+   ↓
+7. Available in semantic search
+</code></pre>
+<p><strong>API Endpoint:</strong> <code>POST /api/knowledge-base/documents</code>
+<strong>Frontend Component:</strong> <code>KnowledgeBaseHub.tsx</code>
+<strong>Documentation:</strong> <a href="knowledge-base-implementation.md">knowledge-base-implementation.md</a></p>
+<hr>
+<h2>7. Agent Chat Flow</h2>
+<p><strong>Purpose:</strong> Interactive AI assistance for various tasks</p>
+<p><strong>User Journey:</strong></p>
+<pre><code>1. User selects agent type:
+   - PDF Processor
+   - Search Assistant
+   - Product Expert
+   - Admin Helper
+   ↓
+2. User sends message (text, images, or PDF)
+   ↓
+3. Frontend calls agent-chat Edge Function
+   ↓
+4. Mastra Agent processes request:
+   - Loads agent-specific prompt from database
+   - Analyzes user input
+   - Executes tools (search, PDF processing, etc.)
+   - Generates response
+   ↓
+5. Response streamed to frontend
+   ↓
+6. User continues conversation
+</code></pre>
+<p><strong>Edge Function:</strong> <code>agent-chat</code>
+<strong>Frontend Component:</strong> <code>AgentHub.tsx</code>
+<strong>AI Model:</strong> Claude Sonnet 4.5
+<strong>Documentation:</strong> <a href="agent-system.md">agent-system.md</a></p>
+<hr>
+<h2>8. VR World Generation Flow</h2>
+<p><strong>Purpose:</strong> Generate explorable 3D worlds from interior design images</p>
+<p><strong>User Journey:</strong></p>
+<pre><code>1. User generates interior design image via Agent
+   ↓
+2. User clicks &quot;Generate VR&quot; button on DesignCanvas
+   ↓
+3. AgentHub calls vrWorldService.generateVRWorld()
+   ↓
+4. Edge function (generate-vr-world) orchestrates:
+   - Authenticates user
+   - Debits credits (50 mini / 200 plus)
+   - Inserts vr_worlds row (status: uploading)
+   - Uploads design image to WorldLabs (signed URL)
+   - Calls WorldLabs worlds:generate API
+   - Polls operations endpoint with backoff (2s → 10s)
+   - Extracts asset URLs (SPZ, GLB, panorama, thumbnail)
+   - Updates vr_worlds row (status: completed)
+   ↓
+5. New assistant message added to chat with WorldViewer
+   ↓
+6. WorldViewer polls vr_worlds table for status
+   ↓
+7. On completion: Spark.js loads SPZ and renders 3D scene
+   ↓
+8. User explores world:
+   - Orbit mode: drag to rotate, scroll to zoom
+   - First-person mode: WASD to move, mouse to look
+   - Quality selector: Draft / Standard / Full
+   - Fullscreen toggle
+</code></pre>
+<p><strong>Edge Function:</strong> <code>generate-vr-world</code>
+<strong>Frontend Component:</strong> <code>WorldViewer.tsx</code>
+<strong>Service:</strong> <code>vrWorldService.ts</code>
+<strong>External API:</strong> WorldLabs Marble (<code>marble-0.1-mini</code>, <code>marble-0.1-plus</code>)
+<strong>Documentation:</strong> <a href="vr-world-generation.md">vr-world-generation.md</a></p>
+<hr>
+<h2>📊 Flow Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Flow</th>
+<th>Entry Point</th>
+<th>AI Models</th>
+<th>Processing Time</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PDF Processing</td>
+<td>Upload PDF</td>
+<td>Claude, GPT-4o, Qwen</td>
+<td>2-10 min</td>
+<td>Products, Images, Metadata</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Search query</td>
+<td>OpenAI, Claude</td>
+<td>&lt;1 sec</td>
+<td>Ranked results</td>
+</tr>
+<tr>
+<td>Data Import</td>
+<td>Upload XML</td>
+<td>Claude</td>
+<td>1-5 min</td>
+<td>Products, Images</td>
+</tr>
+<tr>
+<td>3D Generation</td>
+<td>Text prompt</td>
+<td>Stable Diffusion</td>
+<td>10-30 sec</td>
+<td>3D models, Images</td>
+</tr>
+<tr>
+<td>Knowledge Base</td>
+<td>Create doc</td>
+<td>OpenAI</td>
+<td>&lt;1 sec</td>
+<td>Searchable docs</td>
+</tr>
+<tr>
+<td>Agent Chat</td>
+<td>Send message</td>
+<td>Claude</td>
+<td>1-3 sec</td>
+<td>AI responses</td>
+</tr>
+<tr>
+<td><strong>VR World</strong> ✨</td>
+<td><strong>Generate VR button</strong></td>
+<td><strong>WorldLabs Marble</strong></td>
+<td><strong>30s-5min</strong></td>
+<td><strong>Explorable 3D world</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>Last Updated:</strong> December 3, 2025
+<strong>Version:</strong> 2.4.0
+<strong>Status:</strong> Production</p>
+
+</div></body></html>

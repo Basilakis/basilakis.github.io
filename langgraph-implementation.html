@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>LangGraph Implementation Guide</h1>
+<p>Technical documentation for the LangGraph-based agent execution system in Material Kai Vision Platform.</p>
+<hr>
+<h2>Overview</h2>
+<p>The platform uses <strong>LangGraph</strong> for agent orchestration, providing:</p>
+<ul>
+<li><strong>StateGraph-based execution</strong> with defined state schema</li>
+<li><strong>Checkpointing</strong> for resumable conversations</li>
+<li><strong>Long-term memory</strong> for cross-conversation context</li>
+<li><strong>Observable execution</strong> with streaming updates</li>
+<li><strong>Human-in-the-loop</strong> patterns for critical actions</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<pre><code>                        ┌─────────────────────────────────────┐
+                        │         User Request                │
+                        └──────────────┬──────────────────────┘
+                                       │
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           StateGraph                                      │
+│  ┌────────────────┐                              ┌────────────────────┐  │
+│  │   START        │                              │   END              │  │
+│  └───────┬────────┘                              └────────────────────┘  │
+│          │                                                    ▲          │
+│          ▼                                                    │          │
+│  ┌───────────────────┐    shouldContinue()      ┌────────────┴───────┐  │
+│  │   agentNode       │──────────────────────────│   toolsNode        │  │
+│  │   (LLM invoke)    │◄─────────────────────────│   (execute tools)  │  │
+│  └───────────────────┘                          └────────────────────┘  │
+│          │                                                               │
+│          │ (no tool calls)                                              │
+│          ▼                                                               │
+│  ┌───────────────────┐                                                  │
+│  │   END             │                                                  │
+│  └───────────────────┘                                                  │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                     AgentStateAnnotation                         │    │
+│  │  - messages: BaseMessage[] (reducer: append)                     │    │
+│  │  - systemPrompt: string                                          │    │
+│  │  - toolResults: any[] (reducer: append)                          │    │
+│  │  - collectedProducts: any[] (reducer: append)                    │    │
+│  │  - iteration: number                                             │    │
+│  │  - inputTokens/outputTokens: number (reducer: sum)              │    │
+│  │  - finalResponse: string | null                                  │    │
+│  │  - generationJob: any | null                                     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+              ┌────────────────────────────────────────────┐
+              │         SupabaseCheckpointer               │
+              │   (agent_checkpoints table)                │
+              └────────────────────────────────────────────┘
+                                       │
+                                       ▼
+              ┌────────────────────────────────────────────┐
+              │         LongTermMemory                     │
+              │   (agent_memories table)                   │
+              └────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>State Schema (AgentStateAnnotation)</h2>
+<p>The state schema defines what data flows through the graph. It uses <code>Annotation.Root</code> from LangGraph with the following fields:</p>
+<ul>
+<li><strong>messages</strong> — <code>BaseMessage[]</code> with an append reducer (<code>[...prev, ...next]</code>). Accumulates all messages. Default: <code>[]</code>.</li>
+<li><strong>systemPrompt</strong> — <code>string</code> with a replace reducer (<code>(_, next) =&gt; next</code>). Holds the current system prompt. Default: <code>&#39;&#39;</code>.</li>
+<li><strong>toolResults</strong> — <code>any[]</code> with an append reducer. Collects tool results during execution. Default: <code>[]</code>.</li>
+<li><strong>collectedProducts</strong> — <code>any[]</code> with an append reducer. Products found during search/recommendations. Default: <code>[]</code>.</li>
+<li><strong>iteration</strong> — <code>number</code> with a replace reducer. Current iteration count. Default: <code>0</code>.</li>
+<li><strong>inputTokens</strong> — <code>number</code> with a sum reducer (<code>prev + next</code>). Accumulated input token count. Default: <code>0</code>.</li>
+<li><strong>outputTokens</strong> — <code>number</code> with a sum reducer. Accumulated output token count. Default: <code>0</code>.</li>
+<li><strong>turnCount</strong> — <code>number</code> with a sum reducer. Turn count for billing. Default: <code>0</code>.</li>
+<li><strong>finalResponse</strong> — <code>string | null</code> with a replace reducer. Set when the agent produces its final answer. Default: <code>null</code>.</li>
+<li><strong>generationJob</strong> — <code>any | null</code> with a replace reducer. Set if a 3D generation job is triggered. Default: <code>null</code>.</li>
+</ul>
+<h3>Reducer Types</h3>
+<table>
+<thead>
+<tr>
+<th>Reducer</th>
+<th>Behavior</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Append</td>
+<td><code>[...prev, ...next]</code></td>
+<td>Accumulating messages, results</td>
+</tr>
+<tr>
+<td>Replace</td>
+<td><code>(_, next) =&gt; next</code></td>
+<td>Single values like systemPrompt</td>
+</tr>
+<tr>
+<td>Sum</td>
+<td><code>prev + next</code></td>
+<td>Token counts, turn counts</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Graph Construction</h2>
+<p>The <code>createAgentGraph</code> function accepts a model, a tools array, and an optional <code>onChunk</code> streaming callback. It builds a <code>StateGraph</code> with <code>AgentStateAnnotation</code>, adds an <code>agent</code> node and a <code>tools</code> node, connects <code>START</code> to <code>agent</code>, adds a conditional edge from <code>agent</code> using <code>shouldContinue</code>, adds an edge from <code>tools</code> back to <code>agent</code>, and compiles the graph. The maximum iteration limit is set to 10.</p>
+<h3>Nodes</h3>
+<h4>agentNode</h4>
+<ul>
+<li>Invokes the LLM with current messages</li>
+<li>Tracks token usage</li>
+<li>Sends streaming updates</li>
+<li>Extracts final response when no tool calls</li>
+</ul>
+<h4>toolsNode</h4>
+<ul>
+<li>Executes pending tool calls</li>
+<li>Collects results</li>
+<li>Sends tool execution status</li>
+<li>Extracts products from search results</li>
+</ul>
+<h3>Conditional Edge: shouldContinue</h3>
+<p>The <code>shouldContinue</code> function examines the last message in the state. If the iteration count has reached the maximum (10), it returns <code>END</code>. If the last message contains tool calls, it returns <code>&#39;tools&#39;</code>. Otherwise (no tool calls), it returns <code>END</code>.</p>
+<hr>
+<h2>Checkpointing (SupabaseCheckpointer)</h2>
+<p>Enables resumable conversations by persisting state to Supabase.</p>
+<h3>Database Schema</h3>
+<p>The <code>agent_checkpoints</code> table stores checkpoint data indexed by thread ID. It has a UUID primary key, a <code>thread_id</code> text field (unique), a <code>checkpoint_data</code> JSONB column, and <code>created_at</code>/<code>updated_at</code> timestamps. An index on <code>thread_id</code> supports fast lookup.</p>
+<h3>Checkpointer Class</h3>
+<p>The <code>SupabaseCheckpointer</code> class provides three methods:</p>
+<ul>
+<li><strong>get(threadId)</strong> — Queries the <code>agent_checkpoints</code> table for the given <code>thread_id</code> and returns the <code>checkpoint_data</code> JSONB, or <code>null</code> if not found.</li>
+<li><strong>put(threadId, checkpoint)</strong> — Upserts the checkpoint into the table, updating <code>updated_at</code> on conflict with <code>thread_id</code>.</li>
+<li><strong>delete(threadId)</strong> — Deletes the checkpoint record matching the given <code>thread_id</code>.</li>
+</ul>
+<h3>Thread ID Generation</h3>
+<p>Thread IDs are constructed as <code>${agentId}-${conversationId}</code> when a <code>conversationId</code> is provided, or <code>${agentId}-${crypto.randomUUID()}</code> for new conversations.</p>
+<hr>
+<h2>Long-Term Memory</h2>
+<p>Stores user preferences, facts, and context across conversations.</p>
+<h3>Database Schema</h3>
+<p>The <code>agent_memories</code> table has a UUID primary key, foreign key references to <code>auth.users(id)</code> for <code>user_id</code>, a <code>workspace_id</code> UUID, an <code>agent_id</code> text field, a <code>memory_type</code> text field constrained to <code>(&#39;preference&#39;, &#39;fact&#39;, &#39;context&#39;, &#39;relationship&#39;)</code>, a <code>content</code> text field, an optional <code>conversation_id</code> UUID, a <code>metadata</code> JSONB field, and a <code>created_at</code> timestamp. Indexes cover <code>(user_id, workspace_id)</code>, <code>memory_type</code>, and <code>agent_id</code>.</p>
+<h3>Memory Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>preference</code></td>
+<td>User preferences</td>
+<td>&quot;Prefers modern minimalist style&quot;</td>
+</tr>
+<tr>
+<td><code>fact</code></td>
+<td>Factual information</td>
+<td>&quot;Working on hotel lobby project&quot;</td>
+</tr>
+<tr>
+<td><code>context</code></td>
+<td>Conversational context</td>
+<td>&quot;Previously discussed marble flooring&quot;</td>
+</tr>
+<tr>
+<td><code>relationship</code></td>
+<td>Entity relationships</td>
+<td>&quot;Client is ABC Corp&quot;</td>
+</tr>
+</tbody></table>
+<h3>LongTermMemory Class</h3>
+<p>The <code>LongTermMemory</code> class provides three methods:</p>
+<ul>
+<li><strong>store(userId, workspaceId, memory)</strong> — Inserts a record into <code>agent_memories</code> with the provided <code>agentId</code>, <code>type</code>, <code>content</code>, optional <code>conversationId</code>, and optional <code>metadata</code>.</li>
+<li><strong>retrieve(userId, workspaceId, options?)</strong> — Queries <code>agent_memories</code> for the user and workspace, filtered by optional <code>agentId</code> and <code>types</code> array, ordered by <code>created_at</code> descending, limited to <code>options.limit</code> (default 20).</li>
+<li><strong>formatForContext(memories)</strong> — Groups memories by type and formats them as a markdown context block with sections for Preferences, Known Facts, and Previous Context.</li>
+</ul>
+<h3>Automatic Memory Extraction</h3>
+<p>After each agent turn, an <code>extractAndStoreMemories</code> function runs asynchronously (non-blocking). It constructs an extraction prompt with the user&#39;s input and the assistant&#39;s response, asks the LLM to identify notable information (preferences, facts, context, relationships), and stores any extracted memories. Only truly notable information is stored; the function returns an empty array if nothing is notable.</p>
+<hr>
+<h2>Execution Flow</h2>
+<p>The <code>executeAgent</code> function orchestrates the full agent lifecycle:</p>
+<ol>
+<li>Load agent configuration from <code>AGENT_CONFIGS[agentId]</code> and fetch the system prompt.</li>
+<li>Retrieve long-term memories (limit 20) and append a formatted context block to the system prompt.</li>
+<li>Generate a thread ID from <code>agentId</code> and <code>conversationId</code> (or a new UUID).</li>
+<li>Create the agent graph with <code>createAgentGraph(selectedModel, tools, onChunk)</code>.</li>
+<li>Build the initial state with the user&#39;s input as a <code>HumanMessage</code>, the enriched system prompt, and zeroed counters.</li>
+<li>Invoke the graph and obtain the final state.</li>
+<li>Persist the final state to the checkpointer using the thread ID.</li>
+<li>Kick off <code>extractAndStoreMemories</code> asynchronously (errors are silently caught).</li>
+<li>Return the final response text, tool results, collected products, generation job reference, token usage totals, turn count, and thread ID.</li>
+</ol>
+<hr>
+<h2>Streaming Updates</h2>
+<p>The <code>onChunk</code> callback is invoked at multiple points during execution to provide real-time progress to the client:</p>
+<ul>
+<li><strong>iteration</strong> — Sent at the start of each agent iteration, with the current iteration number, max iterations, and a status message.</li>
+<li><strong>assistant_thinking</strong> — Sent after the LLM responds, includes the response content and whether tool calls are present.</li>
+<li><strong>tool_call</strong> — Sent before each tool is executed, includes the tool name, arguments, and a status message.</li>
+<li><strong>tool_result</strong> — Sent after each tool completes, includes the tool name, result, and a completion message.</li>
+<li><strong>text</strong> — Sent for the final text response content.</li>
+</ul>
+<hr>
+<h2>Human-in-the-Loop (Planned)</h2>
+<p>For critical actions like 3D generation or large purchases, a future <code>shouldRequireApproval</code> conditional edge is planned. It would inspect the last message&#39;s tool calls for critical tool names (e.g., <code>generate3D</code>, <code>createQuote</code>, <code>submitOrder</code>) and route to a <code>human_approval</code> node instead of continuing directly to <code>tools</code>.</p>
+<hr>
+<h2>Dependencies</h2>
+<p>The edge function&#39;s <code>deno.json</code> imports include:</p>
+<ul>
+<li><code>@langchain/anthropic</code> — Anthropic LLM integration</li>
+<li><code>@langchain/core/tools</code> — Tool base classes</li>
+<li><code>@langchain/core/messages</code> — Message types (HumanMessage, etc.)</li>
+<li><code>@langchain/langgraph</code> — StateGraph, START, END, Annotation</li>
+<li><code>zod</code> — Schema validation for tool inputs</li>
+<li><code>@supabase/supabase-js@2</code> — Supabase client</li>
+</ul>
+<hr>
+<h2>Token Usage Tracking</h2>
+<p>Token usage is accumulated across all iterations using the sum reducers on <code>inputTokens</code> and <code>outputTokens</code>. In each <code>agentNode</code> invocation, the function reads <code>response.response_metadata?.usage</code> to extract <code>input_tokens</code> and <code>output_tokens</code>, then returns them as part of the state update. Because the reducers sum values across iterations, the final state contains the total tokens used for the entire conversation turn. The total is computed as <code>finalState.inputTokens + finalState.outputTokens</code>.</p>
+<hr>
+<h2>Best Practices</h2>
+<h3>State Design</h3>
+<ul>
+<li>Use append reducers for accumulating data</li>
+<li>Use replace reducers for single values</li>
+<li>Keep state serializable for checkpointing</li>
+</ul>
+<h3>Graph Structure</h3>
+<ul>
+<li>Keep nodes focused on single responsibilities</li>
+<li>Use conditional edges for branching logic</li>
+<li>Limit iterations to prevent infinite loops</li>
+</ul>
+<h3>Memory Management</h3>
+<ul>
+<li>Store only notable information</li>
+<li>Use specific memory types for categorization</li>
+<li>Clean up old memories periodically</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li>Stream updates for responsive UX</li>
+<li>Use async memory extraction (non-blocking)</li>
+<li>Cache frequently accessed data</li>
+</ul>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>State Not Persisting</h3>
+<ol>
+<li>Check <code>agent_checkpoints</code> table permissions</li>
+<li>Verify thread ID is consistent</li>
+<li>Check checkpoint data serialization</li>
+</ol>
+<h3>Memory Not Loading</h3>
+<ol>
+<li>Verify <code>agent_memories</code> table exists</li>
+<li>Check user_id and workspace_id match</li>
+<li>Review memory type filters</li>
+</ol>
+<h3>Graph Stuck in Loop</h3>
+<ol>
+<li>Check <code>maxIterations</code> limit</li>
+<li>Verify <code>shouldContinue</code> logic</li>
+<li>Review tool call responses</li>
+</ol>
+<h3>Token Counts Wrong</h3>
+<ol>
+<li>Ensure reducers are sum type</li>
+<li>Check response_metadata parsing</li>
+<li>Verify all iterations counted</li>
+</ol>
+<hr>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="agent-system.md">Agent System Architecture</a> - High-level agent overview</li>
+<li><a href="api/agent-chat-api.md">API: Agent Chat</a> - API reference</li>
+<li><a href="ai-models-guide.md">AI Models Guide</a> - Model configurations</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: January 31, 2026
+<strong>Version</strong>: 1.0.0
+<strong>Status</strong>: Production
+<strong>Maintainer</strong>: Development Team</p>
+
+</div></body></html>

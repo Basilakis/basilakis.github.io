@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Duplicate Material Detection &amp; Merging</h1>
+<p>Complete reference for the duplicate detection and product merging system.</p>
+<hr>
+<h2>Overview</h2>
+<p>The Duplicate Material Detection &amp; Merging system helps maintain data quality by identifying and consolidating duplicate products in the knowledge base. <strong>CRITICAL: Duplicates are ONLY detected when products are from the SAME factory/manufacturer.</strong></p>
+<h3>Key Principle</h3>
+<p><strong>Duplicates are defined by factory/manufacturer match, NOT visual similarity:</strong></p>
+<ul>
+<li>Same factory + similar name = DUPLICATE</li>
+<li>Different factory + identical appearance = NOT duplicate</li>
+<li>Same factory + different color/pattern = NOT duplicate (different variants)</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<h3>Detection Strategy</h3>
+<p><strong>Three-Layer Matching (After Factory Verification):</strong></p>
+<ol>
+<li><p><strong>Layer 1: Factory Match (REQUIRED)</strong></p>
+<ul>
+<li>Extract factory/manufacturer from product metadata</li>
+<li>Check priority keys: <code>factory</code>, <code>manufacturer</code>, <code>factory_group</code>, <code>brand</code>, <code>company</code></li>
+<li>If factories don&#39;t match → NOT duplicates (stop here)</li>
+</ul>
+</li>
+<li><p><strong>Layer 2: Name Similarity (50% weight)</strong></p>
+<ul>
+<li>String similarity using sequence matching</li>
+<li>Normalized comparison (lowercase, trimmed)</li>
+<li>Threshold: 0.50+</li>
+</ul>
+</li>
+<li><p><strong>Layer 3: Description &amp; Metadata (30% + 20% weight)</strong></p>
+<ul>
+<li>Description text similarity</li>
+<li>Metadata property comparison (excluding factory keys)</li>
+<li>Combined threshold: 0.20+</li>
+</ul>
+</li>
+</ol>
+<h3>Similarity Scoring</h3>
+<p><strong>Overall Score Calculation:</strong></p>
+<pre><code>overall_score = (name_sim × 0.50) + (desc_sim × 0.30) + (meta_sim × 0.20)
+</code></pre>
+<p><strong>Confidence Levels:</strong></p>
+<ul>
+<li><strong>High</strong>: 85%+ (very likely duplicate)</li>
+<li><strong>Medium</strong>: 70-85% (possible duplicate)</li>
+<li><strong>Low</strong>: 55-70% (review needed)</li>
+</ul>
+<hr>
+<h2>Database Schema</h2>
+<h3>product_merge_history Table</h3>
+<p>Tracks all merge operations with full audit trail and undo capability.</p>
+<p>Fields: <code>id</code>, <code>workspace_id</code>, <code>merged_at</code>, <code>merged_by</code>, <code>source_product_ids</code>, <code>source_product_names</code>, <code>target_product_id</code>, <code>target_product_name</code>, <code>similarity_score</code>, <code>merge_reason</code>, <code>merge_strategy</code> (&#39;manual&#39;, &#39;auto&#39;, &#39;suggested&#39;), <code>source_products_snapshot</code>, <code>target_product_before_merge</code>, <code>target_product_after_merge</code>, <code>is_undone</code>, <code>undone_at</code>, <code>undone_by</code>.</p>
+<h3>duplicate_detection_cache Table</h3>
+<p>Stores pre-computed duplicate pairs for quick lookup.</p>
+<p>Fields: <code>id</code>, <code>workspace_id</code>, <code>product_id_1</code>, <code>product_id_2</code>, <code>overall_similarity_score</code>, <code>name_similarity</code>, <code>description_similarity</code>, <code>metadata_similarity</code>, <code>similarity_breakdown</code>, <code>is_duplicate</code>, <code>confidence_level</code> (&#39;high&#39;, &#39;medium&#39;, &#39;low&#39;), <code>status</code> (&#39;pending&#39;, &#39;reviewed&#39;, &#39;merged&#39;, &#39;dismissed&#39;), <code>reviewed_by</code>, <code>reviewed_at</code>.</p>
+<hr>
+<h2>API Endpoints</h2>
+<h3>1. Detect Duplicates for Single Product</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/duplicates/detect</code></p>
+<p>Find potential duplicates for a specific product.</p>
+<p>The request takes <code>product_id</code>, <code>workspace_id</code>, and an optional <code>similarity_threshold</code>. The response includes a list of matching products with their <code>overall_similarity</code>, <code>name_similarity</code>, <code>description_similarity</code>, <code>metadata_similarity</code>, and <code>confidence_level</code>.</p>
+<p><strong>CRITICAL:</strong> Returns empty list if product has no factory metadata.</p>
+<hr>
+<h3>2. Batch Detect Duplicates</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/duplicates/batch-detect</code></p>
+<p>Scan entire workspace for duplicate products.</p>
+<p>The request takes <code>workspace_id</code>, <code>similarity_threshold</code>, and <code>limit</code>. The response includes all detected duplicate pairs, each showing both product IDs, names, shared factory, overall similarity, and confidence level.</p>
+<hr>
+<h3>3. Get Cached Duplicates</h3>
+<p><strong>Endpoint:</strong> <code>GET /api/duplicates/cached</code></p>
+<p>Retrieve cached duplicate detections.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required): Workspace to query</li>
+<li><code>status</code> (optional): Filter by status (&#39;pending&#39;, &#39;reviewed&#39;, &#39;merged&#39;, &#39;dismissed&#39;)</li>
+<li><code>min_similarity</code> (optional): Minimum similarity score (default: 0.60)</li>
+</ul>
+<hr>
+<h3>4. Update Duplicate Status</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/duplicates/update-status</code></p>
+<p>Update the status of a cached duplicate detection.</p>
+<p>The request takes <code>cache_id</code>, <code>status</code>, and <code>user_id</code>.</p>
+<p><strong>Valid Statuses:</strong></p>
+<ul>
+<li><code>pending</code> - Not yet reviewed</li>
+<li><code>reviewed</code> - Admin has reviewed</li>
+<li><code>merged</code> - Products have been merged</li>
+<li><code>dismissed</code> - Not actually duplicates</li>
+</ul>
+<hr>
+<h3>5. Merge Products</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/duplicates/merge</code></p>
+<p>Merge duplicate products into a single product.</p>
+<p>The request takes <code>target_product_id</code>, <code>source_product_ids</code>, <code>workspace_id</code>, <code>user_id</code>, <code>merge_strategy</code>, and <code>merge_reason</code>.</p>
+<p><strong>Merge Process:</strong></p>
+<ol>
+<li>Merges data from source products into target</li>
+<li>Transfers all relationships (images, chunks, etc.)</li>
+<li>Deletes source products</li>
+<li>Records merge in history for undo capability</li>
+</ol>
+<p><strong>Data Merge Strategy:</strong></p>
+<ul>
+<li><strong>Name:</strong> Keep target name (primary identifier)</li>
+<li><strong>Description:</strong> Combine unique descriptions with &quot; | &quot; separator</li>
+<li><strong>Metadata:</strong> Union of all metadata (no overwrites)</li>
+<li><strong>Chunks:</strong> Combine all source chunks</li>
+<li><strong>Relationships:</strong> Transfer all image/document relationships</li>
+</ul>
+<hr>
+<h3>6. Undo Merge</h3>
+<p><strong>Endpoint:</strong> <code>POST /api/duplicates/undo-merge</code></p>
+<p>Undo a product merge operation.</p>
+<p>The request takes <code>history_id</code> and <code>user_id</code>.</p>
+<p><strong>Undo Process:</strong></p>
+<ol>
+<li>Restores all source products from snapshot</li>
+<li>Reverts target product to pre-merge state</li>
+<li>Marks merge as undone in history</li>
+</ol>
+<hr>
+<h3>7. Get Merge History</h3>
+<p><strong>Endpoint:</strong> <code>GET /api/duplicates/merge-history</code></p>
+<p>Retrieve merge history for a workspace.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required): Workspace to query</li>
+<li><code>limit</code> (optional): Maximum results (default: 50)</li>
+</ul>
+<p>The response includes a list of merge records with <code>merged_at</code>, <code>merged_by</code>, <code>source_product_names</code>, <code>target_product_name</code>, <code>similarity_score</code>, <code>merge_strategy</code>, and <code>is_undone</code>.</p>
+<hr>
+<h2>Implementation Details</h2>
+<h3>Factory Extraction</h3>
+<p>Factory information is extracted from product metadata in priority order: <code>factory</code> (Primary), <code>manufacturer</code> (Secondary), <code>factory_group</code> (Tertiary), <code>brand</code> (Fallback), <code>company</code> (Last resort). The extracted value is normalized to lowercase.</p>
+<h3>Similarity Calculation</h3>
+<p><strong>Name Similarity:</strong> Uses sequence matching with normalization — lowercase, trimmed comparison of product names.</p>
+<p><strong>Description Similarity:</strong> Text similarity using word overlap — counts common words divided by the maximum word count of either description.</p>
+<p><strong>Metadata Similarity:</strong> Property comparison (excluding factory keys) — counts matching metadata properties divided by total properties.</p>
+<hr>
+<h2>Usage Examples</h2>
+<h3>Example 1: Detect Duplicates for Product</h3>
+<p>Send a POST request to <code>/api/duplicates/detect</code> with the <code>product_id</code>, <code>workspace_id</code>, and <code>similarity_threshold</code> in the request body, including your authorization token.</p>
+<h3>Example 2: Merge Duplicate Products</h3>
+<p>Send a POST request to <code>/api/duplicates/merge</code> specifying the <code>target_product_id</code>, <code>source_product_ids</code> array, <code>workspace_id</code>, <code>user_id</code>, <code>merge_strategy</code>, and <code>merge_reason</code>.</p>
+<h3>Example 3: Undo Merge</h3>
+<p>Send a POST request to <code>/api/duplicates/undo-merge</code> with the <code>history_id</code> and <code>user_id</code>.</p>
+<hr>
+<h2>Integration Points</h2>
+<h3>Future Integration</h3>
+<p>When integrating with the platform:</p>
+<ol>
+<li><p><strong>PDF Processing Pipeline</strong></p>
+<ul>
+<li>Call <code>/api/duplicates/detect</code> during product creation</li>
+<li>Check for existing products from same factory</li>
+<li>Prevent duplicate creation or auto-merge</li>
+</ul>
+</li>
+<li><p><strong>Admin Dashboard</strong></p>
+<ul>
+<li>Add duplicate detection UI</li>
+<li>Show merge suggestions</li>
+<li>Provide merge history viewer</li>
+</ul>
+</li>
+<li><p><strong>Batch Operations</strong></p>
+<ul>
+<li>Call <code>/api/duplicates/batch-detect</code> for workspace cleanup</li>
+<li>Bulk merge similar products</li>
+<li>Generate deduplication reports</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Best Practices</h2>
+<ol>
+<li><strong>Always verify factory match</strong> before considering products as duplicates</li>
+<li><strong>Use high confidence threshold (85%+)</strong> for automatic merging</li>
+<li><strong>Review medium confidence (70-85%)</strong> duplicates manually</li>
+<li><strong>Keep merge history</strong> for audit trail and undo capability</li>
+<li><strong>Test with small batches</strong> before large-scale merging</li>
+<li><strong>Monitor similarity scores</strong> to tune thresholds over time</li>
+</ol>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>No Duplicates Found</h3>
+<p><strong>Possible Causes:</strong></p>
+<ul>
+<li>Products don&#39;t have factory metadata</li>
+<li>Factory names don&#39;t match exactly (case-sensitive after normalization)</li>
+<li>Similarity scores below threshold</li>
+</ul>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Verify factory metadata is populated</li>
+<li>Check factory name normalization</li>
+<li>Lower similarity threshold for testing</li>
+</ul>
+<h3>Merge Failed</h3>
+<p><strong>Possible Causes:</strong></p>
+<ul>
+<li>Source product not found</li>
+<li>Target product not found</li>
+<li>Database constraint violation</li>
+</ul>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Verify product IDs exist in workspace</li>
+<li>Check workspace_id matches</li>
+<li>Review database logs</li>
+</ul>
+<h3>Cannot Undo Merge</h3>
+<p><strong>Possible Causes:</strong></p>
+<ul>
+<li>Merge already undone</li>
+<li>History record deleted</li>
+<li>Source products already modified</li>
+</ul>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Check merge history status</li>
+<li>Verify history record exists</li>
+<li>Restore from backup if needed</li>
+</ul>
+<hr>
+<h2>Performance Considerations</h2>
+<ul>
+<li><strong>Batch detection</strong> can be slow for large workspaces (1000+ products)</li>
+<li><strong>Caching</strong> improves repeated lookups</li>
+<li><strong>Factory grouping</strong> reduces comparison pairs</li>
+<li><strong>Similarity threshold</strong> affects result count and accuracy</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: November 9, 2025
+<strong>Status</strong>: Production Ready
+<strong>API Version</strong>: 1.0</p>
+
+</div></body></html>
