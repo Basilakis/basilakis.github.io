@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Intelligent Page Type Detection &amp; Processing</h1>
+<h2>Overview</h2>
+<p>The PDF processing pipeline now includes intelligent page type detection in Stage 0A (Vision Discovery), which enables optimal extraction methods for each page type in Stage 0B (Metadata Extraction).</p>
+<h2>Architecture</h2>
+<h3>Stage 0A: Vision Discovery + Page Type Classification</h3>
+<p>Claude Vision analyzes ALL PDF pages and provides:</p>
+<ol>
+<li>Product identification (name, page_range, description)</li>
+<li><strong>Page type classification</strong> for each page</li>
+</ol>
+<p><strong>Page Types:</strong></p>
+<ul>
+<li><strong>TEXT</strong>: Page has embedded text layer (readable, not image-based)</li>
+<li><strong>IMAGE</strong>: Page is image-based with text as part of image (no text layer)</li>
+<li><strong>MIXED</strong>: Page has both embedded text AND significant images</li>
+<li><strong>EMPTY</strong>: Page is blank or has no meaningful content</li>
+</ul>
+<p>The response for each product includes a <code>page_types</code> dictionary mapping page numbers to their type classification (e.g., <code>&quot;24&quot;: &quot;IMAGE&quot;</code>, <code>&quot;25&quot;: &quot;MIXED&quot;</code>, <code>&quot;26&quot;: &quot;TEXT&quot;</code>).</p>
+<h3>Stage 0B: Intelligent Extraction Routing</h3>
+<p>Based on page types from Stage 0A, the system routes each page to the optimal extraction method:</p>
+<table>
+<thead>
+<tr>
+<th>Page Type</th>
+<th>Extraction Method</th>
+<th>Speed</th>
+<th>Quality</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>TEXT</strong></td>
+<td>PyMuPDF4LLM</td>
+<td>Fast (~2s for 30 pages)</td>
+<td>High for text</td>
+</tr>
+<tr>
+<td><strong>IMAGE</strong></td>
+<td>Claude Vision data (from Stage 0A)</td>
+<td>Instant (0s)</td>
+<td>High for visual content</td>
+</tr>
+<tr>
+<td><strong>MIXED</strong></td>
+<td>PyMuPDF4LLM</td>
+<td>Fast (~2s)</td>
+<td>Gets embedded text</td>
+</tr>
+<tr>
+<td><strong>EMPTY</strong></td>
+<td>Skip</td>
+<td>Instant</td>
+<td>N/A</td>
+</tr>
+</tbody></table>
+<p><strong>Processing Flow:</strong></p>
+<ol>
+<li>Separate pages by type (TEXT, IMAGE, MIXED, EMPTY)</li>
+<li>Extract TEXT pages → PyMuPDF4LLM batch extraction</li>
+<li>Extract IMAGE pages → Use existing Claude Vision data</li>
+<li>Extract MIXED pages → PyMuPDF4LLM batch extraction</li>
+<li>Skip EMPTY pages</li>
+<li>Combine all results</li>
+</ol>
+<h2>Benefits</h2>
+<p>✅ <strong>No more &quot;not a textpage&quot; errors</strong> - Know which pages are image-based BEFORE extraction
+✅ <strong>Same processing time</strong> - ~2-3 seconds total (no extra AI calls, no OCR)
+✅ <strong>Better quality</strong> - Right extraction method for each page type
+✅ <strong>Complete visibility</strong> - Know exactly what type each page is
+✅ <strong>Handles ALL PDFs</strong> - Text-based, image-based, or mixed catalogs</p>
+<h2>Implementation Details</h2>
+<h3>ProductInfo Dataclass</h3>
+<p>The <code>ProductInfo</code> dataclass (<code>mivaa-pdf-extractor/app/services/product_discovery_service.py</code>) was updated to include a <code>page_types</code> field: a dictionary mapping page numbers (int) to type strings (<code>&quot;TEXT&quot;</code>, <code>&quot;IMAGE&quot;</code>, <code>&quot;MIXED&quot;</code>, or <code>&quot;EMPTY&quot;</code>).</p>
+<h3>Vision Discovery Prompt</h3>
+<p>Updated to request page type classification for EACH page in the product&#39;s <code>page_range</code>. The model classifies each page and returns <code>page_types</code> for ALL pages in the range.</p>
+<h3>Stage 0B Extraction Logic</h3>
+<p>Pages are separated by type, then:</p>
+<ul>
+<li>TEXT and MIXED pages are batched and extracted via PyMuPDF4LLM</li>
+<li>IMAGE pages reuse the Claude Vision data already collected in Stage 0A</li>
+<li>EMPTY pages are skipped entirely</li>
+</ul>
+<h2>Logging Example</h2>
+<p>The log output shows page type distribution (e.g., &quot;30 TEXT, 20 IMAGE, 2 MIXED&quot;), then reports character counts as each batch completes: TEXT pages extracted via PyMuPDF4LLM (~45,000 chars), IMAGE pages resolved from Stage 0A vision data (0s, instant), MIXED pages extracted via PyMuPDF4LLM (~3,000 chars), and a final total (e.g., &quot;48,000 characters from 52 pages&quot;).</p>
+<h2>Files Modified</h2>
+<ol>
+<li><p><strong>mivaa-pdf-extractor/app/services/product_discovery_service.py</strong></p>
+<ul>
+<li>Added <code>page_types</code> field to <code>ProductInfo</code> dataclass</li>
+<li>Updated vision discovery prompt to request page type classification</li>
+<li>Updated <code>_parse_discovery_results()</code> to extract page_types</li>
+<li>Rewrote Stage 0B extraction with intelligent routing</li>
+</ul>
+</li>
+<li><p><strong>mivaa-pdf-extractor/app/api/pdf_processing/stage_3_images.py</strong></p>
+<ul>
+<li>Fixed <code>global_memory_monitor</code> import alias issue</li>
+</ul>
+</li>
+</ol>
+<h2>Testing</h2>
+<p>Run the NOVA test to validate. Expected results:</p>
+<ul>
+<li>No &quot;not a textpage&quot; errors</li>
+<li>Page type distribution logged</li>
+<li>IMAGE pages use vision data</li>
+<li>All 7 metrics reported correctly</li>
+</ul>
+
+</div></body></html>

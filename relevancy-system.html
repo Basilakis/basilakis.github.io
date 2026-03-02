@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Relevancy System Architecture</h1>
+<p><strong>Last Updated:</strong> November 3, 2025
+<strong>Version:</strong> 1.0.0
+<strong>Status:</strong> ✅ Production</p>
+<hr>
+<h2>Overview</h2>
+<p>The MIVAA Relevancy System establishes intelligent relationships between chunks, products, and images using AI-powered scoring algorithms. This system ensures accurate search results, proper entity linking, and high-quality knowledge base organization.</p>
+<hr>
+<h2>Core Concepts</h2>
+<h3>What is Relevancy?</h3>
+<p><strong>Relevancy</strong> is a scored relationship (0.0-1.0) between two entities that indicates how closely they are related. Higher scores mean stronger relationships.</p>
+<h3>Why Relevancy Matters</h3>
+<ol>
+<li><strong>Search Accuracy</strong> - Return the most relevant results for user queries</li>
+<li><strong>Entity Linking</strong> - Connect related content across the knowledge base</li>
+<li><strong>Context Preservation</strong> - Maintain relationships between text, images, and products</li>
+<li><strong>Quality Scoring</strong> - Identify high-quality vs low-quality relationships</li>
+</ol>
+<hr>
+<h2>Relationship Types</h2>
+<p>MIVAA uses <strong>3 primary relationship tables</strong> to link entities:</p>
+<h3>1. Chunk → Product Relationships</h3>
+<p><strong>Table:</strong> <code>chunk_product_relationships</code></p>
+<p><strong>Purpose:</strong> Links text chunks to products they describe</p>
+<p><strong>Relationship Types:</strong></p>
+<ul>
+<li><code>source</code> - Chunk is primary source describing the product</li>
+<li><code>related</code> - Chunk mentions or relates to the product</li>
+<li><code>component</code> - Chunk describes a component of the product</li>
+<li><code>alternative</code> - Chunk describes an alternative to the product</li>
+</ul>
+<hr>
+<h3>2. Product → Image Relationships</h3>
+<p><strong>Table:</strong> <code>product_image_relationships</code></p>
+<p><strong>Purpose:</strong> Links products to images that depict them</p>
+<p><strong>Relationship Types:</strong></p>
+<ul>
+<li><code>depicts</code> - Image directly shows the product</li>
+<li><code>illustrates</code> - Image illustrates product features</li>
+<li><code>variant</code> - Image shows a product variant</li>
+<li><code>related</code> - Image is related to the product</li>
+</ul>
+<hr>
+<h3>3. Chunk → Image Relationships</h3>
+<p><strong>Table:</strong> <code>chunk_image_relationships</code></p>
+<p><strong>Purpose:</strong> Links text chunks to images they reference</p>
+<p><strong>Relationship Types:</strong></p>
+<ul>
+<li><code>illustrates</code> - Image illustrates the chunk content</li>
+<li><code>depicts</code> - Image depicts what the chunk describes</li>
+<li><code>related</code> - Image is related to the chunk</li>
+<li><code>example</code> - Image provides an example of chunk content</li>
+</ul>
+<hr>
+<h2>Relevancy Scoring Algorithms</h2>
+<h3>Algorithm 1: Chunk → Product Relevancy</h3>
+<p><strong>Formula:</strong> relevance_score = page_proximity(40%) + embedding_similarity(30%) + mention_score(30%)</p>
+<p><strong>Components:</strong></p>
+<ol>
+<li><p><strong>Page Proximity (40%)</strong> - How close is the chunk to the product?</p>
+<ul>
+<li>Same page: <code>0.4</code></li>
+<li>Adjacent page: <code>0.2</code></li>
+<li>Different page: <code>0.0</code></li>
+</ul>
+</li>
+<li><p><strong>Embedding Similarity (30%)</strong> - How similar is the chunk content to the product?</p>
+<ul>
+<li>Cosine similarity between chunk and product embeddings</li>
+<li>Default medium relevance: <code>0.15</code></li>
+</ul>
+</li>
+<li><p><strong>Mention Score (30%)</strong> - Does the chunk mention the product name?</p>
+<ul>
+<li>Product name mentioned: <code>0.3</code></li>
+<li>Product name not mentioned: <code>0.0</code></li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>Algorithm 2: Product → Image Relevancy</h3>
+<p><strong>Formula:</strong> relevance_score = page_overlap(40%) + visual_similarity(40%) + detection_score(20%)</p>
+<p><strong>Components:</strong></p>
+<ol>
+<li><p><strong>Page Overlap (40%)</strong> - Are the product and image on the same page?</p>
+<ul>
+<li>Same page: <code>0.4</code></li>
+<li>Adjacent page: <code>0.2</code></li>
+<li>Different page: <code>0.0</code></li>
+</ul>
+</li>
+<li><p><strong>Visual Similarity (40%)</strong> - How visually similar is the image to the product?</p>
+<ul>
+<li>From AI detection (CLIP embeddings)</li>
+<li>Default: <code>0.3</code></li>
+</ul>
+</li>
+<li><p><strong>Detection Score (20%)</strong> - How confident is the AI that this image shows the product?</p>
+<ul>
+<li>From product discovery confidence</li>
+<li>Default: <code>0.2</code></li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>Algorithm 3: Chunk → Image Relevancy</h3>
+<p><strong>Formula:</strong> relevance_score = same_page(50%) + visual_text_similarity(30%) + spatial_proximity(20%)</p>
+<p><strong>Components:</strong></p>
+<ol>
+<li><p><strong>Same Page (50%)</strong> - Are the chunk and image on the same page?</p>
+<ul>
+<li>Same page: <code>0.5</code></li>
+<li>Different page: <code>0.0</code></li>
+</ul>
+</li>
+<li><p><strong>Visual-Text Similarity (30%)</strong> - Does the image content match the chunk text?</p>
+<ul>
+<li>From multimodal embeddings</li>
+<li>Default: <code>0.2</code></li>
+</ul>
+</li>
+<li><p><strong>Spatial Proximity (20%)</strong> - How close are they on the page?</p>
+<ul>
+<li>Adjacent: <code>0.2</code></li>
+<li>Far apart: <code>0.1</code></li>
+<li>Different page: <code>0.0</code></li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Implementation</h2>
+<h3>Backend Service: <code>entity_linking_service.py</code></h3>
+<p><strong>Location:</strong> <code>mivaa-pdf-extractor/app/services/entity_linking_service.py</code></p>
+<p><strong>Key Methods:</strong></p>
+<ul>
+<li><code>link_images_to_products(document_id, image_to_product_mapping, product_name_to_id)</code> - Links images to products with relevance scores</li>
+<li><code>link_chunks_to_images(document_id)</code> - Links chunks to images on the same page</li>
+<li><code>link_chunks_to_products(document_id)</code> - Links chunks to products with relevance scores</li>
+</ul>
+<hr>
+<h3>Frontend Service: <code>entityRelationshipService.ts</code></h3>
+<p><strong>Location:</strong> <code>src/services/entityRelationshipService.ts</code></p>
+<p><strong>Key Methods:</strong></p>
+<ul>
+<li><code>linkChunkToProduct(chunkId, productId, relationshipType, relevanceScore)</code> - Returns <code>ChunkProductRelationship</code></li>
+<li><code>linkProductToImage(productId, imageId, relationshipType, relevanceScore)</code> - Returns <code>ProductImageRelationship</code></li>
+<li><code>linkChunkToImage(chunkId, imageId, relationshipType, relevanceScore)</code> - Returns <code>ChunkImageRelationship</code></li>
+</ul>
+<hr>
+<h2>Processing Flow</h2>
+<h3>Stage 1: Product Discovery (Stage 0)</h3>
+<p>Claude/GPT analyzes PDF, identifies products and their pages, and creates an image-to-product mapping.</p>
+<h3>Stage 2: Chunk Creation (Stage 2)</h3>
+<p>Semantic chunking creates text chunks which are stored in the document_chunks table, each with a page_number.</p>
+<h3>Stage 3: Entity Linking (Stage 3-4)</h3>
+<p>Products are linked to Images (using image-to-product mapping), then Chunks are linked to Products (using page proximity + embeddings), then Chunks are linked to Images (using same-page detection). All relationships are stored with relevance scores.</p>
+<hr>
+<h2>Best Practices</h2>
+<h3>1. Use Relevance Thresholds</h3>
+<p>Filter relationships by minimum relevance score. Recommended minimums: 0.7 for high-quality chunk-product relationships, 0.5 for product-image relationships.</p>
+<h3>2. Prioritize Relationship Types</h3>
+<p>When multiple relationships exist, prioritize by type:</p>
+<p><strong>Chunk → Product:</strong></p>
+<ol>
+<li><code>source</code> (primary description)</li>
+<li><code>component</code> (part of product)</li>
+<li><code>related</code> (mentions product)</li>
+<li><code>alternative</code> (alternative to product)</li>
+</ol>
+<p><strong>Product → Image:</strong></p>
+<ol>
+<li><code>depicts</code> (shows product directly)</li>
+<li><code>illustrates</code> (shows features)</li>
+<li><code>variant</code> (shows variant)</li>
+<li><code>related</code> (related image)</li>
+</ol>
+<h3>3. Update Relevance Scores</h3>
+<p>Relevance scores can be updated based on user feedback. Increase score by 0.1 when user confirms a relationship (capped at 1.0), decrease by 0.2 when user rejects (floored at 0.0).</p>
+<hr>
+<h2>Future Enhancements</h2>
+<ol>
+<li><strong>Machine Learning</strong> - Train models to improve relevance scoring</li>
+<li><strong>User Feedback Loop</strong> - Learn from user interactions</li>
+<li><strong>Contextual Relevance</strong> - Consider document structure and hierarchy</li>
+<li><strong>Temporal Relevance</strong> - Factor in recency and updates</li>
+<li><strong>Cross-Document Relevance</strong> - Link entities across multiple documents</li>
+</ol>
+<hr>
+<p><strong>Related Documentation:</strong></p>
+<ul>
+<li><a href="metadata-management-system.md">Metadata Management System</a></li>
+<li><a href="product-discovery-architecture.md">Product Discovery Architecture</a></li>
+<li><a href="pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
+</ul>
+
+</div></body></html>
