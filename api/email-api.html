@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Email API</h1>
+<h2>Overview</h2>
+<p>The Email API is a Supabase Edge Function that handles email sending, domain verification, and email analytics using AWS SES (Simple Email Service).</p>
+<p><strong>Edge Function:</strong> <code>email-api</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/email-api</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth. You need a valid user JWT token (obtained after login):</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_user_jwt_token&gt;
+</code></pre>
+<h3>Direct API Access (cURL)</h3>
+<p>For direct API calls outside the Supabase client, you also need the <code>apikey</code> header:</p>
+<pre><code class="language-bash">curl -X POST &quot;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/email-api&quot; \
+  -H &quot;Authorization: Bearer &lt;USER_JWT_TOKEN&gt;&quot; \
+  -H &quot;apikey: &lt;SUPABASE_ANON_KEY&gt;&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;action&quot;: &quot;send&quot;, &quot;to&quot;: &quot;user@example.com&quot;, &quot;subject&quot;: &quot;Test&quot;, &quot;html&quot;: &quot;&lt;p&gt;Hello&lt;/p&gt;&quot;}&#39;
+</code></pre>
+<p><strong>Note:</strong> The <code>Authorization</code> header requires a valid user JWT token from <code>supabase.auth.getSession()</code>, not just the anon key. The function validates the user via <code>supabase.auth.getUser()</code>.</p>
+<h2>Actions</h2>
+<p>The API uses an action-based routing system. All requests are POST with an <code>action</code> parameter.</p>
+<h3>1. Send Email</h3>
+<p>Send an email with or without a template.</p>
+<p><strong>Action:</strong> <code>send</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;send&#39;,
+  to: string | string[],              // Recipient email(s)
+  from?: string,                       // Sender email (default: noreply@materialshub.gr)
+  fromName?: string,                   // Sender name
+  subject: string,                     // Email subject
+  html?: string,                       // HTML body
+  text?: string,                       // Plain text body
+  templateSlug?: string,               // Template slug from email_templates table
+  variables?: Record&lt;string, string&gt;,  // Variables for template rendering
+  cc?: string[],                       // CC recipients
+  bcc?: string[],                      // BCC recipients
+  replyTo?: string,                    // Reply-to address
+  tags?: Record&lt;string, string&gt;,       // Custom tags for tracking
+  emailType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;notification&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  messageId: string,  // AWS SES message ID
+  logId: string       // email_logs record ID
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: {
+    action: &#39;send&#39;,
+    to: &#39;user@example.com&#39;,
+    subject: &#39;Welcome to Material Kai&#39;,
+    templateSlug: &#39;welcome&#39;,
+    variables: {
+      userName: &#39;John Doe&#39;,
+      loginUrl: &#39;https://app.materialkai.com/login&#39;
+    },
+    emailType: &#39;transactional&#39;
+  }
+});
+</code></pre>
+<h3>2. Verify Domain</h3>
+<p>Initiate domain verification for sending emails.</p>
+<p><strong>Action:</strong> <code>verify-domain</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;verify-domain&#39;,
+  domain: string  // Domain to verify (e.g., &#39;materialshub.gr&#39;)
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  verificationToken: string  // TXT record value to add to DNS
+}
+</code></pre>
+<h3>3. Check Domain Status</h3>
+<p>Check the verification status of a domain.</p>
+<p><strong>Action:</strong> <code>check-domain</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;check-domain&#39;,
+  domain: string  // Domain to check
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  status: &#39;Pending&#39; | &#39;Success&#39; | &#39;Failed&#39; | &#39;TemporaryFailure&#39; | &#39;NotStarted&#39;,
+  verificationToken?: string
+}
+</code></pre>
+<h3>4. List Domains</h3>
+<p>Get all email domains from the database.</p>
+<p><strong>Action:</strong> <code>domains</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;domains&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  domains: Array&lt;{
+    id: string,
+    domain: string,
+    verification_status: &#39;pending&#39; | &#39;verified&#39; | &#39;failed&#39;,
+    verification_token: string,
+    is_default: boolean,
+    created_at: string,
+    created_by: string
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: { action: &#39;domains&#39; }
+});
+// Returns: { success: true, domains: [...] }
+</code></pre>
+<h3>5. List SES Domains</h3>
+<p>Get all domains directly from AWS SES with their verification status. <strong>Requires admin role.</strong></p>
+<p><strong>Action:</strong> <code>list-ses-domains</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;list-ses-domains&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  domains: Array&lt;{
+    domain: string,
+    verificationStatus: &#39;Pending&#39; | &#39;Success&#39; | &#39;Failed&#39; | &#39;TemporaryFailure&#39; | &#39;NotStarted&#39;,
+    verificationToken?: string
+  }&gt;
+}
+</code></pre>
+<h3>6. Get Email Logs</h3>
+<p>Retrieve email sending logs with optional filters.</p>
+<p><strong>Action:</strong> <code>logs</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;logs&#39;,
+  status?: string,     // Filter by status: &#39;queued&#39; | &#39;sent&#39; | &#39;delivered&#39; | &#39;bounced&#39; | &#39;failed&#39;
+  emailType?: string,  // Filter by type: &#39;transactional&#39; | &#39;marketing&#39; | &#39;notification&#39;
+  limit?: number       // Number of logs to return (default: 50)
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  logs: Array&lt;{
+    id: string,
+    template_id?: string,
+    domain_id?: string,
+    from_email: string,
+    from_name?: string,
+    to_email: string,
+    cc_emails?: string[],
+    bcc_emails?: string[],
+    reply_to?: string,
+    subject: string,
+    html_body?: string,
+    text_body?: string,
+    status: string,
+    message_id?: string,
+    email_type: string,
+    tags?: Record&lt;string, string&gt;,
+    variables?: Record&lt;string, string&gt;,
+    sent_at?: string,
+    delivered_at?: string,
+    opened_at?: string,
+    clicked_at?: string,
+    bounced_at?: string,
+    bounce_reason?: string,
+    created_at: string,
+    created_by: string
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: {
+    action: &#39;logs&#39;,
+    status: &#39;sent&#39;,
+    emailType: &#39;transactional&#39;,
+    limit: 100
+  }
+});
+</code></pre>
+<h3>7. Get Email Analytics</h3>
+<p>Retrieve email analytics for sent emails.</p>
+<p><strong>Action:</strong> <code>analytics</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;analytics&#39;,
+  dateRange?: {
+    start: string,  // ISO date string
+    end: string     // ISO date string
+  }
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  totalSent: number,
+  totalDelivered: number,
+  totalBounced: number,
+  totalComplained: number,
+  totalOpened: number,
+  totalClicked: number,
+  deliveryRate: number,   // Percentage
+  bounceRate: number,     // Percentage
+  complaintRate: number,  // Percentage
+  openRate: number,       // Percentage
+  clickRate: number,      // Percentage
+  dailyData: Array&lt;{
+    date: string,
+    total_sent: number,
+    total_delivered: number,
+    total_bounced: number,
+    total_complained: number,
+    total_opened: number,
+    total_clicked: number
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: {
+    action: &#39;analytics&#39;,
+    dateRange: {
+      start: &#39;2024-01-01&#39;,
+      end: &#39;2024-01-31&#39;
+    }
+  }
+});
+</code></pre>
+<h3>8. Get Sending Stats</h3>
+<p>Get AWS SES quota and sending statistics.</p>
+<p><strong>Action:</strong> <code>sending-stats</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;sending-stats&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  stats: {
+    max24HourSend: number,      // Maximum emails allowed in 24 hours
+    maxSendRate: number,        // Maximum emails per second
+    sentLast24Hours: number     // Emails sent in last 24 hours
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: { action: &#39;sending-stats&#39; }
+});
+// Returns: { success: true, stats: { max24HourSend: 50000, maxSendRate: 14, sentLast24Hours: 150 } }
+</code></pre>
+<h2>Actions Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+<th>Auth Required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>send</code></td>
+<td>Send an email</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>verify-domain</code></td>
+<td>Initiate domain verification</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>check-domain</code></td>
+<td>Check domain verification status</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>domains</code></td>
+<td>List all domains from database</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>list-ses-domains</code></td>
+<td>List domains from AWS SES</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td>Get email sending logs</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>analytics</code></td>
+<td>Get email analytics</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>sending-stats</code></td>
+<td>Get AWS SES quota/stats</td>
+<td>User</td>
+</tr>
+</tbody></table>
+<h2>Error Handling</h2>
+<p>All errors return a standard format:</p>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string  // Error message
+}
+</code></pre>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../email-system.md">Email System Documentation</a></li>
+<li><a href="../email-system.md#templates">Email Templates Management</a></li>
+</ul>
+
+</div></body></html>
