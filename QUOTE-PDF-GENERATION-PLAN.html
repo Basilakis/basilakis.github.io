@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Quote PDF/HTML Generation - Final Implementation Plan</h1>
+<h2>Overview</h2>
+<p>Generate branded PDF and HTML documents when a quote is published, using Supabase Edge Functions for consistent, reliable output.</p>
+<hr>
+<h2>Architecture</h2>
+<p>┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│   Frontend      │────▶│  Edge Function       │────▶│  Supabase       │
+│   &quot;Publish&quot;     │     │  generate-quote-pdf  │     │  Storage        │
+│   Button        │◀────│                      │◀────│                 │
+└─────────────────┘     └──────────────────────┘     └─────────────────┘
+                                  │
+                                  ▼
+                        ┌──────────────────────┐
+                        │  Database            │
+                        │  - quotes            │
+                        │  - quote_items       │
+                        │  - quote_templates   │
+                        └──────────────────────┘</p>
+<hr>
+<h2>Phase 1: Database Schema</h2>
+<h3>1.1 Migration: Add Quote Publishing Fields</h3>
+<p>Alter the <code>quotes</code> table to add <code>published_at</code>, <code>pdf_url</code>, <code>html_url</code>, and <code>quote_number</code> columns. A trigger-based function auto-generates quote numbers in the format <code>Q-YYYYMMDD-NNNN</code> when a quote is first published.</p>
+<h3>1.2 Migration: Quote Templates Table</h3>
+<p>Create a <code>quote_templates</code> table with the following structure:</p>
+<ul>
+<li><code>id</code> UUID primary key</li>
+<li><code>workspace_id</code> UUID (references workspaces)</li>
+<li><code>name</code> TEXT</li>
+<li><code>intro_pages</code> JSONB — array of storage paths for intro page images</li>
+<li><code>background_page</code> TEXT — storage path for the background image</li>
+<li><code>final_pages</code> JSONB — array of storage paths for final page images</li>
+<li><code>table_config</code> JSONB — table position (x, y), width, max rows per page, columns, header settings, row height</li>
+<li><code>style_config</code> JSONB — header/row colors, border color, font family, font size, accent color</li>
+<li><code>is_default</code> BOOLEAN</li>
+<li><code>created_at</code> / <code>updated_at</code> timestamps</li>
+</ul>
+<p>RLS policies allow workspace members to read templates and admins/owners to manage them.</p>
+<hr>
+<h2>Phase 2: Supabase Storage Setup</h2>
+<h3>2.1 Storage Buckets</h3>
+<p>quote-templates/                    (Private bucket)
+├── {workspace_id}/
+│   ├── intro/
+│   │   ├── page-1.png
+│   │   └── page-2.png
+│   ├── backgrounds/
+│   │   └── main.png
+│   └── final/
+│       └── page-1.png</p>
+<p>quote-documents/                    (Private bucket, signed URLs for access)
+├── {workspace_id}/
+│   └── {quote_id}/
+│       ├── quote-Q-20260128-0001.pdf
+│       └── quote-Q-20260128-0001.html</p>
+<h3>2.2 Storage Policies</h3>
+<p>Storage RLS policies control access: workspace members can read templates, admins can write templates, and quote owners/workspace admins can access generated documents.</p>
+<hr>
+<h2>Phase 3: Edge Function - generate-quote-pdf</h2>
+<h3>3.1 Function Structure</h3>
+<p>supabase/functions/generate-quote-pdf/
+├── index.ts          # Main handler
+├── pdf-generator.ts  # PDF creation logic
+├── html-generator.ts # HTML creation logic
+├── types.ts          # TypeScript interfaces
+└── deno.json         # Dependencies</p>
+<h3>3.2 Main Handler (index.ts)</h3>
+<p>The main handler accepts a <code>quote_id</code> and optional <code>template_id</code>. It performs the following steps in sequence:</p>
+<ol>
+<li>Fetch the quote with all items, upsells, and user details from the database</li>
+<li>Fetch the applicable template (or default template for the workspace)</li>
+<li>Generate the PDF using <code>pdf-lib</code></li>
+<li>Generate the HTML document</li>
+<li>Auto-generate a quote number if not already set</li>
+<li>Upload the PDF to the <code>quote-documents</code> storage bucket</li>
+<li>Upload the HTML to the <code>quote-documents</code> storage bucket</li>
+<li>Create signed URLs valid for 7 days for both documents</li>
+<li>Update the <code>quotes</code> table with <code>published_at</code>, <code>pdf_url</code>, <code>html_url</code>, <code>quote_number</code>, and <code>status: &#39;quoted&#39;</code></li>
+<li>Return the quote number and signed URLs in the response</li>
+</ol>
+<h3>3.3 PDF Generator (pdf-generator.ts)</h3>
+<p>The PDF generator uses <code>pdf-lib</code> to assemble the document:</p>
+<ol>
+<li><strong>Intro pages</strong>: Each intro page image is embedded and added as a full-bleed page</li>
+<li><strong>Table pages</strong>: The background image is tiled across as many pages as needed; the product table is drawn on top with configurable column layout, header styling, alternating row colors, and product thumbnail images</li>
+<li><strong>Final pages</strong>: Each final page image is embedded and added as a full-bleed page</li>
+</ol>
+<p>The table supports the following configurable columns: <code>image</code>, <code>name</code>, <code>size</code>, <code>quantity</code>, <code>unit_price</code>, <code>total</code>. Totals are drawn on the last table page. A border is drawn around the table area.</p>
+<hr>
+<h2>Phase 4: Frontend Integration</h2>
+<h3>4.1 QuoteDocumentService</h3>
+<p><strong>File</strong>: <code>src/services/QuoteDocumentService.ts</code></p>
+<p>This service provides three static methods:</p>
+<ul>
+<li><code>publishQuote(quoteId, templateId?)</code> — invokes the <code>generate-quote-pdf</code> edge function and returns <code>{ success, quoteNumber, pdfUrl, htmlUrl, error }</code></li>
+<li><code>regenerateDocuments(quoteId)</code> — same as publish, used for already-published quotes</li>
+<li><code>getDocumentUrls(quoteId)</code> — queries the <code>quotes</code> table for <code>pdf_url</code> and <code>html_url</code></li>
+</ul>
+<h3>4.2 Publish Button Component</h3>
+<p><strong>File</strong>: <code>src/components/admin/QuotePublishButton.tsx</code></p>
+<p>A button component that calls <code>QuoteDocumentService.publishQuote()</code> on click. Shows a spinner and &quot;Generating...&quot; label while in progress. Displays a success toast with the quote number on success, or an error toast on failure.</p>
+<h3>4.3 Document Download Links</h3>
+<p><strong>File</strong>: <code>src/components/admin/QuoteDocumentLinks.tsx</code></p>
+<p>Renders only when <code>quote.published_at</code> is set. Displays the quote number as a badge, a PDF download button (opens <code>pdf_url</code> in new tab with download), and a Web View button (opens <code>html_url</code> in new tab).</p>
+<hr>
+<h2>Phase 5: Template Management UI</h2>
+<h3>5.1 Template Upload Page</h3>
+<p><strong>File</strong>: <code>src/pages/admin/QuoteTemplatesPage.tsx</code></p>
+<p>Features:</p>
+<ul>
+<li>Upload PDF pages (auto-convert to PNG)</li>
+<li>Preview template assembly</li>
+<li>Configure table position (drag &amp; drop)</li>
+<li>Set table styling (colors, fonts)</li>
+<li>Mark as default template</li>
+</ul>
+<h3>5.2 PDF to Image Conversion</h3>
+<p>Uses client-side <code>pdf.js</code> to extract each page of an uploaded PDF as a high-resolution PNG blob before uploading to storage. Each page is rendered at 2× scale for quality.</p>
+<hr>
+<h2>Implementation Checklist</h2>
+<h3>Phase 1: Database &amp; Storage (Day 1)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create migration for quote publishing fields</li>
+<li><input disabled="" type="checkbox"> Create migration for quote_templates table</li>
+<li><input disabled="" type="checkbox"> Create quote-templates storage bucket</li>
+<li><input disabled="" type="checkbox"> Create quote-documents storage bucket</li>
+<li><input disabled="" type="checkbox"> Configure storage RLS policies</li>
+</ul>
+<h3>Phase 2: Edge Function (Day 2-3)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create generate-quote-pdf function structure</li>
+<li><input disabled="" type="checkbox"> Implement PDF generation with pdf-lib</li>
+<li><input disabled="" type="checkbox"> Implement HTML generation</li>
+<li><input disabled="" type="checkbox"> Handle template page assembly</li>
+<li><input disabled="" type="checkbox"> Handle table rendering with pagination</li>
+<li><input disabled="" type="checkbox"> Upload to storage and return URLs</li>
+<li><input disabled="" type="checkbox"> Deploy and test</li>
+</ul>
+<h3>Phase 3: Frontend Service (Day 3)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create QuoteDocumentService</li>
+<li><input disabled="" type="checkbox"> Add publishQuote method</li>
+<li><input disabled="" type="checkbox"> Add document URL helpers</li>
+</ul>
+<h3>Phase 4: UI Integration (Day 4)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Add QuotePublishButton component</li>
+<li><input disabled="" type="checkbox"> Add QuoteDocumentLinks component</li>
+<li><input disabled="" type="checkbox"> Integrate into QuoteDetailPage</li>
+<li><input disabled="" type="checkbox"> Add publish confirmation dialog</li>
+</ul>
+<h3>Phase 5: Template Management (Day 5)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Create QuoteTemplatesPage</li>
+<li><input disabled="" type="checkbox"> PDF page extraction (pdf.js)</li>
+<li><input disabled="" type="checkbox"> Template upload UI</li>
+<li><input disabled="" type="checkbox"> Table position configurator</li>
+<li><input disabled="" type="checkbox"> Style customization</li>
+</ul>
+<h3>Phase 6: Testing &amp; Polish (Day 6)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Test with various quote sizes</li>
+<li><input disabled="" type="checkbox"> Test multi-page pagination</li>
+<li><input disabled="" type="checkbox"> Mobile responsiveness of HTML</li>
+<li><input disabled="" type="checkbox"> Error handling</li>
+<li><input disabled="" type="checkbox"> Loading states</li>
+</ul>
+<hr>
+<h2>Assets Required From You</h2>
+<ol>
+<li><strong>Intro PDF</strong> - First page(s) of the quote document</li>
+<li><strong>Background PDF</strong> - Single page used as background for quote tables</li>
+<li><strong>Final PDF</strong> - Last page(s) of the quote document</li>
+<li><strong>Table Example</strong> - Screenshot or description of desired table layout</li>
+<li><strong>Supabase Details</strong> - Bucket names if different from plan</li>
+</ol>
+<hr>
+<h2>Questions Resolved</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PDF Generation</td>
+<td>Edge Function with pdf-lib</td>
+</tr>
+<tr>
+<td>Table columns</td>
+<td>Configurable per template</td>
+</tr>
+<tr>
+<td>Quote number</td>
+<td>Auto-generated (Q-YYYYMMDD-NNNN)</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>Supabase storage with signed URLs</td>
+</tr>
+<tr>
+<td>Trigger</td>
+<td>Manual &quot;Publish&quot; button click</td>
+</tr>
+</tbody></table>
+<hr>
+<p>Ready to start implementation when you provide the template assets.</p>
+
+</div></body></html>
