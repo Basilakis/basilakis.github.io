@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Price Monitoring System</h1>
+<h2>Overview</h2>
+<p>The Price Monitoring System enables Factory and Store users to track competitor prices for their products across multiple sources. The system uses Firecrawl for web scraping and provides automated monitoring, price alerts, and comprehensive analytics.</p>
+<h2>Architecture</h2>
+<h3>Database Schema</h3>
+<h4>Core Tables</h4>
+<ol>
+<li><p><strong>price_monitoring_products</strong></p>
+<ul>
+<li>Tracks which products are being monitored</li>
+<li>Stores monitoring settings (frequency, enabled/disabled)</li>
+<li>Manages scheduling (next_check_at, last_check_at)</li>
+<li>Status tracking (active, paused, error)</li>
+</ul>
+</li>
+<li><p><strong>price_history</strong></p>
+<ul>
+<li>Historical price data from all sources</li>
+<li>Includes price, currency, availability</li>
+<li>Metadata for additional information (shipping, discounts)</li>
+<li>Indexed for fast queries by product and date</li>
+</ul>
+</li>
+<li><p><strong>competitor_sources</strong></p>
+<ul>
+<li>Competitor website URLs and configurations</li>
+<li>Firecrawl-specific scraping settings</li>
+<li>Error tracking and success metrics</li>
+<li>Active/inactive status</li>
+</ul>
+</li>
+<li><p><strong>price_monitoring_jobs</strong></p>
+<ul>
+<li>Tracks scheduled and on-demand monitoring jobs</li>
+<li>Records sources checked, prices found, credits consumed</li>
+<li>Job status (pending, running, completed, failed)</li>
+<li>Performance metrics</li>
+</ul>
+</li>
+<li><p><strong>price_alerts</strong></p>
+<ul>
+<li>User notification preferences</li>
+<li>Alert types (price_drop, price_increase, any_change, availability)</li>
+<li>Thresholds (percentage or absolute amount)</li>
+<li>Notification channels (email, in-app)</li>
+</ul>
+</li>
+<li><p><strong>product_usage_stats</strong> (ADMIN ONLY)</p>
+<ul>
+<li>Product usage across platform features</li>
+<li>MoodBoard, Quote, Search, View counts</li>
+<li>Engagement metrics</li>
+<li>Protected by RLS policies</li>
+</ul>
+</li>
+<li><p><strong>price_alert_history</strong></p>
+<ul>
+<li>History of triggered alerts</li>
+<li>Price change details</li>
+<li>Notification status</li>
+</ul>
+</li>
+</ol>
+<h3>Database Functions</h3>
+<ul>
+<li><code>get_latest_price()</code> - Get most recent price for a product/source</li>
+<li><code>calculate_price_change()</code> - Calculate percentage change between prices</li>
+<li><code>should_trigger_alert()</code> - Determine if alert conditions are met</li>
+<li><code>get_products_due_for_monitoring()</code> - Find products needing price checks</li>
+<li><code>update_next_check_time()</code> - Schedule next monitoring check</li>
+<li><code>get_price_statistics()</code> - Calculate min/max/avg prices and trends</li>
+<li><code>increment_product_usage()</code> - Track product usage (admin only)</li>
+</ul>
+<h3>Row Level Security (RLS)</h3>
+<p>All tables have RLS enabled with role-based policies:</p>
+<ul>
+<li><strong>Users</strong> can view/manage their own monitoring products and alerts</li>
+<li><strong>Factory/Store users</strong> have access to price monitoring features</li>
+<li><strong>Admin/Owner</strong> have full access to all data</li>
+<li><strong>product_usage_stats</strong> is ADMIN-ONLY (strictly enforced)</li>
+<li>System/backend can insert price history and job records</li>
+</ul>
+<h3>Edge Functions</h3>
+<h4>1. price-monitoring</h4>
+<p><strong>Endpoint:</strong> <code>/functions/v1/price-monitoring</code></p>
+<p><strong>Actions:</strong></p>
+<ul>
+<li><code>start_monitoring</code> - Enable monitoring for a product</li>
+<li><code>stop_monitoring</code> - Pause monitoring for a product</li>
+<li><code>check_now</code> - Trigger immediate price check (on-demand)</li>
+<li><code>get_status</code> - Get monitoring status and recent data</li>
+</ul>
+<p><strong>Request format:</strong> JSON body with an <code>action</code> field and a <code>productId</code> field. For <code>start_monitoring</code>, also include a <code>monitoringSettings</code> object with <code>frequency</code> and <code>enabled</code> fields.</p>
+<p><strong>Response format:</strong> JSON with <code>success</code> (boolean), <code>message</code> (string), and for <code>start_monitoring</code> a <code>monitoring</code> object containing id, product_id, monitoring_frequency, and next_check_at.</p>
+<h4>2. price-monitoring-cron</h4>
+<p><strong>Endpoint:</strong> <code>/functions/v1/price-monitoring-cron</code></p>
+<p><strong>Purpose:</strong> Scheduled job that runs hourly to check products due for monitoring</p>
+<p><strong>Security:</strong> Requires <code>x-cron-secret</code> header</p>
+<p><strong>Process:</strong></p>
+<ol>
+<li>Fetch products due for monitoring</li>
+<li>Create monitoring jobs</li>
+<li>Scrape competitor sources using Firecrawl</li>
+<li>Save price history</li>
+<li>Check and trigger price alerts</li>
+<li>Update next check times</li>
+</ol>
+<p><strong>Response:</strong> JSON with success, message, and stats (total, processed, succeeded, failed).</p>
+<h3>Firecrawl Integration</h3>
+<p>The system uses Firecrawl v2 API for web scraping:</p>
+<p><strong>Features Used:</strong></p>
+<ul>
+<li>Markdown extraction for content</li>
+<li>Structured data extraction with custom schemas</li>
+<li>Browser actions for dynamic content</li>
+<li>Timeout configuration</li>
+</ul>
+<p><strong>Price Extraction Schema:</strong> The schema extracts four string fields from each page: price (product price), currency (currency code), availability (stock status), and shipping_cost.</p>
+<p><strong>Credits:</strong> Each scrape consumes approximately 1 Firecrawl credit</p>
+<h2>Frontend Components</h2>
+<h3>PriceMonitoringDashboard</h3>
+<p>Main dashboard showing:</p>
+<ul>
+<li>Statistics cards (total monitored, price drops, credits used)</li>
+<li>Tabs for products, alerts, history, jobs</li>
+<li>Refresh and add product actions</li>
+</ul>
+<h3>MonitoredProductsList</h3>
+<p>Table view of monitored products with:</p>
+<ul>
+<li>Product name and current price</li>
+<li>Price trend indicators (up/down/stable)</li>
+<li>Monitoring frequency and status</li>
+<li>Toggle monitoring on/off</li>
+<li>Check now button for on-demand checks</li>
+</ul>
+<h3>PriceAlertsPanel</h3>
+<p>Manage price alerts:</p>
+<ul>
+<li>Create new alerts</li>
+<li>Configure thresholds</li>
+<li>Set notification channels</li>
+<li>View alert history</li>
+</ul>
+<h3>PriceHistoryChart</h3>
+<p>Visualize price trends:</p>
+<ul>
+<li>Line charts showing price over time</li>
+<li>Multiple sources comparison</li>
+<li>Date range selection</li>
+</ul>
+<h3>AddProductToMonitoring</h3>
+<p>Modal to add products:</p>
+<ul>
+<li>Product search/selection</li>
+<li>Configure monitoring frequency</li>
+<li>Add competitor sources</li>
+</ul>
+<h2>User Roles and Access</h2>
+<h3>Factory Users</h3>
+<ul>
+<li>Monitor their own products</li>
+<li>Track competitor prices</li>
+<li>Set up price alerts</li>
+<li>View price history and trends</li>
+<li>Access to all monitoring features</li>
+</ul>
+<h3>Store Users</h3>
+<ul>
+<li>Monitor products they&#39;re interested in</li>
+<li>Track supplier prices</li>
+<li>Set up price drop alerts</li>
+<li>Compare prices across suppliers</li>
+</ul>
+<h3>Admin/Owner</h3>
+<ul>
+<li>Full access to all monitoring data</li>
+<li>View product usage statistics</li>
+<li>Monitor system health</li>
+<li>Manage all users&#39; monitoring settings</li>
+</ul>
+<h3>Architect/Designer</h3>
+<ul>
+<li>No access to price monitoring features</li>
+<li>Feature is hidden from their interface</li>
+</ul>
+<h2>Deployment Instructions</h2>
+<h3>1. Database Migration</h3>
+<p>Apply migrations using <code>supabase db push</code> or apply each migration file manually using psql. The migrations create all price monitoring tables, alert tables, RLS policies, and database functions.</p>
+<h3>2. Deploy Edge Functions</h3>
+<p>Deploy the price-monitoring and price-monitoring-cron functions using the Supabase CLI. Set the required environment secrets: <code>FIRECRAWL_API_KEY</code> and <code>CRON_SECRET</code>.</p>
+<h3>3. Configure Cron Job</h3>
+<p>Set up a cron job in the Supabase Dashboard under Database → Cron Jobs to call the price-monitoring-cron function on an hourly schedule (<code>0 * * * *</code>), passing the cron secret in the request headers.</p>
+<h3>4. Frontend Integration</h3>
+<p>Add the <code>/price-monitoring</code> route to your app router and render the <code>PriceMonitoringDashboard</code> component. Apply an auth guard so only Factory and Store users can access this route.</p>
+<h2>Usage Guide</h2>
+<h3>For Factory Users</h3>
+<h4>1. Add Product to Monitoring</h4>
+<ol>
+<li>Navigate to Price Monitoring dashboard</li>
+<li>Click &quot;Add Product&quot; button</li>
+<li>Search and select your product</li>
+<li>Configure monitoring settings:<ul>
+<li>Frequency: hourly, daily, weekly, or on-demand</li>
+<li>Enable/disable monitoring</li>
+</ul>
+</li>
+<li>Add competitor sources:<ul>
+<li>Enter competitor website URLs</li>
+<li>Configure scraping settings (optional)</li>
+</ul>
+</li>
+<li>Click &quot;Start Monitoring&quot;</li>
+</ol>
+<h4>2. Add Competitor Sources</h4>
+<ol>
+<li>Go to monitored product</li>
+<li>Click &quot;Add Source&quot;</li>
+<li>Enter:<ul>
+<li>Source name (e.g., &quot;Amazon&quot;, &quot;TileBar&quot;)</li>
+<li>Source URL (product page URL)</li>
+<li>Scraping configuration (optional)</li>
+</ul>
+</li>
+<li>Save source</li>
+</ol>
+<h4>3. Set Up Price Alerts</h4>
+<ol>
+<li>Navigate to &quot;Price Alerts&quot; tab</li>
+<li>Click &quot;New Alert&quot;</li>
+<li>Select product</li>
+<li>Configure alert:<ul>
+<li>Alert type: price drop, price increase, any change</li>
+<li>Threshold: percentage or dollar amount</li>
+<li>Notification channels: email, in-app</li>
+</ul>
+</li>
+<li>Save alert</li>
+</ol>
+<h4>4. Check Prices On-Demand</h4>
+<ol>
+<li>Go to &quot;Monitored Products&quot; tab</li>
+<li>Find product in list</li>
+<li>Click &quot;Check Now&quot; button</li>
+<li>Wait for results (usually 10-30 seconds)</li>
+<li>View updated prices in price history</li>
+</ol>
+<h3>For Store Users</h3>
+<h4>1. Monitor Supplier Prices</h4>
+<ol>
+<li>Add products from your suppliers</li>
+<li>Set monitoring frequency to daily or weekly</li>
+<li>Set up price drop alerts to catch deals</li>
+<li>Compare prices across multiple suppliers</li>
+</ol>
+<h4>2. Track Price Trends</h4>
+<ol>
+<li>Navigate to &quot;Price History&quot; tab</li>
+<li>Select product</li>
+<li>View price chart over time</li>
+<li>Identify best times to purchase</li>
+</ol>
+<h2>API Reference</h2>
+<h3>Start Monitoring</h3>
+<p>Call <code>POST /functions/v1/price-monitoring</code> with Authorization header, Content-Type application/json, and a body containing <code>action: &#39;start_monitoring&#39;</code>, <code>productId</code>, and <code>monitoringSettings</code> with <code>frequency</code> and <code>enabled</code> fields.</p>
+<h3>Check Now</h3>
+<p>Call <code>POST /functions/v1/price-monitoring</code> with Authorization header and a body containing <code>action: &#39;check_now&#39;</code> and <code>productId</code>.</p>
+<h3>Get Status</h3>
+<p>Call <code>POST /functions/v1/price-monitoring</code> with Authorization header and a body containing <code>action: &#39;get_status&#39;</code> and <code>productId</code>.</p>
+<h2>Monitoring and Maintenance</h2>
+<h3>Health Checks</h3>
+<p>Monitor these metrics:</p>
+<ul>
+<li>Job success rate (should be &gt;90%)</li>
+<li>Average scraping time per source</li>
+<li>Credits consumed per day</li>
+<li>Alert trigger rate</li>
+</ul>
+<h3>Error Handling</h3>
+<p>Common errors and solutions:</p>
+<ol>
+<li><p><strong>Firecrawl API errors</strong></p>
+<ul>
+<li>Check API key validity</li>
+<li>Verify credit balance</li>
+<li>Review rate limits</li>
+</ul>
+</li>
+<li><p><strong>Scraping failures</strong></p>
+<ul>
+<li>Update competitor source URLs</li>
+<li>Adjust scraping configuration</li>
+<li>Check website accessibility</li>
+</ul>
+</li>
+<li><p><strong>Alert not triggering</strong></p>
+<ul>
+<li>Verify alert thresholds</li>
+<li>Check notification channels</li>
+<li>Review price history data</li>
+</ul>
+</li>
+</ol>
+<h3>Performance Optimization</h3>
+<ul>
+<li>Batch process products in cron job (100 at a time)</li>
+<li>Cache product details to reduce database queries</li>
+<li>Use database indexes for fast price history queries</li>
+<li>Implement exponential backoff for failed scrapes</li>
+</ul>
+<h2>Future Enhancements</h2>
+<ol>
+<li><p><strong>Advanced Analytics</strong></p>
+<ul>
+<li>Price prediction using ML</li>
+<li>Seasonal trend analysis</li>
+<li>Competitor pricing strategies</li>
+</ul>
+</li>
+<li><p><strong>Bulk Operations</strong></p>
+<ul>
+<li>Import competitor sources from CSV</li>
+<li>Bulk enable/disable monitoring</li>
+<li>Export price data</li>
+</ul>
+</li>
+<li><p><strong>Integrations</strong></p>
+<ul>
+<li>Slack/Discord notifications</li>
+<li>Webhook support for custom integrations</li>
+<li>API for third-party tools</li>
+</ul>
+</li>
+<li><p><strong>UI Improvements</strong></p>
+<ul>
+<li>Interactive price charts with zoom</li>
+<li>Price comparison matrix</li>
+<li>Mobile app support</li>
+</ul>
+</li>
+</ol>
+<h2>Support</h2>
+<p>For issues or questions:</p>
+<ul>
+<li>Check logs in Supabase Dashboard</li>
+<li>Review error messages in price_monitoring_jobs table</li>
+<li>Contact support with job ID for troubleshooting</li>
+</ul>
+
+</div></body></html>

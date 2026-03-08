@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>📚 Comprehensive Metadata Fields Guide</h1>
+<h2>📋 Overview</h2>
+<p>The MIVAA platform extracts <strong>200+ metadata fields</strong> from PDF catalogs using AI-powered dynamic discovery. All metadata is organized into <strong>9 functional categories</strong> and stored in the <code>products.metadata</code> JSONB field in the database.</p>
+<hr>
+<h2>🎯 Metadata Extraction Architecture</h2>
+<h3>⚙️ How It Works</h3>
+<p>┌─────────────────────────────────────────────────────────────┐
+│ Stage 0: Product Discovery &amp; Metadata Extraction            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  0A: Product Discovery (Claude/GPT)                         │
+│  ├── Identify product names                                 │
+│  ├── Extract page ranges                                    │
+│  ├── Extract basic metadata (designer, dimensions)          │
+│  └── Classify content by category                           │
+│                                                              │
+│  0B: Metadata Enrichment (DynamicMetadataExtractor)         │
+│  ├── For each discovered product:                           │
+│  │   ├── Extract product-specific text from PDF             │
+│  │   ├── Call DynamicMetadataExtractor (Claude/GPT)         │
+│  │   ├── Extract 200+ fields across 9 categories            │
+│  │   └── Merge with discovery metadata                      │
+│  │                                                           │
+│  └── Store enriched products in database                    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘</p>
+<h3>🤖 AI Models Used</h3>
+<ul>
+<li><strong>Primary</strong>: Claude Sonnet 4.5 (<code>claude-sonnet-4-5</code>)</li>
+<li><strong>Alternative</strong>: GPT-4o (<code>gpt-4o</code>)</li>
+<li><strong>Temperature</strong>: 0.1 (low for consistent extraction)</li>
+<li><strong>Max Tokens</strong>: 8000 (comprehensive responses)</li>
+</ul>
+<h3>🔝 Metadata Priority</h3>
+<p>When merging metadata from multiple sources, the system uses this priority:</p>
+<ol>
+<li><p><strong>Discovery Metadata</strong> (Highest Priority)</p>
+<ul>
+<li>Extracted during product discovery (Stage 0A)</li>
+<li>Includes: product name, designer, dimensions, variants</li>
+</ul>
+</li>
+<li><p><strong>Critical Metadata</strong> (High Priority)</p>
+<ul>
+<li>Always extracted: <code>material_category</code>, <code>factory_name</code>, <code>factory_group_name</code></li>
+<li>Required for product classification</li>
+</ul>
+</li>
+<li><p><strong>Discovered Metadata</strong> (Standard Priority)</p>
+<ul>
+<li>200+ dynamic fields extracted by DynamicMetadataExtractor</li>
+<li>Organized into 9 functional categories</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>📦 The 9 Metadata Categories</h2>
+<h3>🧱 1. Material Properties</h3>
+<p><strong>Purpose</strong>: Physical and structural characteristics of the material</p>
+<p><strong>Fields</strong> (11 total):</p>
+<ul>
+<li><code>material_type</code> - Type of material (e.g., &quot;ceramic&quot;, &quot;porcelain&quot;, &quot;wood&quot;)</li>
+<li><code>composition</code> - Material composition (e.g., &quot;100% ceramic&quot;, &quot;oak wood&quot;)</li>
+<li><code>type</code> - Specific type classification</li>
+<li><code>blend</code> - Material blend information</li>
+<li><code>fiber_content</code> - Fiber composition (for textiles)</li>
+<li><code>texture</code> - Surface texture (e.g., &quot;smooth&quot;, &quot;rough&quot;, &quot;embossed&quot;)</li>
+<li><code>finish</code> - Surface finish (e.g., &quot;matte&quot;, &quot;glossy&quot;, &quot;satin&quot;)</li>
+<li><code>pattern</code> - Pattern type (e.g., &quot;wood grain&quot;, &quot;marble veins&quot;)</li>
+<li><code>weight</code> - Material weight (e.g., &quot;800 kg/m³&quot;)</li>
+<li><code>density</code> - Material density</li>
+<li><code>durability_rating</code> - Durability classification</li>
+</ul>
+<hr>
+<h3>📏 2. Dimensions</h3>
+<p><strong>Purpose</strong>: Physical measurements and sizing information</p>
+<p><strong>Fields</strong> (8 total):</p>
+<ul>
+<li><code>size</code> - Overall size (e.g., &quot;15×38 cm&quot;, &quot;20×40 cm&quot;)</li>
+<li><code>length</code> - Length measurement</li>
+<li><code>width</code> - Width measurement</li>
+<li><code>height</code> - Height measurement</li>
+<li><code>thickness</code> - Thickness (e.g., &quot;8mm&quot;, &quot;10mm&quot;)</li>
+<li><code>diameter</code> - Diameter (for circular products)</li>
+<li><code>area</code> - Surface area (e.g., &quot;0.57 m²&quot;)</li>
+<li><code>volume</code> - Volume measurement</li>
+</ul>
+<hr>
+<h3>🎨 3. Appearance</h3>
+<p><strong>Purpose</strong>: Visual and aesthetic characteristics</p>
+<p><strong>Fields</strong> (7 total):</p>
+<ul>
+<li><code>color</code> - Color name (e.g., &quot;beige&quot;, &quot;white&quot;, &quot;gray&quot;)</li>
+<li><code>color_code</code> - Color code (e.g., &quot;RAL 9010&quot;, &quot;#F5F5DC&quot;)</li>
+<li><code>gloss_level</code> - Gloss percentage (e.g., &quot;60%&quot;, &quot;matte&quot;)</li>
+<li><code>sheen</code> - Sheen level (e.g., &quot;satin&quot;, &quot;semi-gloss&quot;)</li>
+<li><code>transparency</code> - Transparency level</li>
+<li><code>grain</code> - Grain pattern (e.g., &quot;wood grain&quot;, &quot;marble veins&quot;)</li>
+<li><code>visual_effect</code> - Special visual effects</li>
+</ul>
+<hr>
+<h3>✅ 6. Compliance &amp; Certifications</h3>
+<p><strong>Purpose</strong>: Regulatory compliance and environmental certifications</p>
+<p><strong>Fields</strong> (6 total):</p>
+<ul>
+<li><code>certifications</code> - Certifications held (e.g., &quot;ISO 9001:2015&quot;, &quot;CE certified&quot;)</li>
+<li><code>standards</code> - Standards compliance (e.g., &quot;EN 14411&quot;, &quot;ISO 10545&quot;)</li>
+<li><code>eco_friendly</code> - Eco-friendly status (true/false)</li>
+<li><code>sustainability_rating</code> - Sustainability rating</li>
+<li><code>voc_rating</code> - VOC (Volatile Organic Compounds) rating (e.g., &quot;low VOC&quot;, &quot;zero VOC&quot;)</li>
+<li><code>safety_rating</code> - Safety rating</li>
+</ul>
+<hr>
+<h3>🎨 7. Design</h3>
+<p><strong>Purpose</strong>: Design attribution and aesthetic classification</p>
+<p><strong>Fields</strong> (6 total):</p>
+<ul>
+<li><code>designer</code> - Designer name (e.g., &quot;SG NY&quot;, &quot;Patricia Urquiola&quot;)</li>
+<li><code>studio</code> - Design studio</li>
+<li><code>collection</code> - Collection name (e.g., &quot;Harmony Collection&quot;, &quot;Urban Series&quot;)</li>
+<li><code>series</code> - Series name</li>
+<li><code>aesthetic_style</code> - Aesthetic style (e.g., &quot;contemporary&quot;, &quot;minimalist&quot;, &quot;rustic&quot;)</li>
+<li><code>design_era</code> - Design era (e.g., &quot;modern&quot;, &quot;vintage&quot;)</li>
+</ul>
+<hr>
+<h3>🏭 8. Manufacturing</h3>
+<p><strong>Purpose</strong>: Production and sourcing information</p>
+<p><strong>Fields</strong> (6 total):</p>
+<ul>
+<li><code>factory</code> - Factory name (e.g., &quot;Castellón Factory&quot;)</li>
+<li><code>manufacturer</code> - Manufacturer name</li>
+<li><code>factory_group</code> - Factory group/parent company (e.g., &quot;Harmony Group&quot;)</li>
+<li><code>country_of_origin</code> - Country of origin (e.g., &quot;Spain&quot;, &quot;Italy&quot;)</li>
+<li><code>manufacturing_process</code> - Manufacturing process description</li>
+<li><code>construction</code> - Construction method</li>
+</ul>
+<hr>
+<h3>💰 9. Commercial</h3>
+<p><strong>Purpose</strong>: Business and commercial information</p>
+<p><strong>Fields</strong> (5 total):</p>
+<ul>
+<li><code>pricing</code> - Price information (e.g., &quot;€45/m²&quot;, &quot;$50/sqft&quot;)</li>
+<li><code>availability</code> - Availability status (e.g., &quot;in stock&quot;, &quot;made to order&quot;)</li>
+<li><code>supplier</code> - Supplier name</li>
+<li><code>sku</code> - SKU/product code</li>
+<li><code>warranty</code> - Warranty information (e.g., &quot;5-year warranty&quot;, &quot;lifetime warranty&quot;)</li>
+</ul>
+<hr>
+<h2>🔧 Technical Implementation</h2>
+<h3>🗄️ Database Schema</h3>
+<p>All metadata is stored in the <code>products</code> table in the <code>metadata</code> JSONB field. The products table has columns: <code>id</code> (UUID), <code>sku</code>, <code>name</code>, <code>description</code>, <code>category</code>, <code>type</code>, <code>status</code>, <code>metadata</code> (JSONB — all 200+ metadata fields), <code>properties</code> (JSONB), <code>specifications</code> (JSONB), <code>created_at</code>, and <code>updated_at</code>.</p>
+<h3>📝 Example Product Metadata</h3>
+<p>A complete product record has a <code>metadata</code> JSONB field containing fields from all 9 categories: material properties (material_type, composition, texture, finish, pattern, weight, density), dimensions (size, thickness, area), appearance (color, color_code, gloss_level, grain), performance (water_absorption, fire_rating, slip_resistance, wear_rating, breaking_strength), application (recommended_use, installation_method, room_type, traffic_level), compliance (certifications, standards, eco_friendly, voc_rating), design (designer, collection, aesthetic_style), manufacturing (factory, factory_group, country_of_origin), commercial (pricing, availability, warranty), and <code>_extraction_metadata</code> (extraction_timestamp, extraction_method, model_used, confidence_score, validation_passed).</p>
+<hr>
+<h2>🚀 API Usage</h2>
+<h3>📤 Extract Metadata from PDF</h3>
+<p><strong>Endpoint</strong>: <code>POST /api/rag/process-pdf</code></p>
+<p>Upload a PDF file with <code>extract_categories</code> parameter. The response contains a <code>job_id</code>, <code>status</code>, <code>message</code>, <code>products_discovered</code> count, and <code>metadata_extraction</code> status.</p>
+<h3>📥 Get Product with Metadata</h3>
+<p><strong>Endpoint</strong>: <code>GET /api/products/{product_id}</code></p>
+<p>Returns the product record with its complete <code>metadata</code> object containing all extracted fields.</p>
+<h3>🔍 Search Products by Metadata</h3>
+<p><strong>Endpoint</strong>: <code>POST /api/search/products</code></p>
+<p>Send a <code>filters</code> object with dot-notation keys like <code>&quot;metadata.slip_resistance&quot;: &quot;R11&quot;</code>, <code>&quot;metadata.fire_rating&quot;: &quot;A1&quot;</code>, or <code>&quot;metadata.country_of_origin&quot;: &quot;Spain&quot;</code> to filter products by their metadata values.</p>
+<hr>
+<h2>📊 Frontend Display</h2>
+<h3>ProductDetailModal Component</h3>
+<p>The frontend displays metadata organized by category in the <code>ProductDetailModal</code> component:</p>
+<p><strong>Location</strong>: <code>src/components/AI/ProductDetailModal.tsx</code></p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Displays all 9 metadata categories</li>
+<li>✅ Dynamic rendering - only shows categories with data</li>
+<li>✅ Organized, clean UI with hover effects</li>
+<li>✅ Proper handling of empty/null values</li>
+<li>✅ Support for nested metadata structures</li>
+</ul>
+<p><strong>Example UI</strong>:
+┌─────────────────────────────────────────────────────────┐
+│ NOVA - Product Details                                  │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│ [Product Image]                                          │
+│                                                          │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Material Properties                                  │ │
+│ ├─────────────────────────────────────────────────────┤ │
+│ │ Material Type: ceramic                               │ │
+│ │ Texture: smooth                                      │ │
+│ │ Finish: matte                                        │ │
+│ │ Weight: 800 kg/m³                                    │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                          │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Dimensions                                           │ │
+│ ├─────────────────────────────────────────────────────┤ │
+│ │ Size: 15×38 cm                                       │ │
+│ │ Thickness: 8mm                                       │ │
+│ │ Area: 0.057 m²                                       │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                          │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Performance                                          │ │
+│ ├─────────────────────────────────────────────────────┤ │
+│ │ Slip Resistance: R11                                 │ │
+│ │ Fire Rating: A1                                      │ │
+│ │ Water Absorption: Class 3                            │ │
+│ │ Breaking Strength: 1200 N                            │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                          │
+│ ... (6 more categories)                                 │
+│                                                          │
+└─────────────────────────────────────────────────────────┘</p>
+<hr>
+<h2>🔍 How Metadata Extraction Works</h2>
+<h3>Step-by-Step Process</h3>
+<h4>1. PDF Upload</h4>
+<p>User uploads PDF → MIVAA API receives file → Job created</p>
+<h4>2. Product Discovery (Stage 0A)</h4>
+<p>The <code>ProductDiscoveryService</code> analyzes the PDF and returns products with basic metadata including name, page_range, and initial fields (designer, dimensions, variants).</p>
+<h4>3. Metadata Enrichment (Stage 0B)</h4>
+<p>For each product, the system extracts product-specific text from the page range, initializes <code>DynamicMetadataExtractor</code>, and runs extraction to get 200+ fields organized into <code>critical</code> (material_category, factory_name, factory_group_name), <code>discovered</code> (all dynamic fields), and <code>metadata</code> (extraction tracking info).</p>
+<h4>4. Metadata Merging</h4>
+<p>Metadata is merged with this priority: <code>discovered</code> fields as base, then <code>critical</code> fields override, then <code>discovery metadata</code> (highest priority) overrides those, plus <code>_extraction_metadata</code> added separately.</p>
+<h4>5. Database Storage</h4>
+<p>The product record is stored with its complete metadata JSONB containing all 200+ fields.</p>
+<h4>6. Frontend Display</h4>
+<p>The <code>ProductDetailModal</code> component reads the metadata object and renders each category section dynamically, showing only categories that have data.</p>
+<hr>
+<h2>🎯 Confidence Scoring</h2>
+<p>Each extracted metadata field has a confidence score (0.0-1.0):</p>
+<ul>
+<li><strong>0.9-1.0</strong>: High confidence - explicitly stated in PDF</li>
+<li><strong>0.7-0.9</strong>: Medium-high confidence - strongly implied</li>
+<li><strong>0.5-0.7</strong>: Medium confidence - inferred from context</li>
+<li><strong>0.3-0.5</strong>: Low-medium confidence - weak inference</li>
+<li><strong>0.0-0.3</strong>: Low confidence - uncertain extraction</li>
+</ul>
+<p>Confidence scores are stored alongside field values, tracking both the value and the source location (e.g., &quot;page 6, line 23&quot; or &quot;inferred from image description&quot;).</p>
+<hr>
+<h2>📝 Best Practices</h2>
+<h3>For PDF Catalog Creators</h3>
+<ol>
+<li><strong>Be Explicit</strong>: Clearly state all technical specifications</li>
+<li><strong>Use Standard Terminology</strong>: Use industry-standard terms (R11, PEI 4, etc.)</li>
+<li><strong>Organize by Product</strong>: Group all product information together</li>
+<li><strong>Include Units</strong>: Always include units (mm, kg/m³, etc.)</li>
+<li><strong>Provide Certifications</strong>: List all certifications and standards</li>
+</ol>
+<h3>For Platform Users</h3>
+<ol>
+<li><strong>Review Extracted Metadata</strong>: Always review AI-extracted metadata for accuracy</li>
+<li><strong>Use Filters</strong>: Filter products by metadata fields for precise searches</li>
+<li><strong>Check Confidence Scores</strong>: Pay attention to confidence scores for critical fields</li>
+<li><strong>Report Issues</strong>: Report incorrect extractions to improve AI models</li>
+</ol>
+<h3>For Developers</h3>
+<ol>
+<li><strong>Validate Critical Fields</strong>: Always validate critical fields (material_category, factory_name)</li>
+<li><strong>Handle Missing Data</strong>: Gracefully handle missing metadata fields</li>
+<li><strong>Use JSONB Queries</strong>: Leverage PostgreSQL JSONB queries for efficient filtering</li>
+<li><strong>Monitor Extraction Quality</strong>: Track extraction accuracy and confidence scores</li>
+</ol>
+<hr>
+<h2>🔧 Troubleshooting</h2>
+<h3>Common Issues</h3>
+<p><strong>Issue</strong>: Metadata not extracted</p>
+<ul>
+<li><strong>Cause</strong>: PDF text not readable (scanned images)</li>
+<li><strong>Solution</strong>: Use OCR preprocessing or manual entry</li>
+</ul>
+<p><strong>Issue</strong>: Incorrect metadata values</p>
+<ul>
+<li><strong>Cause</strong>: Ambiguous or unclear PDF content</li>
+<li><strong>Solution</strong>: Review and manually correct in admin panel</li>
+</ul>
+<p><strong>Issue</strong>: Missing metadata fields</p>
+<ul>
+<li><strong>Cause</strong>: Information not present in PDF</li>
+<li><strong>Solution</strong>: Add missing information manually or contact supplier</li>
+</ul>
+<p><strong>Issue</strong>: Low confidence scores</p>
+<ul>
+<li><strong>Cause</strong>: Weak or implicit information in PDF</li>
+<li><strong>Solution</strong>: Review and validate manually</li>
+</ul>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><a href="./metadata-management-system.md">Metadata Management System</a> - Complete metadata architecture</li>
+<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a> - Full PDF processing flow</li>
+<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - Product discovery details</li>
+<li><a href="./api-endpoints.md">API Endpoints</a> - Complete API reference</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: 2025-01-12
+<strong>Version</strong>: 2.0 (Comprehensive Metadata Extraction)</p>
+<h3>⚡ 4. Performance</h3>
+<p><strong>Purpose</strong>: Technical performance metrics and ratings</p>
+<p><strong>Fields</strong> (8 total):</p>
+<ul>
+<li><code>water_resistance</code> - Water resistance rating</li>
+<li><code>water_absorption</code> - Water absorption class (e.g., &quot;Class 3&quot;, &quot;&lt;0.5%&quot;)</li>
+<li><code>fire_rating</code> - Fire resistance rating (e.g., &quot;A1&quot;, &quot;B-s1,d0&quot;)</li>
+<li><code>slip_resistance</code> - Slip resistance (e.g., &quot;R11&quot;, &quot;R10&quot;)</li>
+<li><code>wear_rating</code> - Wear resistance rating (e.g., &quot;PEI 4&quot;, &quot;Class 3&quot;)</li>
+<li><code>abrasion_resistance</code> - Abrasion resistance level</li>
+<li><code>tensile_strength</code> - Tensile strength measurement</li>
+<li><code>breaking_strength</code> - Breaking strength (e.g., &quot;1200 N&quot;)</li>
+<li><code>hardness</code> - Material hardness (e.g., &quot;Mohs 7&quot;)</li>
+</ul>
+<hr>
+<h3>🔧 5. Application</h3>
+<p><strong>Purpose</strong>: Usage recommendations and installation guidance</p>
+<p><strong>Fields</strong> (6 total):</p>
+<ul>
+<li><code>recommended_use</code> - Recommended applications (e.g., &quot;residential flooring&quot;, &quot;wall cladding&quot;)</li>
+<li><code>application</code> - Application type</li>
+<li><code>installation_method</code> - Installation method (e.g., &quot;adhesive&quot;, &quot;floating&quot;, &quot;nailed&quot;)</li>
+<li><code>room_type</code> - Suitable room types (e.g., &quot;bathroom&quot;, &quot;kitchen&quot;, &quot;living room&quot;)</li>
+<li><code>traffic_level</code> - Traffic level suitability (e.g., &quot;high traffic&quot;, &quot;residential&quot;)</li>
+<li><code>care_instructions</code> - Care and maintenance instructions</li>
+<li><code>maintenance</code> - Maintenance requirements</li>
+</ul>
+
+</div></body></html>
