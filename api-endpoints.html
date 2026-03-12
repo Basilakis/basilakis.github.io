@@ -24,67 +24,297 @@
     <div class="container">
         <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
 <h1>MIVAA API Endpoints Reference</h1>
-<p><strong>Last Updated:</strong> 2025-11-02
-<strong>Total Endpoints:</strong> 113
-<strong>Status:</strong> ✅ Production-Ready</p>
-<p>Complete reference of all 113 API endpoints across 14 categories with detailed usage information, database operations, and integration points.</p>
-<p><strong>Recent Updates:</strong></p>
+<p><strong>Last Updated:</strong> 2026-01-21
+<strong>API Version:</strong> v2.6.0
+<strong>Total Endpoints:</strong> 140+</p>
+<p>Complete reference of all consolidated API endpoints with detailed usage information, database operations, and integration points.</p>
+<p><strong>Recent Updates (v2.6.0 - January 2026):</strong></p>
 <ul>
-<li>✅ Added 5 new Document Entities endpoints for certificates, logos, specifications</li>
-<li>✅ Updated Products table to use metadata JSONB field (Products + Metadata = Inseparable)</li>
-<li>✅ Removed 4 test/legacy endpoints from Documents routes</li>
-<li>✅ All endpoints are actively used in production</li>
+<li><strong>MULTI-CHANNEL MESSAGING:</strong> 10+ endpoints for SMS, WhatsApp via Twilio (NEW)<ul>
+<li><code>POST /functions/v1/messaging-api</code> - Unified messaging API (action-based routing)</li>
+<li>Send single/bulk messages across SMS, WhatsApp</li>
+<li>Template management with variable substitution</li>
+<li>Twilio Content API for WhatsApp templates</li>
+<li>WhatsApp pre-approved template support</li>
+<li>Delivery analytics and cost tracking</li>
+<li>Opt-out compliance management</li>
+</ul>
+</li>
+</ul>
+<p><strong>Previous Updates (v2.5.0 - December 30, 2025):</strong></p>
+<ul>
+<li><strong>IMAGE RE-CLASSIFICATION:</strong> 1 new endpoint for AI-powered image re-classification<ul>
+<li><code>POST /api/images/reclassify/{image_id}</code> - Re-run material vs non-material classification</li>
+<li>Force validation with secondary model (Qwen-32B or Claude)</li>
+<li>Real-time database updates with new classification results</li>
+<li>Confidence scoring and reasoning</li>
+</ul>
+</li>
+</ul>
+<p><strong>Previous Updates (v2.3.0 - November 22, 2025):</strong></p>
+<ul>
+<li><strong>NEW ENDPOINTS:</strong> 2 relationship query endpoints for validation and testing<ul>
+<li><code>GET /api/rag/product-image-relationships</code> - Query product-to-image relationships</li>
+<li><code>GET /api/rag/chunk-product-relationships</code> - Query chunk-to-product relationships</li>
+<li>Both support filtering by document_id or product_id</li>
+<li>Include relationship metadata, scores, and statistics</li>
+<li>Used for test validation and admin dashboards</li>
+</ul>
+</li>
+</ul>
+<p><strong>Previous Updates (v2.3.0 - Knowledge Base System):</strong></p>
+<ul>
+<li><strong>KNOWLEDGE BASE:</strong> 15+ new endpoints for document management with AI embeddings (NEW)<ul>
+<li>Document CRUD with automatic embedding generation (1536D)</li>
+<li>Smart content change detection (only regenerate when needed)</li>
+<li>PDF text extraction using PyMuPDF</li>
+<li>Semantic search (vector similarity)</li>
+<li>Category hierarchy management</li>
+<li>Product attachment system</li>
+<li>Version history tracking</li>
+<li>Comments and suggestions</li>
+<li>Search analytics</li>
+</ul>
+</li>
+</ul>
+<p><strong>Previous Updates (v2.2.0):</strong></p>
+<ul>
+<li><strong>DATA IMPORT:</strong> 4 endpoints for XML import and web scraping with dynamic field mapping</li>
+<li><strong>DUPLICATE DETECTION:</strong> 7 endpoints for duplicate detection and product merging (factory-based only)</li>
+<li><strong>CONSOLIDATED PDF EXTRACTION:</strong> <code>/api/pdf/extract/*</code> endpoints removed - use <code>/api/rag/documents/upload</code></li>
+<li><strong>CONSOLIDATED UPLOAD:</strong> Single <code>/api/rag/documents/upload</code> endpoint replaces 3 separate upload endpoints</li>
+<li><strong>CONSOLIDATED SEARCH:</strong> Single <code>/api/rag/search</code> endpoint with strategy parameter replaces 8+ search endpoints</li>
+<li><strong>CONSOLIDATED HEALTH:</strong> Single <code>/health</code> endpoint replaces 10+ individual health checks</li>
+<li><strong>METADATA MANAGEMENT:</strong> 4 endpoints for scope detection, application, listing, and statistics</li>
+</ul>
+<p><strong>Total API Endpoints:</strong> 140+ endpoints across 19 categories</p>
+<ul>
+<li><strong>MULTI-CHANNEL MESSAGING:</strong> SMS, WhatsApp messaging via Twilio ✨ NEW</li>
+<li><strong>KNOWLEDGE BASE:</strong> Complete documentation management system with AI embeddings</li>
+<li><strong>FRONTEND UPDATED:</strong> All API clients updated to use new consolidated endpoints</li>
+<li><strong>FEATURES PRESERVED:</strong> Prompt enhancement, category extraction, all processing modes intact</li>
+<li><strong>METADATA SYSTEM:</strong> Dynamic metadata extraction with scope detection and override logic</li>
+<li><strong>PDF EXTRACTION:</strong> Unified through RAG pipeline with optional quick mode</li>
+<li><strong>DUPLICATE DETECTION:</strong> Factory-based duplicate detection and product merging (ready for integration)</li>
+<li><strong>DATA IMPORT:</strong> XML import with AI-powered field mapping, batch processing, and scheduling</li>
 </ul>
 <hr>
 <h2>📋 Table of Contents</h2>
+<p><strong>✨ CONSOLIDATED ENDPOINTS (One Endpoint, One Purpose, No Duplicates)</strong></p>
 <ol>
-<li><a href="#1-rag-routes-25-endpoints">RAG Routes</a> - 25 endpoints</li>
-<li><a href="#2-admin-routes-18-endpoints">Admin Routes</a> - 18 endpoints</li>
-<li><a href="#3-search-routes-18-endpoints">Search Routes</a> - 18 endpoints</li>
-<li><a href="#4-documents-routes-11-endpoints">Documents Routes</a> - 11 endpoints</li>
-<li><a href="#5-ai-services-routes-10-endpoints">AI Services Routes</a> - 10 endpoints</li>
-<li><a href="#6-images-routes-5-endpoints">Images Routes</a> - 5 endpoints</li>
-<li><a href="#7-document-entities-routes-5-endpoints">Document Entities Routes</a> - 5 endpoints ✨ NEW</li>
-<li><a href="#8-pdf-routes-4-endpoints">PDF Routes</a> - 4 endpoints</li>
-<li><a href="#9-products-routes-3-endpoints">Products Routes</a> - 3 endpoints</li>
-<li><a href="#10-embeddings-routes-3-endpoints">Embeddings Routes</a> - 3 endpoints</li>
-<li><a href="#11-together-ai-routes-3-endpoints">Together AI Routes</a> - 3 endpoints</li>
-<li><a href="#12-anthropic-routes-3-endpoints">Anthropic Routes</a> - 3 endpoints</li>
-<li><a href="#13-monitoring-routes-3-endpoints">Monitoring Routes</a> - 3 endpoints</li>
-<li><a href="#14-ai-metrics-routes-2-endpoints">AI Metrics Routes</a> - 2 endpoints</li>
+<li><a href="#1-core-endpoints">Core Endpoints</a> - Health, Status</li>
+<li><a href="#2-knowledge-base-routes">Knowledge Base Routes</a> - Document Management, Semantic Search, Categories, Attachments ✨ NEW v2.3.0</li>
+<li><a href="#3-rag-routes">RAG Routes</a> - Document Upload, Search, Query (CONSOLIDATED)</li>
+<li><a href="#4-admin-routes">Admin Routes</a> - Admin management</li>
+<li><a href="#5-search-routes">Search Routes</a> - Semantic, Vector, Hybrid Search (CONSOLIDATED)</li>
+<li><a href="#6-document-entities-routes">Document Entities Routes</a> - Certificates, Logos, Specifications</li>
+<li><a href="#7-products-routes">Products Routes</a> - Product management</li>
+<li><a href="#8-images-routes">Images Routes</a> - Image processing</li>
+<li><a href="#9-embeddings-routes">Embeddings Routes</a> - Embedding generation</li>
+<li><a href="#10-huggingface-qwen-routes">HuggingFace/Qwen Routes</a> - Qwen3-VL integration</li>
+<li><a href="#11-anthropic-routes">Anthropic Routes</a> - Anthropic integration</li>
+<li><a href="#12-monitoring-routes">Monitoring Routes</a> - System monitoring</li>
+<li><a href="#13-ai-metrics-routes">AI Metrics Routes</a> - AI performance metrics</li>
+<li><a href="#14-duplicate-detection-routes">Duplicate Detection Routes</a> - Duplicate detection and product merging</li>
+<li><a href="#15-data-import-routes">Data Import Routes</a> - XML import, web scraping, batch processing</li>
+<li><a href="#16-job-health-routes">Job Health Routes</a> - Job monitoring and health checks</li>
+<li><a href="#17-suggestions-routes">Suggestions Routes</a> - Search suggestions and auto-complete</li>
+<li><a href="#19-messaging-routes-sms-whatsapp--new-v260">Messaging Routes</a> - SMS, WhatsApp via Twilio ✨ NEW v2.6.0</li>
 </ol>
 <hr>
-<h2>1. RAG Routes (25 endpoints)</h2>
+<h2>1. Core Endpoints</h2>
+<h3>1.1 GET /health</h3>
+<p><strong>Purpose:</strong> Unified health check for all MIVAA services
+<strong>Replaces:</strong> 10+ individual health check endpoints (<code>/api/pdf/health</code>, <code>/api/rag/health</code>, <code>/api/search/health</code>, etc.)</p>
+<p>The response includes <code>status</code>, <code>timestamp</code>, per-service health details with response times (database, storage, AI models including Claude/GPT/QWEN, and RAG), and a <code>version</code> field.</p>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Single request instead of 10+ requests</li>
+<li>✅ Complete system status overview</li>
+<li>✅ Individual service health details</li>
+<li>✅ Response time metrics for each service</li>
+</ul>
+<hr>
+<h2>2. Knowledge Base Routes ✨ NEW v2.3.0</h2>
+<p><strong>Base Path:</strong> <code>/api/kb</code>
+<strong>Purpose:</strong> Document management system with AI embeddings, semantic search, and product attachments
+<strong>Philosophy:</strong> Complete knowledge base for documentation, guides, specifications, and product information</p>
+<h3>2.1 POST /api/kb/documents</h3>
+<p><strong>Purpose:</strong> Create a new knowledge base document with automatic embedding generation
+<strong>Used In:</strong> Knowledge Base admin panel, Documentation editor
+<strong>Flow:</strong> User creates document → Generate 1536D embedding → Store in database</p>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>title</code>, <code>content</code>, <code>content_markdown</code>, <code>summary</code>, <code>category_id</code>, <code>seo_keywords</code>, <code>status</code>, <code>visibility</code>, <code>metadata</code></p>
+<p><strong>Response fields:</strong> <code>id</code>, <code>workspace_id</code>, <code>title</code>, <code>content</code>, <code>text_embedding</code>, <code>embedding_status</code>, <code>embedding_generated_at</code>, <code>embedding_model</code>, <code>created_at</code>, <code>view_count</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>INSERT into <code>kb_docs</code> with embedding</li>
+<li>INSERT into <code>kb_doc_versions</code> (version history)</li>
+<li>Generate 1536D embedding using OpenAI text-embedding-3-small</li>
+</ul>
+<hr>
+<h3>2.2 GET /api/kb/documents/{doc_id}</h3>
+<p><strong>Purpose:</strong> Retrieve a single knowledge base document by ID
+<strong>Used In:</strong> Document viewer, Edit modal</p>
+<p><strong>Request:</strong> <code>GET /api/kb/documents/{doc_id}?workspace_id=uuid</code></p>
+<p><strong>Response fields:</strong> <code>id</code>, <code>workspace_id</code>, <code>title</code>, <code>content</code>, <code>content_markdown</code>, <code>summary</code>, <code>category_id</code>, <code>embedding_status</code>, <code>created_at</code>, <code>updated_at</code>, <code>view_count</code></p>
+<hr>
+<h3>2.3 PATCH /api/kb/documents/{doc_id}</h3>
+<p><strong>Purpose:</strong> Update document with smart embedding regeneration
+<strong>Smart Detection:</strong> Only regenerates embedding if content changed (title, content, summary, keywords, category)
+<strong>Used In:</strong> Document editor</p>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>title</code>, <code>content</code>, <code>status</code></p>
+<p><strong>Response fields:</strong> <code>id</code>, <code>title</code>, <code>content</code>, <code>embedding_status</code>, <code>embedding_generated_at</code>, <code>updated_at</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>UPDATE <code>kb_docs</code> with new content</li>
+<li>INSERT into <code>kb_doc_versions</code> (version history)</li>
+<li>Regenerate embedding ONLY if content changed</li>
+</ul>
+<hr>
+<h3>2.4 DELETE /api/kb/documents/{doc_id}</h3>
+<p><strong>Purpose:</strong> Delete a knowledge base document
+<strong>Used In:</strong> Document management, Admin panel</p>
+<p><strong>Request:</strong> <code>DELETE /api/kb/documents/{doc_id}?workspace_id=uuid</code></p>
+<p><strong>Response:</strong> 204 No Content</p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>DELETE from <code>kb_docs</code> (cascades to attachments, versions, comments)</li>
+</ul>
+<hr>
+<h3>2.5 POST /api/kb/documents/from-pdf</h3>
+<p><strong>Purpose:</strong> Create document from PDF with text extraction
+<strong>Used In:</strong> PDF upload modal in Knowledge Base
+<strong>Flow:</strong> Upload PDF → Extract text using PyMuPDF → Generate embedding → Store document</p>
+<p><strong>Request:</strong> Multipart form-data with fields: <code>file</code> (PDF), <code>workspace_id</code>, <code>title</code>, <code>category_id</code> (optional), <code>status</code></p>
+<p><strong>Response fields:</strong> <code>id</code>, <code>title</code>, <code>content</code> (extracted text), <code>embedding_status</code>, <code>created_at</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Extract text using PyMuPDF (fitz)</li>
+<li>INSERT into <code>kb_docs</code> with extracted text</li>
+<li>Generate 1536D embedding</li>
+</ul>
+<hr>
+<h3>2.6 POST /api/kb/search</h3>
+<p><strong>Purpose:</strong> Search knowledge base documents using semantic, full-text, or hybrid search
+<strong>Used In:</strong> Knowledge Base search interface, AI agent queries
+<strong>Flow:</strong> Frontend → MIVAA API → Generate query embedding → Supabase vector search → Return results</p>
+<p><strong>Architecture:</strong></p>
+<ol>
+<li>Frontend calls MIVAA API with search query</li>
+<li>MIVAA generates embedding for query using OpenAI (text-embedding-3-small)</li>
+<li>MIVAA calls Supabase <code>kb_match_docs()</code> RPC function with query embedding</li>
+<li>Supabase performs vector similarity search using pgvector <code>&lt;=&gt;</code> operator</li>
+<li>Returns ranked results with similarity scores</li>
+</ol>
+<p><strong>Why MIVAA Backend is Required:</strong></p>
+<ul>
+<li>Document embeddings already stored in <code>kb_docs.text_embedding</code> (generated when doc created)</li>
+<li>Search only generates ONE embedding (for the query)</li>
+<li>Cannot generate embeddings in Supabase RPC (requires OpenAI API call)</li>
+<li>Uses pgvector&#39;s optimized cosine similarity for fast search</li>
+</ul>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>query</code>, <code>search_type</code>, <code>limit</code></p>
+<p><strong>Search Types:</strong></p>
+<ul>
+<li><code>semantic</code> - Vector similarity using pgvector cosine distance (default)<ul>
+<li>Generates query embedding via OpenAI</li>
+<li>Compares against stored document embeddings</li>
+<li>Returns results with similarity scores (0.0 - 1.0)</li>
+<li>Minimum threshold: 0.5</li>
+</ul>
+</li>
+<li><code>full_text</code> - ILIKE-based keyword matching<ul>
+<li>Searches title and content fields</li>
+<li>Case-insensitive</li>
+</ul>
+</li>
+<li><code>hybrid</code> - Combination of semantic + full-text<ul>
+<li>Weighted scoring for best results</li>
+</ul>
+</li>
+</ul>
+<p><strong>Response fields:</strong> <code>success</code>, <code>results</code> (array with id, title, content, similarity_score, created_at), <code>total_count</code>, <code>search_time_ms</code>, <code>search_type</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Generate query embedding (1536D)</li>
+<li>Vector similarity search using <code>&lt;=&gt;</code> operator</li>
+<li>Track search in <code>kb_search_analytics</code></li>
+</ul>
+<hr>
+<h3>2.7 POST /api/kb/categories</h3>
+<p><strong>Purpose:</strong> Create a new category
+<strong>Used In:</strong> Category management UI</p>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>name</code>, <code>description</code>, <code>parent_category_id</code>, <code>color</code>, <code>icon</code>, <code>sort_order</code></p>
+<p><strong>Response fields:</strong> <code>id</code>, <code>name</code>, <code>description</code>, <code>color</code>, <code>icon</code>, <code>created_at</code></p>
+<hr>
+<h3>2.8 GET /api/kb/categories</h3>
+<p><strong>Purpose:</strong> List all categories for a workspace
+<strong>Used In:</strong> Category dropdown, Category management</p>
+<p><strong>Request:</strong> <code>GET /api/kb/categories?workspace_id=uuid</code></p>
+<p><strong>Response:</strong> <code>success</code> and a <code>categories</code> array with fields: <code>id</code>, <code>name</code>, <code>description</code>, <code>parent_category_id</code>, <code>color</code>, <code>icon</code>, <code>sort_order</code>, <code>document_count</code></p>
+<hr>
+<h3>2.9 POST /api/kb/attachments</h3>
+<p><strong>Purpose:</strong> Attach a document to one or more products
+<strong>Used In:</strong> Product attachment modal</p>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>document_id</code>, <code>product_id</code>, <code>relationship_type</code>, <code>relevance_score</code></p>
+<p><strong>Relationship Types:</strong></p>
+<ul>
+<li><code>primary</code> - Main documentation for product</li>
+<li><code>supplementary</code> - Additional information</li>
+<li><code>related</code> - Related documentation</li>
+<li><code>certification</code> - Certification documents</li>
+<li><code>specification</code> - Technical specifications</li>
+</ul>
+<p><strong>Response fields:</strong> <code>id</code>, <code>document_id</code>, <code>product_id</code>, <code>relationship_type</code>, <code>relevance_score</code>, <code>created_at</code></p>
+<hr>
+<h3>2.10 GET /api/kb/documents/{doc_id}/attachments</h3>
+<p><strong>Purpose:</strong> Get all products attached to a document
+<strong>Used In:</strong> Document viewer, Product links section</p>
+<p><strong>Request:</strong> <code>GET /api/kb/documents/{doc_id}/attachments?workspace_id=uuid</code></p>
+<p><strong>Response:</strong> <code>success</code> and <code>attachments</code> array with fields: <code>id</code>, <code>product_id</code>, <code>product_name</code>, <code>relationship_type</code>, <code>relevance_score</code></p>
+<hr>
+<h3>2.11 GET /api/kb/products/{product_id}/documents</h3>
+<p><strong>Purpose:</strong> Get all documents attached to a product
+<strong>Used In:</strong> Product page documentation tab</p>
+<p><strong>Request:</strong> <code>GET /api/kb/products/{product_id}/documents?workspace_id=uuid</code></p>
+<p><strong>Response:</strong> <code>success</code> and <code>documents</code> array with fields: <code>id</code>, <code>title</code>, <code>summary</code>, <code>relationship_type</code>, <code>relevance_score</code>, <code>view_count</code></p>
+<hr>
+<h3>2.12 GET /api/kb/health</h3>
+<p><strong>Purpose:</strong> Health check for Knowledge Base service
+<strong>Used In:</strong> System monitoring</p>
+<p><strong>Request:</strong> <code>GET /api/kb/health</code></p>
+<p><strong>Response fields:</strong> <code>status</code>, <code>service</code>, <code>features</code> (document_crud, embedding_generation, pdf_extraction, semantic_search, categories, attachments), <code>endpoints</code></p>
+<hr>
+<h2>3. RAG Routes (CONSOLIDATED)</h2>
 <p><strong>Base Path:</strong> <code>/api/rag</code> or <code>/api/v1/rag</code>
 <strong>Purpose:</strong> Core RAG (Retrieval-Augmented Generation) functionality for document processing, querying, and management
-<strong>Used In:</strong> Main PDF upload flow, Knowledge Base, Search functionality</p>
-<h3>1.1 POST /documents/upload-with-discovery</h3>
-<p><strong>Purpose:</strong> Upload PDF with intelligent product discovery and focused extraction
-<strong>Used In:</strong> Main PDF upload modal, Product catalog processing
-<strong>Flow:</strong> User uploads PDF → Product discovery → Focused extraction → Chunking → Image processing → Product creation</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/documents/upload-with-discovery
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file (required)
-- title: Document title (optional)
-- description: Document description (optional)
-- tags: Comma-separated tags (optional)
-- chunk_size: Chunk size (default: 2048)
-- chunk_overlap: Chunk overlap (default: 200)
-- enable_product_discovery: Enable AI product discovery (default: true)
-- focused_extraction: Process only product pages (default: true)
-- discovery_model: AI model for discovery - &quot;claude&quot; or &quot;gpt&quot; (default: &quot;claude&quot;)
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;job_id&quot;: &quot;uuid&quot;,
-  &quot;document_id&quot;: &quot;uuid&quot;,
-  &quot;status&quot;: &quot;processing&quot;,
-  &quot;message&quot;: &quot;Document upload started with product discovery&quot;
-}
-</code></pre>
+<strong>Philosophy:</strong> One endpoint per function with parameters for different modes/strategies</p>
+<h3>2.1 POST /api/rag/documents/upload</h3>
+<p><strong>Purpose:</strong> CONSOLIDATED upload endpoint for all document processing scenarios
+<strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/documents/process</code> (removed)</li>
+<li><code>/api/documents/process-url</code> (removed)</li>
+<li><code>/api/documents/upload</code> (removed)</li>
+<li><code>/api/documents/{document_id}/query</code> (removed)</li>
+<li><code>/api/documents/{document_id}/related</code> (removed)</li>
+<li><code>/api/documents/{document_id}/summarize</code> (removed)</li>
+<li><code>/api/documents/{document_id}/extract-entities</code> (removed)</li>
+<li><code>/api/documents/compare</code> (removed)</li>
+</ul>
+<p><strong>Used In:</strong> Main PDF upload modal, Product catalog processing, Simple document upload
+<strong>Flow:</strong> User uploads PDF → AI discovery → Category extraction → Chunking → Image processing → Product creation</p>
+<p><strong>Request:</strong> Multipart form-data. Choose one source: <code>file</code> (PDF file) or <code>file_url</code> (URL to PDF). Additional parameters:</p>
+<ul>
+<li><code>categories</code> — <code>products</code> | <code>certificates</code> | <code>logos</code> | <code>specifications</code> | <code>all</code> | <code>extract_only</code></li>
+<li><code>discovery_model</code> — <code>claude</code> | <code>gpt</code> | <code>haiku</code> (default: <code>claude</code>)</li>
+<li><code>agent_prompt</code> — Custom prompt for AI processing (optional)</li>
+<li><code>enable_prompt_enhancement</code> — <code>true</code> | <code>false</code> (default: <code>true</code>)</li>
+<li><code>title</code>, <code>description</code>, <code>tags</code>, <code>workspace_id</code></li>
+<li><code>chunk_size</code> (default: 2048), <code>chunk_overlap</code> (default: 200)</li>
+</ul>
+<p>All uploads use deep processing mode with complete AI analysis, image embeddings (CLIP), advanced product enrichment, quality validation, and full RAG pipeline.</p>
+<p><strong>Response fields:</strong> <code>job_id</code>, <code>document_id</code>, <code>status: &quot;processing&quot;</code>, <code>message</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>INSERT INTO documents</li>
@@ -102,42 +332,24 @@ Parameters:
 <ol>
 <li>Stage 0 (0-15%): Product Discovery - Claude/GPT analyzes entire PDF</li>
 <li>Stage 1 (15-30%): Focused Extraction - Extract only product pages</li>
-<li>Stage 2 (30-50%): Chunking - Create chunks with LlamaIndex</li>
-<li>Stage 3 (50-70%): Image Processing - Llama Vision + CLIP embeddings</li>
+<li>Stage 2 (30-50%): Chunking - Create chunks for vector DB</li>
+<li>Stage 3 (50-70%): Image Processing - Qwen3-VL + CLIP embeddings</li>
 <li>Stage 4 (70-90%): Product Creation - Create product records</li>
 <li>Stage 5 (90-100%): Quality Enhancement - Claude validation (async)</li>
 </ol>
 <p><strong>Frontend Integration:</strong></p>
 <ul>
 <li>Used in: <code>PDFUploadModal.tsx</code></li>
-<li>Polls: <code>GET /documents/job/{job_id}</code> for progress</li>
+<li>Polls: <code>GET /api/rag/documents/job/{job_id}</code> for progress</li>
 <li>Displays: Real-time progress with stage indicators</li>
 </ul>
 <hr>
-<h3>1.2 POST /documents/upload-async</h3>
-<p><strong>Purpose:</strong> Upload PDF with standard async processing (no product discovery)
-<strong>Used In:</strong> Simple document upload without product extraction
-<strong>Flow:</strong> User uploads PDF → Chunking → Embeddings → Complete</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/documents/upload-async
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file (required)
-- title: Document title (optional)
-- description: Document description (optional)
-- tags: Comma-separated tags (optional)
-- chunk_size: Chunk size (default: 2048)
-- chunk_overlap: Chunk overlap (default: 200)
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;job_id&quot;: &quot;uuid&quot;,
-  &quot;document_id&quot;: &quot;uuid&quot;,
-  &quot;status&quot;: &quot;processing&quot;,
-  &quot;message&quot;: &quot;Document processing started&quot;
-}
-</code></pre>
+<h3>2.2 GET /api/rag/documents/job/{job_id}</h3>
+<p><strong>Purpose:</strong> Get job status and metadata for async processing
+<strong>Used In:</strong> Progress tracking, completion detection, error handling
+<strong>Flow:</strong> Frontend polls this endpoint every 2 seconds during processing</p>
+<p><strong>Request:</strong> <code>GET /api/rag/documents/job/{job_id}</code></p>
+<p><strong>Response fields:</strong> <code>job_id</code>, <code>status</code> (<code>processing</code> | <code>completed</code> | <code>failed</code> | <code>interrupted</code>), <code>document_id</code>, <code>progress</code>, <code>error</code>, <code>metadata</code> (chunks_created, products_created, images_extracted, processing_time, current_stage, pages_completed, pages_failed, pages_skipped), <code>checkpoints</code>, <code>created_at</code>, <code>updated_at</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>INSERT INTO documents</li>
@@ -150,28 +362,8 @@ Parameters:
 <p><strong>Purpose:</strong> Upload PDF and extract only pages containing a specific product
 <strong>Used In:</strong> Single product extraction from multi-product catalogs
 <strong>Flow:</strong> User specifies product → PDF scanned → Extract matching pages → Process focused PDF</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/documents/upload-focused
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file (required)
-- product_name: Product name to search for (required)
-- designer: Designer/studio name (optional)
-- search_terms: Additional search terms (optional)
-- title: Document title (optional)
-- description: Document description (optional)
-- tags: Comma-separated tags (optional)
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;job_id&quot;: &quot;uuid&quot;,
-  &quot;document_id&quot;: &quot;uuid&quot;,
-  &quot;status&quot;: &quot;processing&quot;,
-  &quot;product_name&quot;: &quot;NOVA&quot;,
-  &quot;pages_found&quot;: [5, 6, 7, 8, 9, 10, 11]
-}
-</code></pre>
+<p><strong>Request:</strong> Multipart form-data with fields: <code>file</code> (required), <code>product_name</code> (required), <code>designer</code> (optional), <code>search_terms</code> (optional), <code>title</code>, <code>description</code>, <code>tags</code></p>
+<p><strong>Response fields:</strong> <code>job_id</code>, <code>document_id</code>, <code>status: &quot;processing&quot;</code>, <code>product_name</code>, <code>pages_found</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>INSERT INTO documents</li>
@@ -184,41 +376,9 @@ Parameters:
 <p><strong>Purpose:</strong> Get job status and metadata for async processing
 <strong>Used In:</strong> Progress tracking, completion detection, error handling
 <strong>Flow:</strong> Frontend polls this endpoint every 2 seconds during processing</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/documents/job/{job_id}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;job_id&quot;: &quot;uuid&quot;,
-  &quot;status&quot;: &quot;processing|completed|failed|interrupted&quot;,
-  &quot;document_id&quot;: &quot;uuid&quot;,
-  &quot;progress&quot;: 75,
-  &quot;error&quot;: null,
-  &quot;metadata&quot;: {
-    &quot;chunks_created&quot;: 16,
-    &quot;products_created&quot;: 11,
-    &quot;images_extracted&quot;: 28,
-    &quot;processing_time&quot;: 123.45,
-    &quot;current_stage&quot;: &quot;image_processing&quot;,
-    &quot;pages_completed&quot;: 7,
-    &quot;pages_failed&quot;: 0,
-    &quot;pages_skipped&quot;: 4
-  },
-  &quot;checkpoints&quot;: [
-    {
-      &quot;stage&quot;: &quot;product_discovery&quot;,
-      &quot;progress&quot;: 15,
-      &quot;completed_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;created_at&quot;: &quot;2025-11-01T17:58:00Z&quot;,
-  &quot;updated_at&quot;: &quot;2025-11-01T18:02:00Z&quot;
-}
-</code></pre>
-<p><strong>Database Operations:</strong></p>
-<ul>
-<li>SELECT FROM background_jobs WHERE id = ?</li>
-</ul>
+<p><strong>Request:</strong> <code>GET /api/rag/documents/job/{job_id}</code></p>
+<p><strong>Response fields:</strong> <code>job_id</code>, <code>status</code>, <code>document_id</code>, <code>progress</code>, <code>error</code>, <code>metadata</code>, <code>checkpoints</code>, <code>created_at</code>, <code>updated_at</code></p>
+<p><strong>Database Operations:</strong> SELECT FROM background_jobs WHERE id = ?</p>
 <p><strong>Critical Fields:</strong> ✅ VERIFIED</p>
 <ul>
 <li><code>metadata.chunks_created</code> - Used by test validation</li>
@@ -236,29 +396,8 @@ Parameters:
 <p><strong>Purpose:</strong> Get document chunks with pagination
 <strong>Used In:</strong> Knowledge Base viewer, Chunk inspector, Admin dashboard
 <strong>Flow:</strong> User views document → Fetch chunks → Display in UI</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/chunks?document_id={uuid}&amp;limit=100&amp;offset=0
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;chunks&quot;: [
-    {
-      &quot;id&quot;: &quot;uuid&quot;,
-      &quot;document_id&quot;: &quot;uuid&quot;,
-      &quot;content&quot;: &quot;Chunk text content...&quot;,
-      &quot;chunk_index&quot;: 0,
-      &quot;metadata&quot;: {
-        &quot;page_number&quot;: 1,
-        &quot;chunk_type&quot;: &quot;product&quot;,
-        &quot;product_id&quot;: &quot;uuid&quot;
-      },
-      &quot;quality_score&quot;: 0.85,
-      &quot;created_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;total&quot;: 16
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/chunks?document_id={uuid}&amp;limit=100&amp;offset=0</code></p>
+<p><strong>Response:</strong> <code>chunks</code> array (id, document_id, content, chunk_index, metadata, quality_score, created_at) and <code>total</code> count</p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM document_chunks WHERE document_id = ? LIMIT ? OFFSET ?</li>
@@ -274,30 +413,8 @@ Parameters:
 <p><strong>Purpose:</strong> Get document images with analysis results
 <strong>Used In:</strong> Image gallery, Image inspector, Admin dashboard
 <strong>Flow:</strong> User views document → Fetch images → Display gallery</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/images?document_id={uuid}&amp;limit=100&amp;offset=0
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;images&quot;: [
-    {
-      &quot;id&quot;: &quot;uuid&quot;,
-      &quot;document_id&quot;: &quot;uuid&quot;,
-      &quot;image_url&quot;: &quot;https://storage.supabase.co/...&quot;,
-      &quot;page_number&quot;: 5,
-      &quot;llama_analysis&quot;: {
-        &quot;materials&quot;: [&quot;fabric&quot;, &quot;leather&quot;],
-        &quot;colors&quot;: [&quot;beige&quot;, &quot;brown&quot;],
-        &quot;ocr_text&quot;: &quot;NOVA Sofa&quot;
-      },
-      &quot;clip_embedding&quot;: [0.123, 0.456, ...],
-      &quot;quality_score&quot;: 0.92,
-      &quot;created_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;total&quot;: 28
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/images?document_id={uuid}&amp;limit=100&amp;offset=0</code></p>
+<p><strong>Response:</strong> <code>images</code> array (id, document_id, image_url, page_number, QWEN_analysis, clip_embedding, quality_score, created_at) and <code>total</code> count</p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM document_images WHERE document_id = ? LIMIT ? OFFSET ?</li>
@@ -313,30 +430,8 @@ Parameters:
 <p><strong>Purpose:</strong> Get products extracted from document
 <strong>Used In:</strong> Products tab, Product catalog, Materials page
 <strong>Flow:</strong> User views products → Fetch from database → Display cards</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/products?document_id={uuid}&amp;limit=100&amp;offset=0
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;products&quot;: [
-    {
-      &quot;id&quot;: &quot;uuid&quot;,
-      &quot;name&quot;: &quot;NOVA Sofa&quot;,
-      &quot;description&quot;: &quot;Modern modular sofa system...&quot;,
-      &quot;source_document_id&quot;: &quot;uuid&quot;,
-      &quot;metadata&quot;: {
-        &quot;designer&quot;: &quot;Studio Kairos&quot;,
-        &quot;dimensions&quot;: &quot;W: 240cm, D: 95cm, H: 75cm&quot;,
-        &quot;materials&quot;: [&quot;fabric&quot;, &quot;wood&quot;, &quot;metal&quot;],
-        &quot;page_range&quot;: [5, 11]
-      },
-      &quot;quality_score&quot;: 0.88,
-      &quot;created_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;total&quot;: 11
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/products?document_id={uuid}&amp;limit=100&amp;offset=0</code></p>
+<p><strong>Response:</strong> <code>products</code> array (id, name, description, source_document_id, metadata, quality_score, created_at) and <code>total</code> count</p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM products WHERE source_document_id = ? LIMIT ? OFFSET ?</li>
@@ -348,35 +443,66 @@ Parameters:
 <li>Actions: View details, edit, delete, export</li>
 </ul>
 <hr>
+<h3>1.8 GET /product-image-relationships ✨ NEW</h3>
+<p><strong>Purpose:</strong> Get product-to-image relationships for validation and testing
+<strong>Used In:</strong> Test scripts, Admin dashboard, Relationship viewer
+<strong>Flow:</strong> Query relationships → Return product-image links with scores</p>
+<p><strong>Request:</strong> <code>GET /api/rag/product-image-relationships?document_id={uuid}&amp;limit=100&amp;offset=0&amp;min_score=0.0</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> (optional) - Filter by document ID</li>
+<li><code>product_id</code> (optional) - Filter by product ID</li>
+<li><code>limit</code> (optional) - Maximum results (default: 100, max: 1000)</li>
+<li><code>offset</code> (optional) - Pagination offset (default: 0)</li>
+<li><code>min_score</code> (optional) - Minimum relevance score (default: 0.0, range: 0.0-1.0)</li>
+</ul>
+<p><strong>Response:</strong> <code>document_id</code>, <code>product_id</code>, <code>relationships</code> array (with product and image details), <code>count</code>, <code>limit</code>, <code>offset</code>, and <code>statistics</code> (total_relationships, by_relationship_type, min_score_filter)</p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM product_image_relationships JOIN products JOIN document_images</li>
+<li>Filter by document_id through products.source_document_id</li>
+<li>Filter by product_id directly</li>
+<li>Filter by min_score using relevance_score &gt;= ?</li>
+</ul>
+<p><strong>Frontend Integration:</strong></p>
+<ul>
+<li>Used in: Test validation scripts, Admin relationship viewer</li>
+<li>Displays: Product-to-image links with relevance scores</li>
+<li>Actions: View relationships, validate pipeline output</li>
+</ul>
+<hr>
+<h3>1.9 GET /chunk-product-relationships ✨ NEW</h3>
+<p><strong>Purpose:</strong> Get chunk-to-product relationships for validation and testing
+<strong>Used In:</strong> Test scripts, Admin dashboard, Content analysis
+<strong>Flow:</strong> Query relationships → Return chunk-product links</p>
+<p><strong>Request:</strong> <code>GET /api/rag/chunk-product-relationships?document_id={uuid}&amp;limit=100&amp;offset=0</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> (optional) - Filter by document ID</li>
+<li><code>product_id</code> (optional) - Filter by product ID</li>
+<li><code>limit</code> (optional) - Maximum results (default: 100, max: 1000)</li>
+<li><code>offset</code> (optional) - Pagination offset (default: 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>document_id</code>, <code>product_id</code>, <code>relationships</code> array (with chunk content and product name details), <code>count</code>, <code>limit</code>, <code>offset</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM chunk_product_relationships JOIN document_chunks JOIN products</li>
+<li>Filter by document_id through document_chunks.document_id</li>
+<li>Filter by product_id directly</li>
+</ul>
+<p><strong>Frontend Integration:</strong></p>
+<ul>
+<li>Used in: Test validation scripts, Content inspector</li>
+<li>Displays: Chunk-to-product associations</li>
+<li>Actions: View content relationships, validate chunking</li>
+</ul>
+<hr>
 <h3>1.8 POST /query</h3>
 <p><strong>Purpose:</strong> Query documents using RAG (Retrieval-Augmented Generation)
 <strong>Used In:</strong> Main search interface, Q&amp;A functionality
 <strong>Flow:</strong> User asks question → Semantic search → Retrieve relevant chunks → Generate answer with AI</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/query
-Content-Type: application/json
-
-{
-  &quot;query&quot;: &quot;What materials are used in NOVA sofa?&quot;,
-  &quot;document_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
-  &quot;top_k&quot;: 5,
-  &quot;model&quot;: &quot;claude&quot;
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;answer&quot;: &quot;The NOVA sofa uses fabric, wood, and metal materials...&quot;,
-  &quot;sources&quot;: [
-    {
-      &quot;chunk_id&quot;: &quot;uuid&quot;,
-      &quot;content&quot;: &quot;...&quot;,
-      &quot;score&quot;: 0.92,
-      &quot;document_id&quot;: &quot;uuid&quot;
-    }
-  ],
-  &quot;model_used&quot;: &quot;claude-sonnet-4.5&quot;
-}
-</code></pre>
+<p><strong>Request fields:</strong> <code>query</code>, <code>document_ids</code>, <code>top_k</code>, <code>model</code></p>
+<p><strong>Response fields:</strong> <code>answer</code>, <code>sources</code> (chunk_id, content, score, document_id), <code>model_used</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM document_chunks, embeddings
 <strong>Frontend Integration:</strong> SearchInterface.tsx, QAModal.tsx</p>
 <hr>
@@ -384,24 +510,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Conversational interface for document Q&amp;A with context
 <strong>Used In:</strong> Chat interface, conversational search
 <strong>Flow:</strong> User sends message → Maintain conversation history → Generate contextual response</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/chat
-Content-Type: application/json
-
-{
-  &quot;message&quot;: &quot;Tell me more about the dimensions&quot;,
-  &quot;conversation_id&quot;: &quot;uuid&quot;,
-  &quot;document_ids&quot;: [&quot;uuid1&quot;]
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;response&quot;: &quot;The NOVA sofa dimensions are W: 240cm, D: 95cm, H: 75cm...&quot;,
-  &quot;conversation_id&quot;: &quot;uuid&quot;,
-  &quot;sources&quot;: [...],
-  &quot;model_used&quot;: &quot;claude-sonnet-4.5&quot;
-}
-</code></pre>
+<p><strong>Request fields:</strong> <code>message</code>, <code>conversation_id</code>, <code>document_ids</code></p>
+<p><strong>Response fields:</strong> <code>response</code>, <code>conversation_id</code>, <code>sources</code>, <code>model_used</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM document_chunks, embeddings
 <strong>Frontend Integration:</strong> ChatInterface.tsx</p>
 <hr>
@@ -409,33 +519,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Semantic search across document collection
 <strong>Used In:</strong> Search page, knowledge base search
 <strong>Flow:</strong> User enters search term → Semantic/hybrid/keyword search → Return ranked results</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/search
-Content-Type: application/json
-
-{
-  &quot;query&quot;: &quot;modern sofas&quot;,
-  &quot;search_type&quot;: &quot;semantic&quot;,
-  &quot;filters&quot;: {
-    &quot;document_ids&quot;: [&quot;uuid1&quot;],
-    &quot;tags&quot;: [&quot;furniture&quot;]
-  },
-  &quot;top_k&quot;: 10
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;results&quot;: [
-    {
-      &quot;chunk_id&quot;: &quot;uuid&quot;,
-      &quot;content&quot;: &quot;...&quot;,
-      &quot;score&quot;: 0.89,
-      &quot;metadata&quot;: {...}
-    }
-  ],
-  &quot;total&quot;: 45
-}
-</code></pre>
+<p><strong>Request fields:</strong> <code>query</code>, <code>search_type</code>, <code>filters</code> (document_ids, tags), <code>top_k</code></p>
+<p><strong>Response:</strong> <code>results</code> array (chunk_id, content, score, metadata) and <code>total</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM document_chunks, embeddings
 <strong>Frontend Integration:</strong> SearchPage.tsx, KnowledgeBase.tsx</p>
 <hr>
@@ -443,17 +528,7 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Advanced query search with query expansion and optimization
 <strong>Used In:</strong> Advanced search interface
 <strong>Flow:</strong> User query → Query expansion → Multi-strategy search → Ranked results</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/search/advanced
-Content-Type: application/json
-
-{
-  &quot;query&quot;: &quot;sustainable furniture&quot;,
-  &quot;expand_query&quot;: true,
-  &quot;rerank&quot;: true,
-  &quot;filters&quot;: {...}
-}
-</code></pre>
+<p><strong>Request fields:</strong> <code>query</code>, <code>expand_query</code>, <code>rerank</code>, <code>filters</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM document_chunks, embeddings
 <strong>Frontend Integration:</strong> AdvancedSearch.tsx</p>
 <hr>
@@ -461,16 +536,7 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> MMR (Maximal Marginal Relevance) search for diverse results
 <strong>Used In:</strong> Search with diversity requirements
 <strong>Flow:</strong> User query → Semantic search → MMR reranking → Diverse results</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/search/mmr
-Content-Type: application/json
-
-{
-  &quot;query&quot;: &quot;chairs&quot;,
-  &quot;lambda_param&quot;: 0.5,
-  &quot;top_k&quot;: 10
-}
-</code></pre>
+<p><strong>Request fields:</strong> <code>query</code>, <code>lambda_param</code>, <code>top_k</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM document_chunks, embeddings
 <strong>Frontend Integration:</strong> SearchPage.tsx (diversity mode)</p>
 <hr>
@@ -478,26 +544,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> List and filter documents in collection
 <strong>Used In:</strong> Documents page, admin dashboard
 <strong>Flow:</strong> User views documents → Fetch with filters → Display list</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/documents?limit=20&amp;offset=0&amp;search=harmony&amp;tags=catalog
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;documents&quot;: [
-    {
-      &quot;id&quot;: &quot;uuid&quot;,
-      &quot;title&quot;: &quot;Harmony PDF&quot;,
-      &quot;filename&quot;: &quot;harmony.pdf&quot;,
-      &quot;page_count&quot;: 120,
-      &quot;chunks_count&quot;: 45,
-      &quot;images_count&quot;: 28,
-      &quot;products_count&quot;: 11,
-      &quot;created_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;total&quot;: 1
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/documents?limit=20&amp;offset=0&amp;search=harmony&amp;tags=catalog</code></p>
+<p><strong>Response:</strong> <code>documents</code> array (id, title, filename, page_count, chunks_count, images_count, products_count, created_at) and <code>total</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM documents
 <strong>Frontend Integration:</strong> DocumentsPage.tsx, AdminDashboard.tsx</p>
 <hr>
@@ -505,21 +553,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Delete document and all associated data
 <strong>Used In:</strong> Document management, cleanup
 <strong>Flow:</strong> User deletes document → Remove from database → Delete from storage → Cleanup embeddings</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">DELETE /api/rag/documents/{document_id}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;success&quot;: true,
-  &quot;deleted&quot;: {
-    &quot;document&quot;: 1,
-    &quot;chunks&quot;: 45,
-    &quot;images&quot;: 28,
-    &quot;products&quot;: 11,
-    &quot;embeddings&quot;: 225
-  }
-}
-</code></pre>
+<p><strong>Request:</strong> <code>DELETE /api/rag/documents/{document_id}</code></p>
+<p><strong>Response:</strong> <code>success</code> and <code>deleted</code> counts (document, chunks, images, products, embeddings)</p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>DELETE FROM documents</li>
@@ -534,21 +569,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Health check for RAG services
 <strong>Used In:</strong> Monitoring, admin dashboard
 <strong>Flow:</strong> System checks → Verify all services → Return status</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/health
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;status&quot;: &quot;healthy&quot;,
-  &quot;services&quot;: {
-    &quot;llamaindex&quot;: &quot;healthy&quot;,
-    &quot;embeddings&quot;: &quot;healthy&quot;,
-    &quot;vector_store&quot;: &quot;healthy&quot;,
-    &quot;database&quot;: &quot;healthy&quot;
-  },
-  &quot;timestamp&quot;: &quot;2025-11-01T18:30:00Z&quot;
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/health</code></p>
+<p><strong>Response fields:</strong> <code>status</code>, <code>services</code> (rag, embeddings, vector_store, database), <code>timestamp</code></p>
 <p><strong>Database Operations:</strong> None (service checks only)
 <strong>Frontend Integration:</strong> AdminDashboard.tsx (health monitor)</p>
 <hr>
@@ -556,20 +578,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Get RAG system statistics
 <strong>Used In:</strong> Admin dashboard, analytics
 <strong>Flow:</strong> Fetch system metrics → Calculate statistics → Return summary</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/stats
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;documents&quot;: 150,
-  &quot;chunks&quot;: 6750,
-  &quot;images&quot;: 4200,
-  &quot;products&quot;: 1650,
-  &quot;embeddings&quot;: 33750,
-  &quot;storage_used_mb&quot;: 2450,
-  &quot;avg_processing_time&quot;: 125.5
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/stats</code></p>
+<p><strong>Response fields:</strong> <code>documents</code>, <code>chunks</code>, <code>images</code>, <code>products</code>, <code>embeddings</code>, <code>storage_used_mb</code>, <code>avg_processing_time</code></p>
 <p><strong>Database Operations:</strong> SELECT COUNT FROM documents, document_chunks, document_images, products, embeddings
 <strong>Frontend Integration:</strong> AdminDashboard.tsx (statistics panel)</p>
 <hr>
@@ -577,34 +587,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Get detailed AI model tracking for a job
 <strong>Used In:</strong> Job monitoring, AI usage analytics
 <strong>Flow:</strong> Fetch job → Get AI tracking data → Return model usage details</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/job/{job_id}/ai-tracking
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;job_id&quot;: &quot;uuid&quot;,
-  &quot;models_used&quot;: {
-    &quot;LLAMA&quot;: {
-      &quot;calls&quot;: 28,
-      &quot;tokens&quot;: 45000,
-      &quot;cost&quot;: 0.45,
-      &quot;stages&quot;: [&quot;image_analysis&quot;]
-    },
-    &quot;ANTHROPIC&quot;: {
-      &quot;calls&quot;: 2,
-      &quot;tokens&quot;: 12000,
-      &quot;cost&quot;: 1.20,
-      &quot;stages&quot;: [&quot;product_discovery&quot;, &quot;validation&quot;]
-    },
-    &quot;CLIP&quot;: {
-      &quot;calls&quot;: 140,
-      &quot;embeddings_generated&quot;: 140,
-      &quot;stages&quot;: [&quot;image_embeddings&quot;]
-    }
-  },
-  &quot;total_cost&quot;: 1.65
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/job/{job_id}/ai-tracking</code></p>
+<p><strong>Response:</strong> <code>job_id</code> and <code>models_used</code> (per-model: calls, tokens, cost, stages) and <code>total_cost</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM background_jobs
 <strong>Frontend Integration:</strong> JobMonitor.tsx, AIUsagePanel.tsx</p>
 <hr>
@@ -612,9 +596,7 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Get AI tracking for specific model
 <strong>Used In:</strong> Model-specific analytics
 <strong>Flow:</strong> Fetch job → Filter by model → Return model-specific data</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/job/{job_id}/ai-tracking/model/LLAMA
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/job/{job_id}/ai-tracking/model/QWEN</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM background_jobs
 <strong>Frontend Integration:</strong> AIUsagePanel.tsx (model filter)</p>
 <hr>
@@ -622,9 +604,7 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Get AI tracking for specific processing stage
 <strong>Used In:</strong> Stage-specific analytics
 <strong>Flow:</strong> Fetch job → Filter by stage → Return stage-specific AI usage</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/job/{job_id}/ai-tracking/stage/image_analysis
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/job/{job_id}/ai-tracking/stage/image_analysis</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM background_jobs
 <strong>Frontend Integration:</strong> StageMonitor.tsx</p>
 <hr>
@@ -632,22 +612,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Get all checkpoints for a job
 <strong>Used In:</strong> Job recovery, debugging
 <strong>Flow:</strong> Fetch job → Get checkpoint history → Return checkpoint data</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/jobs/{job_id}/checkpoints
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;checkpoints&quot;: [
-    {
-      &quot;stage&quot;: &quot;product_discovery&quot;,
-      &quot;progress&quot;: 15,
-      &quot;data&quot;: {...},
-      &quot;completed_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;count&quot;: 6
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/jobs/{job_id}/checkpoints</code></p>
+<p><strong>Response:</strong> <code>checkpoints</code> array (stage, progress, data, completed_at) and <code>count</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM background_jobs
 <strong>Frontend Integration:</strong> JobMonitor.tsx (checkpoint viewer)</p>
 <hr>
@@ -655,17 +621,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Manually restart job from last checkpoint
 <strong>Used In:</strong> Job recovery, error handling
 <strong>Flow:</strong> User triggers restart → Load checkpoint → Resume processing</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/jobs/{job_id}/restart
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;success&quot;: true,
-  &quot;job_id&quot;: &quot;uuid&quot;,
-  &quot;resumed_from&quot;: &quot;image_processing&quot;,
-  &quot;progress&quot;: 65
-}
-</code></pre>
+<p><strong>Request:</strong> <code>POST /api/rag/jobs/{job_id}/restart</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>job_id</code>, <code>resumed_from</code>, <code>progress</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM background_jobs</li>
@@ -685,24 +642,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> List all background jobs with filtering
 <strong>Used In:</strong> Admin dashboard, job management
 <strong>Flow:</strong> Fetch jobs → Apply filters → Return paginated list</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/documents/jobs?limit=20&amp;offset=0&amp;status=processing
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;jobs&quot;: [
-    {
-      &quot;id&quot;: &quot;uuid&quot;,
-      &quot;document_id&quot;: &quot;uuid&quot;,
-      &quot;filename&quot;: &quot;harmony.pdf&quot;,
-      &quot;status&quot;: &quot;processing&quot;,
-      &quot;progress&quot;: 75,
-      &quot;created_at&quot;: &quot;2025-11-01T18:00:00Z&quot;
-    }
-  ],
-  &quot;total&quot;: 5
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/documents/jobs?limit=20&amp;offset=0&amp;status=processing</code></p>
+<p><strong>Response:</strong> <code>jobs</code> array (id, document_id, filename, status, progress, created_at) and <code>total</code></p>
 <p><strong>Database Operations:</strong> SELECT FROM background_jobs
 <strong>Frontend Integration:</strong> AdminDashboard.tsx (jobs panel)</p>
 <hr>
@@ -710,18 +651,8 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Get complete document content with all AI analysis
 <strong>Used In:</strong> Document viewer, export functionality
 <strong>Flow:</strong> Fetch document → Get all related data → Return comprehensive content</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/rag/documents/documents/{document_id}/content?include_chunks=true&amp;include_images=true&amp;include_products=true
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;document&quot;: {...},
-  &quot;chunks&quot;: [...],
-  &quot;images&quot;: [...],
-  &quot;products&quot;: [...],
-  &quot;embeddings&quot;: [...]
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/rag/documents/documents/{document_id}/content?include_chunks=true&amp;include_images=true&amp;include_products=true</code></p>
+<p><strong>Response:</strong> <code>document</code>, <code>chunks</code>, <code>images</code>, <code>products</code>, <code>embeddings</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM documents</li>
@@ -736,16 +667,7 @@ Content-Type: application/json
 <p><strong>Purpose:</strong> Upload and process document for RAG
 <strong>Used In:</strong> Simple document upload
 <strong>Flow:</strong> Upload → Process → Generate embeddings → Complete</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">POST /api/rag/documents/upload
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file
-- title: Document title
-- chunk_size: 2048
-- chunk_overlap: 200
-</code></pre>
+<p><strong>Request:</strong> Multipart form-data with fields: <code>file</code> (PDF), <code>title</code>, <code>chunk_size</code> (default: 2048), <code>chunk_overlap</code> (default: 200)</p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>INSERT INTO documents</li>
@@ -762,15 +684,8 @@ Parameters:
 <p><strong>Purpose:</strong> List all jobs with filtering and pagination
 <strong>Used In:</strong> Admin dashboard jobs panel
 <strong>Flow:</strong> Admin views jobs → Apply filters → Display paginated list</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/admin/jobs?status=processing&amp;limit=20&amp;offset=0
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;jobs&quot;: [...],
-  &quot;total&quot;: 45
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/admin/jobs?status=processing&amp;limit=20&amp;offset=0</code></p>
+<p><strong>Response:</strong> <code>jobs</code> array and <code>total</code> count</p>
 <p><strong>Database Operations:</strong> SELECT FROM background_jobs
 <strong>Frontend Integration:</strong> AdminDashboard.tsx (jobs panel)</p>
 <hr>
@@ -893,401 +808,307 @@ Parameters:
 <p><strong>Database Operations:</strong> UPDATE document_images, document_chunks
 <strong>Frontend Integration:</strong> ImageViewer.tsx (reprocess button)</p>
 <hr>
-<h2>3. Search Routes (18 endpoints)</h2>
-<p><strong>Base Path:</strong> <code>/api/search</code>
-<strong>Purpose:</strong> Search and query functionality across documents
-<strong>Used In:</strong> Search interface, knowledge base, document discovery</p>
-<p><strong>Extract Tables</strong></p>
-<pre><code class="language-http">POST /api/v1/extract/tables
-Content-Type: multipart/form-data
-
-Response: { tables: [{ page, content, format }] }
-</code></pre>
-<p><strong>Extract Images</strong></p>
-<pre><code class="language-http">POST /api/v1/extract/images
-Content-Type: multipart/form-data
-
-Response: { images: [{ page, filename, base64, metadata }] }
-</code></pre>
-<p><strong>Get Job Status</strong></p>
-<pre><code class="language-http">GET /api/v1/documents/job/{job_id}
-
-Response: { status, progress, current_stage, checkpoint, error }
-</code></pre>
-<p><strong>Stream Job Progress</strong></p>
-<pre><code class="language-http">GET /api/v1/documents/job/{job_id}/progress/stream
-
-Response: Server-Sent Events with real-time progress
-</code></pre>
+<h3>2.19 POST /api/rag/metadata/detect-scope</h3>
+<p><strong>Purpose:</strong> Detect metadata scope for text chunks (product-specific vs catalog-general)
+<strong>Used In:</strong> PDF processing pipeline, metadata classification
+<strong>Flow:</strong> Analyze chunk → Classify scope → Return scope with confidence</p>
+<p><strong>Request fields:</strong> <code>chunk_content</code>, <code>product_names</code>, <code>document_context</code></p>
+<p><strong>Response:</strong> <code>success</code> and <code>data</code> with <code>scope</code>, <code>confidence</code>, <code>reasoning</code>, <code>applies_to</code>, <code>extracted_metadata</code>, <code>is_override</code></p>
+<p><strong>Scope Types:</strong></p>
+<ul>
+<li><code>product_specific</code> - Mentions specific product name</li>
+<li><code>catalog_general_explicit</code> - Explicitly says &quot;all products&quot;</li>
+<li><code>catalog_general_implicit</code> - Metadata mentioned without product context</li>
+<li><code>category_specific</code> - Applies to product category</li>
+</ul>
+<p><strong>Database Operations:</strong> None (AI-powered classification)
+<strong>Frontend Integration:</strong> Admin metadata management, PDF processing monitoring</p>
 <hr>
-<h3>2. Document Management (13 endpoints)</h3>
-<p><strong>Process Document</strong></p>
-<pre><code class="language-http">POST /api/documents/process
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file
-- extract_text: boolean
-- extract_images: boolean
-- extract_tables: boolean
-- extract_metadata: boolean
-- page_range: Optional &quot;1-5&quot; or &quot;1,3,5&quot;
-- async_processing: boolean
-
-Response: { success, message, job_id, async_processing }
-</code></pre>
-<p><strong>Process from URL</strong></p>
-<pre><code class="language-http">POST /api/documents/process-url
-Content-Type: application/json
-
-Body: { url, async_processing }
-Response: { success, message, job_id }
-</code></pre>
-<p><strong>Analyze Document</strong></p>
-<pre><code class="language-http">POST /api/documents/analyze
-Content-Type: multipart/form-data
-
-Response: { structure, metadata, content_type }
-</code></pre>
-<p><strong>List Documents</strong></p>
-<pre><code class="language-http">GET /api/documents/documents
-
-Query Parameters:
-- workspace_id: Filter by workspace
-- limit: Results per page (default: 20)
-- offset: Pagination offset
-
-Response: { documents: [...], total_count }
-</code></pre>
-<p><strong>Get Document</strong></p>
-<pre><code class="language-http">GET /api/documents/documents/{id}
-
-Response: { id, filename, content_type, metadata, created_at }
-</code></pre>
-<p><strong>Get Document Content</strong></p>
-<pre><code class="language-http">GET /api/documents/documents/{id}/content
-
-Response: { content, format, page_count }
-</code></pre>
-<p><strong>Delete Document</strong></p>
-<pre><code class="language-http">DELETE /api/documents/documents/{id}
-
-Response: { success, message }
-</code></pre>
+<h3>2.20 POST /api/rag/metadata/apply-to-products</h3>
+<p><strong>Purpose:</strong> Apply metadata to products with scope-aware override logic
+<strong>Used In:</strong> PDF processing pipeline (Stage 4), metadata management
+<strong>Flow:</strong> Detect scope → Apply in order → Track overrides → Update database</p>
+<p><strong>Request fields:</strong> <code>document_id</code>, <code>chunks_with_scope</code> (array of chunk_id, content, scope, metadata, applies_to)</p>
+<p><strong>Response:</strong> <code>success</code> and <code>data</code> with <code>products_updated</code>, <code>metadata_fields_applied</code>, <code>overrides_tracked</code>, <code>catalog_general_count</code>, <code>product_specific_count</code>, <code>processing_time_ms</code></p>
+<p><strong>Processing Order:</strong></p>
+<ol>
+<li>Catalog-general (explicit) - Lowest priority</li>
+<li>Catalog-general (implicit) - Low priority</li>
+<li>Category-specific - Medium priority</li>
+<li>Product-specific - Highest priority (can override)</li>
+</ol>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>UPDATE products SET metadata = metadata || new_metadata</li>
+<li>Track overrides in <code>_overrides</code> array</li>
+</ul>
+<p><strong>Frontend Integration:</strong> PDF processing pipeline, admin metadata management</p>
+<hr>
+<h3>2.21 GET /api/rag/metadata/list</h3>
+<p><strong>Purpose:</strong> List metadata with filtering and pagination
+<strong>Used In:</strong> Admin metadata viewer, metadata analytics
+<strong>Flow:</strong> Query database → Filter → Paginate → Return results</p>
+<p><strong>Request:</strong> <code>GET /api/rag/metadata/list?document_id=uuid&amp;scope=catalog_general_implicit&amp;limit=50&amp;offset=0</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> (optional) - Filter by document</li>
+<li><code>product_id</code> (optional) - Filter by product</li>
+<li><code>scope</code> (optional) - Filter by scope type</li>
+<li><code>metadata_key</code> (optional) - Filter by specific metadata field</li>
+<li><code>limit</code> (optional) - Results per page (default: 50)</li>
+<li><code>offset</code> (optional) - Pagination offset (default: 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>success</code> and <code>data</code> with <code>items</code> array (product_id, product_name, metadata_key, metadata_value, scope, source_chunk_id, is_override, created_at), <code>total</code>, <code>limit</code>, <code>offset</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM products WHERE document_id = ?</li>
+<li>JOIN with document_chunks for source tracking</li>
+</ul>
+<p><strong>Frontend Integration:</strong> Admin metadata management page, metadata analytics dashboard</p>
+<hr>
+<h3>2.22 GET /api/rag/metadata/statistics</h3>
+<p><strong>Purpose:</strong> Get metadata statistics and analytics
+<strong>Used In:</strong> Admin dashboard, metadata analytics
+<strong>Flow:</strong> Aggregate metadata → Calculate stats → Return summary</p>
+<p><strong>Request:</strong> <code>GET /api/rag/metadata/statistics?document_id=uuid</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>document_id</code> (optional) - Filter by document</li>
+<li><code>product_id</code> (optional) - Filter by product</li>
+</ul>
+<p><strong>Response:</strong> <code>success</code> and <code>data</code> with <code>total_products</code>, <code>total_metadata_fields</code>, <code>catalog_general_count</code>, <code>product_specific_count</code>, <code>category_specific_count</code>, <code>override_count</code>, <code>most_common_fields</code>, <code>scope_distribution</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT COUNT(*) FROM products</li>
+<li>Aggregate metadata fields across products</li>
+<li>Calculate scope distribution</li>
+</ul>
+<p><strong>Frontend Integration:</strong> Admin dashboard, metadata analytics page</p>
+<hr>
+<h2>3. Search Routes (CONSOLIDATED)</h2>
+<p><strong>Base Path:</strong> <code>/api/rag</code>
+<strong>Purpose:</strong> Unified search and query functionality across documents
+<strong>Philosophy:</strong> Single search endpoint with strategy parameter instead of multiple separate endpoints</p>
+<h3>3.1 POST /search</h3>
+<p><strong>Purpose:</strong> CONSOLIDATED search endpoint for all 6 search strategies ✅
+<strong>Status:</strong> All strategies implemented (100% complete)
+<strong>Replaces:</strong></p>
+<ul>
+<li><code>/api/search/semantic</code> (deprecated)</li>
+<li><code>/api/search/similarity</code> (deprecated)</li>
+<li><code>/api/search/multimodal</code> (deprecated)</li>
+<li><code>/api/unified-search</code> (deprecated)</li>
+<li><code>/api/search/materials/visual</code> (deprecated)</li>
+</ul>
+<p><strong>Available Strategies:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Status</th>
+<th>Use Case</th>
+<th>Performance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>semantic</code></td>
+<td>✅</td>
+<td>Natural language queries</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td><code>vector</code></td>
+<td>✅</td>
+<td>Exact similarity matching</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td><code>multi_vector</code></td>
+<td>✅</td>
+<td>Text + visual understanding</td>
+<td>&lt;200ms</td>
+</tr>
+<tr>
+<td><code>hybrid</code></td>
+<td>✅</td>
+<td>Technical terms + semantics</td>
+<td>&lt;180ms</td>
+</tr>
+<tr>
+<td><code>material</code></td>
+<td>✅</td>
+<td>Property-based filtering</td>
+<td>&lt;50ms</td>
+</tr>
+<tr>
+<td><code>image</code></td>
+<td>✅</td>
+<td>Visual similarity</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>✅</td>
+<td>All strategies combined</td>
+<td>&lt;800ms</td>
+</tr>
+</tbody></table>
+<p><strong>Request:</strong> <code>POST /api/rag/search?strategy={strategy}</code> with body fields:</p>
+<ul>
+<li><code>query</code> — search query text</li>
+<li><code>workspace_id</code></li>
+<li><code>top_k</code></li>
+<li><code>similarity_threshold</code></li>
+<li><code>text_weight</code>, <code>visual_weight</code>, <code>multimodal_weight</code> (for multi_vector strategy)</li>
+<li><code>semantic_weight</code>, <code>keyword_weight</code> (for hybrid strategy)</li>
+<li><code>material_filters</code> — <code>material_type</code>, <code>slip_resistance</code>, <code>finish</code> (for material strategy)</li>
+<li><code>image_url</code> or <code>image_base64</code> (for image strategy)</li>
+</ul>
+<p><strong>Response:</strong> <code>query</code>, <code>enhanced_query</code>, <code>results</code> array (id, name, description, relevance_score, metadata, score_breakdown for multi_vector, found_in_strategies for all), <code>total_results</code>, <code>search_type</code>, <code>processing_time</code>, <code>strategies_executed</code>, <code>strategies_count</code></p>
+<p><strong>Usage Examples:</strong></p>
+<p><strong>1. Semantic Search (Natural Language):</strong> POST to <code>?strategy=semantic</code> with <code>query</code> and <code>workspace_id</code></p>
+<p><strong>2. Multi-Vector Search (Text + Visual):</strong> POST to <code>?strategy=multi_vector</code> with <code>query</code>, <code>workspace_id</code>, and optional weight overrides</p>
+<p><strong>3. Hybrid Search (Semantic + Keyword):</strong> POST to <code>?strategy=hybrid</code> with <code>query</code>, <code>workspace_id</code>, <code>semantic_weight</code>, <code>keyword_weight</code></p>
+<p><strong>4. Material Property Search:</strong> POST to <code>?strategy=material</code> with <code>query: &quot;&quot;</code>, <code>workspace_id</code>, and <code>material_filters</code> object</p>
+<p><strong>5. Image Search (Visual Similarity):</strong> POST to <code>?strategy=image</code> with <code>query: &quot;&quot;</code>, <code>workspace_id</code>, and <code>image_url</code></p>
+<hr>
+<h3>3.X POST /api/rag/search/knowledge-base ✨ NEW</h3>
+<p><strong>Purpose:</strong> Search existing knowledge base without uploading a PDF
+<strong>Added:</strong> 2025-12-03 (v2.4.0)
+<strong>Used In:</strong> Knowledge base search, entity discovery, product search
+<strong>Flow:</strong> User searches → Multi-vector search across products/entities/chunks → Return unified results</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Uses same <strong>multi-vector search</strong> as main search endpoint</li>
+<li>Combines 6 specialized CLIP embeddings (text 20%, visual 20%, color 15%, texture 15%, style 15%, material 15%)</li>
+<li>Searches across products, entities, chunks, and images</li>
+<li>Supports category filtering and entity type filtering</li>
+<li>Returns comprehensive results with all metadata and embeddings</li>
+</ul>
+<p><strong>Request fields:</strong></p>
+<ul>
+<li><code>query</code> (required)</li>
+<li><code>workspace_id</code> (required)</li>
+<li><code>search_types</code> (optional) — <code>[&quot;products&quot;, &quot;entities&quot;, &quot;chunks&quot;, &quot;images&quot;]</code> (default: all)</li>
+<li><code>categories</code> (optional) — <code>[&quot;product&quot;, &quot;certificate&quot;, &quot;logo&quot;, &quot;specification&quot;, &quot;general&quot;]</code></li>
+<li><code>entity_types</code> (optional) — <code>[&quot;certificate&quot;, &quot;logo&quot;, &quot;specification&quot;]</code></li>
+<li><code>top_k</code> (optional, default: 10)</li>
+<li><code>similarity_threshold</code> (optional, default: 0.7)</li>
+</ul>
+<p><strong>Response fields:</strong> <code>query</code>, <code>total_results</code>, <code>products</code> array, <code>entities</code> array, <code>chunks</code> array, <code>images</code> array, <code>processing_time</code>, <code>search_metadata</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM products (with multi-vector search)</li>
+<li>SELECT FROM document_entities (with embedding search)</li>
+<li>SELECT FROM document_chunks (with category filtering)</li>
+<li>SELECT FROM document_images (with CLIP embeddings)</li>
+</ul>
+<p><strong>Frontend Integration:</strong></p>
+<ul>
+<li>KnowledgeBaseSearch.tsx</li>
+<li>EntityDiscovery.tsx</li>
+<li>ProductSearch.tsx</li>
+</ul>
+<p><strong>Usage Examples:</strong></p>
+<ul>
+<li>Search for products only: set <code>search_types: [&quot;products&quot;]</code></li>
+<li>Search for certificates: set <code>search_types: [&quot;entities&quot;]</code>, <code>entity_types: [&quot;certificate&quot;]</code></li>
+<li>Search across all types with category filter: set <code>search_types: [&quot;products&quot;, &quot;chunks&quot;]</code>, <code>categories: [&quot;product&quot;]</code></li>
+<li>All strategies combined: POST to <code>?strategy=all</code> with query</li>
+</ul>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>SELECT FROM products with vector similarity (pgvector)</li>
+<li>PostgreSQL full-text search (for hybrid strategy)</li>
+<li>JSONB property filtering (for material strategy)</li>
+<li>CLIP embedding generation (for image strategy)</li>
+</ul>
+<p><strong>Frontend Integration:</strong> SearchPage.tsx, KnowledgeBase.tsx, ProductDiscovery.tsx</p>
+<p><strong>Related Documentation:</strong> <a href="./search-strategies.md">Search Strategies Guide</a></p>
+<hr>
+<h3>3.2 POST /query</h3>
+<p><strong>Purpose:</strong> CONSOLIDATED query endpoint with auto-detecting modality
+<strong>Replaces:</strong> Multiple query endpoints with different modalities</p>
+<p><strong>Request fields:</strong> <code>query</code>, <code>modality</code> (<code>auto</code> | <code>text</code> | <code>image</code> | <code>multimodal</code>), <code>limit</code>, <code>workspace_id</code></p>
+<p><strong>Response fields:</strong> <code>success</code>, <code>answer</code>, <code>sources</code> (chunk_id, content, relevance_score), <code>modality_detected</code>, <code>processing_time_ms</code></p>
+<hr>
+<h3>PDF Extraction - DEPRECATED ⚠️ (REMOVED)</h3>
+<p><strong>All <code>/api/pdf/extract/*</code> endpoints have been removed as of November 7, 2025.</strong></p>
+<p><strong>Removed Endpoints:</strong></p>
+<ul>
+<li><code>POST /api/pdf/extract/markdown</code> ❌ DELETED</li>
+<li><code>POST /api/pdf/extract/tables</code> ❌ DELETED</li>
+<li><code>POST /api/pdf/extract/images</code> ❌ DELETED</li>
+</ul>
+<p><strong>Replacement:</strong> Use <code>POST /api/rag/documents/upload</code></p>
+<p>The RAG endpoint provides identical functionality using the same PyMuPDF4LLM library. It accepts multipart/form-data with a <code>file</code> (PDF) and <code>workspace_id</code> and returns markdown, tables, images, and status.</p>
+<p><strong>Benefits of consolidation:</strong></p>
+<ul>
+<li>✅ Single endpoint for all extraction needs</li>
+<li>✅ Optional RAG pipeline for enhanced processing</li>
+<li>✅ Unified job tracking and progress monitoring</li>
+<li>✅ Consistent error handling and response format</li>
+</ul>
+<hr>
+<h3>2. Document Management - DEPRECATED ⚠️</h3>
+<p><strong>All <code>/api/documents/*</code> endpoints have been removed. Use <code>/api/rag/*</code> endpoints instead.</strong></p>
+<p>See Section 2 (RAG System) for current endpoints:</p>
+<ul>
+<li>Upload: <code>POST /api/rag/documents/upload</code></li>
+<li>List: <code>GET /api/rag/documents</code></li>
+<li>Get: <code>GET /api/rag/documents/{id}</code></li>
+<li>Delete: <code>DELETE /api/rag/documents/{id}</code></li>
+<li>Query: <code>POST /api/rag/query</code></li>
+<li>Search: <code>GET /api/rag/search</code></li>
+</ul>
 <hr>
 <h3>3. Search APIs (8 endpoints)</h3>
-<p><strong>Semantic Search</strong></p>
-<pre><code class="language-http">POST /api/search/semantic
-Content-Type: application/json
-
-Body: {
-  query: &quot;string&quot;,
-  workspace_id: &quot;string&quot;,
-  limit: 10,
-  threshold: 0.7
-}
-
-Response: { results: [{ id, title, score, content }] }
-</code></pre>
-<p><strong>Vector Search</strong></p>
-<pre><code class="language-http">POST /api/search/vector
-Content-Type: application/json
-
-Body: {
-  embedding: [float],
-  workspace_id: &quot;string&quot;,
-  limit: 10,
-  metric: &quot;cosine&quot;
-}
-
-Response: { results: [{ id, similarity_score }] }
-</code></pre>
-<p><strong>Hybrid Search</strong></p>
-<pre><code class="language-http">POST /api/search/hybrid
-Content-Type: application/json
-
-Body: {
-  query: &quot;string&quot;,
-  embedding: [float],
-  workspace_id: &quot;string&quot;,
-  limit: 10,
-  semantic_weight: 0.5
-}
-
-Response: { results: [...] }
-</code></pre>
-<p><strong>Visual Search</strong></p>
-<pre><code class="language-http">POST /api/search/visual
-Content-Type: multipart/form-data
-
-Parameters:
-- image: Image file
-- workspace_id: string
-- limit: 10
-
-Response: { results: [{ id, similarity_score, image_url }] }
-</code></pre>
-<p><strong>Material Search</strong></p>
-<pre><code class="language-http">POST /api/search/materials
-Content-Type: application/json
-
-Body: {
-  query: &quot;string&quot;,
-  filters: { material_type, color, texture },
-  limit: 10
-}
-
-Response: { materials: [...] }
-</code></pre>
-<p><strong>Search Recommendations</strong></p>
-<pre><code class="language-http">GET /api/search/recommendations
-
-Query Parameters:
-- query: string
-- workspace_id: string
-
-Response: { suggestions: [...] }
-</code></pre>
-<p><strong>Search Analytics</strong></p>
-<pre><code class="language-http">GET /api/analytics
-
-Query Parameters:
-- workspace_id: string
-- date_range: &quot;7d&quot; | &quot;30d&quot; | &quot;90d&quot;
-
-Response: { top_queries, search_volume, avg_response_time }
-</code></pre>
+<p><strong>Semantic Search</strong> — <code>POST /api/search/semantic</code> — body: <code>query</code>, <code>workspace_id</code>, <code>limit</code>, <code>threshold</code> — response: <code>results</code> array (id, title, score, content)</p>
+<p><strong>Vector Search</strong> — <code>POST /api/search/vector</code> — body: <code>embedding</code> (float array), <code>workspace_id</code>, <code>limit</code>, <code>metric</code> — response: <code>results</code> array (id, similarity_score)</p>
+<p><strong>Hybrid Search</strong> — <code>POST /api/search/hybrid</code> — body: <code>query</code>, <code>embedding</code>, <code>workspace_id</code>, <code>limit</code>, <code>semantic_weight</code> — response: <code>results</code> array</p>
+<p><strong>Visual Search</strong> — <code>POST /api/search/visual</code> — multipart: <code>image</code> file, <code>workspace_id</code>, <code>limit</code> — response: <code>results</code> array (id, similarity_score, image_url)</p>
+<p><strong>Material Search</strong> — <code>POST /api/search/materials</code> — body: <code>query</code>, <code>filters</code> (material_type, color, texture), <code>limit</code> — response: <code>materials</code> array</p>
+<p><strong>Search Recommendations</strong> — <code>GET /api/search/recommendations</code> — query params: <code>query</code>, <code>workspace_id</code> — response: <code>suggestions</code> array</p>
+<p><strong>Search Analytics</strong> — <code>GET /api/analytics</code> — query params: <code>workspace_id</code>, <code>date_range</code> — response: <code>top_queries</code>, <code>search_volume</code>, <code>avg_response_time</code></p>
 <hr>
-<h3>4. Image Analysis (5 endpoints)</h3>
-<p><strong>Analyze Image</strong></p>
-<pre><code class="language-http">POST /api/images/analyze
-Content-Type: multipart/form-data
-
-Parameters:
-- image: Image file
-- analysis_type: &quot;material&quot; | &quot;color&quot; | &quot;texture&quot; | &quot;all&quot;
-
-Response: { materials, colors, textures, quality_score }
-</code></pre>
-<p><strong>Batch Image Analysis</strong></p>
-<pre><code class="language-http">POST /api/images/analyze/batch
-Content-Type: multipart/form-data
-
-Parameters:
-- images: Multiple image files
-
-Response: { results: [{ image_id, analysis }] }
-</code></pre>
-<p><strong>Search Similar Images</strong></p>
-<pre><code class="language-http">POST /api/images/search
-Content-Type: multipart/form-data
-
-Parameters:
-- image: Image file
-- limit: 10
-
-Response: { similar_images: [...] }
-</code></pre>
-<p><strong>Upload &amp; Analyze</strong></p>
-<pre><code class="language-http">POST /api/images/upload-and-analyze
-Content-Type: multipart/form-data
-
-Response: { image_id, url, analysis }
-</code></pre>
+<h3>4. Image Analysis (6 endpoints)</h3>
+<p><strong>Analyze Image</strong> — <code>POST /api/images/analyze</code> — multipart: <code>image</code> file, <code>analysis_type</code> — response: <code>materials</code>, <code>colors</code>, <code>textures</code>, <code>quality_score</code></p>
+<p><strong>Batch Image Analysis</strong> — <code>POST /api/images/analyze/batch</code> — multipart: multiple <code>images</code> — response: <code>results</code> array (image_id, analysis)</p>
+<p><strong>Search Similar Images</strong> — <code>POST /api/images/search</code> — multipart: <code>image</code> file, <code>limit</code> — response: <code>similar_images</code> array</p>
+<p><strong>Upload &amp; Analyze</strong> — <code>POST /api/images/upload-and-analyze</code> — multipart — response: <code>image_id</code>, <code>url</code>, <code>analysis</code></p>
+<p><strong>Re-classify Image ✨ NEW</strong> — <code>POST /api/images/reclassify/{image_id}</code> — params: <code>image_id</code>, <code>force_validation</code> (optional boolean) — response: <code>success</code>, <code>image_id</code>, <code>classification</code> (is_material, confidence, reason, model), <code>updated_data</code>, <code>message</code></p>
 <hr>
 <h3>5. RAG System (7 endpoints)</h3>
-<p><strong>Upload Document</strong></p>
-<pre><code class="language-http">POST /api/v1/rag/documents/upload
-Content-Type: multipart/form-data
-
-Parameters:
-- file: PDF file
-- title: string
-- metadata: JSON
-
-Response: { document_id, chunks_created, embeddings_generated }
-</code></pre>
-<p><strong>Query RAG</strong></p>
-<pre><code class="language-http">POST /api/v1/rag/query
-Content-Type: application/json
-
-Body: {
-  query: &quot;string&quot;,
-  workspace_id: &quot;string&quot;,
-  top_k: 5
-}
-
-Response: { results: [{ chunk_id, content, score }] }
-</code></pre>
-<p><strong>Chat with RAG</strong></p>
-<pre><code class="language-http">POST /api/v1/rag/chat
-Content-Type: application/json
-
-Body: {
-  message: &quot;string&quot;,
-  conversation_id: &quot;string&quot;,
-  workspace_id: &quot;string&quot;
-}
-
-Response: { response, sources: [...] }
-</code></pre>
-<p><strong>Search RAG</strong></p>
-<pre><code class="language-http">POST /api/v1/rag/search
-Content-Type: application/json
-
-Body: { query, filters, limit }
-
-Response: { results: [...] }
-</code></pre>
-<p><strong>List RAG Documents</strong></p>
-<pre><code class="language-http">GET /api/v1/rag/documents
-
-Query Parameters:
-- workspace_id: string
-- limit: 20
-
-Response: { documents: [...] }
-</code></pre>
-<p><strong>RAG Health</strong></p>
-<pre><code class="language-http">GET /api/v1/rag/health
-
-Response: { status, indices_count, memory_usage }
-</code></pre>
-<p><strong>RAG Statistics</strong></p>
-<pre><code class="language-http">GET /api/v1/rag/stats
-
-Response: { document_count, chunk_count, embedding_count }
-</code></pre>
+<p><strong>Upload Document</strong> — <code>POST /api/v1/rag/documents/upload</code> — multipart: <code>file</code>, <code>title</code>, <code>metadata</code> — response: <code>document_id</code>, <code>chunks_created</code>, <code>embeddings_generated</code></p>
+<p><strong>Query RAG</strong> — <code>POST /api/v1/rag/query</code> — body: <code>query</code>, <code>workspace_id</code>, <code>top_k</code> — response: <code>results</code> array (chunk_id, content, score)</p>
+<p><strong>Chat with RAG</strong> — <code>POST /api/v1/rag/chat</code> — body: <code>message</code>, <code>conversation_id</code>, <code>workspace_id</code> — response: <code>response</code>, <code>sources</code> array</p>
+<p><strong>Search RAG</strong> — <code>POST /api/v1/rag/search</code> — body: <code>query</code>, <code>filters</code>, <code>limit</code> — response: <code>results</code> array</p>
+<p><strong>List RAG Documents</strong> — <code>GET /api/v1/rag/documents</code> — query params: <code>workspace_id</code>, <code>limit</code> — response: <code>documents</code> array</p>
+<p><strong>RAG Health</strong> — <code>GET /api/v1/rag/health</code> — response: <code>status</code>, <code>indices_count</code>, <code>memory_usage</code></p>
+<p><strong>RAG Statistics</strong> — <code>GET /api/v1/rag/stats</code> — response: <code>document_count</code>, <code>chunk_count</code>, <code>embedding_count</code></p>
 <hr>
 <h3>6. Embeddings (3 endpoints)</h3>
-<p><strong>Generate Embedding</strong></p>
-<pre><code class="language-http">POST /api/embeddings/generate
-Content-Type: application/json
-
-Body: { text: &quot;string&quot; }
-
-Response: { embedding: [float], dimension: 1536 }
-</code></pre>
-<p><strong>Batch Embeddings</strong></p>
-<pre><code class="language-http">POST /api/embeddings/batch
-Content-Type: application/json
-
-Body: { texts: [&quot;string&quot;] }
-
-Response: { embeddings: [[float]] }
-</code></pre>
-<p><strong>CLIP Embeddings</strong></p>
-<pre><code class="language-http">POST /api/embeddings/clip-generate
-Content-Type: multipart/form-data
-
-Parameters:
-- image: Image file
-- embedding_type: &quot;visual&quot; | &quot;color&quot; | &quot;texture&quot; | &quot;application&quot;
-
-Response: { embedding: [float], type, dimension }
-</code></pre>
+<p><strong>Generate Embedding</strong> — <code>POST /api/embeddings/generate</code> — body: <code>text</code> — response: <code>embedding</code> (float array), <code>dimension</code></p>
+<p><strong>Batch Embeddings</strong> — <code>POST /api/embeddings/batch</code> — body: <code>texts</code> (string array) — response: <code>embeddings</code> (array of float arrays)</p>
+<p><strong>CLIP Embeddings</strong> — <code>POST /api/embeddings/clip-generate</code> — multipart: <code>image</code> file, <code>embedding_type</code> — response: <code>embedding</code>, <code>type</code>, <code>dimension</code></p>
 <hr>
 <h3>7. Products (6 endpoints)</h3>
-<p><strong>Create Product</strong></p>
-<pre><code class="language-http">POST /api/products
-Content-Type: application/json
-
-Body: {
-  name: &quot;string&quot;,
-  description: &quot;string&quot;,
-  metafields: {},
-  images: [&quot;image_id&quot;],
-  chunks: [&quot;chunk_id&quot;]
-}
-
-Response: { product_id, created_at }
-</code></pre>
-<p><strong>Get Product</strong></p>
-<pre><code class="language-http">GET /api/products/{id}
-
-Response: { id, name, description, metafields, images, chunks }
-</code></pre>
-<p><strong>Update Product</strong></p>
-<pre><code class="language-http">PATCH /api/products/{id}
-Content-Type: application/json
-
-Body: { name, description, metafields }
-
-Response: { success, updated_at }
-</code></pre>
-<p><strong>Delete Product</strong></p>
-<pre><code class="language-http">DELETE /api/products/{id}
-
-Response: { success }
-</code></pre>
-<p><strong>List Products</strong></p>
-<pre><code class="language-http">GET /api/products
-
-Query Parameters:
-- workspace_id: string
-- limit: 50
-- offset: 0
-
-Response: { products: [...], total_count }
-</code></pre>
-<p><strong>Find Similar Products</strong></p>
-<pre><code class="language-http">GET /api/products/{id}/similar
-
-Query Parameters:
-- limit: 10
-
-Response: { similar_products: [...] }
-</code></pre>
+<p><strong>Create Product</strong> — <code>POST /api/products</code> — body: <code>name</code>, <code>description</code>, <code>metafields</code>, <code>images</code>, <code>chunks</code> — response: <code>product_id</code>, <code>created_at</code></p>
+<p><strong>Get Product</strong> — <code>GET /api/products/{id}</code> — response: <code>id</code>, <code>name</code>, <code>description</code>, <code>metafields</code>, <code>images</code>, <code>chunks</code></p>
+<p><strong>Update Product</strong> — <code>PATCH /api/products/{id}</code> — body: <code>name</code>, <code>description</code>, <code>metafields</code> — response: <code>success</code>, <code>updated_at</code></p>
+<p><strong>Delete Product</strong> — <code>DELETE /api/products/{id}</code> — response: <code>success</code></p>
+<p><strong>List Products</strong> — <code>GET /api/products</code> — query params: <code>workspace_id</code>, <code>limit</code>, <code>offset</code> — response: <code>products</code> array, <code>total_count</code></p>
+<p><strong>Find Similar Products</strong> — <code>GET /api/products/{id}/similar</code> — query params: <code>limit</code> — response: <code>similar_products</code> array</p>
 <hr>
 <h3>8. Admin &amp; Monitoring (8 endpoints)</h3>
-<p><strong>Get Job Progress</strong></p>
-<pre><code class="language-http">GET /api/admin/jobs/{id}/progress
-
-Response: { job_id, status, progress_percent, current_stage }
-</code></pre>
-<p><strong>Get Page Progress</strong></p>
-<pre><code class="language-http">GET /api/admin/jobs/{id}/progress/pages
-
-Response: { pages: [{ page_number, status, progress }] }
-</code></pre>
-<p><strong>Stream Progress</strong></p>
-<pre><code class="language-http">GET /api/admin/jobs/{id}/progress/stream
-
-Response: Server-Sent Events
-</code></pre>
-<p><strong>Get Chunk Quality</strong></p>
-<pre><code class="language-http">GET /api/admin/chunks/quality
-
-Query Parameters:
-- workspace_id: string
-
-Response: { chunks: [{ id, quality_score, status }] }
-</code></pre>
-<p><strong>AI Metrics</strong></p>
-<pre><code class="language-http">GET /api/admin/ai-metrics
-
-Response: {
-  models_used: [...],
-  total_tokens: number,
-  cost_estimate: number,
-  processing_time: number
-}
-</code></pre>
-<p><strong>System Health</strong></p>
-<pre><code class="language-http">GET /health
-
-Response: { status, uptime, database, api_latency }
-</code></pre>
-<p><strong>Performance Metrics</strong></p>
-<pre><code class="language-http">GET /metrics
-
-Response: { requests_per_second, avg_latency, error_rate }
-</code></pre>
-<p><strong>Performance Summary</strong></p>
-<pre><code class="language-http">GET /performance/summary
-
-Response: { summary_stats }
-</code></pre>
+<p><strong>Get Job Progress</strong> — <code>GET /api/admin/jobs/{id}/progress</code> — response: <code>job_id</code>, <code>status</code>, <code>progress_percent</code>, <code>current_stage</code></p>
+<p><strong>Get Page Progress</strong> — <code>GET /api/admin/jobs/{id}/progress/pages</code> — response: <code>pages</code> array (page_number, status, progress)</p>
+<p><strong>Stream Progress</strong> — <code>GET /api/admin/jobs/{id}/progress/stream</code> — response: Server-Sent Events</p>
+<p><strong>Get Chunk Quality</strong> — <code>GET /api/admin/chunks/quality</code> — query params: <code>workspace_id</code> — response: <code>chunks</code> array (id, quality_score, status)</p>
+<p><strong>AI Metrics</strong> — <code>GET /api/admin/ai-metrics</code> — response: <code>models_used</code>, <code>total_tokens</code>, <code>cost_estimate</code>, <code>processing_time</code></p>
+<p><strong>System Health</strong> — <code>GET /health</code> — response: <code>status</code>, <code>uptime</code>, <code>database</code>, <code>api_latency</code></p>
+<p><strong>Performance Metrics</strong> — <code>GET /metrics</code> — response: <code>requests_per_second</code>, <code>avg_latency</code>, <code>error_rate</code></p>
+<p><strong>Performance Summary</strong> — <code>GET /performance/summary</code> — response: <code>summary_stats</code></p>
 <hr>
 <h2>7. Document Entities Routes (5 endpoints)</h2>
 <p><strong>Base Path:</strong> <code>/api/document-entities</code>
@@ -1298,39 +1119,17 @@ Response: { summary_stats }
 <p><strong>Purpose:</strong> Get all document entities for a workspace with filtering
 <strong>Used In:</strong> Docs Admin Page, Agentic queries
 <strong>Flow:</strong> Query entities → Apply filters → Return paginated results</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/document-entities/?workspace_id={uuid}&amp;entity_type=certificate&amp;factory_name=Castellón Factory&amp;limit=100&amp;offset=0
-
-Query Parameters:
-- workspace_id: UUID (required)
-- entity_type: certificate | logo | specification | marketing | bank_statement (optional)
-- factory_name: Filter by factory name (optional)
-- factory_group: Filter by factory group (optional)
-- limit: Maximum results (default: 100)
-- offset: Pagination offset (default: 0)
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">[
-  {
-    &quot;id&quot;: &quot;uuid&quot;,
-    &quot;entity_type&quot;: &quot;certificate&quot;,
-    &quot;name&quot;: &quot;ISO 9001:2015&quot;,
-    &quot;description&quot;: &quot;Quality Management System certification&quot;,
-    &quot;page_range&quot;: [45, 46],
-    &quot;factory_name&quot;: &quot;Castellón Factory&quot;,
-    &quot;factory_group&quot;: &quot;Harmony Group&quot;,
-    &quot;manufacturer&quot;: &quot;Harmony Materials&quot;,
-    &quot;metadata&quot;: {
-      &quot;certificate_type&quot;: &quot;quality_management&quot;,
-      &quot;issue_date&quot;: &quot;2024-01-15&quot;,
-      &quot;expiry_date&quot;: &quot;2027-01-15&quot;,
-      &quot;certifying_body&quot;: &quot;TÜV SÜD&quot;,
-      &quot;standards&quot;: [&quot;ISO 9001:2015&quot;]
-    },
-    &quot;created_at&quot;: &quot;2024-01-15T10:30:00Z&quot;
-  }
-]
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/document-entities/?workspace_id={uuid}&amp;entity_type=certificate&amp;factory_name=Castellón Factory&amp;limit=100&amp;offset=0</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> — UUID (required)</li>
+<li><code>entity_type</code> — certificate | logo | specification | marketing | bank_statement (optional)</li>
+<li><code>factory_name</code> — Filter by factory name (optional)</li>
+<li><code>factory_group</code> — Filter by factory group (optional)</li>
+<li><code>limit</code> — Maximum results (default: 100)</li>
+<li><code>offset</code> — Pagination offset (default: 0)</li>
+</ul>
+<p><strong>Response:</strong> Array of entities with fields: <code>id</code>, <code>entity_type</code>, <code>name</code>, <code>description</code>, <code>page_range</code>, <code>factory_name</code>, <code>factory_group</code>, <code>manufacturer</code>, <code>metadata</code>, <code>created_at</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM document_entities WHERE workspace_id = ? AND entity_type = ? AND factory_name = ?</li>
@@ -1346,21 +1145,8 @@ Query Parameters:
 <p><strong>Purpose:</strong> Get a specific document entity by ID
 <strong>Used In:</strong> Entity detail view, relationship management
 <strong>Flow:</strong> Fetch entity by ID → Return entity details</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/document-entities/{entity_id}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">{
-  &quot;id&quot;: &quot;uuid&quot;,
-  &quot;entity_type&quot;: &quot;certificate&quot;,
-  &quot;name&quot;: &quot;ISO 9001:2015&quot;,
-  &quot;description&quot;: &quot;Quality Management System certification&quot;,
-  &quot;page_range&quot;: [45, 46],
-  &quot;factory_name&quot;: &quot;Castellón Factory&quot;,
-  &quot;metadata&quot;: {...},
-  &quot;created_at&quot;: &quot;2024-01-15T10:30:00Z&quot;
-}
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/document-entities/{entity_id}</code></p>
+<p><strong>Response fields:</strong> <code>id</code>, <code>entity_type</code>, <code>name</code>, <code>description</code>, <code>page_range</code>, <code>factory_name</code>, <code>metadata</code>, <code>created_at</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM document_entities WHERE id = ?</li>
@@ -1371,24 +1157,12 @@ Query Parameters:
 <p><strong>Purpose:</strong> Get all document entities linked to a specific product
 <strong>Used In:</strong> Product detail page, agentic queries
 <strong>Flow:</strong> Fetch product relationships → Get linked entities → Return entities</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/document-entities/product/{product_id}?entity_type=certificate
-
-Query Parameters:
-- entity_type: Filter by entity type (optional)
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">[
-  {
-    &quot;entity_type&quot;: &quot;certificate&quot;,
-    &quot;name&quot;: &quot;ISO 9001:2015&quot;,
-    &quot;description&quot;: &quot;Quality Management System certification&quot;,
-    &quot;page_range&quot;: [45, 46],
-    &quot;factory_name&quot;: &quot;Castellón Factory&quot;,
-    &quot;metadata&quot;: {...}
-  }
-]
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/document-entities/product/{product_id}?entity_type=certificate</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>entity_type</code> — Filter by entity type (optional)</li>
+</ul>
+<p><strong>Response:</strong> Array of entities with fields: <code>entity_type</code>, <code>name</code>, <code>description</code>, <code>page_range</code>, <code>factory_name</code>, <code>metadata</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT document_entities.* FROM product_document_relationships JOIN document_entities WHERE product_id = ?</li>
@@ -1403,23 +1177,12 @@ Query Parameters:
 <p><strong>Purpose:</strong> Get all document entities for a specific factory
 <strong>Used In:</strong> Factory-specific queries, compliance reports
 <strong>Flow:</strong> Query by factory name → Filter by entity type → Return entities</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/document-entities/factory/Castellón Factory?entity_type=certificate
-
-Query Parameters:
-- entity_type: Filter by entity type (optional)
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">[
-  {
-    &quot;entity_type&quot;: &quot;certificate&quot;,
-    &quot;name&quot;: &quot;ISO 9001:2015&quot;,
-    &quot;factory_name&quot;: &quot;Castellón Factory&quot;,
-    &quot;factory_group&quot;: &quot;Harmony Group&quot;,
-    &quot;metadata&quot;: {...}
-  }
-]
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/document-entities/factory/Castellón Factory?entity_type=certificate</code></p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>entity_type</code> — Filter by entity type (optional)</li>
+</ul>
+<p><strong>Response:</strong> Array of entities with fields: <code>entity_type</code>, <code>name</code>, <code>factory_name</code>, <code>factory_group</code>, <code>metadata</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM document_entities WHERE factory_name = ? AND entity_type = ?</li>
@@ -1434,25 +1197,8 @@ Query Parameters:
 <p><strong>Purpose:</strong> Get all product-document relationships for a product
 <strong>Used In:</strong> Relationship management, linking visualization
 <strong>Flow:</strong> Fetch relationships → Return relationship details with scores</p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-http">GET /api/document-entities/relationships/product/{product_id}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-json">[
-  {
-    &quot;id&quot;: &quot;uuid&quot;,
-    &quot;product_id&quot;: &quot;uuid&quot;,
-    &quot;document_entity_id&quot;: &quot;uuid&quot;,
-    &quot;relationship_type&quot;: &quot;certification&quot;,
-    &quot;relevance_score&quot;: 0.95,
-    &quot;metadata&quot;: {
-      &quot;linking_method&quot;: &quot;ai_discovery&quot;,
-      &quot;confidence&quot;: 0.95
-    },
-    &quot;created_at&quot;: &quot;2024-01-15T10:30:00Z&quot;
-  }
-]
-</code></pre>
+<p><strong>Request:</strong> <code>GET /api/document-entities/relationships/product/{product_id}</code></p>
+<p><strong>Response:</strong> Array of relationships with fields: <code>id</code>, <code>product_id</code>, <code>document_entity_id</code>, <code>relationship_type</code>, <code>relevance_score</code>, <code>metadata</code> (linking_method, confidence), <code>created_at</code></p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM product_document_relationships WHERE product_id = ?</li>
@@ -1462,29 +1208,13 @@ Query Parameters:
 <h2>🔐 Authentication</h2>
 <p>All endpoints require one of:</p>
 <ol>
-<li><p><strong>Supabase JWT</strong> (Frontend)</p>
-<pre><code>Authorization: Bearer {supabase_jwt_token}
-</code></pre>
-</li>
-<li><p><strong>MIVAA JWT</strong> (Internal)</p>
-<pre><code>Authorization: Bearer {mivaa_jwt_token}
-</code></pre>
-</li>
-<li><p><strong>API Key</strong> (External)</p>
-<pre><code>X-API-Key: {api_key}
-</code></pre>
-</li>
+<li><strong>Supabase JWT</strong> (Frontend) — <code>Authorization: Bearer {supabase_jwt_token}</code></li>
+<li><strong>MIVAA JWT</strong> (Internal) — <code>Authorization: Bearer {mivaa_jwt_token}</code></li>
+<li><strong>API Key</strong> (External) — <code>X-API-Key: {api_key}</code></li>
 </ol>
 <hr>
 <h2>📊 Response Format</h2>
-<p>All endpoints return JSON:</p>
-<pre><code class="language-json">{
-  &quot;success&quot;: boolean,
-  &quot;data&quot;: {},
-  &quot;error&quot;: null,
-  &quot;timestamp&quot;: &quot;2025-10-31T12:00:00Z&quot;
-}
-</code></pre>
+<p>All endpoints return JSON with fields: <code>success</code> (boolean), <code>data</code> (object), <code>error</code> (null or string), <code>timestamp</code>.</p>
 <hr>
 <h2>⚡ Rate Limiting</h2>
 <ul>
@@ -1493,8 +1223,335 @@ Query Parameters:
 <li><strong>Enterprise</strong>: Unlimited</li>
 </ul>
 <hr>
-<p><strong>Total Endpoints</strong>: 113
-<strong>Last Updated</strong>: November 2, 2025
-<strong>API Version</strong>: v1</p>
+<h2>15. Duplicate Detection Routes</h2>
+<p><strong>Purpose:</strong> Detect and merge duplicate products from the same factory/manufacturer</p>
+<p><strong>CRITICAL RULE:</strong> Duplicates are ONLY detected when products have the same factory/manufacturer in metadata. Visual similarity alone does NOT constitute a duplicate.</p>
+<h3>15.1 POST /api/duplicates/detect</h3>
+<p><strong>Purpose:</strong> Detect potential duplicates for a specific product</p>
+<p><strong>Request fields:</strong> <code>product_id</code>, <code>workspace_id</code>, <code>similarity_threshold</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>product_id</code>, <code>duplicates_found</code>, <code>duplicates</code> array (product_id, name, factory, overall_similarity, confidence_level)</p>
+<hr>
+<h3>15.2 POST /api/duplicates/batch-detect</h3>
+<p><strong>Purpose:</strong> Scan entire workspace for duplicate products</p>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>similarity_threshold</code>, <code>limit</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>workspace_id</code>, <code>duplicate_pairs_found</code>, <code>duplicate_pairs</code> array</p>
+<hr>
+<h3>15.3 GET /api/duplicates/cached</h3>
+<p><strong>Purpose:</strong> Get cached duplicate detections</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required)</li>
+<li><code>status</code> (optional): &#39;pending&#39;, &#39;reviewed&#39;, &#39;merged&#39;, &#39;dismissed&#39;</li>
+<li><code>min_similarity</code> (optional): default 0.60</li>
+</ul>
+<p><strong>Response:</strong> <code>success</code>, <code>workspace_id</code>, <code>cached_duplicates</code>, <code>duplicates</code> array</p>
+<hr>
+<h3>15.4 POST /api/duplicates/update-status</h3>
+<p><strong>Purpose:</strong> Update duplicate detection status</p>
+<p><strong>Request fields:</strong> <code>cache_id</code>, <code>status</code>, <code>user_id</code></p>
+<p><strong>Valid Statuses:</strong> &#39;pending&#39;, &#39;reviewed&#39;, &#39;merged&#39;, &#39;dismissed&#39;</p>
+<hr>
+<h3>15.5 POST /api/duplicates/merge</h3>
+<p><strong>Purpose:</strong> Merge duplicate products into a single product</p>
+<p><strong>Request fields:</strong> <code>target_product_id</code>, <code>source_product_ids</code>, <code>workspace_id</code>, <code>user_id</code>, <code>merge_strategy</code>, <code>merge_reason</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>history_id</code>, <code>target_product</code>, <code>merged_count</code>, <code>message</code></p>
+<hr>
+<h3>15.6 POST /api/duplicates/undo-merge</h3>
+<p><strong>Purpose:</strong> Undo a product merge operation</p>
+<p><strong>Request fields:</strong> <code>history_id</code>, <code>user_id</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>message</code>, <code>restored_products</code></p>
+<hr>
+<h3>15.7 GET /api/duplicates/merge-history</h3>
+<p><strong>Purpose:</strong> Get merge history for a workspace</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required)</li>
+<li><code>limit</code> (optional): default 50</li>
+</ul>
+<p><strong>Response:</strong> <code>success</code>, <code>workspace_id</code>, <code>merge_count</code>, <code>merges</code> array</p>
+<hr>
+<h2>16. Data Import Routes</h2>
+<p><strong>Category:</strong> Data Import (XML, Web Scraping)
+<strong>Total Endpoints:</strong> 4
+<strong>Status:</strong> ✅ Phase 1 &amp; 2 Complete (XML Import with Dynamic Mapping &amp; Backend Processing)</p>
+<h3>16.1 POST /api/import/process</h3>
+<p><strong>Purpose:</strong> Start processing an import job (called by Edge Function)</p>
+<p><strong>Request fields:</strong> <code>job_id</code>, <code>workspace_id</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>message</code>, <code>job_id</code></p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Background task processing</li>
+<li>Batch processing (10 products at a time)</li>
+<li>Concurrent image downloads (5 parallel)</li>
+<li>Checkpoint recovery</li>
+<li>Real-time progress updates</li>
+</ul>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Updates <code>data_import_jobs</code> status to &#39;processing&#39;</li>
+<li>Creates records in <code>data_import_history</code></li>
+<li>Inserts products into <code>products</code> table</li>
+<li>Links images via <code>document_images</code> table</li>
+<li>Creates chunks in <code>chunks</code> table</li>
+</ul>
+<hr>
+<h3>16.2 GET /api/import/jobs/{job_id}</h3>
+<p><strong>Purpose:</strong> Get import job status and progress</p>
+<p><strong>Path Parameters:</strong></p>
+<ul>
+<li><code>job_id</code> (required): Import job ID</li>
+</ul>
+<p><strong>Response fields:</strong> <code>job_id</code>, <code>status</code>, <code>import_type</code>, <code>source_name</code>, <code>total_products</code>, <code>processed_products</code>, <code>failed_products</code>, <code>progress_percentage</code>, <code>current_stage</code>, <code>started_at</code>, <code>completed_at</code>, <code>error_message</code>, <code>estimated_time_remaining</code></p>
+<p><strong>Status Values:</strong></p>
+<ul>
+<li><code>pending</code> - Job created, waiting to start</li>
+<li><code>processing</code> - Job is being processed</li>
+<li><code>completed</code> - Job completed successfully</li>
+<li><code>failed</code> - Job failed with errors</li>
+</ul>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Reads from <code>data_import_jobs</code> table</li>
+<li>Calculates progress percentage</li>
+<li>Estimates time remaining based on processing rate</li>
+</ul>
+<hr>
+<h3>16.3 GET /api/import/history</h3>
+<p><strong>Purpose:</strong> Get import history for a workspace with pagination and filters</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required)</li>
+<li><code>page</code> (optional, default: 1)</li>
+<li><code>page_size</code> (optional, default: 20)</li>
+<li><code>status</code> (optional): pending, processing, completed, failed</li>
+<li><code>import_type</code> (optional): xml, web_scraping</li>
+</ul>
+<p><strong>Response:</strong> <code>imports</code> array (job_id, import_type, source_name, status, total_products, processed_products, failed_products, created_at, completed_at, is_scheduled, next_run_at), <code>total_count</code>, <code>page</code>, <code>page_size</code></p>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Queries <code>data_import_jobs</code> table with filters</li>
+<li>Applies pagination</li>
+<li>Orders by <code>created_at DESC</code></li>
+</ul>
+<hr>
+<h3>16.4 GET /api/import/health</h3>
+<p><strong>Purpose:</strong> Health check for data import API</p>
+<p><strong>Response fields:</strong> <code>status</code>, <code>service</code>, <code>version</code>, <code>features</code> (xml_import, web_scraping, batch_processing, concurrent_image_downloads, checkpoint_recovery, real_time_progress)</p>
+<p><strong>Features Status:</strong></p>
+<ul>
+<li>✅ <code>xml_import</code> - XML import with dynamic field mapping</li>
+<li>⏳ <code>web_scraping</code> - Firecrawl integration (Phase 4)</li>
+<li>✅ <code>batch_processing</code> - Process 10 products at a time</li>
+<li>✅ <code>concurrent_image_downloads</code> - Download 5 images in parallel</li>
+<li>✅ <code>checkpoint_recovery</code> - Resume from last successful batch</li>
+<li>✅ <code>real_time_progress</code> - Real-time progress updates in database</li>
+</ul>
+<hr>
+<h2>Edge Function Endpoints</h2>
+<h3>POST /xml-import-orchestrator</h3>
+<p><strong>Purpose:</strong> Parse XML, detect fields, suggest mappings, create import jobs</p>
+<p><strong>Hosted:</strong> Supabase Edge Function (Deno)</p>
+<p><strong>Request fields:</strong> <code>workspace_id</code>, <code>category</code>, <code>xml_content</code> (base64 encoded), <code>preview_only</code>, <code>field_mappings</code>, <code>mapping_template_id</code>, <code>parent_job_id</code></p>
+<p><strong>Response (Preview Mode):</strong> <code>success</code>, <code>detected_fields</code> array (xml_field, suggested_mapping, confidence, sample_values), <code>total_products</code></p>
+<p><strong>Response (Import Mode):</strong> <code>success</code>, <code>job_id</code>, <code>total_products</code></p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>XML parsing with field detection</li>
+<li>AI-powered field mapping (Claude Sonnet 4.5)</li>
+<li>Fallback rule-based mapping (multi-language support)</li>
+<li>Preview mode for field detection only</li>
+<li>Stores products in job metadata for Python API</li>
+<li>Calls Python API to start processing</li>
+</ul>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Creates record in <code>data_import_jobs</code> table</li>
+<li>Stores original XML content for re-runs</li>
+<li>Stores field mappings for future use</li>
+<li>Links to mapping template if provided</li>
+</ul>
+<hr>
+<h3>POST /scheduled-import-runner</h3>
+<p><strong>Purpose:</strong> Run scheduled imports via Supabase Cron</p>
+<p><strong>Hosted:</strong> Supabase Edge Function (Deno)</p>
+<p><strong>Trigger:</strong> Supabase Cron (every 15 minutes)</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Fetches XML from source URLs</li>
+<li>Creates new import jobs with same field mappings</li>
+<li>Updates <code>next_run_at</code> timestamps</li>
+<li>Links to parent job via <code>parent_job_id</code></li>
+</ul>
+<p><strong>Database Operations:</strong></p>
+<ul>
+<li>Queries <code>data_import_jobs</code> for scheduled imports</li>
+<li>Creates new job records for each scheduled import</li>
+<li>Updates <code>last_run_at</code> and <code>next_run_at</code> timestamps</li>
+</ul>
+<hr>
+<p><strong>Total Endpoints</strong>: 119 (115 + 4 Data Import)
+<strong>Last Updated</strong>: November 10, 2025</p>
+<p><strong>See Also:</strong></p>
+<ul>
+<li><a href="data-import-system.md">Data Import System Documentation</a> - Complete guide to XML import and web scraping
+<strong>API Version</strong>: v1</li>
+</ul>
+<hr>
+<hr>
+<h2>19. Messaging Routes (SMS, WhatsApp) ✨ NEW v2.6.0</h2>
+<p><strong>Base Path:</strong> Supabase Edge Function <code>/functions/v1/messaging-api</code>
+<strong>Purpose:</strong> Multi-channel messaging via Twilio (SMS, WhatsApp)
+<strong>Provider:</strong> Twilio - Single API for all channels
+<strong>Philosophy:</strong> Unified messaging API with templates, campaigns, analytics, and compliance</p>
+<h3>Environment Variables (Supabase Secrets)</h3>
+<p>Required secrets: <code>TWILIO_ACCOUNT_SID</code> and <code>TWILIO_AUTH_TOKEN</code></p>
+<h3>19.1 POST /functions/v1/messaging-api (action: send)</h3>
+<p><strong>Purpose:</strong> Send a single message via SMS or WhatsApp
+<strong>Used In:</strong> Test messages, transactional notifications, OTP delivery</p>
+<p><strong>Request fields:</strong> <code>action: &quot;send&quot;</code>, <code>channel</code> (<code>sms</code> | <code>whatsapp</code>), <code>to</code> (phone number), <code>content</code>, <code>from</code> (optional), <code>messageType</code> (<code>transactional</code> | <code>marketing</code> | <code>otp</code> | <code>notification</code>), <code>variables</code> (for template rendering), <code>templateSlug</code> (optional), <code>mediaUrl</code> (optional), <code>tags</code> (optional), <code>whatsappContentSid</code> (optional, for WhatsApp pre-approved templates)</p>
+<p><strong>Response:</strong> <code>success</code>, <code>messageId</code>, <code>logId</code></p>
+<p><strong>Twilio API Endpoints Used:</strong></p>
+<ul>
+<li>SMS: <code>POST /2010-04-01/Accounts/{AccountSid}/Messages.json</code></li>
+<li>WhatsApp: <code>POST /2010-04-01/Accounts/{AccountSid}/Messages.json</code> (with <code>whatsapp:</code> prefix)</li>
+</ul>
+<hr>
+<h3>19.2 POST /functions/v1/messaging-api (action: send-bulk)</h3>
+<p><strong>Purpose:</strong> Send messages to multiple recipients in bulk
+<strong>Used In:</strong> Marketing campaigns, mass notifications</p>
+<p><strong>Request fields:</strong> <code>action: &quot;send-bulk&quot;</code>, <code>channel</code>, <code>recipients</code> (array of {to, variables}), <code>content</code>, <code>templateSlug</code> (optional), <code>messageType</code>, <code>from</code> (optional)</p>
+<p><strong>Response:</strong> <code>success</code>, <code>bulkId</code>, <code>total</code>, <code>sent</code>, <code>failed</code>, <code>optedOut</code>, <code>results</code> array (to, status, messageId or error)</p>
+<hr>
+<h3>19.3 POST /functions/v1/messaging-api (action: channels)</h3>
+<p><strong>Purpose:</strong> List all configured messaging channels
+<strong>Used In:</strong> Channel management UI, channel selection dropdowns</p>
+<p><strong>Request fields:</strong> <code>action: &quot;channels&quot;</code>, <code>channelType</code> (optional filter: <code>sms</code> | <code>whatsapp</code>)</p>
+<p><strong>Response:</strong> <code>success</code>, <code>channels</code> array (id, channel_type, provider, sender_id, display_name, is_active, is_default, daily_quota, max_send_rate, config)</p>
+<p><strong>Database Table:</strong> <code>messaging_channels</code></p>
+<hr>
+<h3>19.4 POST /functions/v1/messaging-api (action: templates)</h3>
+<p><strong>Purpose:</strong> List all messaging templates
+<strong>Used In:</strong> Template management UI, campaign creation</p>
+<p><strong>Request fields:</strong> <code>action: &quot;templates&quot;</code>, <code>channelType</code> (optional filter)</p>
+<p><strong>Response:</strong> <code>success</code>, <code>templates</code> array (id, name, slug, channel_type, content, variables, category, whatsapp_template_name, is_approved, is_active)</p>
+<p><strong>Database Table:</strong> <code>messaging_templates</code></p>
+<hr>
+<h3>19.5 POST /functions/v1/messaging-api (action: logs)</h3>
+<p><strong>Purpose:</strong> Get message delivery logs with filtering
+<strong>Used In:</strong> Message logs tab, delivery tracking, debugging</p>
+<p><strong>Request fields:</strong> <code>action: &quot;logs&quot;</code>, <code>channelType</code> (optional), <code>status</code> (optional: queued | sent | delivered | read | failed | rejected), <code>messageType</code> (optional), <code>limit</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>logs</code> array (id, channel_type, provider_message_id, from_number, to_number, content, status, sent_at, delivered_at, cost, currency)</p>
+<p><strong>Database Table:</strong> <code>messaging_logs</code></p>
+<hr>
+<h3>19.6 POST /functions/v1/messaging-api (action: analytics)</h3>
+<p><strong>Purpose:</strong> Get aggregated messaging analytics
+<strong>Used In:</strong> Analytics dashboard, reporting</p>
+<p><strong>Request fields:</strong> <code>action: &quot;analytics&quot;</code>, <code>channelType</code> (optional), <code>dateRange</code> (start, end)</p>
+<p><strong>Response:</strong> <code>success</code>, <code>totalSent</code>, <code>totalDelivered</code>, <code>totalRead</code> (WhatsApp only), <code>totalFailed</code>, <code>totalCost</code>, <code>deliveryRate</code>, <code>readRate</code>, <code>failureRate</code>, <code>dailyData</code> array</p>
+<p><strong>Database Table:</strong> <code>messaging_analytics</code></p>
+<hr>
+<h3>19.7 POST /functions/v1/messaging-api (action: balance)</h3>
+<p><strong>Purpose:</strong> Get Twilio account balance
+<strong>Used In:</strong> Header balance display, billing monitoring</p>
+<p><strong>Request fields:</strong> <code>action: &quot;balance&quot;</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>balance</code>, <code>currency</code></p>
+<p><strong>Twilio API Endpoint:</strong> <code>GET /2010-04-01/Accounts/{AccountSid}/Balance.json</code></p>
+<hr>
+<h3>19.8 POST /functions/v1/messaging-api (action: sync-senders)</h3>
+<p><strong>Purpose:</strong> Sync senders/numbers from Twilio account to local database
+<strong>Used In:</strong> Channel sync button, initial setup</p>
+<p><strong>Request fields:</strong> <code>action: &quot;sync-senders&quot;</code>, <code>autoImport</code> (boolean — set to true to automatically import to database)</p>
+<p><strong>Response:</strong> <code>success</code>, <code>senders</code> (sms and whatsapp arrays with sender_id, display_name, status), <code>total</code>, <code>imported</code></p>
+<p><strong>Twilio API Endpoints Used:</strong></p>
+<ul>
+<li>Phone Numbers: <code>GET /2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers.json</code></li>
+<li>WhatsApp Senders: Configured via Twilio Console</li>
+</ul>
+<hr>
+<h3>19.9 POST /functions/v1/messaging-api (action: whatsapp-templates)</h3>
+<p><strong>Purpose:</strong> Fetch WhatsApp templates from Twilio Content API
+<strong>Used In:</strong> WhatsApp template selection, template sync</p>
+<p><strong>Request fields:</strong> <code>action: &quot;whatsapp-templates&quot;</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>templates</code> array (sid, friendly_name, language, types with body)</p>
+<p><strong>Twilio API Endpoint:</strong> <code>GET /v1/Content</code> (Twilio Content API)</p>
+<hr>
+<h3>19.10 POST /functions/v1/messaging-api (action: send-test)</h3>
+<p><strong>Purpose:</strong> Send a test message for a campaign
+<strong>Used In:</strong> Campaign testing, preview verification</p>
+<p><strong>Request fields:</strong> <code>action: &quot;send-test&quot;</code>, <code>campaignId</code>, <code>testNumber</code></p>
+<p><strong>Response:</strong> <code>success</code>, <code>messageId</code></p>
+<hr>
+<h3>Twilio API Reference (Internal)</h3>
+<p><strong>Base URL:</strong> <code>https://api.twilio.com</code>
+<strong>Authentication:</strong> HTTP Basic Auth (Account SID + Auth Token)</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/2010-04-01/Accounts/{AccountSid}/Messages.json</code></td>
+<td>POST</td>
+<td>Send SMS/WhatsApp messages</td>
+</tr>
+<tr>
+<td><code>/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers.json</code></td>
+<td>GET</td>
+<td>List phone numbers</td>
+</tr>
+<tr>
+<td><code>/2010-04-01/Accounts/{AccountSid}/Balance.json</code></td>
+<td>GET</td>
+<td>Get account balance</td>
+</tr>
+<tr>
+<td><code>/v1/Content</code></td>
+<td>GET</td>
+<td>List WhatsApp content templates (Content API)</td>
+</tr>
+</tbody></table>
+<p><strong>Documentation:</strong> <a href="https://www.twilio.com/docs/messaging/api">https://www.twilio.com/docs/messaging/api</a></p>
+<hr>
+<h3>Database Tables</h3>
+<p>The messaging system uses the following tables:</p>
+<ul>
+<li><strong><code>messaging_channels</code></strong> — Stores SMS and WhatsApp sender configurations (channel_type, provider, sender_id, display_name, is_active, is_default, config JSONB, daily_quota, max_send_rate)</li>
+<li><strong><code>messaging_templates</code></strong> — Message templates with variables (name, slug, channel_type, content, variables array, category, whatsapp_content_sid, is_approved, is_active)</li>
+<li><strong><code>messaging_logs</code></strong> — Per-message delivery records (channel_type, provider_message_id, from/to numbers, content, status, timestamps, cost, currency)</li>
+<li><strong><code>messaging_analytics</code></strong> — Daily aggregated analytics per channel (date, channel_type, total_sent, total_delivered, total_read, total_failed, total_cost)</li>
+<li><strong><code>messaging_optouts</code></strong> — Compliance opt-out records (phone_number, channel_type, source, opted_out_at)</li>
+</ul>
+<hr>
+<h2>Summary</h2>
+<p><strong>Total Endpoints:</strong> 140+
+<strong>Latest Version:</strong> v2.6.0
+<strong>Last Updated:</strong> January 2026</p>
+<p><strong>New in v2.6.0:</strong></p>
+<ul>
+<li>✨ Multi-channel Messaging (SMS, WhatsApp) via Twilio</li>
+<li>✨ Unified messaging templates with variable substitution</li>
+<li>✨ Bulk messaging with recipient-specific variables</li>
+<li>✨ WhatsApp template support via Twilio Content API</li>
+<li>✨ Delivery analytics and cost tracking</li>
+<li>✨ Opt-out compliance management</li>
+</ul>
+<p><strong>New in v2.5.0:</strong></p>
+<ul>
+<li>✨ Image re-classification with AI validation</li>
+</ul>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>✅ Consolidated endpoints (no duplicates)</li>
+<li>✅ Comprehensive AI integration (Claude, GPT, QWEN)</li>
+<li>✅ Complete Knowledge Base system</li>
+<li>✅ Advanced duplicate detection</li>
+<li>✅ Data import with AI field mapping</li>
+<li>✅ Spatial analysis with Claude Vision</li>
+<li>✅ Multi-channel messaging via Twilio</li>
+<li>✅ Full FastAPI documentation at <code>/docs</code> and <code>/redoc</code></li>
+</ul>
 
 </div></body></html>
