@@ -26,21 +26,33 @@
 <h1>Material Kai Vision Platform - Complete Overview</h1>
 <p><strong>AI-Powered Material Intelligence System for Enterprise Catalogs</strong></p>
 <blockquote>
-<p>Production-grade platform serving 5,000+ users with 99.5%+ uptime. Transforms material catalog PDFs into searchable, intelligent knowledge using 12 AI models across a sophisticated 14-stage processing pipeline.</p>
+<p>Production-grade platform serving 5,000+ users with 99.5%+ uptime. Transforms material catalogs from multiple sources (PDF, Web, XML) into searchable, intelligent knowledge using 12+ AI models across 5 providers.</p>
 </blockquote>
 <hr>
 <h2>🎯 Executive Summary</h2>
-<p>Material Kai Vision Platform is an enterprise AI system that automatically extracts, analyzes, and organizes material information from PDF catalogs. Using advanced computer vision, natural language processing, and semantic search, it enables users to discover materials by visual similarity, properties, applications, and natural language queries.</p>
+<p>Material Kai Vision Platform is an enterprise AI system that automatically extracts, analyzes, and organizes material information from multiple sources: PDF catalogs, manufacturer websites, and XML feeds. Using advanced computer vision, natural language processing, semantic search, spatial analysis, and interior design generation, it enables comprehensive material discovery and application.</p>
 <p><strong>Key Metrics:</strong></p>
 <ul>
 <li><strong>5,000+ users</strong> in production</li>
 <li><strong>99.5%+ uptime</strong> SLA</li>
-<li><strong>12 AI models</strong> integrated</li>
-<li><strong>14-stage processing pipeline</strong></li>
-<li><strong>6 embedding types</strong> for multi-modal search</li>
+<li><strong>12+ AI models</strong> across 5 providers (Anthropic, OpenAI, Voyage AI, HuggingFace, WorldLabs)</li>
+<li><strong>150+ API endpoints</strong> across 16 categories</li>
+<li><strong>3 ingestion methods</strong> (PDF, Web Scraping, XML)</li>
+<li><strong>14-stage PDF processing pipeline</strong></li>
+<li><strong>7 embedding types</strong> for multi-modal search (text, visual, understanding, color, texture, style, material)</li>
 <li><strong>95%+ product detection accuracy</strong></li>
 <li><strong>85%+ search relevance</strong></li>
 <li><strong>90%+ material recognition accuracy</strong></li>
+</ul>
+<p><strong>New Capabilities (2026):</strong></p>
+<ul>
+<li>🌐 <strong>Web Scraping</strong>: Automatic product discovery from websites</li>
+<li>💰 <strong>Price Monitoring</strong>: Competitive price tracking across sources</li>
+<li>🎨 <strong>Interior Design</strong>: 14 AI models for design generation</li>
+<li>🔍 <strong>Smart Search Management</strong>: AI-powered search deduplication</li>
+<li>🥽 <strong>VR World Generation</strong>: WorldLabs Marble 3D Gaussian Splat worlds from interior images</li>
+<li>🤖 <strong>Unified Jarvis Agent</strong>: Merged Search + Insights + SEO into one intelligent agent</li>
+<li>🔍 <strong>B2B Manufacturer Search</strong>: Claude built-in web search (no separate API key)</li>
 </ul>
 <hr>
 <h2>Platform Architecture</h2>
@@ -55,7 +67,7 @@
 <p><strong>Backend</strong>:</p>
 <ul>
 <li>MIVAA API: FastAPI + Python 3.11</li>
-<li>113 REST API endpoints (14 categories)</li>
+<li>108 REST API endpoints (14 categories) - Consolidated from 113</li>
 <li>Docker containerized</li>
 <li>Self-hosted on dedicated server</li>
 </ul>
@@ -68,14 +80,16 @@
 </ul>
 <p><strong>AI Services</strong>:</p>
 <ul>
-<li>OpenAI (GPT-4o, text-embedding-3-small)</li>
-<li>Anthropic (Claude Sonnet 4.5, Claude Haiku 4.5)</li>
-<li>Together AI (Llama 4 Scout 17B Vision)</li>
-<li>CLIP (Visual embeddings)</li>
-<li>Replicate (Image generation)</li>
+<li>Anthropic (Claude Sonnet 4.5, Claude Haiku 4.5 + built-in web search)</li>
+<li>OpenAI (GPT-4o, GPT-4o-mini for query parsing)</li>
+<li>Voyage AI (voyage-3.5, primary text/understanding embeddings, 1024D)</li>
+<li>HuggingFace Endpoint (Qwen3-VL 32B Vision)</li>
+<li>SigLIP2 via HuggingFace Endpoint (5 visual embedding types, 768D each)</li>
+<li>Replicate (14 interior design generation models)</li>
+<li>WorldLabs Marble (3D Gaussian Splat VR world generation)</li>
 </ul>
 <h3>System Flow</h3>
-<pre><code>User uploads PDF → Frontend (React)
+<p>User uploads PDF → Frontend (React)
     ↓
 Supabase Edge Function (mivaa-gateway)
     ↓
@@ -83,26 +97,27 @@ MIVAA API (FastAPI) → Creates background job
     ↓
 14-Stage Processing Pipeline:
   0A. Product Discovery (Claude/GPT-4o) - Products + Metadata extraction
-  0B. Document Entity Discovery (Optional) - Certificates, Logos, Specs
-  1. Focused Extraction (product pages only)
-  2. Text Extraction (PyMuPDF4LLM)
-  3. Semantic Chunking (Anthropic)
-  4. Text Embeddings (OpenAI 1536D)
-  5. Image Extraction
-  6. Image Analysis (Llama Vision)
-  7-10. Multi-Vector CLIP Embeddings (512D)
-  11. Product Creation &amp; Entity Linking
-  12. Entity Relationship Mapping
-  13. Quality Enhancement (async)
-  14. Cleanup &amp; Completion
-    ↓
+  0B. Document Entity Discovery (Optional) - Certificates, Logos, Specs</p>
+<ol>
+<li>Focused Extraction (product pages only)</li>
+<li>Text Extraction (PyMuPDF4LLM)</li>
+<li>Semantic Chunking (Anthropic)</li>
+<li>Text Embeddings (Voyage AI voyage-3.5, 1024D)</li>
+<li>Image Extraction</li>
+<li>Image Analysis (Qwen3-VL 32B → understanding embeddings via Voyage AI)
+  7-10. Multi-Vector SigLIP2 Embeddings (768D: visual, color, texture, style, material)</li>
+<li>Product Creation &amp; Entity Linking</li>
+<li>Entity Relationship Mapping</li>
+<li>Quality Enhancement (async)</li>
+<li>Cleanup &amp; Completion
+↓
 Data stored in Supabase → Available for search
-    ↓
-Real-time updates → Frontend displays results
-</code></pre>
+↓
+Real-time updates → Frontend displays results</li>
+</ol>
 <hr>
 <h2>AI Models &amp; Intelligence</h2>
-<h3>12 AI Models Across 7 Pipeline Stages</h3>
+<h3>8 AI Models Across 4 Providers</h3>
 <h4>1. Anthropic Claude Models</h4>
 <p><strong>Claude Sonnet 4.5</strong> (Premium Tier):</p>
 <ul>
@@ -134,19 +149,19 @@ Real-time updates → Frontend displays results
 <li><strong>Cost</strong>: $0.02 per 1M tokens</li>
 <li><strong>Pipeline Stages</strong>: Text Embedding Generation (Stage 5)</li>
 </ul>
-<h4>3. Together AI - Llama 4 Scout 17B Vision</h4>
+<h4>3. HuggingFace Endpoint - Qwen3-VL 32B Vision</h4>
 <ul>
-<li><strong>Parameters</strong>: 17 billion</li>
+<li><strong>Parameters</strong>: 32 billion</li>
 <li><strong>Modality</strong>: Vision + Text</li>
 <li><strong>Use Cases</strong>: Material image analysis, product classification, OCR</li>
-<li><strong>Performance</strong>: <ul>
+<li><strong>Performance</strong>:<ul>
 <li>69.4% MMMU (Massive Multitask Multimodal Understanding)</li>
 <li>#1 ranked for OCR tasks</li>
 <li>85%+ accuracy on material recognition</li>
 </ul>
 </li>
 <li><strong>Cost</strong>: $0.30 per 1M tokens</li>
-<li><strong>Pipeline Stages</strong>: Image Analysis (Stage 7), Material Recognition</li>
+<li><strong>Pipeline Stages</strong>: Image Analysis (Stage 6, 8)</li>
 </ul>
 <h4>4. CLIP (OpenAI)</h4>
 <ul>
@@ -158,17 +173,20 @@ Real-time updates → Frontend displays results
 <li><strong>Pipeline Stages</strong>: Image Embedding Generation (Stage 8)</li>
 </ul>
 <h4>5. Replicate Models</h4>
-<p><strong>Stable Diffusion XL</strong>: 3D texture generation, material visualization<br><strong>FLUX-Schnell</strong>: Fast image generation, material previews</p>
-<h3>Multi-Vector Embeddings (6 Types)</h3>
-<p>The platform generates <strong>6 types of embeddings</strong> for comprehensive search:</p>
+<p><strong>Stable Diffusion XL</strong>: 3D texture generation, material visualization
+<strong>FLUX-Schnell</strong>: Fast image generation, material previews</p>
+<h3>Multi-Vector Embeddings (7 Types)</h3>
+<p>The platform generates <strong>7 types of embeddings</strong> stored as <code>halfvec</code> (float16, 50% storage savings):</p>
 <ol>
-<li><strong>Text Embeddings</strong> (1536D) - OpenAI text-embedding-3-small</li>
-<li><strong>Visual CLIP Embeddings</strong> (512D) - CLIP ViT-B/32</li>
-<li><strong>Color Embeddings</strong> (256D) - Custom color analysis</li>
-<li><strong>Texture Embeddings</strong> (256D) - Custom texture analysis</li>
-<li><strong>Application Embeddings</strong> (512D) - Use-case classifier</li>
-<li><strong>Multimodal Embeddings</strong> (2048D) - Combined text + visual</li>
+<li><strong>Text Embeddings</strong> (1024D) - Voyage AI voyage-3.5 (primary)</li>
+<li><strong>Visual Embeddings</strong> (768D) - SigLIP2 via HuggingFace Endpoint</li>
+<li><strong>Understanding Embeddings</strong> (1024D) - Voyage AI from Qwen3-VL structured analysis (enables spec-based search)</li>
+<li><strong>Color Embeddings</strong> (768D) - SigLIP2 color-guided</li>
+<li><strong>Texture Embeddings</strong> (768D) - SigLIP2 texture-guided</li>
+<li><strong>Style Embeddings</strong> (768D) - SigLIP2 style-guided</li>
+<li><strong>Material Embeddings</strong> (768D) - SigLIP2 material-guided</li>
 </ol>
+<p><strong>Dynamic Weight Profiles</strong>: 7 profiles (product_name, color_finish, specification, texture_pattern, style_aesthetic, material_search, balanced) automatically selected per query.</p>
 <hr>
 <h2>PDF Processing Pipeline (14 Stages)</h2>
 <h3>Stage-by-Stage Breakdown</h3>
@@ -230,7 +248,7 @@ Real-time updates → Frontend displays results
 </ul>
 <p><strong>Stage 9: Image Analysis (AI)</strong></p>
 <ul>
-<li>Llama 4 Scout 17B Vision: Analyze each image (1-3 seconds)</li>
+<li>Qwen3-VL 32B Vision: Analyze each image (1-3 seconds)</li>
 <li>Extract material properties</li>
 <li>Quality scoring (0-100)</li>
 <li>Classify image type (product, detail, mood, diagram)</li>
@@ -371,35 +389,85 @@ Real-time updates → Frontend displays results
 <hr>
 <h2>Database Architecture</h2>
 <h3>Core Tables</h3>
-<p><strong>workspaces</strong>: Multi-tenant workspace management<br><strong>documents</strong>: PDF documents and metadata<br><strong>document_chunks</strong>: Semantic text chunks with 1536D embeddings<br><strong>document_images</strong>: Extracted images with 512D CLIP embeddings<br><strong>products</strong>: Product records from PDFs<br><strong>background_jobs</strong>: Async job tracking with checkpoint recovery<br><strong>material_metadata_fields</strong>: Dynamic metafield definitions<br><strong>metafield_values</strong>: Metafield data for chunks/products/images</p>
+<p><strong>workspaces</strong>: Multi-tenant workspace management
+<strong>documents</strong>: PDF documents and metadata
+<strong>document_chunks</strong>: Semantic text chunks with 1536D embeddings
+<strong>document_images</strong>: Extracted images with 512D CLIP embeddings
+<strong>products</strong>: Product records from PDFs
+<strong>background_jobs</strong>: Async job tracking with checkpoint recovery
+<strong>material_metadata_fields</strong>: Dynamic metafield definitions
+<strong>metafield_values</strong>: Metafield data for chunks/products/images</p>
 <h3>Storage Buckets</h3>
-<p><strong>pdf-documents</strong>: Original PDF files (50MB max)<br><strong>pdf-tiles</strong>: Extracted images (10MB max)<br><strong>material-images</strong>: Material photos (10MB max)<br><strong>3d-models</strong>: Generated 3D models (100MB max)</p>
+<p><strong>pdf-documents</strong>: Original PDF files (50MB max)
+<strong>pdf-tiles</strong>: Extracted images (10MB max)
+<strong>material-images</strong>: Material photos (10MB max)
+<strong>3d-models</strong>: Generated 3D models (100MB max)</p>
 <h3>Security</h3>
-<p><strong>Row-Level Security (RLS)</strong>: All tables protected<br><strong>Workspace Isolation</strong>: Users only access their workspace data<br><strong>JWT Authentication</strong>: Supabase Auth with automatic token refresh<br><strong>Encryption</strong>: At rest and in transit</p>
+<p><strong>Row-Level Security (RLS)</strong>: All tables protected
+<strong>Workspace Isolation</strong>: Users only access their workspace data
+<strong>JWT Authentication</strong>: Supabase Auth with automatic token refresh
+<strong>Encryption</strong>: At rest and in transit</p>
 <hr>
 <h2>Frontend Features</h2>
 <h3>User-Facing Features</h3>
-<p><strong>Dashboard</strong>: Metrics, feature grid, quick actions<br><strong>PDF Processing</strong>: Drag-and-drop upload with real-time progress<br><strong>Materials Catalog</strong>: Searchable, filterable product catalog<br><strong>Search Hub</strong>: AI-powered semantic search<br><strong>Material Recognition</strong>: Upload images for material identification<br><strong>3D Generation</strong>: AI-powered material visualization<br><strong>Mood Boards</strong>: Create and share material collections<br><strong>Shopping Cart</strong>: Quote requests and commission tracking</p>
+<p><strong>Dashboard</strong>: Metrics, feature grid, quick actions
+<strong>PDF Processing</strong>: Drag-and-drop upload with real-time progress
+<strong>Materials Catalog</strong>: Searchable, filterable product catalog
+<strong>Search Hub</strong>: AI-powered semantic search
+<strong>Material Recognition</strong>: Upload images for material identification
+<strong>3D Generation</strong>: AI-powered material visualization
+<strong>Mood Boards</strong>: Create and share material collections
+<strong>Quotes System</strong>: Complete quote management with timeline tracking</p>
 <h3>Admin Features</h3>
-<p><strong>Knowledge Base Management</strong>: View/edit chunks, images, products<br><strong>PDF Processing Monitor</strong>: Real-time job tracking<br><strong>AI Metrics Dashboard</strong>: Model usage and cost tracking<br><strong>Quality Dashboard</strong>: Chunk quality and embedding stability<br><strong>System Performance</strong>: Response times, error rates, uptime<br><strong>User Management</strong>: Workspace members and permissions<br><strong>Async Job Queue Monitor</strong>: Background job status and recovery</p>
+<p><strong>Knowledge Base Management</strong>: View/edit chunks, images, products
+<strong>PDF Processing Monitor</strong>: Real-time job tracking with 9 checkpoint stages ✨ ENHANCED
+<strong>Analytics Dashboard</strong>: Comprehensive analytics (search, API, agent chat, quality) ✨ ENHANCED
+<strong>AI Monitoring Dashboard</strong>: Model usage, cost tracking, performance metrics
+<strong>Quality Dashboard</strong>: Chunk quality and embedding stability
+<strong>System Performance</strong>: Response times, error rates, uptime
+<strong>User Management</strong>: Workspace members and permissions
+<strong>Async Job Queue Monitor</strong>: Real-time background job status with auto-refresh ✨ ENHANCED
+<strong>Agent Configurations</strong>: Manage AI agent system prompts and behavior
+<strong>AI Configs</strong>: Unified AI prompt management (agents, extraction, templates, search) ✨ NEW
+<strong>Quote Management</strong>: View all quote requests with status filtering
+<strong>Status Tags Management</strong>: Create/edit custom status tags with colors
+<strong>Upsells Management</strong>: Manage upsell items with pricing
+<strong>Timeline Steps Management</strong>: Configure project timeline steps</p>
+<p><strong>Monitoring Features</strong> ✨ NEW:</p>
+<ul>
+<li>Real-time job tracking with Supabase subscriptions</li>
+<li>Comprehensive metrics per pipeline stage</li>
+<li>AI model cost tracking and usage analytics</li>
+<li>Search analytics and query patterns</li>
+<li>Agent chat quality ratings and performance</li>
+<li>Sentry integration for exception tracking</li>
+<li>Alert system (critical, warning, notifications)</li>
+</ul>
 <hr>
 <h2>API Ecosystem</h2>
-<h3>74+ REST API Endpoints</h3>
-<p><strong>Categories</strong>:</p>
+<h3>108 REST API Endpoints (Consolidated from 113)</h3>
+<p><strong>Categories</strong> (14 total):</p>
 <ol>
-<li>RAG &amp; Document Processing (15 endpoints)</li>
-<li>Search APIs (6 endpoints)</li>
-<li>Embedding APIs (5 endpoints)</li>
-<li>Products API (8 endpoints)</li>
-<li>Images API (6 endpoints)</li>
-<li>AI Services (7 endpoints)</li>
-<li>Background Jobs (5 endpoints)</li>
-<li>Admin &amp; Monitoring (12 endpoints)</li>
-<li>Document Management (13 endpoints)</li>
-<li>Anthropic APIs (3 endpoints)</li>
-<li>Together AI APIs (3 endpoints)</li>
-<li>Health &amp; Monitoring (4 endpoints)</li>
+<li>RAG &amp; Document Processing (27 endpoints - includes metadata management, PDF extraction consolidated)</li>
+<li>Search APIs (6 endpoints - semantic, vector, hybrid, visual, material, multi-vector)</li>
+<li>Admin Routes (18 endpoints - job management, system monitoring, metadata management)</li>
+<li>Document Entities (5 endpoints - certificates, logos, specifications)</li>
+<li>Products API (3 endpoints - product management)</li>
+<li>Images API (6 endpoints - image analysis, processing, and re-classification)</li>
+<li>Embeddings APIs (3 endpoints - embedding generation)</li>
+<li>AI Services (10 endpoints - AI model integration)</li>
+<li>Background Jobs (7 endpoints - async job tracking)</li>
+<li>Anthropic APIs (3 endpoints - Claude integration)</li>
+<li>HuggingFace Endpoint APIs (3 endpoints - Qwen integration)</li>
+<li>Monitoring Routes (3 endpoints - health checks, metrics)</li>
+<li>AI Metrics Routes (2 endpoints - AI performance tracking)</li>
 </ol>
+<p><strong>Consolidation Summary</strong>:</p>
+<ul>
+<li>✅ PDF Extraction: <code>/api/pdf/extract/*</code> (3 endpoints) → <code>/api/rag/documents/upload</code></li>
+<li>✅ Document Management: <code>/api/documents/*</code> (18 endpoints) → <code>/api/rag/*</code> (27 endpoints)</li>
+<li>✅ Health Checks: 10+ individual endpoints → Single <code>/health</code> endpoint</li>
+</ul>
 <p><strong>Documentation</strong>:</p>
 <ul>
 <li>Swagger UI: <code>https://v1api.materialshub.gr/docs</code></li>
@@ -431,6 +499,67 @@ Real-time updates → Frontend displays results
 <li><strong>Storage</strong>: Unlimited (Supabase)</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: 2025-10-31<br><strong>Version</strong>: 2.0.0<br><strong>Status</strong>: Production<br><strong>Users</strong>: 5,000+<br><strong>Uptime</strong>: 99.5%+</p>
+<h2>Quote System</h2>
+<h3>Complete Quote Management Platform</h3>
+<p><strong>Customer Features</strong>:</p>
+<ul>
+<li>Create multiple independent quotes</li>
+<li>Add products from search, agents, moodboards</li>
+<li>Custom text-based requests (no products required)</li>
+<li>Dimensions and area tracking (width, height, sqm)</li>
+<li>Auto-expiration after 30 days (configurable)</li>
+<li>Submit quote requests</li>
+<li>View and accept/reject extras/upsells</li>
+<li>Accept quotes with validation</li>
+<li>Track project timeline progress</li>
+</ul>
+<p><strong>Admin Features</strong>:</p>
+<ul>
+<li>View all quote requests with filtering</li>
+<li>Assign custom status tags with colors</li>
+<li>Attach upsells/extras to quotes</li>
+<li>Monitor customer acceptance</li>
+<li>Update project timeline progress</li>
+<li>Add notes to timeline steps</li>
+</ul>
+<p><strong>System Components</strong>:</p>
+<ul>
+<li>8 database tables (quotes, quote_items, status_tags, upsells, quote_upsells, timeline_steps, quote_timeline, system_settings)</li>
+<li>30+ service methods via QuotesService</li>
+<li>6 default status tags (pending, in_progress, quoted, accepted, rejected, expired)</li>
+<li>9 predefined timeline steps (Quote Accepted → Project Completed)</li>
+<li>Full-page admin interface with tabs</li>
+<li>Visual timeline tree with connector lines</li>
+<li>Real-time status updates</li>
+</ul>
+<p><strong>Workflow</strong>:</p>
+<ol>
+<li>Customer creates quote and adds materials</li>
+<li>Customer submits quote request</li>
+<li>Admin assigns status tag and attaches upsells</li>
+<li>Customer accepts/rejects each upsell</li>
+<li>Customer accepts quote (validates all upsells decided)</li>
+<li>System auto-initializes project timeline</li>
+<li>Admin updates timeline progress with notes</li>
+<li>Customer tracks project completion</li>
+</ol>
+<hr>
+<p><strong>Last Updated</strong>: March 1, 2026
+<strong>Version</strong>: 3.2.0
+<strong>Status</strong>: Production
+<strong>Users</strong>: 5,000+
+<strong>Uptime</strong>: 99.5%+</p>
+<p><strong>Recent Enhancements</strong>:</p>
+<ul>
+<li>✨ Unified Jarvis Agent — Search + Insights + SEO merged into one agent (2026-02-19)</li>
+<li>✨ VR World Generation — WorldLabs Marble + Spark.js 3D Gaussian Splat viewer (2026-02-10)</li>
+<li>✨ halfvec migration — All vector columns float16, 50% storage savings (2026-02-07)</li>
+<li>✨ 7-vector fusion search with query-adaptive weight profiles</li>
+<li>✨ Understanding embeddings — Qwen3-VL analysis → Voyage AI 1024D embedding</li>
+<li>✨ B2B web search powered by Anthropic built-in web_search tool (no Perplexity key)</li>
+<li>✨ Real-time PDF Processing Monitor with auto-refresh</li>
+<li>✨ Enhanced Analytics Dashboard with 4 comprehensive tabs</li>
+<li>✨ Sentry integration for all pipeline stages</li>
+</ul>
 
 </div></body></html>
