@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Web Scraping Integration Guide</h1>
+<blockquote>
+<p><strong>📚 Related Documentation:</strong></p>
+<ul>
+<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - AI-powered product extraction</li>
+<li><a href="./data-import-system.md">Data Import System</a> - Unified import hub</li>
+</ul>
+</blockquote>
+<h2>🌐 Overview</h2>
+<p>The Material Kai Vision Platform now supports <strong>automatic product discovery from web scraping</strong> using Firecrawl integration. This feature allows you to scrape product catalogs from manufacturer websites and automatically create products with AI-powered metadata extraction.</p>
+<h3>Async Processing</h3>
+<p>Web scraping uses <strong>fully async processing</strong> with the same concurrency limits as PDF processing:</p>
+<ul>
+<li>✅ 5 concurrent Qwen Vision requests (image classification)</li>
+<li>✅ 2 concurrent Claude requests (validation)</li>
+<li>✅ 10 concurrent image uploads</li>
+<li>✅ 20 images per CLIP batch</li>
+<li>✅ Same timeout guards (300s product discovery, 120s AI)</li>
+</ul>
+<p>See <a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> for complete details.</p>
+<h2>🎯 Key Features</h2>
+<ul>
+<li><strong>Automatic Product Discovery</strong>: AI analyzes scraped content to identify and extract products</li>
+<li><strong>Unified Pipeline</strong>: Same AI models and quality as PDF processing</li>
+<li><strong>Background Processing</strong>: Large scraping jobs processed asynchronously</li>
+<li><strong>Retry Logic</strong>: Automatic retry with exponential backoff for failed operations</li>
+<li><strong>Real-time Progress</strong>: Track scraping and processing status in real-time</li>
+<li><strong>Image Extraction</strong>: Automatically downloads and links product images</li>
+</ul>
+<h2>📊 How It Works</h2>
+<p>┌─────────────────────┐
+│  User Triggers      │
+│  Web Scraping       │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Firecrawl API      │
+│  Scrapes Website    │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Edge Function      │
+│  (scrape-session-   │
+│   manager)          │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Python API         │
+│  (WebScrapingService)│
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  AI Discovery       │
+│  (Claude/GPT)       │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Products Created   │
+│  in Database        │
+└─────────────────────┘</p>
+<h2>🚀 Getting Started</h2>
+<h3>1. Trigger Web Scraping</h3>
+<p>Invoke the <code>scrape-session-manager</code> Supabase Edge Function with a request body containing <code>url</code>, <code>workspace_id</code>, <code>scraping_service</code> (&#39;firecrawl&#39;), and an optional <code>max_pages</code> limit.</p>
+<h3>2. Monitor Progress</h3>
+<p>Subscribe to the <code>scraping_sessions</code> table via Supabase real-time, filtering on the specific <code>session_id</code>, to receive progress updates including the <code>progress_percentage</code> field.</p>
+<h3>3. View Results</h3>
+<p>Query the <code>products</code> table filtering by <code>source_type = &#39;web_scraping&#39;</code> and <code>source_id = sessionId</code> to fetch all products created from a specific scraping session.</p>
+<h2>🔄 Processing Pipeline</h2>
+<h3>Stage 1: Web Scraping (0-50%)</h3>
+<p><strong>Firecrawl Edge Function</strong></p>
+<ul>
+<li>Scrapes website pages</li>
+<li>Extracts markdown content</li>
+<li>Downloads images</li>
+<li>Stores in <code>scraping_pages</code> table</li>
+</ul>
+<p><strong>Progress Updates</strong>:</p>
+<ul>
+<li>Page 1/10 scraped (5%)</li>
+<li>Page 5/10 scraped (25%)</li>
+<li>Page 10/10 scraped (50%)</li>
+</ul>
+<h3>Stage 2: Product Discovery (50-100%)</h3>
+<p><strong>Python API Processing</strong></p>
+<ul>
+<li>Fetches all scraped markdown</li>
+<li>Combines content for AI analysis</li>
+<li>Calls <code>ProductDiscoveryService.discover_products_from_text()</code></li>
+<li>Creates products with metadata</li>
+<li>Links images to products</li>
+</ul>
+<p><strong>Progress Updates</strong>:</p>
+<ul>
+<li>AI analysis started (55%)</li>
+<li>Products discovered (70%)</li>
+<li>Products created (85%)</li>
+<li>Images linked (95%)</li>
+<li>Complete (100%)</li>
+</ul>
+<h2>🤖 AI Models</h2>
+<h3>Claude Sonnet 4.5 (Default)</h3>
+<ul>
+<li><strong>Best Quality</strong>: Most comprehensive analysis</li>
+<li><strong>Use For</strong>: High-value catalogs, complex products</li>
+<li><strong>Cost</strong>: ~$0.015 per 1K tokens</li>
+</ul>
+<h3>GPT-5</h3>
+<ul>
+<li><strong>Fast Processing</strong>: Good quality, faster than Claude</li>
+<li><strong>Use For</strong>: Standard catalogs, quick processing</li>
+<li><strong>Cost</strong>: ~$0.01 per 1K tokens</li>
+</ul>
+<h3>Claude Haiku 4.5</h3>
+<ul>
+<li><strong>Fastest</strong>: Lower cost, good for simple products</li>
+<li><strong>Use For</strong>: Simple product lists, high volume</li>
+<li><strong>Cost</strong>: ~$0.0025 per 1K tokens</li>
+</ul>
+<h2>📋 Comparison with Other Methods</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Web Scraping</th>
+<th>PDF Processing</th>
+<th>XML Import</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>AI Discovery</strong></td>
+<td>✅ Yes</td>
+<td>✅ Yes</td>
+<td>❌ No (direct mapping)</td>
+</tr>
+<tr>
+<td><strong>Image Extraction</strong></td>
+<td>✅ Automatic</td>
+<td>✅ Automatic</td>
+<td>⚠️ Manual URLs</td>
+</tr>
+<tr>
+<td><strong>Metadata Quality</strong></td>
+<td>⭐⭐⭐⭐</td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>⭐⭐⭐</td>
+</tr>
+<tr>
+<td><strong>Processing Speed</strong></td>
+<td>Fast (2-5 min)</td>
+<td>Medium (5-15 min)</td>
+<td>Very Fast (&lt;1 min)</td>
+</tr>
+<tr>
+<td><strong>Cost per Product</strong></td>
+<td>$0.02-0.05</td>
+<td>$0.05-0.15</td>
+<td>$0.00</td>
+</tr>
+<tr>
+<td><strong>Best For</strong></td>
+<td>Websites</td>
+<td>PDF Catalogs</td>
+<td>Structured Data</td>
+</tr>
+</tbody></table>
+<h2>🔧 Configuration</h2>
+<h3>Scraping Options</h3>
+<p>The scraping configuration accepts: <code>url</code> (website URL to scrape), <code>workspace_id</code>, <code>scraping_service</code> (currently only &#39;firecrawl&#39;), optional <code>max_pages</code> (default: 10), optional <code>categories</code> array (default: [&#39;products&#39;]), and optional <code>model</code> (&#39;claude&#39;, &#39;gpt&#39;, or &#39;haiku&#39;, default: &#39;claude&#39;).</p>
+<h3>Discovery Options</h3>
+<p>The discovery configuration accepts: <code>categories</code> array ([&#39;products&#39;, &#39;certificates&#39;, &#39;logos&#39;]), <code>model</code> string (&#39;claude&#39;, &#39;gpt&#39;, or &#39;haiku&#39;), and <code>workspace_id</code>.</p>
+<h2>📊 Monitoring &amp; Debugging</h2>
+<h3>Check Session Status</h3>
+<p>Send a GET request to <code>https://v1api.materialshub.gr/api/scraping/session/{session_id}/status</code> with your authorization token.</p>
+<h3>View Scraping Logs</h3>
+<p>Query the <code>scraping_sessions</code> table by session ID to check session status. Query <code>scraping_pages</code> filtering by <code>session_id</code> to inspect individual page statuses and markdown lengths. Query <code>products</code> filtering by <code>source_type = &#39;web_scraping&#39;</code> and <code>source_id</code> to see created products with their source URLs.</p>
+<h3>Common Issues</h3>
+<h4>Issue: &quot;Session not found&quot;</h4>
+<p><strong>Cause</strong>: Invalid session ID or session deleted
+<strong>Solution</strong>: Verify session ID exists in <code>scraping_sessions</code> table</p>
+<h4>Issue: &quot;No products discovered&quot;</h4>
+<p><strong>Cause</strong>: Website content doesn&#39;t contain product information
+<strong>Solution</strong>:</p>
+<ul>
+<li>Check scraped markdown in <code>scraping_pages.markdown_content</code></li>
+<li>Verify website has product listings</li>
+<li>Try different URL (e.g., /products page instead of homepage)</li>
+</ul>
+<h4>Issue: &quot;Webhook failed after 3 retries&quot;</h4>
+<p><strong>Cause</strong>: Python API unreachable or authentication failed
+<strong>Solution</strong>:</p>
+<ul>
+<li>Check Python API is running</li>
+<li>Verify MIVAA_API_KEY is configured</li>
+<li>Check Edge Function logs for error details</li>
+<li>Manually retry from admin UI</li>
+</ul>
+<h4>Issue: &quot;AI analysis timeout&quot;</h4>
+<p><strong>Cause</strong>: Too much content or AI API slow
+<strong>Solution</strong>:</p>
+<ul>
+<li>Reduce <code>max_pages</code> to scrape fewer pages</li>
+<li>Use faster model (GPT or Haiku instead of Claude)</li>
+<li>Split into multiple smaller scraping sessions</li>
+</ul>
+<h2>🎯 Best Practices</h2>
+<h3>1. Start Small</h3>
+<ul>
+<li>Test with 1-2 pages first</li>
+<li>Verify product discovery quality</li>
+<li>Scale up to full catalog</li>
+</ul>
+<h3>2. Choose Right Model</h3>
+<ul>
+<li><strong>Claude Sonnet</strong>: High-value products, complex catalogs</li>
+<li><strong>GPT-5</strong>: Standard products, good balance</li>
+<li><strong>Haiku</strong>: Simple products, high volume</li>
+</ul>
+<h3>3. Monitor Costs</h3>
+<ul>
+<li>Track AI token usage in job metadata</li>
+<li>Estimate: ~$0.02-0.05 per product</li>
+<li>Use Haiku for cost optimization</li>
+</ul>
+<h3>4. Handle Failures</h3>
+<ul>
+<li>Enable automatic retry (built-in)</li>
+<li>Monitor webhook status</li>
+<li>Set up Sentry alerts</li>
+</ul>
+<h3>5. Optimize Performance</h3>
+<ul>
+<li>Scrape during off-peak hours</li>
+<li>Use background processing for large jobs</li>
+<li>Batch similar products together</li>
+</ul>
+<h2>🔐 Security</h2>
+<h3>Authentication</h3>
+<ul>
+<li>Edge Function → Python API: Material Kai API key (<code>mk_*</code>)</li>
+<li>Stored in Supabase secrets</li>
+<li>Validated by JWT middleware</li>
+</ul>
+<h3>Data Privacy</h3>
+<ul>
+<li>Scraped content stored in workspace-isolated tables</li>
+<li>Products linked to workspace</li>
+<li>Row-level security enforced</li>
+</ul>
+<h3>Rate Limiting</h3>
+<ul>
+<li>Firecrawl API: 100 requests/minute</li>
+<li>Python API: No hard limit (use responsibly)</li>
+<li>Automatic retry prevents abuse</li>
+</ul>
+<h2>📈 Performance Metrics</h2>
+<h3>Typical Processing Times</h3>
+<table>
+<thead>
+<tr>
+<th>Pages</th>
+<th>Products</th>
+<th>Time</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1-5</td>
+<td>1-10</td>
+<td>1-2 min</td>
+<td>$0.10-0.50</td>
+</tr>
+<tr>
+<td>5-10</td>
+<td>10-25</td>
+<td>2-5 min</td>
+<td>$0.50-1.25</td>
+</tr>
+<tr>
+<td>10-20</td>
+<td>25-50</td>
+<td>5-10 min</td>
+<td>$1.25-2.50</td>
+</tr>
+<tr>
+<td>20-50</td>
+<td>50-100</td>
+<td>10-20 min</td>
+<td>$2.50-5.00</td>
+</tr>
+</tbody></table>
+<h3>Success Rates</h3>
+<ul>
+<li><strong>Scraping Success</strong>: 95%+ (Firecrawl reliability)</li>
+<li><strong>Product Discovery</strong>: 85%+ (AI accuracy)</li>
+<li><strong>Image Extraction</strong>: 90%+ (depends on website structure)</li>
+</ul>
+<h2>🚨 Troubleshooting</h2>
+<h3>Enable Debug Logging</h3>
+<p>Add debug console.log statements in the Edge Function to output session data and markdown lengths during processing.</p>
+<h3>Check Database State</h3>
+<p>Query <code>scraping_sessions</code> by session ID to check status, progress percentage, and error message. Query sessions with non-null <code>scraping_config-&gt;&gt;&#39;webhook_retry_count&#39;</code> to find sessions that have experienced webhook retries.</p>
+<h3>Manual Retry</h3>
+<p>Send a POST request to <code>https://v1api.materialshub.gr/api/scraping/session/{session_id}/retry</code> with your authorization token.</p>
+<hr>
+<h2>🛡️ Production Hardening</h2>
+<p>Web Scraping implements <strong>complete production hardening</strong> for reliability and monitoring:</p>
+<h3>Source Tracking ✅</h3>
+<p>Every product, chunk, and image is tagged with source information. Products, chunks, and images all receive <code>source_type: &#39;web_scraping&#39;</code> and <code>source_job_id: session_id</code> fields.</p>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Filter Materials Data page by specific scraping session</li>
+<li>Trace any data back to its source website</li>
+<li>Delete all data from a specific scraping session</li>
+<li>Audit data quality by source</li>
+</ul>
+<hr>
+<h3>Heartbeat Monitoring ✅</h3>
+<p>Updates <code>last_heartbeat_at</code> field <strong>every 30 seconds</strong> to detect stuck jobs. The update writes the current timestamp and current status, plus session metadata (pages scraped, products found) to the <code>scraping_sessions</code> table.</p>
+<p><strong>Implementation:</strong></p>
+<ul>
+<li>Location: <code>scrape-session-manager</code> Edge Function</li>
+<li>Frequency: Every 30 seconds during scraping</li>
+<li>Stuck Threshold: &gt;5 minutes without heartbeat</li>
+<li>Auto-Recovery: Automatic retry of stuck sessions</li>
+</ul>
+<hr>
+<h3>Sentry Error Tracking ✅</h3>
+<p>Comprehensive error tracking and performance monitoring. The implementation uses Sentry transaction tracking with <code>op: &#39;web_scraping&#39;</code> and tags for session and workspace IDs, breadcrumbs for each page scraped, exception capture on error, and transaction status set to &#39;ok&#39; on success or &#39;internal_error&#39; on failure.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Transaction tracking for performance monitoring</li>
+<li>Breadcrumbs for scraping progress context</li>
+<li>Exception capture with full stack traces</li>
+<li>Firecrawl API metrics</li>
+<li>Performance bottleneck identification</li>
+</ul>
+<hr>
+<h3>Production Hardening Status</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Source Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>All tables have <code>source_type=&#39;web_scraping&#39;</code> and <code>source_job_id</code></td>
+</tr>
+<tr>
+<td><strong>Heartbeat Monitoring</strong></td>
+<td>✅ COMPLETE</td>
+<td>Updates every 30s, 5-minute stuck threshold</td>
+</tr>
+<tr>
+<td><strong>Sentry Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>Transactions, breadcrumbs, exception capture</td>
+</tr>
+<tr>
+<td><strong>Error Handling</strong></td>
+<td>✅ COMPLETE</td>
+<td>Comprehensive try-catch with Sentry integration</td>
+</tr>
+<tr>
+<td><strong>Progress Tracking</strong></td>
+<td>✅ COMPLETE</td>
+<td>Real-time progress updates via <code>scraping_sessions</code> table</td>
+</tr>
+<tr>
+<td><strong>Checkpoint Recovery</strong></td>
+<td>✅ COMPLETE</td>
+<td>Resume from last scraped page</td>
+</tr>
+<tr>
+<td><strong>Auto-Recovery</strong></td>
+<td>✅ COMPLETE</td>
+<td>Automatic retry of stuck/failed sessions</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>📚 Related Documentation</h2>
+<ul>
+<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a></li>
+<li><a href="./web-scraping-authentication.md">Web Scraping Authentication</a></li>
+<li><a href="./job-queue-system.md">Job Queue System</a></li>
+<li><a href="./api-docs.md">API Documentation</a></li>
+<li><a href="./unified-product-generation-flow.md">Unified Product Generation Flow</a> - Complete production hardening details</li>
+</ul>
+<h2>🆘 Support</h2>
+<p>For issues or questions:</p>
+<ol>
+<li>Check this guide first</li>
+<li>Review Edge Function logs</li>
+<li>Check Python API logs</li>
+<li>Contact support with session ID</li>
+</ol>
+
+</div></body></html>

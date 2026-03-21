@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Unified Job Tracking System</h1>
+<h2>Overview</h2>
+<p>The Material KAI Vision Platform uses a unified job tracking system across all data import pipelines:</p>
+<ul>
+<li><strong>PDF Processing</strong> - Extract materials from PDF catalogs</li>
+<li><strong>Web Scraping</strong> - Discover materials from websites</li>
+<li><strong>XML Import</strong> - Import materials from XML feeds</li>
+</ul>
+<p>All jobs are tracked in the <code>background_jobs</code> table with links to specialized tables for each job type.</p>
+<hr>
+<h2>📊 Database Schema</h2>
+<h3>Core Tables</h3>
+<h4><strong>background_jobs</strong> (Unified Job Tracking)</h4>
+<p>Primary table for all background jobs across the platform.</p>
+<p>Key columns: <code>id</code>, <code>job_type</code> (&#39;pdf_processing&#39;, &#39;web_scraping&#39;, &#39;xml_import&#39;), <code>status</code> (&#39;pending&#39;, &#39;processing&#39;, &#39;completed&#39;, &#39;failed&#39;), <code>progress</code> (0-100), <code>current_stage</code>, <code>last_heartbeat</code> (updated every 30s during processing), <code>document_id</code> (for PDF jobs), <code>filename</code> (for PDF jobs), <code>metadata</code> JSONB (job-specific data), <code>created_at</code>, <code>started_at</code>, <code>completed_at</code>, <code>failed_at</code>, <code>updated_at</code>, <code>error</code>, and <code>retry_count</code>.</p>
+<h4><strong>scraping_sessions</strong> (Web Scraping Jobs)</h4>
+<p>Tracks web scraping sessions with page-level details.</p>
+<p>Key columns: <code>id</code>, <code>background_job_id</code> (references background_jobs), <code>source_url</code>, <code>status</code> (&#39;pending&#39;, &#39;processing&#39;, &#39;scraping&#39;, &#39;completed&#39;, &#39;failed&#39;), <code>total_pages</code>, <code>completed_pages</code>, <code>failed_pages</code>, <code>materials_processed</code>, <code>progress_percentage</code>, <code>scraping_config</code> JSONB (service, max_pages, categories, model), <code>created_at</code>, <code>updated_at</code>, and <code>error_message</code>.</p>
+<h4><strong>data_import_jobs</strong> (XML Import Jobs)</h4>
+<p>Tracks XML import jobs with product-level details.</p>
+<p>Key columns: <code>id</code>, <code>background_job_id</code> (references background_jobs), <code>source_name</code>, <code>import_type</code> (&#39;xml&#39;, &#39;csv&#39;, &#39;json&#39;), <code>status</code> (&#39;pending&#39;, &#39;processing&#39;, &#39;completed&#39;, &#39;failed&#39;), <code>total_products</code>, <code>processed_products</code>, <code>failed_products</code>, <code>field_mappings</code> JSONB (XML field to DB field mappings), <code>created_at</code>, <code>updated_at</code>, and <code>error_message</code>.</p>
+<h4><strong>webhook_calls</strong> (API Call Tracking)</h4>
+<p>Tracks webhook/API calls made during job processing.</p>
+<p>Key columns: <code>id</code>, <code>job_id</code> (links to background_jobs or data_import_jobs), <code>job_type</code>, <code>webhook_url</code>, <code>request_body</code> JSONB, <code>response_status</code>, <code>response_body</code> JSONB, <code>response_time_ms</code>, <code>status</code> (&#39;pending&#39;, &#39;success&#39;, &#39;failed&#39;, &#39;retrying&#39;), <code>retry_count</code>, <code>next_retry_at</code>, <code>created_at</code>, <code>completed_at</code>, and <code>error_message</code>.</p>
+<hr>
+<h2>🎯 Job Lifecycle</h2>
+<h3>1. PDF Processing Job</h3>
+<p>pending → processing → completed/failed
+         ↓
+    (9 checkpoint stages)</p>
+<p><strong>Stages</strong>:</p>
+<ol>
+<li><code>pdf_loaded</code> - PDF file loaded</li>
+<li><code>text_extracted</code> - Text extraction complete</li>
+<li><code>tiles_generated</code> - Image tiles created</li>
+<li><code>embeddings_created</code> - Vector embeddings generated</li>
+<li><code>materials_extracted</code> - Materials discovered and saved</li>
+</ol>
+<p><strong>Monitoring</strong>:</p>
+<ul>
+<li>Heartbeat every 30 seconds</li>
+<li>Checkpoint after each stage</li>
+<li>Auto-recovery on crash</li>
+</ul>
+<h3>2. Web Scraping Job</h3>
+<p>pending → processing → scraping → completed/failed
+         ↓
+    (page-by-page processing)</p>
+<p><strong>Flow</strong>:</p>
+<ol>
+<li>Create scraping_session</li>
+<li>Parse sitemap/crawl pages</li>
+<li>Create scraping_pages entries</li>
+<li>Process pages in batches</li>
+<li>Discover materials from each page</li>
+<li>Update progress in real-time</li>
+</ol>
+<p><strong>Monitoring</strong>:</p>
+<ul>
+<li>Real-time page progress</li>
+<li>Materials discovered count</li>
+<li>Failed pages tracking</li>
+</ul>
+<h3>3. XML Import Job</h3>
+<p>pending → processing → completed/failed
+         ↓
+    (product-by-product processing)</p>
+<p><strong>Flow</strong>:</p>
+<ol>
+<li>Create data_import_job</li>
+<li>Parse XML file</li>
+<li>Detect fields and suggest mappings</li>
+<li>Call Python API to process products</li>
+<li>Track webhook calls with retries</li>
+<li>Update progress in real-time</li>
+</ol>
+<p><strong>Monitoring</strong>:</p>
+<ul>
+<li>Product processing progress</li>
+<li>Webhook call status</li>
+<li>Retry attempts tracking</li>
+</ul>
+<hr>
+<h2>📱 Admin UI Integration</h2>
+<h3>Current State</h3>
+<h4><strong>AsyncJobQueueMonitor</strong> (<code>/admin/async-queue-monitor</code>)</h4>
+<p>Currently shows only PDF processing jobs.</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Real-time job status</li>
+<li>Progress tracking</li>
+<li>Checkpoint history</li>
+<li>Job cancellation</li>
+<li>Auto-refresh every 5 seconds</li>
+</ul>
+<h4><strong>MaterialScraperPage</strong> (<code>/scraper</code>)</h4>
+<p>Dedicated UI for web scraping.</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Create new scraping sessions</li>
+<li>View session list</li>
+<li>Real-time progress monitoring</li>
+<li>Page queue viewer</li>
+<li>Retry failed sessions</li>
+</ul>
+<h4><strong>DataImportHub</strong> (<code>/admin/data-import</code>)</h4>
+<p>Handles PDF and XML imports.</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>PDF upload and processing</li>
+<li>XML import with field mapping</li>
+<li>Import history</li>
+</ul>
+<h3>Planned Enhancements</h3>
+<p><strong>Unified Job Monitor</strong> - Extend AsyncJobQueueMonitor to show all job types:</p>
+<ul>
+<li>Add tabs for PDF, Scraping, XML</li>
+<li>Unified metrics dashboard</li>
+<li>Cross-job-type analytics</li>
+<li>Failed jobs requiring attention</li>
+</ul>
+<hr>
+<h2>🔍 Querying Jobs</h2>
+<p>All job types can be queried through Supabase using the <code>background_jobs</code> table. Scraping sessions can be queried from <code>scraping_sessions</code> with a join to <code>background_jobs</code>. Import jobs can be queried from <code>data_import_jobs</code> with joins to both <code>background_jobs</code> and <code>webhook_calls</code>.</p>
+<hr>
+<h2>🚨 Monitoring &amp; Alerts</h2>
+<p>All job failures are automatically reported to <strong>Sentry</strong> with full context.</p>
+<p>See <a href="monitoring-and-alerting.md">monitoring-and-alerting.md</a> for details.</p>
+<hr>
+<h2>📈 Metrics</h2>
+<h3>Key Metrics Tracked</h3>
+<ul>
+<li>Total jobs by type</li>
+<li>Success rate by type</li>
+<li>Average processing time</li>
+<li>Failed jobs count</li>
+<li>Retry attempts</li>
+<li>Cost per job (AI usage)</li>
+</ul>
+<h3>Real-Time Updates</h3>
+<p>All admin UIs use Supabase real-time subscriptions for live updates on the <code>background_jobs</code> table, automatically updating the UI when any job status changes.</p>
+
+</div></body></html>

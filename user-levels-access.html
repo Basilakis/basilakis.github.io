@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>User Levels &amp; Access Control</h1>
+<p>Reference document for all user roles on the Material KAI Vision Platform, how they are determined, and what each level can access.</p>
+<hr>
+<h2>How Roles Are Determined</h2>
+<p>Roles are computed from two database sources:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user_profiles.professional_type</code></td>
+<td>string enum</td>
+<td>Determines persona / feature set</td>
+</tr>
+<tr>
+<td><code>user_profiles.factory_verified</code></td>
+<td>boolean</td>
+<td>Unlocks factory-side features</td>
+</tr>
+<tr>
+<td><code>workspace_members.role</code></td>
+<td><code>&#39;admin&#39;</code> | <code>&#39;owner&#39;</code></td>
+<td>Grants admin privileges</td>
+</tr>
+</tbody></table>
+<p><strong>Derived flags</strong> (from <code>useFactoryRole</code> hook):</p>
+<ul>
+<li><code>isFactory</code> = <code>factory_verified === true</code> AND <code>professional_type</code> ∈ <code>[&#39;manufacturer&#39;, &#39;brand&#39;, &#39;supplier&#39;]</code></li>
+<li><code>isAdmin</code> = <code>workspace_members.role</code> ∈ <code>[&#39;admin&#39;, &#39;owner&#39;]</code></li>
+</ul>
+<hr>
+<h2>Complete User Level Table</h2>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>How Determined</th>
+<th><code>isFactory</code></th>
+<th><code>isAdmin</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Unauthenticated</strong></td>
+<td>Not logged in</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Designer</strong></td>
+<td><code>professional_type = &#39;designer&#39;</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Interior Designer</strong></td>
+<td><code>professional_type = &#39;interior_designer&#39;</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Architect</strong></td>
+<td><code>professional_type = &#39;architect&#39;</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Sourcing Agent</strong></td>
+<td><code>professional_type = &#39;sourcing_agent&#39;</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Consultant</strong></td>
+<td><code>professional_type = &#39;consultant&#39;</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Other</strong></td>
+<td><code>professional_type = &#39;other&#39;</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Manufacturer (unverified)</strong></td>
+<td><code>professional_type = &#39;manufacturer&#39;</code>, <code>factory_verified = false</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Manufacturer (verified)</strong></td>
+<td><code>professional_type = &#39;manufacturer&#39;</code>, <code>factory_verified = true</code></td>
+<td><strong>true</strong></td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Brand (unverified)</strong></td>
+<td><code>professional_type = &#39;brand&#39;</code>, <code>factory_verified = false</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Brand (verified)</strong></td>
+<td><code>professional_type = &#39;brand&#39;</code>, <code>factory_verified = true</code></td>
+<td><strong>true</strong></td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Supplier (unverified)</strong></td>
+<td><code>professional_type = &#39;supplier&#39;</code>, <code>factory_verified = false</code></td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Supplier (verified)</strong></td>
+<td><code>professional_type = &#39;supplier&#39;</code>, <code>factory_verified = true</code></td>
+<td><strong>true</strong></td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Admin</strong></td>
+<td><code>workspace_members.role = &#39;admin&#39;</code></td>
+<td>any</td>
+<td><strong>true</strong></td>
+</tr>
+<tr>
+<td><strong>Owner</strong></td>
+<td><code>workspace_members.role = &#39;owner&#39;</code></td>
+<td>any</td>
+<td><strong>true</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Access Matrix</h2>
+<h3>Navigation / Pages</h3>
+<table>
+<thead>
+<tr>
+<th>Page / Route</th>
+<th align="center">Unauth</th>
+<th align="center">Standard Users¹</th>
+<th align="center">Unverified Factory</th>
+<th align="center">Verified Factory</th>
+<th align="center">Admin / Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dashboard (<code>/</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Agent Hub (<code>/agent-hub</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>MoodBoards (<code>/moodboard</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Discover (<code>/discover</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Quotes Cart (<code>/quotes</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Factory Analytics (<code>/factory-analytics</code>)</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Admin Panel (<code>/admin</code>)</td>
+<td align="center">❌</td>
+<td align="center">❌²</td>
+<td align="center">❌²</td>
+<td align="center">❌²</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Public Profiles (<code>/u/:id</code>)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>¹ Standard Users = Designer, Interior Designer, Architect, Sourcing Agent, Consultant, Other
+² Sidebar shows the Admin link for all users; access is guarded by <code>AdminGuard</code> (redirects non-admins)</p>
+</blockquote>
+<hr>
+<h3>Factory Analytics Page</h3>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th align="center">Verified Factory</th>
+<th align="center">Admin / Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>My Factory (own performance metrics)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Market Trends</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Platform-wide analytics</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>KAI Agent Tools (RBAC via edge function)</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th align="center">All Authenticated Users</th>
+<th align="center">Admin / Owner Only</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>knowledge_base_search</code></td>
+<td align="center">✅</td>
+<td align="center">—</td>
+</tr>
+<tr>
+<td><code>material_search</code> (7-vector fusion)</td>
+<td align="center">✅</td>
+<td align="center">—</td>
+</tr>
+<tr>
+<td><code>visual_search</code> (image similarity)</td>
+<td align="center">✅ (when image attached)</td>
+<td align="center">—</td>
+</tr>
+<tr>
+<td><code>generate_3d</code> (Interior Designer agent)</td>
+<td align="center">✅</td>
+<td align="center">—</td>
+</tr>
+<tr>
+<td>Sub-agent orchestration (<code>research_analysis</code>, <code>analytics_analysis</code>, <code>business_analysis</code>, <code>product_analysis</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>B2B tools (<code>b2b_manufacturer_search</code>, <code>company_website_scrape</code>, <code>company_enrichment</code>, <code>contact_discovery</code>, <code>email_validate</code>, <code>save_to_crm</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>SEO pipeline (<code>seo_keyword_research</code>, <code>seo_article_planner</code>, <code>seo_article_writer</code>, <code>seo_content_analyzer</code>, <code>create_seo_article</code>)</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Product Detail Modal</h3>
+<table>
+<thead>
+<tr>
+<th>Tab / Action</th>
+<th align="center">Standard Users</th>
+<th align="center">Admin / Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Product info tab</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Image viewer tab</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>AI Metadata tab</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Edit / Enrichment tab</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Embeddings debug tab</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Profile Features</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th align="center">Unverified Factory</th>
+<th align="center">Verified Factory</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Standard profile fields</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Factory verification section (claim / view status)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Factory Analytics access</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Quotes / Timeline</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th align="center">Standard Users</th>
+<th align="center">Admin / Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>View quote timelines</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Edit milestone dates</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Manage quote status</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Groups Summary</h2>
+<p>For implementation purposes, user levels collapse into <strong>4 functional groups</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Who</th>
+<th>Key Privilege</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Unauthenticated</strong></td>
+<td>Not logged in</td>
+<td>Public pages only</td>
+</tr>
+<tr>
+<td><strong>Standard</strong></td>
+<td>Designer, Interior Designer, Architect, Sourcing Agent, Consultant, Other + unverified Manufacturer/Brand/Supplier</td>
+<td>Core platform features</td>
+</tr>
+<tr>
+<td><strong>Verified Factory</strong></td>
+<td>Manufacturer/Brand/Supplier with <code>factory_verified = true</code></td>
+<td>+ Factory Analytics (own data)</td>
+</tr>
+<tr>
+<td><strong>Admin / Owner</strong></td>
+<td><code>workspace_members.role</code> = admin or owner</td>
+<td>Full access + admin tools + RBAC-gated AI tools</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Pending / To Define</h2>
+<p>The following access questions are <strong>not yet implemented</strong> and will be defined in the next task:</p>
+<ul>
+<li><input disabled="" type="checkbox"> How users self-select their professional type (onboarding flow vs profile edit)</li>
+<li><input disabled="" type="checkbox"> Whether Sourcing Agents get access to B2B manufacturer search tools</li>
+<li><input disabled="" type="checkbox"> Whether Verified Factories get any elevated KAI agent tools beyond standard</li>
+<li><input disabled="" type="checkbox"> Credit quota differences per user level</li>
+<li><input disabled="" type="checkbox"> Public profile visibility rules (who can be discovered on <code>/discover</code>)</li>
+</ul>
+
+</div></body></html>
