@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Collaborative Filtering Recommendations System</h1>
+<p>Complete documentation for the collaborative filtering recommendation system that provides personalized material recommendations.</p>
+<blockquote>
+<p><strong>📚 Related Documentation:</strong></p>
+<ul>
+<li><a href="./system-architecture.md">System Architecture</a> - Overall platform architecture</li>
+<li><a href="./api-endpoints.md">API Endpoints</a> - Complete API reference</li>
+</ul>
+</blockquote>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#database-schema">Database Schema</a></li>
+<li><a href="#algorithms">Algorithms</a></li>
+<li><a href="#api-endpoints">API Endpoints</a></li>
+<li><a href="#frontend-integration">Frontend Integration</a></li>
+<li><a href="#performance--caching">Performance &amp; Caching</a></li>
+<li><a href="#analytics">Analytics</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>The collaborative filtering system provides <strong>personalized material recommendations</strong> based on user behavior and interaction patterns.</p>
+<h3>Key Features</h3>
+<p>✅ <strong>User-User Collaborative Filtering</strong> - &quot;Users like you also liked...&quot;
+✅ <strong>Item-Item Collaborative Filtering</strong> - &quot;Materials similar to this...&quot;
+✅ <strong>Hybrid Recommendations</strong> - Combining collaborative + content-based
+✅ <strong>Interaction Tracking</strong> - Track views, clicks, saves, purchases, ratings
+✅ <strong>Smart Caching</strong> - 7-day cache with automatic invalidation
+✅ <strong>Real-time Analytics</strong> - Track recommendation performance</p>
+<h3>Interaction Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Weight</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>view</strong></td>
+<td>1.0</td>
+<td>User viewed material page</td>
+</tr>
+<tr>
+<td><strong>click</strong></td>
+<td>2.0</td>
+<td>User clicked on material</td>
+</tr>
+<tr>
+<td><strong>save</strong></td>
+<td>3.0</td>
+<td>User saved material to favorites</td>
+</tr>
+<tr>
+<td><strong>add_to_quote</strong></td>
+<td>4.0</td>
+<td>User added material to quote</td>
+</tr>
+<tr>
+<td><strong>purchase</strong></td>
+<td>5.0</td>
+<td>User purchased material</td>
+</tr>
+<tr>
+<td><strong>rate</strong></td>
+<td>1-5</td>
+<td>User rated material (uses actual rating value)</td>
+</tr>
+<tr>
+<td><strong>share</strong></td>
+<td>3.0</td>
+<td>User shared material</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Architecture</h2>
+<p>The system flow is as follows: user interactions are tracked and viewed recommendations are requested from the frontend. Both actions route through the <code>recommendations-api</code> Edge Function, which checks the cache. On a cache hit, cached recommendation_scores are returned. On a cache miss, recommendations are computed by querying the user_material_interactions table via a Python service that applies cosine similarity and matrix factorization algorithms, and the results are stored back in recommendation_scores before being returned.</p>
+<hr>
+<h2>Database Schema</h2>
+<h3>1. user_material_interactions</h3>
+<p>Tracks all user interactions with materials for collaborative filtering. Key fields: id (UUID primary key), user_id (references auth.users), workspace_id (references workspaces), material_id (references products), interaction_type (one of: view, click, save, purchase, rate, add_to_quote, share), interaction_value (float, default 1.0 — represents rating value, time spent, or weight), session_id (for grouping interactions), metadata (JSONB for additional context), created_at, and updated_at.</p>
+<p><strong>Indexes:</strong></p>
+<ul>
+<li><code>idx_user_interactions_user_id</code> - Fast user lookups</li>
+<li><code>idx_user_interactions_material_id</code> - Fast material lookups</li>
+<li><code>idx_user_interactions_workspace_id</code> - Workspace filtering</li>
+<li><code>idx_user_interactions_user_material</code> - User-material composite</li>
+<li><code>idx_user_interactions_workspace_material</code> - Workspace-material composite</li>
+</ul>
+<hr>
+<h3>2. recommendation_scores</h3>
+<p>Cached recommendation scores for fast retrieval. Key fields: id (UUID primary key), user_id (references auth.users), workspace_id (references workspaces), material_id (references products), score (float 0-1, normalized), algorithm (one of: collaborative, content, hybrid, user_user, item_item), confidence (float 0-1, default 0.5), metadata (JSONB for algorithm-specific data such as similar users or similar items), computed_at, expires_at (default 7 days from now), created_at, and updated_at. A unique constraint applies on (user_id, material_id, algorithm).</p>
+<p><strong>Indexes:</strong></p>
+<ul>
+<li><code>idx_recommendation_scores_user_score</code> - Fast user recommendations</li>
+<li><code>idx_recommendation_scores_workspace_score</code> - Workspace recommendations</li>
+<li><code>idx_recommendation_scores_expires_at</code> - Cache cleanup</li>
+</ul>
+<hr>
+<h2>Algorithms</h2>
+<h3>1. User-User Collaborative Filtering</h3>
+<p><strong>&quot;Users like you also liked...&quot;</strong></p>
+<p><strong>How it works:</strong></p>
+<ol>
+<li>Build interaction vector for target user</li>
+<li>Find users with similar interaction patterns (cosine similarity)</li>
+<li>Recommend materials liked by similar users</li>
+<li>Weight by similarity score and interaction value</li>
+</ol>
+<p><strong>Example:</strong> If User A has interactions {material_1: 5.0, material_2: 3.0, material_3: 4.0} and User B has interactions {material_1: 4.0, material_2: 3.0, material_4: 5.0} with a similarity of 0.85, then material_4 is recommended to User A with a score of 0.85 × 5.0 = 4.25.</p>
+<p><strong>Minimum Requirements:</strong></p>
+<ul>
+<li>Target user: 3+ interactions</li>
+<li>Similar users: 3+ interactions</li>
+<li>Similarity threshold: 0.3</li>
+</ul>
+<hr>
+<h3>2. Item-Item Collaborative Filtering</h3>
+<p><strong>&quot;Materials similar to this...&quot;</strong></p>
+<p><strong>How it works:</strong></p>
+<ol>
+<li>Find users who interacted with target material</li>
+<li>Find other materials these users interacted with</li>
+<li>Calculate similarity based on common users</li>
+<li>Rank by weighted overlap</li>
+</ol>
+<p><strong>Example:</strong> If Material A is liked by [User1, User2, User3, User4] and Material B is liked by [User2, User3, User4, User5], the similarity is 3 common users divided by (4 + 4 - 3) = 0.6.</p>
+<p><strong>Minimum Requirements:</strong></p>
+<ul>
+<li>Target material: 3+ interactions</li>
+<li>Similar materials: 3+ interactions</li>
+<li>Similarity threshold: 0.3</li>
+</ul>
+<hr>
+<h3>3. Cosine Similarity</h3>
+<p>Used to calculate similarity between interaction vectors.</p>
+<p><strong>Formula:</strong></p>
+<p>similarity = (A · B) / (||A|| × ||B||)</p>
+<p><strong>Where:</strong></p>
+<ul>
+<li>A · B = dot product of vectors</li>
+<li>||A|| = magnitude of vector A</li>
+<li>||B|| = magnitude of vector B</li>
+</ul>
+<p><strong>Range:</strong> 0.0 (no similarity) to 1.0 (identical)</p>
+<hr>
+<h2>API Endpoints</h2>
+<h3>POST /functions/recommendations-api/track-interaction</h3>
+<p>Track user interaction with a material.</p>
+<p><strong>Request parameters:</strong> workspace_id, material_id, interaction_type (one of: view, click, save, purchase, rate, add_to_quote, share), optional interaction_value (default 1.0), optional session_id, and optional metadata object.</p>
+<p><strong>Response:</strong> A data object containing id, user_id, workspace_id, material_id, interaction_type, interaction_value, and created_at. Also includes a success message &quot;Interaction tracked successfully&quot;.</p>
+<p>Call the endpoint via a POST request to <code>/functions/recommendations-api/track-interaction</code> with the Authorization header set to <code>Bearer ${token}</code>, Content-Type application/json, and the above body parameters.</p>
+<hr>
+<h3>GET /functions/recommendations-api/for-user</h3>
+<p>Get personalized recommendations for the current user.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required) - Workspace ID</li>
+<li><code>limit</code> (optional) - Maximum number of recommendations (default: 20)</li>
+<li><code>algorithm</code> (optional) - Algorithm to use: <code>user_user</code>, <code>item_item</code>, <code>hybrid</code> (default: <code>user_user</code>)</li>
+</ul>
+<p><strong>Response:</strong> A data array where each entry contains material_id, score (0-1), confidence (0-1), algorithm, and metadata (which may include similar_users_count and recommending_users). Also includes a cached boolean flag.</p>
+<p>Call the endpoint via a GET request to <code>/functions/recommendations-api/for-user?workspace_id=...&amp;limit=20&amp;algorithm=user_user</code> with the Authorization header.</p>
+<hr>
+<h3>GET /functions/recommendations-api/similar-materials/{material_id}</h3>
+<p>Get materials similar to a specific material.</p>
+<p><strong>Path Parameters:</strong></p>
+<ul>
+<li><code>material_id</code> (required) - Material ID</li>
+</ul>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required) - Workspace ID</li>
+<li><code>limit</code> (optional) - Maximum number of recommendations (default: 10)</li>
+</ul>
+<p><strong>Response:</strong> A data array where each entry contains material_id, score (0-1), confidence (0-1), algorithm (&#39;item_item&#39;), and metadata (including source_material_id and common_users count).</p>
+<p>Call the endpoint via a GET request to <code>/functions/recommendations-api/similar-materials/{material_id}?workspace_id=...&amp;limit=10</code> with the Authorization header.</p>
+<hr>
+<h3>GET /functions/recommendations-api/analytics/{workspace_id}</h3>
+<p>Get recommendation analytics for a workspace.</p>
+<p><strong>Path Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (required) - Workspace ID</li>
+</ul>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>days</code> (optional) - Number of days to analyze (default: 30)</li>
+</ul>
+<p><strong>Response:</strong> A data object containing workspace_id, period_days, total_interactions, interactions_by_type (object mapping type to count), cached_recommendations count, and recommendations_by_algorithm (object mapping algorithm name to count).</p>
+<p>Call the endpoint via a GET request to <code>/functions/recommendations-api/analytics/{workspace_id}?days=30</code> with the Authorization header.</p>
+<hr>
+<h3>DELETE /functions/recommendations-api/cache</h3>
+<p>Invalidate recommendation cache.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>workspace_id</code> (optional) - Filter by workspace</li>
+<li><code>material_id</code> (optional) - Filter by material</li>
+</ul>
+<p><strong>Response:</strong> A message confirming &quot;Cache invalidated successfully&quot;.</p>
+<p>Call the endpoint via a DELETE request to <code>/functions/recommendations-api/cache?workspace_id=...</code> with the Authorization header.</p>
+<hr>
+<h2>Frontend Integration</h2>
+<h3>1. Track Interactions</h3>
+<p>Create a <code>RecommendationsService</code> class (e.g., at <code>src/services/recommendationsService.ts</code>) with a private <code>trackInteraction</code> method that retrieves the current Supabase session and workspace ID, then POSTs to the track-interaction endpoint with the material ID, interaction type, interaction value, session ID, and optional metadata.</p>
+<p>Expose convenience static methods from this service: <code>trackView</code> (value 1.0), <code>trackClick</code> (value 2.0), <code>trackSave</code> (value 3.0), <code>trackRating</code> (uses the actual rating value), and <code>trackAddToQuote</code> (value 4.0).</p>
+<p>In material card components, call <code>RecommendationsService.trackClick()</code> on click events (with metadata such as source page and position), and call <code>RecommendationsService.trackView()</code> using an IntersectionObserver when the card enters the viewport.</p>
+<hr>
+<h3>2. Display Recommendations</h3>
+<p>Create a <code>RecommendedForYou</code> component that on mount fetches the current Supabase session and workspace ID, then calls the <code>for-user</code> endpoint with a limit of 20. Render a grid of MaterialCard components from the returned material IDs.</p>
+<p>Create a <code>SimilarMaterials</code> component that accepts a <code>materialId</code> prop and on mount fetches from the <code>similar-materials/{materialId}</code> endpoint. Render a carousel of MaterialCard components from the returned material IDs.</p>
+<hr>
+<h2>Performance &amp; Caching</h2>
+<h3>Cache Strategy</h3>
+<p><strong>Cache TTL:</strong> 7 days
+<strong>Cache Invalidation:</strong> Automatic on new interactions
+<strong>Cache Key:</strong> <code>(user_id, workspace_id, algorithm)</code></p>
+<h3>Performance Optimizations</h3>
+<ol>
+<li><strong>Indexed Lookups</strong> - All queries use indexed columns</li>
+<li><strong>Batch Processing</strong> - Process multiple recommendations at once</li>
+<li><strong>Lazy Loading</strong> - Load recommendations only when needed</li>
+<li><strong>Debouncing</strong> - Debounce interaction tracking (1 second)</li>
+<li><strong>Background Computation</strong> - Compute recommendations asynchronously</li>
+</ol>
+<h3>Scalability</h3>
+<ul>
+<li><strong>User-User:</strong> O(U * I) where U = users, I = interactions per user</li>
+<li><strong>Item-Item:</strong> O(M * U) where M = materials, U = users per material</li>
+<li><strong>Cache Lookup:</strong> O(1) with indexes</li>
+</ul>
+<hr>
+<h2>Analytics</h2>
+<h3>Track Recommendation Performance</h3>
+<p>Fetch the analytics endpoint for your workspace with a <code>days</code> parameter. The response data includes total_interactions, interactions_by_type (broken down by each interaction type), cached_recommendations count, and recommendations_by_algorithm (broken down by each algorithm type).</p>
+<h3>Metrics to Monitor</h3>
+<ol>
+<li><strong>Interaction Rate</strong> - Interactions per user per day</li>
+<li><strong>Click-Through Rate</strong> - Clicks on recommendations / impressions</li>
+<li><strong>Conversion Rate</strong> - Purchases from recommendations / clicks</li>
+<li><strong>Cache Hit Rate</strong> - Cached responses / total requests</li>
+<li><strong>Recommendation Coverage</strong> - Users with recommendations / total users</li>
+</ol>
+<hr>
+<h2>Summary</h2>
+<p>✅ <strong>Database Schema Created</strong> - 2 tables with proper indexes and RLS
+✅ <strong>Backend Service Built</strong> - Python service with collaborative filtering
+✅ <strong>API Endpoints Created</strong> - 5 endpoints for tracking and recommendations
+✅ <strong>Frontend Integration Ready</strong> - Service and components documented
+✅ <strong>Caching Implemented</strong> - 7-day cache with automatic invalidation
+✅ <strong>Analytics Available</strong> - Track recommendation performance</p>
+<p><strong>Next Steps:</strong></p>
+<ol>
+<li>Build frontend components (RecommendedForYou, SimilarMaterials)</li>
+<li>Integrate interaction tracking across platform</li>
+<li>Test recommendation quality</li>
+<li>Optimize algorithms based on analytics</li>
+</ol>
+<p><strong>The collaborative filtering system is ready for integration!</strong> 🚀</p>
+
+</div></body></html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Async Processing &amp; Concurrency Limits</h1>
+<p>Complete documentation for async processing architecture and concurrency limits across all product generation methods.</p>
+<hr>
+<h2>📋 Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#async-architecture">Async Architecture</a></li>
+<li><a href="#concurrency-limits">Concurrency Limits</a></li>
+<li><a href="#timeout-configuration">Timeout Configuration</a></li>
+<li><a href="#rate-limiting">Rate Limiting</a></li>
+<li><a href="#shared-services">Shared Services</a></li>
+<li><a href="#performance-optimization">Performance Optimization</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>All three product generation methods (PDF Processing, Web Scraping, XML Import) use <strong>fully async processing</strong> with <strong>unified concurrency limits</strong> to ensure:</p>
+<ul>
+<li><strong>Memory efficiency</strong>: Prevent OOM crashes</li>
+<li><strong>API rate limiting</strong>: Respect external API limits</li>
+<li><strong>Resource optimization</strong>: Balance speed vs. resource usage</li>
+<li><strong>Consistent behavior</strong>: Same limits across all methods</li>
+</ul>
+<h3>Key Principles</h3>
+<p>✅ <strong>Fully Async</strong>: All I/O operations use <code>async/await</code>
+✅ <strong>Semaphore-based</strong>: Concurrency controlled via <code>asyncio.Semaphore</code>
+✅ <strong>Batch Processing</strong>: Large datasets processed in batches
+✅ <strong>Retry Logic</strong>: Automatic retry with exponential backoff
+✅ <strong>Circuit Breakers</strong>: Prevent cascading failures
+✅ <strong>Timeout Guards</strong>: Prevent infinite hangs</p>
+<hr>
+<h2>Async Architecture</h2>
+<h3>1. Main Processing Flow</h3>
+<p>All three methods use <code>AsyncQueueService</code> for background job processing. PDF Processing uses <code>process_pdf_document()</code>, Web Scraping uses <code>process_scraping_session()</code>, and XML Import uses <code>process_import_job()</code>. All are fully async and use the same downstream services for chunking, embedding, and image processing.</p>
+<h3>2. Background Job Processing</h3>
+<p>The <code>AsyncQueueService</code> is shared across all three methods. It queues jobs for chunking, embedding generation, and product enrichment via its <code>queue_ai_analysis_jobs()</code> method.</p>
+<h3>3. Progress Tracking</h3>
+<p>All methods update the <code>background_jobs</code> table in real-time with the current job status, progress percentage, and metadata about the current stage.</p>
+<hr>
+<h2>Concurrency Limits</h2>
+<h3>1. Image Classification (AI-based filtering)</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>ImageProcessingService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Qwen Vision Concurrent</strong></td>
+<td>5</td>
+<td>Fast material classification</td>
+</tr>
+<tr>
+<td><strong>Claude Validation Concurrent</strong></td>
+<td>2</td>
+<td>Validation for uncertain cases</td>
+</tr>
+<tr>
+<td><strong>Batch Size</strong></td>
+<td>15 images</td>
+<td>Memory optimization</td>
+</tr>
+</tbody></table>
+<p><strong>Why these limits?</strong></p>
+<ul>
+<li><strong>HuggingFace/Qwen (5)</strong>: HuggingFace Endpoint (Qwen3-VL 32B) → higher concurrency</li>
+<li><strong>Claude (2)</strong>: Expensive, rate-limited → lower concurrency</li>
+<li><strong>Batch (15)</strong>: Prevents OOM on large PDFs with 500+ images</li>
+</ul>
+<hr>
+<h3>2. Image Upload to Storage</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>ImageProcessingService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Concurrent Uploads</strong></td>
+<td>10</td>
+<td>Supabase Storage upload limit</td>
+</tr>
+</tbody></table>
+<p><strong>Why 10?</strong></p>
+<ul>
+<li>Supabase Storage can handle ~10 concurrent uploads</li>
+<li>Higher values cause connection pool exhaustion</li>
+</ul>
+<hr>
+<h3>3. CLIP Embeddings Generation</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>ImageProcessingService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Batch Size</strong></td>
+<td>20 images</td>
+<td>Memory optimization</td>
+</tr>
+<tr>
+<td><strong>Max Retries</strong></td>
+<td>3</td>
+<td>Retry failed embeddings</td>
+</tr>
+</tbody></table>
+<p><strong>Why 20?</strong></p>
+<ul>
+<li>CLIP model processes ~20 images in 10-15 seconds</li>
+<li>Larger batches cause memory spikes</li>
+</ul>
+<hr>
+<h3>4. Image Downloads (XML Import Only)</h3>
+<p><strong>Applies to</strong>: XML Import
+<strong>Service</strong>: <code>ImageDownloadService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Concurrent Downloads</strong></td>
+<td>5</td>
+<td>Network bandwidth optimization</td>
+</tr>
+<tr>
+<td><strong>Max Retries</strong></td>
+<td>3</td>
+<td>Retry failed downloads</td>
+</tr>
+<tr>
+<td><strong>Timeout</strong></td>
+<td>30 seconds</td>
+<td>Prevent hanging downloads</td>
+</tr>
+<tr>
+<td><strong>Max File Size</strong></td>
+<td>10 MB</td>
+<td>Prevent large file downloads</td>
+</tr>
+</tbody></table>
+<p><strong>Why these limits?</strong></p>
+<ul>
+<li><strong>5 concurrent</strong>: Prevents network congestion</li>
+<li><strong>30s timeout</strong>: Most images download in &lt;10s</li>
+<li><strong>10MB max</strong>: Prevents downloading huge files</li>
+</ul>
+<hr>
+<h3>5. Product Batch Processing (XML Import Only)</h3>
+<p><strong>Applies to</strong>: XML Import
+<strong>Service</strong>: <code>DataImportService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Batch Size</strong></td>
+<td>10 products</td>
+<td>Memory optimization</td>
+</tr>
+<tr>
+<td><strong>Image Downloads per Batch</strong></td>
+<td>5 concurrent</td>
+<td>Network optimization</td>
+</tr>
+</tbody></table>
+<p><strong>Why 10 products?</strong></p>
+<ul>
+<li>Each product can have 5-10 images</li>
+<li>10 products × 5 images = 50 images per batch</li>
+<li>Prevents memory spikes on large imports</li>
+</ul>
+<hr>
+<h3>6. PDF Processing Workers</h3>
+<p><strong>Applies to</strong>: PDF Processing
+<strong>Service</strong>: <code>PDFProcessor</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Max Workers</strong></td>
+<td>2</td>
+<td>Memory optimization (reduced from 4)</td>
+</tr>
+<tr>
+<td><strong>Pages per Worker</strong></td>
+<td>5</td>
+<td>Batch size for page processing</td>
+</tr>
+<tr>
+<td><strong>Max Pages in Memory</strong></td>
+<td>10</td>
+<td>2 workers × 5 pages</td>
+</tr>
+</tbody></table>
+<p><strong>Why 2 workers?</strong></p>
+<ul>
+<li><strong>Before</strong>: 4 workers × 5 pages = 20 pages in memory → OOM crashes</li>
+<li><strong>After</strong>: 2 workers × 5 pages = 10 pages in memory → Stable</li>
+</ul>
+<hr>
+<h2>Timeout Configuration</h2>
+<h3>1. Product Discovery Timeouts</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping
+<strong>Service</strong>: <code>ProductDiscoveryService</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Product Discovery</strong></td>
+<td>300s (5 min)</td>
+<td>AI analysis of full document</td>
+</tr>
+<tr>
+<td><strong>Per-product Extraction</strong></td>
+<td>60s</td>
+<td>Individual product metadata</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>2. PDF Extraction Timeouts</h3>
+<p><strong>Applies to</strong>: PDF Processing
+<strong>Service</strong>: <code>PDFProcessor</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Full PDF Extraction</strong></td>
+<td>7200s (2 hours)</td>
+<td>Large PDFs with OCR</td>
+</tr>
+<tr>
+<td><strong>Per-page Extraction</strong></td>
+<td>Dynamic</td>
+<td>Based on file size</td>
+</tr>
+</tbody></table>
+<p>The per-page timeout is calculated dynamically: <code>max(300, file_size_mb * 10 + num_pages * 5)</code>. This means a small PDF (10 pages, 5MB) gets ~300s, while a large PDF (500 pages, 50MB) gets ~3000s (50 min).</p>
+<hr>
+<h3>3. Image Download Timeouts</h3>
+<p><strong>Applies to</strong>: XML Import
+<strong>Service</strong>: <code>ImageDownloadService</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Per-image Download</strong></td>
+<td>30s</td>
+<td>Single image download</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>4. AI Classification Timeouts</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>QwenEndpointService</code>, <code>AIClientService</code></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Timeout</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Qwen Vision Request</strong></td>
+<td>120s</td>
+<td>Image classification</td>
+</tr>
+<tr>
+<td><strong>Claude Request</strong></td>
+<td>120s</td>
+<td>Validation</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Rate Limiting</h2>
+<h3>1. HuggingFace Endpoint (Qwen3-VL Vision)</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>QwenEndpointService</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Requests per Minute</strong></td>
+<td>10</td>
+<td>API rate limit</td>
+</tr>
+<tr>
+<td><strong>Burst Limit</strong></td>
+<td>5</td>
+<td>Short-term burst</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>2. Claude API (Circuit Breaker)</h3>
+<p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
+<strong>Service</strong>: <code>CircuitBreaker</code></p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Failure Threshold</strong></td>
+<td>5</td>
+<td>Open circuit after 5 failures</td>
+</tr>
+<tr>
+<td><strong>Recovery Timeout</strong></td>
+<td>60s</td>
+<td>Try again after 60s</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3. Image Export Rate Limiting</h3>
+<p><strong>Applies to</strong>: All methods
+<strong>Service</strong>: <code>images.py</code> API</p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Exports per Hour</strong></td>
+<td>5</td>
+<td>Prevent abuse</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Shared Services</h2>
+<p>All three methods use the <strong>SAME</strong> services with <strong>SAME</strong> limits:</p>
+<h3>1. ImageProcessingService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<p>Shared limits across all methods: 5 concurrent HuggingFace Endpoint (Qwen3-VL) requests, 2 concurrent Claude requests, 10 concurrent uploads, classification batch size of 15 images, and CLIP batch size of 20 images.</p>
+<hr>
+<h3>2. RealEmbeddingsService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<p>Uses the <code>google/siglip-so400m-patch14-384</code> (SigLIP 1152D) model and generates five specialized embedding types: <code>color_siglip_1152</code>, <code>texture_siglip_1152</code>, <code>material_siglip_1152</code>, <code>style_siglip_1152</code>, and <code>visual_siglip_1152</code>.</p>
+<hr>
+<h3>3. AsyncQueueService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<p>Shared background job processing for chunking, embedding generation, and product enrichment.</p>
+<hr>
+<h3>4. ChunkingService</h3>
+<p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
+<p>Shared chunking logic with chunk size of 1000 characters and overlap of 200 characters.</p>
+<hr>
+<h2>Performance Optimization</h2>
+<h3>1. Memory Optimization</h3>
+<p><strong>Batch Processing</strong>: All methods process data in batches to prevent OOM</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Batch Size</th>
+<th>Memory Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>PDF Image Classification</strong></td>
+<td>15 images</td>
+<td>~500MB per batch</td>
+</tr>
+<tr>
+<td><strong>CLIP Embeddings</strong></td>
+<td>20 images</td>
+<td>~300MB per batch</td>
+</tr>
+<tr>
+<td><strong>XML Product Import</strong></td>
+<td>10 products</td>
+<td>~200MB per batch</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>2. Network Optimization</h3>
+<p><strong>Concurrent Downloads</strong>: Controlled via semaphores</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Concurrency</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Image Downloads (XML)</strong></td>
+<td>5 concurrent</td>
+<td>~5 images/sec</td>
+</tr>
+<tr>
+<td><strong>Image Uploads</strong></td>
+<td>10 concurrent</td>
+<td>~10 images/sec</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3. API Optimization</h3>
+<p><strong>Rate Limiting</strong>: Prevent API throttling</p>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>Limit</th>
+<th>Strategy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>HuggingFace (Qwen3-VL)</strong></td>
+<td>10 req/min</td>
+<td>Semaphore (5 concurrent)</td>
+</tr>
+<tr>
+<td><strong>Claude</strong></td>
+<td>Circuit breaker</td>
+<td>Semaphore (2 concurrent)</td>
+</tr>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td>No limit</td>
+<td>Batch processing</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Comparison Table</h2>
+<h3>Async Processing</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Main Processing</strong></td>
+<td>✅ Fully async</td>
+<td>✅ Fully async</td>
+<td>✅ Fully async</td>
+</tr>
+<tr>
+<td><strong>Background Jobs</strong></td>
+<td>✅ AsyncQueueService</td>
+<td>✅ AsyncQueueService</td>
+<td>✅ AsyncQueueService</td>
+</tr>
+<tr>
+<td><strong>Product Discovery</strong></td>
+<td>✅ Async + timeout</td>
+<td>✅ Async + timeout</td>
+<td>✅ Async (queued)</td>
+</tr>
+<tr>
+<td><strong>Image Processing</strong></td>
+<td>✅ Async + semaphores</td>
+<td>✅ Async + semaphores</td>
+<td>✅ Async + semaphores</td>
+</tr>
+<tr>
+<td><strong>Chunking</strong></td>
+<td>✅ Async</td>
+<td>✅ Async</td>
+<td>✅ Async (queued)</td>
+</tr>
+<tr>
+<td><strong>Embeddings</strong></td>
+<td>✅ Async</td>
+<td>✅ Async</td>
+<td>✅ Async (queued)</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Concurrency Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Qwen Vision</strong></td>
+<td>5 concurrent</td>
+<td>5 concurrent</td>
+<td>5 concurrent</td>
+</tr>
+<tr>
+<td><strong>Claude Validation</strong></td>
+<td>2 concurrent</td>
+<td>2 concurrent</td>
+<td>2 concurrent</td>
+</tr>
+<tr>
+<td><strong>Image Classification Batch</strong></td>
+<td>15 images</td>
+<td>15 images</td>
+<td>15 images</td>
+</tr>
+<tr>
+<td><strong>Image Uploads</strong></td>
+<td>10 concurrent</td>
+<td>10 concurrent</td>
+<td>10 concurrent</td>
+</tr>
+<tr>
+<td><strong>CLIP Batch</strong></td>
+<td>20 images</td>
+<td>20 images</td>
+<td>20 images</td>
+</tr>
+<tr>
+<td><strong>Image Downloads</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>5 concurrent</td>
+</tr>
+<tr>
+<td><strong>Product Batch</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>10 products</td>
+</tr>
+<tr>
+<td><strong>PDF Workers</strong></td>
+<td>2 workers</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Timeout Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Timeout</th>
+<th>PDF</th>
+<th>Web</th>
+<th>XML</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Product Discovery</strong></td>
+<td>300s (5 min)</td>
+<td>300s (5 min)</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><strong>PDF Extraction</strong></td>
+<td>7200s (2 hours)</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><strong>Image Download</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>30s</td>
+</tr>
+<tr>
+<td><strong>AI Classification</strong></td>
+<td>120s</td>
+<td>120s</td>
+<td>120s</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Best Practices</h2>
+<h3>1. Monitoring</h3>
+<p>Always log batch progress including the current batch number, total batches, and progress percentage to enable real-time tracking.</p>
+<h3>2. Error Handling</h3>
+<p>Use try/except blocks with detailed logging around every batch processing call. On failure, log the error with context and continue processing the next batch rather than aborting the entire job.</p>
+<h3>3. Resource Cleanup</h3>
+<p>After each batch, explicitly delete the batch data reference and call the garbage collector to free memory, particularly important for large image batches.</p>
+<h3>4. Progress Tracking</h3>
+<p>Always update the <code>background_jobs</code> table after each stage with the current progress percentage and stage name so the frontend can display accurate real-time progress.</p>
+<hr>
+<h2>Summary</h2>
+<p>✅ <strong>All methods fully async</strong>: PDF, Web Scraping, XML Import
+✅ <strong>Same concurrency limits</strong>: 5 HuggingFace/Qwen, 2 Claude, 10 uploads, 20 SLIG
+✅ <strong>Same timeout guards</strong>: 300s discovery, 120s AI, 30s downloads
+✅ <strong>Same rate limiting</strong>: 10 req/min HuggingFace/Qwen, circuit breaker Claude
+✅ <strong>Same shared services</strong>: ImageProcessingService, RealEmbeddingsService, AsyncQueueService
+✅ <strong>Memory optimized</strong>: Batch processing prevents OOM
+✅ <strong>Network optimized</strong>: Semaphores prevent congestion
+✅ <strong>API optimized</strong>: Rate limiting prevents throttling</p>
+<p><strong>The architecture is unified, consistent, and production-ready!</strong> 🚀</p>
+
+</div></body></html>

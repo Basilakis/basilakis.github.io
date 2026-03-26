@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Logger Service Documentation</h1>
+<p><strong>Version:</strong> 1.0
+<strong>Last Updated:</strong> December 12, 2024
+<strong>File:</strong> <a href="../src/services/logger.service.ts"><code>src/services/logger.service.ts</code></a></p>
+<hr>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#how-it-works">How It Works</a></li>
+<li><a href="#where-to-see-logs">Where to See Logs</a></li>
+<li><a href="#basic-usage">Basic Usage</a></li>
+<li><a href="#advanced-usage">Advanced Usage</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#examples">Examples</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>The Logger Service is a centralized, structured logging system that replaces direct <code>console.*</code> calls throughout the application. It provides:</p>
+<ul>
+<li><strong>Structured logging</strong> with metadata</li>
+<li><strong>Environment-aware</strong> output (debug logs only in development)</li>
+<li><strong>Scoped loggers</strong> for specific services/components</li>
+<li><strong>Log buffering</strong> for debugging</li>
+<li><strong>Remote logging</strong> capability for production monitoring</li>
+<li><strong>Type safety</strong> with full TypeScript support</li>
+</ul>
+<h3>Why Use This Instead of console.log?</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>console.log</th>
+<th>Logger Service</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Structured data</td>
+<td>❌ No</td>
+<td>✅ Yes (metadata)</td>
+</tr>
+<tr>
+<td>Log levels</td>
+<td>❌ No</td>
+<td>✅ Yes (DEBUG, INFO, WARN, ERROR)</td>
+</tr>
+<tr>
+<td>Environment aware</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Filterable</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Remote logging</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Service context</td>
+<td>❌ No</td>
+<td>✅ Yes (scoped loggers)</td>
+</tr>
+<tr>
+<td>Production safe</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>How It Works</h2>
+<h3>Architecture</h3>
+<p>┌─────────────────────────────────────────────────────────┐
+│                   Your Application Code                  │
+│  logger.info(&#39;User logged in&#39;, { userId: &#39;123&#39; })       │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│                Logger Service (logger.service.ts)        │
+│  • Checks log level threshold                           │
+│  • Adds timestamp, service name, metadata               │
+│  • Stores in buffer (last 100 entries)                  │
+│  • Decides where to output                              │
+└─────┬─────────────────────────┬─────────────────────────┘
+      │                         │
+      │ Development            │ Production
+      ▼                         ▼
+┌──────────────────┐    ┌────────────────────────────────┐
+│  Browser Console │    │  Remote Logging Service        │
+│  • Colored logs  │    │  • Error tracking              │
+│  • Full details  │    │  • Log aggregation             │
+│  • Stack traces  │    │  • Monitoring dashboard        │
+└──────────────────┘    └────────────────────────────────┘</p>
+<h3>Log Flow</h3>
+<ol>
+<li><strong>You call:</strong> <code>logger.info(&#39;message&#39;, { metadata })</code></li>
+<li><strong>Logger checks:</strong> Is log level &gt;= minimum threshold?</li>
+<li><strong>Logger creates entry</strong> with timestamp, level, message, metadata, and service name</li>
+<li><strong>Logger outputs:</strong><ul>
+<li><strong>Development:</strong> To browser console (you see it immediately)</li>
+<li><strong>Production:</strong> To remote service (for monitoring) + console for errors</li>
+</ul>
+</li>
+<li><strong>Logger buffers:</strong> Keeps last 100 log entries in memory for debugging</li>
+</ol>
+<hr>
+<h2>Where to See Logs</h2>
+<h3>1. Browser Developer Console (Primary View)</h3>
+<p><strong>This is where you&#39;ll see most logs during development.</strong></p>
+<h4>How to Open:</h4>
+<ul>
+<li><strong>Chrome/Edge:</strong> Press <code>F12</code> or <code>Ctrl+Shift+I</code> (Windows) / <code>Cmd+Option+I</code> (Mac)</li>
+<li><strong>Firefox:</strong> Press <code>F12</code> or <code>Ctrl+Shift+K</code> (Windows) / <code>Cmd+Option+K</code> (Mac)</li>
+<li><strong>Safari:</strong> Enable Developer menu in Preferences, then press <code>Cmd+Option+C</code></li>
+</ul>
+<h4>What You&#39;ll See:</h4>
+<p>Log entries formatted as <code>[LEVEL] timestamp: message</code> followed by metadata on the next line. Errors include stack traces.</p>
+<h4>Filtering Console Logs:</h4>
+<ol>
+<li><p><strong>By level:</strong></p>
+<ul>
+<li>Click console settings (gear icon)</li>
+<li>Enable/disable: Verbose, Info, Warnings, Errors</li>
+</ul>
+</li>
+<li><p><strong>By service:</strong> Type <code>service: &quot;UserService&quot;</code> in the console filter box</p>
+</li>
+<li><p><strong>By text:</strong> Type any search term in the console filter box</p>
+</li>
+</ol>
+<h3>2. Log Buffer (In-Memory Debugging)</h3>
+<p><strong>Access recent logs programmatically in the console.</strong></p>
+<p>Import <code>logger</code> from <code>./src/services/logger.service</code> and call <code>logger.getRecentLogs(10)</code> to get the last N log entries. Each entry contains timestamp, level (numeric), message, metadata, and service name.</p>
+<h3>3. Network Tab (Remote Logging)</h3>
+<p><strong>In production, logs are sent to a remote service.</strong></p>
+<h4>How to See:</h4>
+<ol>
+<li>Open Developer Tools (<code>F12</code>)</li>
+<li>Go to <strong>Network</strong> tab</li>
+<li>Filter by: <code>fetch</code> or your logging endpoint URL</li>
+<li>Click on logging requests to see payload</li>
+</ol>
+<p>The payload includes timestamp, level, message, metadata, error details (if applicable), and service name.</p>
+<h3>4. Production Monitoring Dashboard</h3>
+<p><strong>For production environments, integrate with monitoring services:</strong></p>
+<ul>
+<li><strong>Sentry</strong> - Error tracking and performance monitoring</li>
+<li><strong>LogRocket</strong> - Session replay with logs</li>
+<li><strong>Datadog</strong> - Log aggregation and analytics</li>
+<li><strong>New Relic</strong> - Application performance monitoring</li>
+<li><strong>Custom endpoint</strong> - Your own logging service</li>
+</ul>
+<p>The setup involves configuring the logger&#39;s <code>remoteOutput</code> method to forward log entries to the chosen service (e.g., <code>Sentry.captureMessage</code> for Sentry integration).</p>
+<hr>
+<h2>Basic Usage</h2>
+<h3>1. Import the Logger</h3>
+<p>Import <code>logger</code> from <code>@/config</code> or <code>@/services/logger.service</code>.</p>
+<h3>2. Log Messages</h3>
+<p>Use <code>logger.info(message, metadata)</code> for general information, <code>logger.warn(message, metadata)</code> for warnings, <code>logger.error(message, error, metadata)</code> for errors, and <code>logger.debug(message, metadata)</code> for detailed debugging info (development only).</p>
+<h3>3. View in Console</h3>
+<p>Open browser console (<code>F12</code>) and you&#39;ll see formatted log entries with level, timestamp, message, and metadata.</p>
+<hr>
+<h2>Advanced Usage</h2>
+<h3>Scoped Loggers (Recommended for Services)</h3>
+<p><strong>Create a logger specific to your service/component</strong> using <code>createLogger(&#39;ServiceName&#39;)</code>. This automatically prefixes all log entries with the service name, making logs easy to filter.</p>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Automatic service name in all logs</li>
+<li>Easy to filter logs by service</li>
+<li>Better organization</li>
+</ul>
+<h3>Accessing Recent Logs</h3>
+<p>Call <code>logger.getRecentLogs(count)</code> to retrieve recent log entries. You can then filter them by level, serialize to JSON, or analyze error patterns.</p>
+<h3>Conditional Logging</h3>
+<p>Use environment checks (<code>env.isDevelopment</code>, <code>env.features.enableLogging</code>) to conditionally log sensitive or verbose information only when appropriate.</p>
+<hr>
+<h2>Configuration</h2>
+<h3>Logger Configuration Object</h3>
+<p>The <code>LoggerConfig</code> interface has these fields: <code>minLevel</code> (minimum level to log), <code>enableConsole</code> (boolean), <code>enableRemote</code> (boolean), <code>remoteEndpoint</code> (optional URL), and <code>serviceName</code> (default service name).</p>
+<h3>Default Configuration</h3>
+<p>In development, <code>minLevel</code> is <code>LogLevel.DEBUG</code> and console logging is enabled. In production, <code>minLevel</code> is <code>LogLevel.INFO</code> and remote logging is enabled when analytics is active.</p>
+<h3>Customizing Configuration</h3>
+<p>Call <code>logger.configure(config)</code> at runtime to update settings such as <code>minLevel</code>, <code>enableRemote</code>, or <code>remoteEndpoint</code>.</p>
+<h3>Log Levels</h3>
+<ul>
+<li><code>DEBUG = 0</code> - Detailed debug information (dev only)</li>
+<li><code>INFO = 1</code> - General informational messages</li>
+<li><code>WARN = 2</code> - Warning messages</li>
+<li><code>ERROR = 3</code> - Error messages</li>
+<li><code>NONE = 4</code> - Disable all logging</li>
+</ul>
+<p><strong>Level Hierarchy:</strong> If <code>minLevel = LogLevel.WARN</code>, only WARN and ERROR logs are output. DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; NONE.</p>
+<hr>
+<h2>Best Practices</h2>
+<h3>✅ DO</h3>
+<ol>
+<li>Use scoped loggers for services: <code>const logger = createLogger(&#39;MyService&#39;)</code></li>
+<li>Include relevant context in metadata (userId, duration, result)</li>
+<li>Log errors with the error object as the second argument</li>
+<li>Use appropriate log levels (debug for steps, info for events, warn for alerts, error for failures)</li>
+<li>Keep messages concise but descriptive</li>
+</ol>
+<h3>❌ DON&#39;T</h3>
+<ol>
+<li>Don&#39;t log sensitive data (passwords, API keys — NEVER!)</li>
+<li>Don&#39;t use <code>console.*</code> directly — use <code>logger.info</code> instead</li>
+<li>Don&#39;t log in tight loops without throttling</li>
+<li>Don&#39;t log without context — &quot;Success&quot; says nothing; describe what succeeded</li>
+<li>Don&#39;t stringify objects manually — pass them as metadata</li>
+</ol>
+<h3>Logging Patterns</h3>
+<h4>Service Pattern</h4>
+<p>Create a scoped logger as a class property. In each method, log before the operation (with relevant IDs), then log success with result metadata, and catch/log errors with the error object and context before re-throwing.</p>
+<h4>Component Pattern</h4>
+<p>In <code>useEffect</code>, log mount/unmount events with relevant props. In event handlers, log the action, then success or failure.</p>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Problem: Not seeing logs in console</h3>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><p><strong>Check console filter level</strong> — Open Console Settings (gear icon) and ensure &quot;Info&quot; is enabled</p>
+</li>
+<li><p><strong>Check browser console level</strong> — Make sure console is set to &quot;All levels&quot; or &quot;Verbose&quot;</p>
+</li>
+<li><p><strong>Check logger configuration</strong> — Import <code>logger</code> from <code>@/config</code> and call <code>logger.configure({ minLevel: LogLevel.DEBUG, enableConsole: true })</code></p>
+</li>
+<li><p><strong>Check environment</strong> — Import <code>env</code> from <code>@/config</code> and verify <code>env.features.enableLogging</code> and <code>env.nodeEnv</code></p>
+</li>
+</ol>
+<h3>Problem: Logs not appearing in production</h3>
+<p><strong>Expected behavior:</strong> Only INFO, WARN, and ERROR logs appear in production (DEBUG is filtered out).</p>
+<p><strong>To verify:</strong> Check <code>env.nodeEnv</code> (should be <code>&#39;production&#39;</code>) and <code>env.isProduction</code> (should be <code>true</code>).</p>
+<h3>Problem: Too many logs</h3>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><p><strong>Increase minimum log level</strong> — Call <code>logger.configure({ minLevel: LogLevel.WARN })</code></p>
+</li>
+<li><p><strong>Filter in console</strong> — Use console filter <code>-service:VerboseService</code> or disable INFO logs by clicking their level indicator</p>
+</li>
+<li><p><strong>Use scoped loggers and filter</strong> — Type <code>service: &quot;ImportantService&quot;</code> in the console filter</p>
+</li>
+</ol>
+<h3>Problem: Cannot access logger.getRecentLogs()</h3>
+<p><strong>Solution:</strong> Import <code>logger</code> from <code>@/config</code> (not via <code>createLogger</code>, which returns a scoped logger without <code>getRecentLogs</code>).</p>
+<hr>
+<h2>Examples</h2>
+<h3>Example 1: Authentication Service</h3>
+<p>A scoped logger created as <code>createLogger(&#39;AuthService&#39;)</code> is used throughout the <code>AuthService</code> class. On <code>login</code>, it logs the attempt with the email, then on success logs the userId and loginMethod. Sensitive session details are only logged in development. On failure, it logs the error with email, reason, and timestamp before re-throwing. The <code>logout</code> method similarly logs initiation, success, or partial failure.</p>
+<h3>Example 2: API Client with Retry Logic</h3>
+<p>An <code>ApiClient</code> using <code>createLogger(&#39;ApiClient&#39;)</code> logs each request attempt with endpoint and method. On each retry it logs a warning with attempt number, error message, and next retry delay. After all retries fail it logs an error with total duration before throwing.</p>
+<h3>Example 3: React Component Lifecycle</h3>
+<p>A <code>MaterialSearch</code> component logs mount/unmount events via <code>useEffect</code>. Before searching it logs the query, on completion it logs result count, and on error it logs the failure with the query.</p>
+<hr>
+<h2>Quick Reference Card</h2>
+<h3>Import</h3>
+<p>Import <code>logger</code> and <code>createLogger</code> from <code>@/config</code>.</p>
+<h3>Log Methods</h3>
+<ul>
+<li><code>logger.debug(message, metadata)</code> — Dev only</li>
+<li><code>logger.info(message, metadata)</code> — General info</li>
+<li><code>logger.warn(message, metadata)</code> — Warnings</li>
+<li><code>logger.error(message, error, metadata)</code> — Errors</li>
+</ul>
+<h3>Scoped Logger</h3>
+<p>Create with <code>createLogger(&#39;ServiceName&#39;)</code> then call methods on the returned logger instance.</p>
+<h3>Utility Methods</h3>
+<ul>
+<li><code>logger.getRecentLogs(count)</code> — Get recent logs</li>
+<li><code>logger.clearBuffer()</code> — Clear log buffer</li>
+<li><code>logger.configure(config)</code> — Update configuration</li>
+</ul>
+<h3>Where to See Logs</h3>
+<ol>
+<li>Browser Console (<code>F12</code>)</li>
+<li><code>logger.getRecentLogs()</code> in console</li>
+<li>Network tab (remote logging)</li>
+<li>Production monitoring dashboard</li>
+</ol>
+<hr>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="./environment-configuration.md">Environment Configuration</a> (coming soon)</li>
+<li><a href="../MIGRATION_GUIDE.md">Migration Guide</a></li>
+<li><a href="../INTEGRATION_COMPLETE.md">Integration Complete</a></li>
+<li><a href="../CODE_REVIEW_REPORT.md">Code Review Report</a></li>
+</ul>
+<hr>
+<h2>Support</h2>
+<p>If you have questions or issues:</p>
+<ol>
+<li>Check this documentation</li>
+<li>Review examples above</li>
+<li>Check <a href="../src/services/logger.service.ts"><code>src/services/logger.service.ts</code></a> implementation</li>
+<li>Refer to <a href="../MIGRATION_GUIDE.md"><code>MIGRATION_GUIDE.md</code></a></li>
+</ol>
+<hr>
+<p><strong>Last Updated:</strong> December 12, 2024
+<strong>Version:</strong> 1.0
+<strong>Status:</strong> Production Ready ✅</p>
+
+</div></body></html>

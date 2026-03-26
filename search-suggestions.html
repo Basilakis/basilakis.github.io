@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Intelligent Search Suggestions &amp; Auto-Complete</h1>
+<p><strong>Feature #49</strong> - Comprehensive search suggestions system with auto-complete, trending searches, personalization, typo correction, query expansion, and analytics tracking.</p>
+<h2>Overview</h2>
+<p>The MIVAA platform now includes an intelligent search suggestions system that enhances the user search experience through:</p>
+<ul>
+<li><strong>Auto-Complete</strong>: Real-time suggestions as users type</li>
+<li><strong>Trending Searches</strong>: Display of currently popular search queries</li>
+<li><strong>Typo Correction</strong>: Automatic detection and correction of spelling errors</li>
+<li><strong>Query Expansion</strong>: Synonym expansion and related term suggestions</li>
+<li><strong>Personalization</strong>: User-specific suggestions based on search history</li>
+<li><strong>Analytics Tracking</strong>: Comprehensive tracking of suggestion effectiveness</li>
+</ul>
+<h2>Architecture</h2>
+<h3>Database Schema</h3>
+<p>Four new tables support the search suggestions system:</p>
+<h4>1. search_suggestions</h4>
+<p>Stores auto-complete suggestions with popularity metrics. Key columns: <code>suggestion_text</code>, <code>suggestion_type</code> (product, material, category, property, trending, recent), <code>category</code>, <code>popularity_score</code>, <code>click_count</code>, <code>impression_count</code>, <code>ctr</code> (computed), <code>metadata</code> (JSONB), <code>is_active</code>, timestamps.</p>
+<h4>2. search_query_corrections</h4>
+<p>Tracks typo corrections and their effectiveness. Key columns: <code>original_query</code>, <code>corrected_query</code>, <code>correction_type</code> (spelling, synonym, expansion, abbreviation), <code>confidence_score</code>, <code>auto_applied_count</code>, <code>user_accepted_count</code>, <code>user_rejected_count</code>, <code>acceptance_rate</code> (computed). Has a unique constraint on <code>(original_query, corrected_query)</code>.</p>
+<h4>3. trending_searches</h4>
+<p>Tracks trending queries over time windows. Key columns: <code>query_text</code>, <code>search_count</code>, <code>unique_users_count</code>, <code>time_window</code> (hourly, daily, weekly, monthly), <code>trend_score</code>, <code>growth_rate</code>, <code>category</code>, <code>metadata</code> (JSONB), <code>window_start</code>, <code>window_end</code>. Has a unique constraint on <code>(query_text, time_window, window_start)</code>.</p>
+<h4>4. search_suggestion_clicks</h4>
+<p>Tracks user interactions with suggestions. Key columns: <code>suggestion_id</code> (FK to search_suggestions), <code>user_id</code>, <code>session_id</code>, <code>original_query</code>, <code>suggestion_position</code>, <code>action_type</code> (clicked, dismissed, ignored, accepted), <code>result_count</code>, <code>user_satisfied</code>.</p>
+<h3>Database Functions</h3>
+<h4>update_suggestion_metrics()</h4>
+<p>Trigger function that automatically updates click counts and impression counts when users interact with suggestions.</p>
+<h4>calculate_trending_searches(p_time_window, p_limit)</h4>
+<p>Calculates trending searches based on current vs previous period, returns trend scores and growth rates.</p>
+<h4>get_popular_searches(p_query_filter, p_limit, p_days)</h4>
+<p>Retrieves popular search queries with filtering options.</p>
+<h2>API Endpoints</h2>
+<p>All endpoints are available under <code>/api/search/</code> prefix.</p>
+<h3>1. Auto-Complete Suggestions</h3>
+<p><strong>POST</strong> <code>/api/search/autocomplete</code></p>
+<p>Get intelligent auto-complete suggestions as user types.</p>
+<p>Request body fields: <code>query</code> (string), <code>limit</code> (integer, default 10), <code>user_id</code> (optional), <code>session_id</code> (optional), <code>include_trending</code> (boolean), <code>include_recent</code> (boolean), <code>include_popular</code> (boolean), <code>categories</code> (array of strings).</p>
+<p>Response includes: <code>success</code>, <code>query</code>, <code>suggestions</code> (array with id, suggestion_text, suggestion_type, category, popularity_score, click_count, impression_count, ctr, metadata, confidence), <code>total_suggestions</code>, <code>processing_time_ms</code>, <code>metadata</code> (sources used, query_length).</p>
+<h3>2. Trending Searches</h3>
+<p><strong>GET</strong> <code>/api/search/trending</code></p>
+<p>Get currently trending search queries.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>time_window</code>: hourly, daily, weekly, monthly (default: daily)</li>
+<li><code>limit</code>: Maximum results (default: 20, max: 100)</li>
+<li><code>category</code>: Filter by category (optional)</li>
+<li><code>min_search_count</code>: Minimum search count threshold (default: 2)</li>
+</ul>
+<p>Response includes: <code>success</code>, <code>trending_searches</code> (array with query_text, search_count, unique_users_count, trend_score, growth_rate, time_window, category), <code>total_results</code>, <code>time_window</code>, <code>window_start</code>, <code>window_end</code>.</p>
+<h3>3. Typo Correction</h3>
+<p><strong>POST</strong> <code>/api/search/typo-correction</code></p>
+<p>Detect typos and suggest corrections.</p>
+<p>Request body fields: <code>query</code> (string), <code>auto_apply_threshold</code> (float, e.g. 0.9), <code>max_suggestions</code> (integer).</p>
+<p>Response includes: <code>success</code>, <code>original_query</code>, <code>has_corrections</code>, <code>corrections</code> (array with original_query, corrected_query, correction_type, confidence_score, auto_applied, acceptance_rate), <code>recommended_correction</code>.</p>
+<h3>4. Query Expansion</h3>
+<p><strong>POST</strong> <code>/api/search/query-expansion</code></p>
+<p>Expand query with synonyms and related terms.</p>
+<p>Request body fields: <code>query</code> (string), <code>max_synonyms_per_term</code> (integer), <code>max_related_concepts</code> (integer), <code>use_ai</code> (boolean).</p>
+<p>Response includes: <code>success</code>, <code>expanded_query</code> (with original_query, expanded_terms, synonyms by term, related_concepts, confidence_score), <code>suggested_searches</code>, <code>processing_time_ms</code>.</p>
+<h3>5. Track Suggestion Click</h3>
+<p><strong>POST</strong> <code>/api/search/track-click</code></p>
+<p>Track when user clicks on a suggestion for analytics.</p>
+<p>Request body fields: <code>suggestion_id</code>, <code>user_id</code>, <code>session_id</code>, <code>original_query</code>, <code>suggestion_position</code>, <code>action_type</code>, <code>result_count</code>, <code>user_satisfied</code>.</p>
+<p>Response: <code>{&quot;success&quot;: true, &quot;message&quot;: &quot;Click tracked successfully&quot;}</code>.</p>
+<h2>Frontend Integration</h2>
+<h3>SearchSuggestionsService</h3>
+<p>TypeScript service (<code>src/services/searchSuggestionsService.ts</code>) provides methods:</p>
+<ul>
+<li><code>getAutoCompleteSuggestions(params)</code> - Get auto-complete suggestions</li>
+<li><code>getTrendingSearches(timeWindow, limit)</code> - Get trending searches</li>
+<li><code>checkTypoCorrection(query, threshold, maxSuggestions)</code> - Check for typos</li>
+<li><code>expandQuery(query, maxSynonyms, maxConcepts, useAi)</code> - Expand query terms</li>
+<li><code>trackSuggestionClick(suggestionId, originalQuery, position, actionType, userId)</code> - Track interactions</li>
+</ul>
+<h3>SemanticSearchInput Component</h3>
+<p>Enhanced search input component with auto-complete and typo correction:</p>
+<ul>
+<li>Real-time auto-complete suggestions as user types</li>
+<li>Typo correction banner with &quot;Did you mean?&quot; suggestions</li>
+<li>Trending searches display</li>
+<li>Click tracking for analytics</li>
+<li>Keyboard navigation support</li>
+</ul>
+<h2>Usage Examples</h2>
+<h3>Example 1: Basic Auto-Complete</h3>
+<p>User types &quot;fire res&quot; → System suggests:</p>
+<ul>
+<li>&quot;fire resistant tiles&quot;</li>
+<li>&quot;fire resistant materials&quot;</li>
+<li>&quot;fire resistant coating&quot;</li>
+</ul>
+<h3>Example 2: Typo Correction</h3>
+<p>User types &quot;waterprf&quot; → System shows banner:
+&quot;Did you mean: waterproof?&quot;</p>
+<h3>Example 3: Trending Searches</h3>
+<p>Display top 10 trending searches on search page:</p>
+<ul>
+<li>&quot;marble flooring&quot; (↑ 45%)</li>
+<li>&quot;ceramic tiles&quot; (↑ 32%)</li>
+<li>&quot;wood panels&quot; (↑ 28%)</li>
+</ul>
+<h2>Performance Considerations</h2>
+<ul>
+<li>Auto-complete debounced to 300ms to reduce API calls</li>
+<li>Suggestions cached on frontend for 5 minutes</li>
+<li>Database indexes on frequently queried columns</li>
+<li>Computed columns for CTR and acceptance rates</li>
+<li>Trigger-based metric updates for real-time statistics</li>
+</ul>
+<h2>Future Enhancements</h2>
+<ul>
+<li>AI-powered semantic expansion using Claude/GPT-5</li>
+<li>Personalized suggestions based on user preferences</li>
+<li>Multi-language support for international users</li>
+<li>Voice search integration</li>
+<li>Image-based search suggestions</li>
+<li>Category-specific suggestion models</li>
+</ul>
+
+</div></body></html>

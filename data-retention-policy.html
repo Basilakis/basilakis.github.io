@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Data Retention Policy</h1>
+<p>Documents which database tables are automatically cleaned, which are kept indefinitely, and the rationale for each decision.</p>
+<p>Cleanup is performed by two mechanisms:</p>
+<ul>
+<li><strong>Weekly edge function</strong> — <code>job-cleanup-cron</code> runs every Sunday at 03:00 UTC</li>
+<li><strong>Daily pg_cron SQL job</strong> — <code>system-logs-daily-cleanup</code> runs every day at 02:00 UTC (handles high-volume <code>system_logs</code> directly in the DB)</li>
+</ul>
+<hr>
+<h2>Tables That Are Cleaned</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Retention</th>
+<th>Trigger</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>background_jobs</code></td>
+<td>5 days</td>
+<td>completed or failed</td>
+<td>Short-lived job records; no value after completion</td>
+</tr>
+<tr>
+<td><code>scraping_sessions</code></td>
+<td>5 days</td>
+<td>completed or failed</td>
+<td>Temporary session state; content is already in products</td>
+</tr>
+<tr>
+<td><code>data_import_jobs</code></td>
+<td>5 days</td>
+<td>completed/failed + non-scheduled</td>
+<td>One-off import runs; scheduled jobs are kept</td>
+</tr>
+<tr>
+<td><code>job_checkpoints</code></td>
+<td>7 days</td>
+<td>age</td>
+<td>Resume checkpoints lose value once the job finishes</td>
+</tr>
+<tr>
+<td><code>job_progress</code></td>
+<td>7 days</td>
+<td>not updated</td>
+<td>Progress rows are only useful while the job runs; orphaned after parent job is deleted</td>
+</tr>
+<tr>
+<td><code>vr_worlds</code> (failed only)</td>
+<td>7 days</td>
+<td>status = failed</td>
+<td>Failed renders have no asset URLs; safe to discard</td>
+</tr>
+<tr>
+<td><code>generation_3d</code> (unsaved)</td>
+<td>15 days</td>
+<td>not saved to moodboard</td>
+<td>Unsaved renders are temp workspace; storage files also deleted</td>
+</tr>
+<tr>
+<td><code>data_import_history</code></td>
+<td>30 days</td>
+<td>age</td>
+<td>Import audit trail useful short-term; not needed long-term</td>
+</tr>
+<tr>
+<td><code>agent_checkpoints</code></td>
+<td>30 days</td>
+<td>age</td>
+<td>Conversation state snapshots; stale after a month</td>
+</tr>
+<tr>
+<td><code>flow_run_steps</code></td>
+<td>30 days</td>
+<td>age</td>
+<td>Step-level execution details; parent run is enough after 30 days</td>
+</tr>
+<tr>
+<td><code>flow_runs</code></td>
+<td>30 days</td>
+<td>completed/failed/cancelled</td>
+<td>Old automation run history; summarised by stats</td>
+</tr>
+<tr>
+<td><code>system_logs</code></td>
+<td>30 days</td>
+<td>age</td>
+<td>Operational Python API logs (~77k rows/day); kept 30 days for debugging</td>
+</tr>
+<tr>
+<td><code>ai_call_logs</code></td>
+<td>30 days</td>
+<td>age</td>
+<td>Raw per-call AI API debug logs with request/response payloads; distinct from billing logs</td>
+</tr>
+<tr>
+<td><code>search_query_tracking</code></td>
+<td>90 days</td>
+<td>age</td>
+<td>Search analytics; longer window useful for trend analysis</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Tables That Are Kept Indefinitely</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ai_usage_logs</code></td>
+<td><strong>Billing audit log.</strong> Every credit debit is recorded here. Required for business analytics, dispute resolution, and revenue reporting. Deleting these would remove visibility into platform usage and revenue patterns.</td>
+</tr>
+<tr>
+<td><code>agent_chat_conversations</code></td>
+<td>User conversation history. Small volume; users may want to refer back to previous sessions.</td>
+</tr>
+<tr>
+<td><code>agent_chat_messages</code></td>
+<td>Individual messages within conversations. Kept together with parent conversations.</td>
+</tr>
+<tr>
+<td><code>products</code></td>
+<td>Core product catalogue. Never cleaned automatically.</td>
+</tr>
+<tr>
+<td><code>user_credits</code></td>
+<td>Credit balances. Financial data, never deleted.</td>
+</tr>
+<tr>
+<td><code>credit_transactions</code></td>
+<td>Credit debit/top-up history. Financial audit trail, never deleted.</td>
+</tr>
+<tr>
+<td><code>vr_worlds</code> (non-failed)</td>
+<td>Saved 3D world assets. Tied to user work; only failed ones are cleaned.</td>
+</tr>
+<tr>
+<td><code>generation_3d</code> (saved)</td>
+<td>3D renders saved to moodboard by the user. User-owned content.</td>
+</tr>
+<tr>
+<td><code>flow_definitions</code></td>
+<td>Automation flow blueprints. Configuration data, not transient.</td>
+</tr>
+<tr>
+<td><code>data_import_jobs</code> (scheduled)</td>
+<td>Recurring import jobs. Kept because they run repeatedly on a schedule.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>pg_cron Jobs</h2>
+<table>
+<thead>
+<tr>
+<th>Job Name</th>
+<th>Schedule</th>
+<th>Type</th>
+<th>What It Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>job-cleanup-weekly</code></td>
+<td><code>0 3 * * 0</code> (Sun 03:00 UTC)</td>
+<td>Edge function</td>
+<td>Full multi-table cleanup pass via <code>job-cleanup-cron</code> edge function</td>
+</tr>
+<tr>
+<td><code>system-logs-daily-cleanup</code></td>
+<td><code>0 2 * * *</code> (daily 02:00 UTC)</td>
+<td>Direct SQL</td>
+<td><code>DELETE FROM system_logs WHERE created_at &lt; NOW() - INTERVAL &#39;30 days&#39;</code> — handles bulk purge without edge function overhead</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Notes</h2>
+<ul>
+<li><code>ai_call_logs</code> vs <code>ai_usage_logs</code>: These are <strong>different tables</strong>. <code>ai_usage_logs</code> is the billing record (kept forever). <code>ai_call_logs</code> contains raw request/response payloads used for debugging (cleaned after 30 days).</li>
+<li><code>generation_3d</code> storage: When unsaved renders are deleted, the corresponding crop image files are also removed from the <code>product-images</code> Storage bucket before the DB rows are deleted (CASCADE removes <code>generation_3d_segments</code>).</li>
+<li><code>flow_run_steps</code> are always deleted before their parent <code>flow_runs</code> to avoid foreign key conflicts.</li>
+<li><code>data_import_jobs</code> with <code>is_scheduled = true</code> are excluded from cleanup because they represent recurring cron-driven jobs that must persist.</li>
+</ul>
+
+</div></body></html>
