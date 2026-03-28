@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Professional Marketplace</h1>
+<p>The platform includes a public marketplace where professionals (architects, designers, consultants, etc.) can publish profiles, list services, display skills, and be discovered by others.</p>
+<hr>
+<h2>Routes</h2>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Component</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/discover</code></td>
+<td><code>DiscoverPage</code></td>
+<td>All authenticated users</td>
+</tr>
+<tr>
+<td><code>/u/:userId</code></td>
+<td><code>PublicProfilePage</code></td>
+<td>Public (unauthenticated too)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Profile Visibility</h2>
+<p>Profiles are opt-in public. The <code>user_profiles.is_public</code> boolean controls visibility:</p>
+<ul>
+<li><code>is_public = false</code> (default) — profile is private, not listed in <code>/discover</code>, <code>/u/:id</code> returns &quot;not found&quot;</li>
+<li><code>is_public = true</code> — profile appears in directory and public profile page is accessible</li>
+</ul>
+<p>Users toggle this in their profile settings (<code>ProfileTab</code>).</p>
+<hr>
+<h2>Profile Fields</h2>
+<p>Stored in <code>user_profiles</code> table:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>full_name</code></td>
+<td>varchar</td>
+<td>Display name</td>
+</tr>
+<tr>
+<td><code>company</code></td>
+<td>text</td>
+<td>Company or studio name</td>
+</tr>
+<tr>
+<td><code>bio</code></td>
+<td>text</td>
+<td>Short personal/professional description</td>
+</tr>
+<tr>
+<td><code>avatar_url</code></td>
+<td>text</td>
+<td>Profile photo URL</td>
+</tr>
+<tr>
+<td><code>location</code></td>
+<td>text</td>
+<td>City, country, or region</td>
+</tr>
+<tr>
+<td><code>website_url</code></td>
+<td>text</td>
+<td>External website link</td>
+</tr>
+<tr>
+<td><code>professional_type</code></td>
+<td>enum</td>
+<td>Role classification (see below)</td>
+</tr>
+<tr>
+<td><code>is_public</code></td>
+<td>boolean</td>
+<td>Controls public visibility</td>
+</tr>
+<tr>
+<td><code>services</code></td>
+<td>text[]</td>
+<td>Legacy simple service name list</td>
+</tr>
+<tr>
+<td><code>services_detail</code></td>
+<td>jsonb</td>
+<td>Rich service objects (preferred, see below)</td>
+</tr>
+<tr>
+<td><code>skill_tags</code></td>
+<td>text[]</td>
+<td>Free-form skill/expertise tags</td>
+</tr>
+<tr>
+<td><code>preferred_factories</code></td>
+<td>jsonb</td>
+<td>Array of <code>{ name, country? }</code> factory references</td>
+</tr>
+<tr>
+<td><code>featured_moodboard_id</code></td>
+<td>uuid</td>
+<td>FK to <code>moodboards</code> — pinned to profile top</td>
+</tr>
+<tr>
+<td><code>profile_views</code></td>
+<td>integer</td>
+<td>Incremented on each public profile view via <code>increment_profile_views()</code> RPC</td>
+</tr>
+</tbody></table>
+<h3>Professional Types (enum)</h3>
+<pre><code>designer | interior_designer | architect | manufacturer |
+brand | supplier | sourcing_agent | consultant | other
+</code></pre>
+<hr>
+<h2>Services</h2>
+<p>Services are stored in two columns for backwards compatibility:</p>
+<ul>
+<li><code>services</code> (text[]) — legacy, name-only list</li>
+<li><code>services_detail</code> (jsonb) — rich objects, preferred when available</li>
+</ul>
+<h3>ServiceItem structure</h3>
+<pre><code class="language-typescript">interface ServiceItem {
+  id: string;
+  name: string;
+  description?: string;
+  price?: string;
+  previous_work?: { title: string; url?: string }[];
+}
+</code></pre>
+<p>On the public profile, if <code>services_detail</code> is populated it takes precedence over <code>services</code>. Each service card has:</p>
+<ul>
+<li>Name + optional price badge</li>
+<li>Description (collapsible)</li>
+<li>Previous work links (collapsible)</li>
+<li><strong>Hire</strong> button → opens <code>HireMeModal</code></li>
+</ul>
+<hr>
+<h2>Hire Me Flow</h2>
+<p>Visitors can contact a professional directly from their public profile.</p>
+<h3>How it works</h3>
+<ol>
+<li>Visitor clicks <strong>Hire Me</strong> (global) or <strong>Hire</strong> on a specific service card</li>
+<li><code>HireMeModal</code> opens with optional service pre-selected</li>
+<li>Visitor fills in name, email, message, and optionally selects services</li>
+<li>On submit: inserts a row into <code>profile_contact_requests</code> and emits a <code>hire_me_received</code> flow event</li>
+</ol>
+<h3>DB Table: <code>profile_contact_requests</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>uuid</td>
+<td>PK</td>
+</tr>
+<tr>
+<td><code>to_user_id</code></td>
+<td>uuid</td>
+<td>FK to <code>user_profiles.user_id</code></td>
+</tr>
+<tr>
+<td><code>from_name</code></td>
+<td>text</td>
+<td>Requester&#39;s name</td>
+</tr>
+<tr>
+<td><code>from_email</code></td>
+<td>text</td>
+<td>Requester&#39;s email</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td>text</td>
+<td>Message body</td>
+</tr>
+<tr>
+<td><code>services_requested</code></td>
+<td>text[]</td>
+<td>Selected service names (nullable)</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>timestamptz</td>
+<td>Auto</td>
+</tr>
+</tbody></table>
+<h3>Flow Event</h3>
+<p>Emits <code>hire_me_received</code> via <code>flowEventService</code> — can be used to trigger automated flows (e.g., email notification to the professional).</p>
+<hr>
+<h2>Discover Directory (<code>/discover</code>)</h2>
+<p>Lists all public profiles ordered by <code>profile_views DESC</code>, limit 60.</p>
+<h3>Features</h3>
+<ul>
+<li><strong>Search</strong> — filters by name, company, bio, services, skill tags, location (client-side)</li>
+<li><strong>Tag filters</strong> — dynamically built from all professional types + services + skill tags across listed profiles (up to 24 tags). Click to filter by tag.</li>
+<li><strong>Creator cards</strong> — show avatar, name, professional type badge, company, location, bio snippet, up to 3 services, follower count, website link, and a Follow button</li>
+<li><strong>Follow</strong> — <code>user_follows</code> table, <code>FollowButton</code> component</li>
+</ul>
+<h3>Data fetched</h3>
+<pre><code class="language-sql">SELECT user_id, full_name, company, bio, avatar_url, location,
+       website_url, services, skill_tags, profile_views, professional_type
+FROM user_profiles
+WHERE is_public = true
+ORDER BY profile_views DESC
+LIMIT 60
+</code></pre>
+<p>Follower counts are fetched in a second query and merged client-side.</p>
+<hr>
+<h2>Public Profile Page (<code>/u/:userId</code>)</h2>
+<p>Full profile view for a single user.</p>
+<h3>Sections (in order)</h3>
+<ol>
+<li><strong>Header</strong> — avatar, name, professional type badge, company, location, follower count, website, bio, Follow + Hire Me buttons</li>
+<li><strong>Skills &amp; Expertise</strong> — skill tags as badges</li>
+<li><strong>Services</strong> — rich service cards with Hire button per service</li>
+<li><strong>Featured Board</strong> — pinned moodboard with image preview and comments</li>
+<li><strong>Preferred Factories</strong> — factory name + country grid</li>
+<li><strong>Moodboards</strong> — all other public moodboards with image previews and comments</li>
+</ol>
+<h3>Social</h3>
+<ul>
+<li><strong>Follow/Unfollow</strong> — <code>FollowButton</code> component, stored in <code>user_follows</code></li>
+<li><strong>Moodboard comments</strong> — <code>MoodboardComments</code> component inline on each board</li>
+<li><strong>Profile views</strong> — auto-incremented on every page load via <code>increment_profile_views(p_user_id)</code> RPC (fire-and-forget)</li>
+</ul>
+<hr>
+<h2>Flow Triggers Related to Profiles</h2>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hire_me_received</code></td>
+<td>Hire Me form submitted</td>
+</tr>
+<tr>
+<td><code>profile_followed</code></td>
+<td>A user follows a public profile</td>
+</tr>
+<tr>
+<td><code>profile_published</code></td>
+<td>User makes their profile public</td>
+</tr>
+<tr>
+<td><code>preferred_factory_added</code></td>
+<td>User adds a preferred factory</td>
+</tr>
+</tbody></table>
+<p>These can be used in the Flow Builder to trigger automated actions (emails, notifications, etc.).</p>
+<hr>
+<h2>Key Components</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Profile editing</td>
+<td><a href="../src/components/core/Profile/ProfileTab.tsx">src/components/core/Profile/ProfileTab.tsx</a></td>
+</tr>
+<tr>
+<td>Public profile page</td>
+<td><a href="../src/pages/PublicProfilePage.tsx">src/pages/PublicProfilePage.tsx</a></td>
+</tr>
+<tr>
+<td>Discover directory</td>
+<td><a href="../src/pages/DiscoverPage.tsx">src/pages/DiscoverPage.tsx</a></td>
+</tr>
+<tr>
+<td>Hire Me modal</td>
+<td><a href="../src/components/core/Profile/HireMeModal.tsx">src/components/core/Profile/HireMeModal.tsx</a></td>
+</tr>
+<tr>
+<td>Follow button</td>
+<td><a href="../src/components/features/social/FollowButton.tsx">src/components/features/social/FollowButton.tsx</a></td>
+</tr>
+<tr>
+<td>Moodboard comments</td>
+<td><a href="../src/components/features/social/MoodboardComments.tsx">src/components/features/social/MoodboardComments.tsx</a></td>
+</tr>
+<tr>
+<td>Reviews display</td>
+<td><a href="../src/components/features/profile/ReviewsSection.tsx">src/components/features/profile/ReviewsSection.tsx</a></td>
+</tr>
+<tr>
+<td>Review modal</td>
+<td><a href="../src/components/features/profile/ReviewModal.tsx">src/components/features/profile/ReviewModal.tsx</a></td>
+</tr>
+<tr>
+<td>Booking widget (public)</td>
+<td><a href="../src/components/features/profile/BookingWidget.tsx">src/components/features/profile/BookingWidget.tsx</a></td>
+</tr>
+<tr>
+<td>Booking modal</td>
+<td><a href="../src/components/features/profile/BookingModal.tsx">src/components/features/profile/BookingModal.tsx</a></td>
+</tr>
+<tr>
+<td>Appointments dashboard</td>
+<td><a href="../src/pages/AppointmentsPage.tsx">src/pages/AppointmentsPage.tsx</a></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Ratings &amp; Reviews</h2>
+<h3>DB Tables</h3>
+<ul>
+<li><code>profile_reviews</code> — one review per reviewer per professional. Columns: <code>to_user_id</code>, <code>from_user_id</code>, <code>overall_rating</code> (1–5), <code>dimension_ratings</code> JSONB (<code>communication</code>, <code>expertise</code>, <code>timeliness</code>, <code>value</code>), <code>comment</code>, <code>service_name</code>, <code>reply</code> (professional&#39;s reply), <code>is_verified</code>.</li>
+<li><code>review_summaries</code> — cached AI-generated summary per professional (<code>summary_text</code>, <code>last_computed_at</code>).</li>
+</ul>
+<h3>Public profile</h3>
+<p>Displays: aggregate score card, AI summary, per-dimension stars, individual reviews, reply thread. Authenticated users (not the owner) see &quot;Write a Review&quot; button.</p>
+<hr>
+<h2>Appointment Booking</h2>
+<h3>DB Tables</h3>
+<ul>
+<li><code>appointment_availability</code> — per-user per-day availability. Columns: <code>day_of_week</code> (0–6), <code>slots</code> (text[]), <code>timezone</code>, <code>is_active</code>.</li>
+<li><code>appointments</code> — bookings. Columns: <code>professional_user_id</code>, <code>client_*</code>, <code>appointment_date</code>, <code>appointment_time</code>, <code>status</code> (pending/confirmed/cancelled/completed), <code>notes</code>, <code>inbox_conversation_id</code>.</li>
+</ul>
+<h3>Routes</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Component</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/appointments</code></td>
+<td><code>AppointmentsPage</code></td>
+<td>Authenticated (own appointments only)</td>
+</tr>
+</tbody></table>
+<h3>Flow Events</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>appointment_booked</code></td>
+<td>Client submits booking</td>
+</tr>
+<tr>
+<td><code>appointment_confirmed</code></td>
+<td>Professional confirms</td>
+</tr>
+<tr>
+<td><code>appointment_cancelled</code></td>
+<td>Either party cancels</td>
+</tr>
+<tr>
+<td><code>appointment_moved_to_inbox</code></td>
+<td>Professional clicks &quot;Email Client&quot;</td>
+</tr>
+</tbody></table>
+<h3>Inbox Bridge</h3>
+<p>&quot;Email Client&quot; in <code>AppointmentDetailDrawer</code> creates a new <code>agent_chat_conversations</code> row (<code>agent_id=&#39;kai&#39;</code>) pre-seeded with appointment context, saves the <code>conversation_id</code> back to <code>appointments.inbox_conversation_id</code>, then navigates to <code>/agent-hub?conversation=&lt;id&gt;</code>.</p>
+
+</div></body></html>

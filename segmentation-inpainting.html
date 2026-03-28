@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Segmentation &amp; Inpainting</h1>
+<p>Pixel-precise area selection and AI-powered inpainting — replace specific zones in interior images with generated content or real product photos.</p>
+<hr>
+<h2>Overview</h2>
+<p>Two-stage pipeline:</p>
+<ol>
+<li><strong>Segmentation</strong> — SAM 2 generates a pixel-perfect binary mask from user-drawn zone hints</li>
+<li><strong>Inpainting</strong> — FLUX Fill Pro or AnyDoor fills the masked area based on a text prompt or reference product image</li>
+</ol>
+<p><strong>Python API:</strong> <code>/api/segment/*</code> (sam_routes.py)
+<strong>Frontend:</strong> <code>RegionEditCanvas.tsx</code> for user mask painting</p>
+<hr>
+<h2>Segmentation (SAM 2)</h2>
+<h3>Primary Path: SAM 2 via Replicate</h3>
+<p>Model: <code>meta/sam-2</code></p>
+<p>Takes an image and zone hints (bounding boxes or click points) and returns a binary PNG mask where:</p>
+<ul>
+<li><strong>White pixels</strong> = area to regenerate</li>
+<li><strong>Black pixels</strong> = area to preserve exactly</li>
+</ul>
+<h3>Fallback: Pillow Bbox/Ellipse</h3>
+<p>When SAM 2 is unavailable or for speed-critical paths, a Pillow-based fallback generates approximate rectangular or elliptical masks. Instant, zero cost.</p>
+<hr>
+<h2>Inpainting</h2>
+<h3>With Reference Image: AnyDoor</h3>
+<p>Model: <code>ali-vilab/anydoor</code> via Replicate</p>
+<p>When <code>reference_image_url</code> is provided, AnyDoor places the real product photo into the masked zone, adapting lighting and perspective. Use this to visualize how a specific tile, fabric, or material looks in the room.</p>
+<h3>Text-Guided: FLUX Fill Pro</h3>
+<p>When no reference image is provided, FLUX Fill Pro generates content based on the text prompt. Use this to replace a floor with &quot;herringbone oak parquet&quot; or a wall with &quot;rough concrete texture&quot;.</p>
+<hr>
+<h2>Region Edit API</h2>
+<p>The <code>generate-region-edit</code> edge function provides the end-to-end masked inpainting experience:</p>
+<pre><code>POST /functions/v1/generate-region-edit
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+</code></pre>
+<h3>Request Body</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Public URL of the room image to edit</td>
+</tr>
+<tr>
+<td><code>mask_data_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>PNG data URL of the binary mask (white = regenerate)</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Text description of what to place in the masked area</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>Workspace ID for credit deduction</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>Required for server-to-server calls</td>
+</tr>
+</tbody></table>
+<p><strong>Credits:</strong> 20 per call (Grok Aurora inpainting)</p>
+<p><strong>Model:</strong> Grok Aurora (<code>/v1/images/edits</code> endpoint) for mask-guided inpainting.</p>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;image_url&quot;: &quot;https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1/object/public/generation-images/region-edit/job-uuid.jpg&quot;,
+  &quot;credits_used&quot;: 20
+}
+</code></pre>
+<hr>
+<h2>Segmentation Python API</h2>
+<pre><code>POST /api/segment/mask
+</code></pre>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;image_url&quot;: &quot;https://...&quot;,
+  &quot;zone_hints&quot;: [
+    { &quot;type&quot;: &quot;bbox&quot;, &quot;x&quot;: 100, &quot;y&quot;: 200, &quot;width&quot;: 300, &quot;height&quot;: 150 }
+  ],
+  &quot;fallback&quot;: false
+}
+</code></pre>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;mask_data_url&quot;: &quot;data:image/png;base64,...&quot;,
+  &quot;method&quot;: &quot;sam2&quot;,
+  &quot;processing_ms&quot;: 2400
+}
+</code></pre>
+<hr>
+<h2>Inpainting Python API</h2>
+<pre><code>POST /api/segment/inpaint
+</code></pre>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;image_url&quot;: &quot;https://...&quot;,
+  &quot;mask_data_url&quot;: &quot;data:image/png;base64,...&quot;,
+  &quot;prompt&quot;: &quot;Herringbone oak parquet flooring&quot;,
+  &quot;reference_image_url&quot;: &quot;https://...&quot;   // optional — triggers AnyDoor
+}
+</code></pre>
+<hr>
+<h2>Frontend Integration</h2>
+<p><code>RegionEditCanvas.tsx</code> provides:</p>
+<ul>
+<li>Draw mode: User paints the area to regenerate with a brush</li>
+<li>Erase mode: Remove painted areas</li>
+<li>Preview: Overlay the mask on the original image</li>
+<li>Generate: Submits <code>image_url</code> + <code>mask_data_url</code> + <code>prompt</code> to <code>generate-region-edit</code></li>
+</ul>
+<p>Accessed via <code>GeminiEditModal.tsx</code> in the Designer.</p>
+<hr>
+<h2>Storage</h2>
+<p>Inpainting results are stored at:</p>
+<pre><code>generation-images/region-edit/{job-uuid}.{jpg|png}
+</code></pre>
+<hr>
+<p><strong>Last Updated:</strong> March 2026</p>
+
+</div></body></html>

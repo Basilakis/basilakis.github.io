@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material KAI Vision Platform — Full Business &amp; Product Overview</h1>
+<p><strong>Confidential | For Investor &amp; Partner Use</strong>
+<em>Version 3.5 — March 2026</em></p>
+<hr>
+<h2>Executive Summary</h2>
+<p>Material KAI Vision Platform is an AI-powered B2B SaaS platform for the architecture, interior design, and construction materials industry. It transforms the way professionals discover, specify, visualize, and procure building materials — replacing static PDF catalogs and fragmented manual searches with a unified intelligent platform powered by 20+ AI models across 8 providers.</p>
+<p>The platform serves <strong>5,000+ active users</strong> across three professional groups: buyers (architects, designers, sourcing agents), suppliers (manufacturers, brands), and platform operations. It is live in production at <strong>materialshub.gr</strong> with 99.5%+ uptime, 10,000+ cataloged products, and 1,000+ processed PDFs.</p>
+<p><strong>Core value propositions:</strong></p>
+<ul>
+<li>For <strong>buyers</strong>: Find the exact material — by look, feel, specification, image, or natural language — in seconds instead of hours. Then visualize it in a 3D interior design, walk through a VR version of the room, and request a quote — all within one platform.</li>
+<li>For <strong>suppliers/manufacturers</strong>: Automatically digitize your entire catalog from a single PDF upload. Get real-time visibility into who is searching for your products, what the market trends are, and receive qualified enquiries directly.</li>
+<li>For <strong>the platform</strong>: A credit-based consumption model tied directly to AI feature usage, Stripe-powered with volume discounts, layered over a marketplace that creates strong network effects as both sides grow.</li>
+</ul>
+<hr>
+<h2>The Problem</h2>
+<p>The architecture, interior design, and construction materials industry is a massive, globally fragmented market still running largely on PDFs, trade fairs, and manual outreach.</p>
+<p><strong>Pain for buyers (architects, interior designers, sourcing agents):</strong></p>
+<ul>
+<li>Finding the right material means searching across hundreds of manufacturer PDFs, websites, and physical showrooms — each with different formats, terminology, and cataloging standards</li>
+<li>No cross-manufacturer visual search exists: &quot;find me something that looks like this image&quot; is impossible in any current tool</li>
+<li>Specification-based search (&quot;slip-resistant matte ceramic, 30×60cm, suitable for external use&quot;) requires manual page-by-page reading</li>
+<li>No structured workflow from inspiration → specification → quote → project tracking exists in one tool</li>
+<li>Design visualization requires separate tools (Photoshop, Revit, SketchUp) — completely disconnected from the material catalog</li>
+</ul>
+<p><strong>Pain for manufacturers and suppliers:</strong></p>
+<ul>
+<li>PDF catalogs are invisible to search engines and AI systems</li>
+<li>No visibility into buyer interest: who viewed what, which products are trending</li>
+<li>No competitive price intelligence without manual monitoring</li>
+<li>No structured digital channel for receiving and managing qualified enquiries</li>
+<li>Maintaining a web presence requires constant manual effort per product</li>
+</ul>
+<hr>
+<h2>The Solution</h2>
+<p>Material KAI Vision Platform closes this gap with a fully integrated AI platform that handles the complete lifecycle:</p>
+<pre><code>Manufacturer uploads PDF → AI extracts, understands &amp; indexes all products
+          ↓
+Buyer searches by text, image, color, texture, or specification
+          ↓
+AI agents explain, compare &amp; recommend materials from the catalog
+          ↓
+Interior Designer agent generates room visualizations using those materials
+          ↓
+VR generation turns any design into a walkable 3D world (in-browser)
+          ↓
+Buyer saves materials to Moodboards → builds a Quote → tracks the project
+          ↓
+Manufacturer sees who is interested, manages enquiries, tracks market trends
+</code></pre>
+<p>Every step — ingestion, search, design, visualization, procurement — runs on the same platform, creating a flywheel: more suppliers → richer catalog → better search results → more buyers → more enquiries → more suppliers.</p>
+<hr>
+<h2>Platform Architecture</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+<th>Hosting</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Frontend</td>
+<td>React 18 + TypeScript + Vite + Shadcn/UI</td>
+<td>Vercel Edge Network (global CDN)</td>
+</tr>
+<tr>
+<td>Backend API</td>
+<td>FastAPI + Python 3.11 (MIVAA service)</td>
+<td>Dedicated server (DigitalOcean)</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>Supabase PostgreSQL 15 + pgvector 0.8.0</td>
+<td>Supabase managed cloud</td>
+</tr>
+<tr>
+<td>Edge Functions</td>
+<td>30+ Deno/TypeScript functions</td>
+<td>Supabase managed cloud</td>
+</tr>
+</tbody></table>
+<p><strong>Production URLs:</strong></p>
+<ul>
+<li>Platform: <code>materialshub.gr</code></li>
+<li>API: <code>v1api.materialshub.gr</code></li>
+<li>API Docs: <code>v1api.materialshub.gr/docs</code></li>
+</ul>
+<p><strong>Scale characteristics:</strong></p>
+<ul>
+<li>Frontend served via Vercel global edge — zero latency regardless of user geography</li>
+<li>Backend handles unlimited async job queue with checkpoint-based recovery</li>
+<li>Database uses connection pooling and optimized halfvec (float16) vector indexes</li>
+<li>170+ API endpoints, 20 categories, 60+ Supabase Edge Functions, fully documented via OpenAPI/Swagger</li>
+</ul>
+<hr>
+<h2>AI &amp; Intelligence Layer</h2>
+<p>The platform&#39;s core differentiator is not a single AI model — it is the orchestration of <strong>20+ AI models</strong> deeply embedded into every layer: ingestion, enrichment, search, agent interactions, design generation, and analytics.</p>
+<h3>Full AI Model Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Model</th>
+<th>Role</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Anthropic</td>
+<td>Claude Sonnet 4.5</td>
+<td>Jarvis agent, deep product analysis, metadata extraction, B2B research</td>
+<td>$3 input / $15 output per 1M tokens</td>
+</tr>
+<tr>
+<td>Anthropic</td>
+<td>Claude Haiku 4.5</td>
+<td>Fast classification, content detection, B2B web search</td>
+<td>$0.80 input / $4 output per 1M tokens</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>GPT-4o</td>
+<td>Alternative product discovery, multimodal tasks</td>
+<td>$2.50 input / $10 output per 1M tokens</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>GPT-4o-mini</td>
+<td>Query intent parsing, lightweight operations</td>
+<td>$0.15 input / $0.60 output per 1M tokens</td>
+</tr>
+<tr>
+<td>Voyage AI</td>
+<td>voyage-3.5 (1024D)</td>
+<td>Primary text embeddings + understanding embeddings</td>
+<td>$0.06 per 1M tokens</td>
+</tr>
+<tr>
+<td>HuggingFace</td>
+<td>Qwen3-VL 32B Vision</td>
+<td>Image analysis, OCR, material recognition (69.4% MMMU, #1 OCR benchmark)</td>
+<td>Cloud endpoint</td>
+</tr>
+<tr>
+<td>HuggingFace</td>
+<td>SigLIP2 (768D × 5 types)</td>
+<td>Visual / color / texture / style / material embeddings</td>
+<td>Cloud endpoint</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td>FLUX.1-dev, FLUX.1-schnell, SDXL, SD3, Playground v2.5, Kandinsky 2.2, Proteus v0.2</td>
+<td>Text-to-image interior design generation</td>
+<td>Per image</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td>ComfyUI Interior Remodel, Interiorly Gen1 Dev, Designer Architecture + 4 others</td>
+<td>Image-to-image interior transformation</td>
+<td>Per image</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td>proplabs/virtual-staging</td>
+<td>AI room staging from empty photos</td>
+<td>20 credits/run</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td>Wan 2.1 i2v 720p, Runway Gen4 Turbo</td>
+<td>Interior video generation (budget + premium)</td>
+<td>12/40 credits</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td>meta/sam-2, ali-vilab/anydoor</td>
+<td>Pixel-precise mask generation, product placement</td>
+<td>Per use</td>
+</tr>
+<tr>
+<td>WorldLabs</td>
+<td>Marble mini + plus</td>
+<td>3D Gaussian Splat VR world generation</td>
+<td>50/200 credits per world</td>
+</tr>
+<tr>
+<td>Google Gemini</td>
+<td>gemini-3.1-flash-image-preview, gemini-3-pro-image-preview</td>
+<td>Interior image generation (4 modes)</td>
+<td>6/15 credits</td>
+</tr>
+<tr>
+<td>xAI (Grok)</td>
+<td>grok-2-aurora</td>
+<td>Masked inpainting for region editing, social images</td>
+<td>10–20 credits</td>
+</tr>
+<tr>
+<td>Kling</td>
+<td>kling-v3.0, kling-1.6-pro</td>
+<td>Interior + social video generation</td>
+<td>15–20 credits</td>
+</tr>
+</tbody></table>
+<h3>7-Vector Embedding Fusion — The Search Backbone</h3>
+<p>Every product in the catalog is represented by <strong>7 distinct AI embedding vectors</strong>, enabling multi-dimensional similarity search. All stored as <code>halfvec</code> (float16) — 50% storage cost reduction, zero accuracy loss:</p>
+<table>
+<thead>
+<tr>
+<th>Embedding Type</th>
+<th>Dimensions</th>
+<th>Model</th>
+<th>What It Powers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Text</td>
+<td>1024D</td>
+<td>Voyage AI voyage-3.5</td>
+<td>Natural language + keyword search</td>
+</tr>
+<tr>
+<td>Visual</td>
+<td>768D</td>
+<td>SigLIP2</td>
+<td>&quot;Find materials that look like this photo&quot;</td>
+</tr>
+<tr>
+<td>Understanding</td>
+<td>1024D</td>
+<td>Voyage AI (from Qwen3-VL JSON analysis)</td>
+<td>Spec-based search (dimensions, finishes, surface properties)</td>
+</tr>
+<tr>
+<td>Color</td>
+<td>768D</td>
+<td>SigLIP2</td>
+<td>Color palette matching</td>
+</tr>
+<tr>
+<td>Texture</td>
+<td>768D</td>
+<td>SigLIP2</td>
+<td>Surface texture similarity</td>
+</tr>
+<tr>
+<td>Style</td>
+<td>768D</td>
+<td>SigLIP2</td>
+<td>Design aesthetic matching</td>
+</tr>
+<tr>
+<td>Material</td>
+<td>768D</td>
+<td>SigLIP2</td>
+<td>Material type / composition classification</td>
+</tr>
+</tbody></table>
+<p>Search results are fused dynamically using <strong>7 query-adaptive weight profiles</strong>. The system infers query intent and automatically adjusts how much each embedding type contributes to the final ranking. No competitor in the materials space currently operates at this level of search sophistication.</p>
+<hr>
+<h2>Complete Feature Set</h2>
+<h3>Feature 1 — Catalog Ingestion (Three Methods)</h3>
+<p><strong>A. PDF Processing Pipeline (14 Stages)</strong></p>
+<p>The primary ingest path. A supplier uploads a product catalog PDF. The platform automatically:</p>
+<ol>
+<li>Discovers all products using Claude Haiku (fast boundary detection) + Claude Sonnet (metadata enrichment) — <strong>95%+ detection accuracy</strong></li>
+<li>Extracts text with PyMuPDF4LLM (structure-preserving)</li>
+<li>Semantic chunking via Anthropic API (800 token max, 100 overlap)</li>
+<li>Generates text + understanding embeddings via Voyage AI</li>
+<li>Extracts all images from product pages</li>
+<li>Runs Qwen3-VL 32B Vision on every image — identifies material type, surface properties, finishes, dimensions visible, color palette</li>
+<li>Generates all 5 SigLIP2 visual embedding types per image</li>
+<li>Extracts 200+ metadata fields per product (dimensions, material composition, certifications, weight, finish, slip resistance, etc.)</li>
+<li>YOLO layout detection + Camelot table extraction on complex page layouts</li>
+<li>Creates fully searchable product records with all embeddings linked</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>PDF Size</th>
+<th>Products Extracted</th>
+<th>Processing Time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Small (1–20 pages)</td>
+<td>1–5</td>
+<td>1–2 min</td>
+</tr>
+<tr>
+<td>Medium (21–50 pages)</td>
+<td>6–15</td>
+<td>2–4 min</td>
+</tr>
+<tr>
+<td>Large (51–100 pages)</td>
+<td>16–30</td>
+<td>4–8 min</td>
+</tr>
+<tr>
+<td>Extra Large (100+ pages)</td>
+<td>30+</td>
+<td>8–15 min</td>
+</tr>
+</tbody></table>
+<p><strong>9 recovery checkpoints</strong> — failure at any stage resumes from the last checkpoint, not from scratch.</p>
+<p><strong>B. Web Scraping</strong>
+Automatic product discovery from manufacturer websites via Firecrawl. Discovers product pages, extracts structured data, and runs the same full AI enrichment pipeline.</p>
+<p><strong>C. XML Import</strong>
+Structured data import with AI-powered field mapping (Claude Sonnet). Supports recurring scheduled imports, batch processing (10 products at a time, 5 concurrent image downloads), and checkpoint recovery.</p>
+<hr>
+<h3>Feature 2 — Multi-Modal AI Search</h3>
+<p>Six search strategies, all available simultaneously with results merged and deduplicated:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Mechanism</th>
+<th>Best For</th>
+<th>Accuracy</th>
+<th>Response Time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Semantic</td>
+<td>Natural language → text embeddings (1024D)</td>
+<td>&quot;sustainable natural stone for wet areas&quot;</td>
+<td>85%+</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td>Vector</td>
+<td>Pure cosine similarity</td>
+<td>Precise technical lookups</td>
+<td>88%+</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td>Multi-Vector (7-fusion)</td>
+<td>All 7 embeddings, adaptive weights</td>
+<td>Complex multi-attribute queries</td>
+<td>90%+</td>
+<td>&lt;200ms</td>
+</tr>
+<tr>
+<td>Hybrid</td>
+<td>Semantic (70%) + PostgreSQL full-text (30%)</td>
+<td>Technical product names and codes</td>
+<td>90%+</td>
+<td>&lt;180ms</td>
+</tr>
+<tr>
+<td>Material Property</td>
+<td>JSONB filter on 200+ metadata fields</td>
+<td>Specification-driven sourcing</td>
+<td>95%+</td>
+<td>&lt;50ms</td>
+</tr>
+<tr>
+<td>Visual / Image Upload</td>
+<td>Photo → SigLIP2 embedding → cosine similarity</td>
+<td>Inspiration-to-specification workflow</td>
+<td>88%+</td>
+<td>&lt;150ms</td>
+</tr>
+<tr>
+<td>All Combined</td>
+<td>All 6 in parallel, merged + ranked</td>
+<td>Maximum coverage</td>
+<td>Best overall</td>
+<td>&lt;800ms</td>
+</tr>
+</tbody></table>
+<p>After retrieval, a secondary AI re-ranking pass scores results on visual, understanding, relevance, and material dimensions — surfacing the most contextually relevant products even when they don&#39;t exactly match keywords.</p>
+<p><strong>Saved Searches with AI Deduplication:</strong> Users can save search queries. Claude Haiku automatically detects near-duplicate saved searches (85–95% semantic similarity threshold) and offers to merge them, keeping the search library clean.</p>
+<hr>
+<h3>Feature 3 — KAI Agent Hub (Three AI Agents)</h3>
+<p>The Agent Hub (<code>/agent-hub</code>) is the conversational AI interface with memory, multi-turn context, image uploads, and tool-use.</p>
+<p><strong>Jarvis — Primary Material Intelligence Agent</strong>
+Model: Claude Sonnet 4.5 | LangGraph + Supabase checkpointer (conversations resume across sessions)</p>
+<p>Tools available to all authenticated users:</p>
+<ul>
+<li><code>material_search</code> — 7-vector fusion search across the catalog</li>
+<li><code>knowledge_base_search</code> — RAG over the workspace knowledge base</li>
+<li><code>visual_search</code> — automatic image-to-material matching when images are attached</li>
+</ul>
+<p>Tools gated to Admin/Owner only:</p>
+<ul>
+<li><code>b2b_manufacturer_search</code> — live web search via Anthropic&#39;s built-in <code>web_search_20250305</code> tool. CEE queries include native-language terms (Polish, Czech, Slovak, etc.)</li>
+<li><code>company_website_scrape</code> — scrapes manufacturer websites via Firecrawl</li>
+<li><code>company_enrichment</code> — enriches company records via Apollo.io</li>
+<li><code>contact_discovery</code> — Hunter.io with Apollo.io fallback</li>
+<li><code>email_validate</code> — ZeroBounce email validation before outreach</li>
+<li><code>save_to_crm</code> — saves enriched company and contact data</li>
+<li><code>seo_keyword_research</code>, <code>seo_article_planner</code>, <code>seo_article_writer</code>, <code>seo_content_analyzer</code>, <code>create_seo_article</code> — full SEO content pipeline</li>
+<li>Sub-agents: <code>research_analysis</code>, <code>analytics_analysis</code>, <code>business_analysis</code>, <code>product_analysis</code></li>
+</ul>
+<p><strong>Interior Designer Agent</strong>
+Model: Claude Sonnet 4.5 | Focused on spatial design and visualization</p>
+<ul>
+<li>Analyzes room photos: layout, dimensions, natural light, spatial relationships, accessibility compliance</li>
+<li>Generates interior design images (text prompt or image reference) — see Feature 4</li>
+<li>Matches generated designs back to real catalog materials using 7-vector search</li>
+<li>Estimates project costs based on matched materials and dimensions</li>
+<li>Generates explorable 3D VR worlds from any design image — see Feature 5</li>
+</ul>
+<p><strong>Demo Agent</strong>
+Model: Claude Haiku 4.5 | Platform showcases and sales demonstrations. Admin-only.</p>
+<hr>
+<h3>Feature 4 — Interior Design Generation Suite</h3>
+<p>The Interior Designer agent generates photorealistic interior design images and videos through <strong>four distinct AI generation systems</strong>:</p>
+<hr>
+<p><strong>A. Replicate Text-to-Image (14 models, run in parallel)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Models</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Text-to-Image</td>
+<td>FLUX.1-dev, FLUX.1-schnell, SDXL, SD3, Playground v2.5, Kandinsky 2.2, Proteus v0.2 (7 variations output simultaneously)</td>
+</tr>
+<tr>
+<td>Image-to-Image</td>
+<td>ComfyUI Interior Remodel, Interiorly Gen1 Dev, Designer Architecture + 4 others</td>
+</tr>
+</tbody></table>
+<p><strong>B. Gemini Interior Generation (4 modes)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Description</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Text-to-Image</td>
+<td>Narrative prompt → photorealistic room render</td>
+<td>6 (flash) / 15 (4K pro)</td>
+</tr>
+<tr>
+<td>Image Edit</td>
+<td>Existing room + instruction → transformed image</td>
+<td>6 / 15</td>
+</tr>
+<tr>
+<td>Floor Plan Render</td>
+<td>2D floor plan → photorealistic perspective interior</td>
+<td>6 / 15</td>
+</tr>
+<tr>
+<td>Floor Plan Diagram</td>
+<td>Text description → 2D floor plan layout</td>
+<td>6 / 15</td>
+</tr>
+</tbody></table>
+<p>The Gemini system uses a two-step style-transfer pipeline — an inspiration image is analyzed by Gemini Vision into a structured design specification, which is then used to edit the target room. This prevents spatial &quot;bleed&quot; (the inspiration image never directly influences the generated geometry) and produces far more accurate style transfers than naive image-to-image approaches.</p>
+<p><strong>C. Virtual Staging</strong></p>
+<p>Empty room photos → furnished renders via Replicate <code>proplabs/virtual-staging</code> (~56 seconds). 8 room types, 8 furniture styles. 20 credits per run. Accessible as both a standalone tool and a KAI agent tool.</p>
+<p><strong>D. Region Editing (Masked Inpainting)</strong></p>
+<p>Users paint a zone over any room image using the <code>RegionEditCanvas</code> tool. SAM 2 (Replicate <code>meta/sam-2</code>) generates a pixel-perfect binary mask from drawn hints. Grok Aurora then regenerates only the painted area based on a text prompt (20 credits). For product-specific placement, AnyDoor (<code>ali-vilab/anydoor</code>) places a real product photo into the masked zone with accurate lighting adaptation.</p>
+<hr>
+<p><strong>Generation workflow (full):</strong></p>
+<ol>
+<li>User describes room style or uploads reference via Interior Designer agent</li>
+<li>Platform runs parallel generation (multiple models, multiple variations)</li>
+<li>All outputs permanently stored in Supabase Storage</li>
+<li>Agent runs 7-vector material matching on generated image — surfacing real catalog products that match</li>
+<li>Agent presents cost estimates based on matched materials and room dimensions</li>
+<li>User can: generate VR world, create video walkthrough, stage an empty room, or region-edit any element</li>
+<li>All generations are credit-billed per operation</li>
+</ol>
+<p><strong>E. Interior Video Generation</strong></p>
+<p>Any design image can become a video via four AI models:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Veo-2 (Google)</td>
+<td>30</td>
+<td>Cinematic walkthroughs, floor-plan flythroughs</td>
+</tr>
+<tr>
+<td>Kling v3.0</td>
+<td>20</td>
+<td>Product spotlights, before/after reveals, social reels</td>
+</tr>
+<tr>
+<td>Wan 2.1 i2v 720p</td>
+<td>12</td>
+<td>Budget general-purpose</td>
+</tr>
+<tr>
+<td>Runway Gen4 Turbo</td>
+<td>40</td>
+<td>Premium quality</td>
+</tr>
+</tbody></table>
+<p>Video type auto-selects the optimal model. Supports 16:9, 9:16, 1:1 aspect ratios. Async polling for long renders (Veo, Runway) with <code>job_id</code> polling pattern.</p>
+<hr>
+<h3>Feature 5 — VR World Generation (WorldLabs Marble + Spark.js)</h3>
+<p>Any interior design image — AI-generated or user-uploaded — can be turned into a fully <strong>explorable 3D world</strong> inside the browser. No app, no plugin, no external tool required.</p>
+<p><strong>End-to-end flow:</strong></p>
+<ol>
+<li>User clicks &quot;Generate VR&quot; on any design image in the agent chat</li>
+<li>Selects model tier (mini for quick preview, plus for high-fidelity final)</li>
+<li>Supabase Edge Function uploads the image to WorldLabs Marble API and triggers world generation</li>
+<li>Platform polls for completion status, stores all asset URLs in the <code>vr_worlds</code> database table</li>
+<li>WorldViewer component renders the 3D Gaussian Splat inline in the chat via Spark.js (Three.js-based, code-split, ~496KB)</li>
+<li>The world persists in the database — reloads instantly in future sessions</li>
+</ol>
+<p><strong>Model tiers:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+<th>USD Cost</th>
+<th>Generation Time</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>marble-0.1-mini</td>
+<td>50 credits</td>
+<td>$0.50</td>
+<td>~30–45 seconds</td>
+<td>Quick previews, client check-ins</td>
+</tr>
+<tr>
+<td>marble-0.1-plus</td>
+<td>200 credits</td>
+<td>$2.00</td>
+<td>~5 minutes</td>
+<td>High-fidelity final walkthroughs</td>
+</tr>
+</tbody></table>
+<p>Credits are refunded automatically on generation failure.</p>
+<p><strong>Output assets per world:</strong></p>
+<ul>
+<li>Gaussian Splat SPZ files at 3 quality levels: 100k (draft), 500k (standard), full</li>
+<li>Collider GLB (collision mesh for first-person physics)</li>
+<li>360° panorama equirectangular image</li>
+<li>Thumbnail preview</li>
+<li>AI-generated scene caption</li>
+</ul>
+<p><strong>Navigation controls:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Controls</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Orbit (default)</td>
+<td>Drag to rotate · Scroll to zoom · Right-click drag to pan</td>
+</tr>
+<tr>
+<td>Walk (first-person)</td>
+<td>WASD to move · Mouse look · Shift for speed boost</td>
+</tr>
+</tbody></table>
+<p><strong>Business value of VR worlds:</strong>
+An architect can go from finding a tile in the catalog → generating a room design with that tile → walking through a VR version of that room → requesting a quote — all in one session on one platform. No competitor offers this workflow. VR generation is also a strong upsell moment: mini worlds generate impulse purchases, plus worlds are high-margin repeat purchases for client presentations.</p>
+<hr>
+<h3>Feature 6 — Moodboards</h3>
+<p>Visual material collections that serve as both a design tool and a social/portfolio layer.</p>
+<p><strong>Private workspace use:</strong></p>
+<ul>
+<li>Create named boards and organize materials from search, agents, or the catalog</li>
+<li>Add materials directly from search results or agent chat output</li>
+<li>Feed a moodboard directly into a Quote (materials pre-populated)</li>
+<li>Notes and descriptions per board</li>
+<li>Export for client presentations</li>
+</ul>
+<p><strong>Public portfolio use (marketplace layer):</strong></p>
+<ul>
+<li>Any board can be made public — visible on the user&#39;s public profile (<code>/u/:userId</code>)</li>
+<li>Public boards appear in the Discover directory for other users to browse</li>
+<li>Visitors can comment on public boards (social engagement layer)</li>
+<li>One board can be &quot;featured&quot; — pinned to the profile header as a visual portfolio piece with a full-width image preview</li>
+</ul>
+<p><strong>As a conversion funnel:</strong>
+Moodboards are a key step in the discovery-to-quote journey. A designer explores materials → builds a board as a design brief → shares it with a client → client requests a quote on specific items from the board → supplier receives a structured enquiry. The board functions as the visual brief.</p>
+<hr>
+<h3>Feature 7 — Professional Marketplace</h3>
+<p>A B2B talent and services marketplace built on top of the platform, enabling professionals to be discovered, followed, and hired.</p>
+<p><strong>The vision:</strong> As the platform grows, it becomes not just a material catalog but the professional network for the design and construction industry. A manufacturer searching for a trusted sourcing agent in a new market, or an architect looking to collaborate with a sustainability consultant, finds and contacts them through the same platform they use daily for material sourcing.</p>
+<p><strong>Public Profiles</strong> (<code>/u/:userId</code>) — opt-in (<code>is_public = true</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Identity</td>
+<td>Name, company, bio, avatar, location, website, professional type badge</td>
+</tr>
+<tr>
+<td>Skills &amp; Expertise</td>
+<td>Free-form skill tags (e.g., &quot;Biophilic Design&quot;, &quot;LEED Certified&quot;, &quot;CEE Material Sourcing&quot;)</td>
+</tr>
+<tr>
+<td>Services</td>
+<td>Rich listings: name, description, price range, previous work portfolio with links</td>
+</tr>
+<tr>
+<td>Preferred Factories</td>
+<td>Curated list of trusted manufacturers the professional works with</td>
+</tr>
+<tr>
+<td>Featured Moodboard</td>
+<td>Pinned visual portfolio piece with full image preview</td>
+</tr>
+<tr>
+<td>All Public Moodboards</td>
+<td>Grid of public boards with previews and comment sections</td>
+</tr>
+<tr>
+<td>Social</td>
+<td>Follow/unfollow, profile view counter, Hire Me CTA button</td>
+</tr>
+</tbody></table>
+<p><strong>Hire Me Flow:</strong></p>
+<ol>
+<li>Visitor clicks &quot;Hire Me&quot; or &quot;Hire&quot; on a specific service card</li>
+<li>Modal opens with optional service pre-selection</li>
+<li>Visitor fills in name, email, message</li>
+<li>Request stored in <code>profile_contact_requests</code> table</li>
+<li><code>hire_me_received</code> flow event emitted → triggers configurable automation (email, Slack, CRM)</li>
+<li>Platform tracks service interest per professional in analytics</li>
+</ol>
+<p><strong>Discover Directory</strong> (<code>/discover</code>):</p>
+<ul>
+<li>Grid of all public profiles, sorted by profile views</li>
+<li>Real-time search: name, company, bio, services, skills, location</li>
+<li>Dynamic tag filtering: professional type, services, skill tags</li>
+<li>Follow button per card</li>
+<li>Follower counts as social proof signal</li>
+<li>Up to 60 profiles displayed</li>
+</ul>
+<p><strong>Supported professional types:</strong>
+Designer, Interior Designer, Architect, Manufacturer, Brand, Supplier, Sourcing Agent, Consultant</p>
+<p><strong>Monetization pathway (current → planned):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Model</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Now</td>
+<td>Free — building network density and liquidity</td>
+</tr>
+<tr>
+<td>Near-term</td>
+<td>Featured listing placements (suppliers/professionals pay to appear higher)</td>
+</tr>
+<tr>
+<td>Near-term</td>
+<td>Verified badge subscription (trust signal for buyers)</td>
+</tr>
+<tr>
+<td>Longer-term</td>
+<td>Lead generation packages for suppliers (qualified buyer contact access)</td>
+</tr>
+<tr>
+<td>Longer-term</td>
+<td>Transaction fee on Hire Me requests (% of project value or flat fee per connected lead)</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Feature 8 — Quotes &amp; Project Management</h3>
+<p>A complete B2B procurement workflow from material selection to project delivery tracking.</p>
+<p><strong>Buyer workflow:</strong></p>
+<ol>
+<li>Build a quote cart — add products from search, agents, or moodboards</li>
+<li>Per item: dimensions (width, height, sqm), quantities, notes</li>
+<li>Submit quote request to the supplier</li>
+<li>Review and accept/reject each upsell/extra individually</li>
+<li>Accept the quote → project timeline auto-initializes</li>
+<li>Track 9 predefined milestones from &quot;Quote Accepted&quot; to &quot;Project Completed&quot;</li>
+</ol>
+<p><strong>Supplier/Admin workflow:</strong></p>
+<ol>
+<li>View all incoming quote requests filtered by custom status tag</li>
+<li>Assign color-coded status tags (6 system defaults + unlimited custom)</li>
+<li>Attach upsells and extras with pricing</li>
+<li>Monitor which extras the buyer accepted/rejected</li>
+<li>Update project timeline milestones with notes per step</li>
+<li>Manage Upsells library and Timeline Steps configuration</li>
+</ol>
+<p><strong>Quote lifecycle:</strong> Auto-expire after 30 days of inactivity. Any user action resets the timer. Activity tracking = quote remains active during active projects.</p>
+<p><strong>Database:</strong> 8 tables — <code>quotes</code>, <code>quote_items</code>, <code>status_tags</code>, <code>upsells</code>, <code>quote_upsells</code>, <code>timeline_steps</code>, <code>quote_timeline</code>, <code>system_settings</code>.</p>
+<hr>
+<h3>Feature 9 — Price Monitoring</h3>
+<p>Competitive intelligence for the materials market:</p>
+<ul>
+<li>Track competitor prices across multiple sources on configurable schedules (hourly, daily, weekly, on-demand)</li>
+<li>Price history database with trend visualization</li>
+<li>Configurable price alerts when prices cross defined thresholds</li>
+<li>Competitor source management (add/remove monitored sources)</li>
+<li>Statistics: min/max/average price trends per product category</li>
+</ul>
+<p>Particularly valuable for verified manufacturer/brand users who need competitive pricing intelligence without manual monitoring.</p>
+<hr>
+<h3>Feature 10 — Knowledge Base &amp; RAG</h3>
+<p>Document-level intelligence beyond product catalogs:</p>
+<ul>
+<li>Upload spec sheets, technical guidelines, research papers, compliance documents</li>
+<li>AI semantic chunking with quality scoring (0–1 scale)</li>
+<li>Hash-based + semantic deduplication (85–95% threshold)</li>
+<li>Chunk relationship mapping (semantic, sequential, hierarchical)</li>
+<li>200+ metadata fields extracted per chunk</li>
+<li>Queried live by Jarvis agent for context-aware answers with source attribution</li>
+<li>Full admin view with quality indicators</li>
+</ul>
+<hr>
+<h3>Feature 11 — Flow Builder &amp; Automation</h3>
+<p><strong>Flow Builder</strong> — visual no-code automation engine:</p>
+<p>Trigger events include: <code>hire_me_received</code>, <code>profile_followed</code>, <code>profile_published</code>, <code>quote_requested</code>, <code>quote_approved</code>, <code>moodboard_shared</code>, <code>moodboard_commented</code>, <code>material_reviewed</code>, <code>user_signup</code>, <code>search_executed</code>, <code>model_3d_created</code>, <code>vr_world_created</code>, and scheduled (cron).</p>
+<p>Actions: send email (Amazon SES), Slack notification, call webhook, trigger AI agent, create CRM record.</p>
+<p><strong>Background Agent Framework</strong> — autonomous long-running AI tasks:</p>
+<ul>
+<li>Product Enrichment Agent: continuously enriches catalog products with AI metadata</li>
+<li>Material Tagger Agent: auto-tags materials with structured labels</li>
+<li>Extensible: new agents implemented via <code>AgentRunner</code> interface</li>
+<li>Auto-recovery: tasks stuck &gt;8 minutes re-dispatched automatically (up to 3 retries)</li>
+<li>Chain triggers: agents can trigger subsequent agents on completion</li>
+<li>Full run history, log viewer, manual trigger from admin panel</li>
+</ul>
+<hr>
+<h3>Feature 12 — Social Media Suite</h3>
+<p>AI-powered social media content generation and cross-platform publishing via Late.dev:</p>
+<p><strong>Content Generation:</strong></p>
+<ul>
+<li><strong>Captions</strong>: Claude generates 3 variants per platform (Instagram, Facebook, LinkedIn, TikTok, Pinterest, YouTube, Twitter, Threads), each respecting character limits, hashtag conventions, and platform tone. 2 credits.</li>
+<li><strong>Images</strong>: Auto-routed by content type — xAI Aurora for lifestyle/people (10cr), Gemini Imagen for product/interior (5cr), FLUX Dev for artistic/textured (6cr). 1:1, 4:5, 9:16, 16:9 aspect ratios.</li>
+<li><strong>Videos</strong>: Kling 1.6 Pro (15cr, fast) or Veo-2 (30cr, premium) for short-form social videos. Async polling for longer renders.</li>
+</ul>
+<p><strong>Publishing (Late.dev):</strong></p>
+<ul>
+<li>Users connect Instagram, Facebook, LinkedIn, TikTok, Pinterest, YouTube, Twitter, or Threads via OAuth at their profile settings page</li>
+<li>Accounts are per-user (not per workspace — each professional manages their own presence)</li>
+<li>Publish immediately or schedule for a future datetime</li>
+<li>No credit cost for publishing — uses the workspace&#39;s Late.dev subscription</li>
+<li>Engagement metrics (likes, comments, shares, reach) synced back to local database via <code>late-analytics</code></li>
+<li>Best posting time recommendations per platform</li>
+</ul>
+<p><strong>Business value for the platform:</strong>
+Professionals using Material KAI to design rooms and source materials can publish their work directly to social media without leaving the platform. Every post is a word-of-mouth marketing event for the platform, driving organic discovery. The social suite also creates a natural upsell moment — from free content generation into higher-tier credit packages.</p>
+<hr>
+<h3>Feature 13 — Email System &amp; Campaigns</h3>
+<p>Full transactional and campaign email infrastructure via Amazon SES:</p>
+<ul>
+<li>Domain verification and management</li>
+<li>React Email templates with personalization</li>
+<li>Per-recipient tracking: sent, delivered, opened, clicked, bounced</li>
+<li>Bounce/complaint handling via SES + SNS webhooks</li>
+<li><strong>Campaign system</strong>: bulk email campaigns with audience targeting, scheduling, real-time delivery analytics</li>
+<li>Admin dashboard at <code>/admin/emails</code></li>
+</ul>
+<hr>
+<h3>Feature 14 — CRM (Companies &amp; Contacts)</h3>
+<p>Built-in CRM for managing supplier and manufacturer relationships:</p>
+<ul>
+<li>Company records: name, website, industry, country, Apollo.io enrichment data</li>
+<li>Contact records: email (ZeroBounce validated), linked to companies</li>
+<li>Records created directly from B2B manufacturer research agent</li>
+<li>Full CRUD API: company management, contact management, association management</li>
+</ul>
+<hr>
+<h3>Feature 15 — Admin Dashboard</h3>
+<p>Full platform operations suite at <code>/admin</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Platform Overview</td>
+<td>Cross-workspace analytics, user metrics, hire request funnel, rating distributions</td>
+</tr>
+<tr>
+<td>PDF Processing Monitor</td>
+<td>Real-time job tracking with 9 checkpoint stages, error logs, retry controls</td>
+</tr>
+<tr>
+<td>Analytics</td>
+<td>Search patterns, processing stats, AI model usage, cost tracking, agent chat quality ratings</td>
+</tr>
+<tr>
+<td>AI Monitoring</td>
+<td>Per-model usage, cost breakdown, performance trends, Sentry error integration</td>
+</tr>
+<tr>
+<td>Knowledge Base</td>
+<td>View/edit chunks, images, products with quality scores</td>
+</tr>
+<tr>
+<td>Agent Configurations</td>
+<td>Manage AI agent system prompts in real-time (no deployment needed)</td>
+</tr>
+<tr>
+<td>Background Agents</td>
+<td>Run history, logs, manual trigger, create/edit configurations</td>
+</tr>
+<tr>
+<td>User Management</td>
+<td>Workspace members, roles, permissions</td>
+</tr>
+<tr>
+<td>Quotes</td>
+<td>All quote requests with filtering and detail views</td>
+</tr>
+<tr>
+<td>Status Tags</td>
+<td>Custom color-coded quote status management</td>
+</tr>
+<tr>
+<td>Upsells</td>
+<td>Upsell library with pricing</td>
+</tr>
+<tr>
+<td>Timeline Steps</td>
+<td>Project milestone configuration</td>
+</tr>
+<tr>
+<td>Email / Campaigns</td>
+<td>Email domain management, template library, bulk campaign management</td>
+</tr>
+<tr>
+<td>Flows</td>
+<td>Visual flow builder</td>
+</tr>
+<tr>
+<td>Push Notifications</td>
+<td>Workspace-level push notification management</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>User Segments, Roles &amp; Access Control</h2>
+<h3>Four Functional Groups</h3>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Who</th>
+<th>Key Privileges</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Standard (Buyers)</strong></td>
+<td>Designers, Interior Designers, Architects, Sourcing Agents, Consultants, Other</td>
+<td>Full search, agents, 3D generation, VR, moodboards, quotes, marketplace</td>
+</tr>
+<tr>
+<td><strong>Verified Factory (Suppliers)</strong></td>
+<td>Manufacturers, Brands, Suppliers with <code>factory_verified=true</code></td>
+<td>All above + Factory Analytics (own data + market trends)</td>
+</tr>
+<tr>
+<td><strong>Admin / Owner</strong></td>
+<td><code>workspace_members.role</code> = admin or owner</td>
+<td>All above + admin panel, B2B tools, SEO pipeline, sub-agents, cross-workspace analytics</td>
+</tr>
+<tr>
+<td><strong>Unauthenticated</strong></td>
+<td>Not logged in</td>
+<td>Public profiles (<code>/u/:id</code>) only</td>
+</tr>
+</tbody></table>
+<h3>Feature Access Matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th align="center">Standard</th>
+<th align="center">Verified Factory</th>
+<th align="center">Admin/Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>7-vector material search</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Visual (image) search</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Jarvis agent (material + KB)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Interior Designer agent</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>3D design generation</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>VR world generation</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Moodboards</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Quotes &amp; project tracking</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Discover directory</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Public profile (opt-in)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Factory Analytics — own data</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Factory Analytics — market trends</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Platform-wide analytics</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>B2B manufacturer research tools</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>SEO content pipeline</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Sub-agent orchestration</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Full admin panel</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Business Model</h2>
+<h3>Revenue Streams</h3>
+<p><strong>1. Credit-Based AI Consumption (Primary)</strong>
+1 credit = $0.01 USD. All AI operations consume credits deducted from user balance. Purchased via Stripe with volume discounts:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Spend</th>
+<th>Credits per $1</th>
+<th>Discount</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Standard</td>
+<td>$1 – $9.99</td>
+<td>100</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Silver</td>
+<td>$10 – $44.99</td>
+<td>~111</td>
+<td>10%</td>
+</tr>
+<tr>
+<td>Gold</td>
+<td>$45 – $79.99</td>
+<td>125</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Platinum</td>
+<td>$80+</td>
+<td>~143</td>
+<td>30%</td>
+</tr>
+</tbody></table>
+<p>Volume discounts incentivize larger upfront purchases and reduce churn. A single Stripe product is reused — prices set dynamically at checkout.</p>
+<p><strong>2. Supplier / Manufacturer Subscriptions</strong>
+Manufacturers pay a subscription to digitize and publish their catalog on the platform, gaining access to Factory Analytics and appearing in buyer searches. Covers ongoing AI enrichment, updates, and market trend reports.</p>
+<p><strong>3. Professional Marketplace — Hire Me Layer</strong>
+Currently free to establish network effects. Planned:</p>
+<ul>
+<li>Featured profile/listing placement (pay to appear higher in directory)</li>
+<li>Verified badge subscription (trust signal)</li>
+<li>Lead generation packages for suppliers (qualified buyer contact access)</li>
+<li>Transaction fees on Hire Me connections (% of project value or flat fee per lead)</li>
+</ul>
+<p><strong>4. Enterprise / API Access</strong>
+Custom contracts for large manufacturers or distributor networks:</p>
+<ul>
+<li>White-label catalog intelligence</li>
+<li>API access to 7-vector search against private product database</li>
+<li>Private workspace deployments with dedicated AI processing capacity</li>
+<li>Custom SLA agreements</li>
+</ul>
+<hr>
+<h2>AI Cost Structure &amp; Margins</h2>
+<p>All AI costs tracked in real-time via <code>ai_usage_logs</code>. The platform charges credits at a markup over raw API costs:</p>
+<table>
+<thead>
+<tr>
+<th>AI Operation</th>
+<th>Raw API Cost (approx.)</th>
+<th>Credits Charged</th>
+<th>Platform Margin</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Claude Sonnet analysis (1K tokens)</td>
+<td>~$0.003–0.015</td>
+<td>1–20 credits</td>
+<td>20–60%+</td>
+</tr>
+<tr>
+<td>Claude Haiku (1K tokens)</td>
+<td>~$0.0008–0.004</td>
+<td>1–5 credits</td>
+<td>50–80%+</td>
+</tr>
+<tr>
+<td>GPT-4o-mini (query parsing)</td>
+<td>~$0.0002</td>
+<td>1 credit</td>
+<td>50x+</td>
+</tr>
+<tr>
+<td>Voyage AI text embedding (1K tokens)</td>
+<td>~$0.00006</td>
+<td>Bundled into search</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Qwen3-VL image analysis (per image)</td>
+<td>~$0.02–0.05</td>
+<td>2–5 credits</td>
+<td>Variable</td>
+</tr>
+<tr>
+<td>VR World — mini</td>
+<td>$0.50 WorldLabs</td>
+<td>50 credits ($0.50)</td>
+<td>Pass-through + platform overhead</td>
+</tr>
+<tr>
+<td>VR World — plus</td>
+<td>$2.00 WorldLabs</td>
+<td>200 credits ($2.00)</td>
+<td>Pass-through + platform overhead</td>
+</tr>
+<tr>
+<td>Interior design (Replicate)</td>
+<td>Replicate variable</td>
+<td>Credits per image</td>
+<td>Variable</td>
+</tr>
+<tr>
+<td>Gemini interior (flash)</td>
+<td>~$0.02</td>
+<td>6 credits</td>
+<td>3x markup</td>
+</tr>
+<tr>
+<td>Gemini interior (pro/4K)</td>
+<td>~$0.06</td>
+<td>15 credits</td>
+<td>2.5x markup</td>
+</tr>
+<tr>
+<td>Virtual staging</td>
+<td>~$0.16 Replicate</td>
+<td>20 credits ($0.20)</td>
+<td>1.25x + overhead</td>
+</tr>
+<tr>
+<td>Interior video (Kling v3.0)</td>
+<td>~$0.12</td>
+<td>20 credits ($0.20)</td>
+<td>1.7x markup</td>
+</tr>
+<tr>
+<td>Interior video (Veo-2)</td>
+<td>~$0.25</td>
+<td>30 credits ($0.30)</td>
+<td>1.2x + overhead</td>
+</tr>
+<tr>
+<td>Region edit (Grok Aurora)</td>
+<td>~$0.08 xAI</td>
+<td>20 credits ($0.20)</td>
+<td>2.5x markup</td>
+</tr>
+<tr>
+<td>Social image (Aurora)</td>
+<td>~$0.04</td>
+<td>10 credits</td>
+<td>2.5x markup</td>
+</tr>
+<tr>
+<td>Social caption (Claude)</td>
+<td>~$0.002</td>
+<td>2 credits</td>
+<td>10x+ markup</td>
+</tr>
+<tr>
+<td>Web scraping (per Firecrawl credit)</td>
+<td>~$0.001</td>
+<td>~0.1 platform credits</td>
+<td>Variable</td>
+</tr>
+</tbody></table>
+<p><strong>Blended gross margin target on AI costs: 60–70%.</strong> Highest margin on high-frequency, low-cost operations (query parsing, embeddings). Thinner margins on high-cost generation (VR, image gen) where pass-through pricing builds user trust.</p>
+<p><strong>Fixed infrastructure costs:</strong></p>
+<ul>
+<li>Vercel: Included in Vercel plan at current scale (global CDN, zero egress cost)</li>
+<li>Supabase: Managed PostgreSQL, storage, edge function invocations — scales with usage</li>
+<li>DigitalOcean: Dedicated server for MIVAA FastAPI backend — predictable fixed monthly cost</li>
+<li>HuggingFace Endpoints: Pay-per-use for Qwen3-VL and SigLIP2 inference</li>
+<li>Variable: Anthropic, OpenAI, Voyage AI, WorldLabs, Replicate — fully usage-based</li>
+</ul>
+<hr>
+<h2>Factory Analytics — Supplier Intelligence Dashboard</h2>
+<p>Verified manufacturers and brands access <code>/factory-analytics</code>:</p>
+<p><strong>My Factory Tab (own data):</strong></p>
+<ul>
+<li>Product view counts and search appearance frequency</li>
+<li>Which products generate the most buyer interest</li>
+<li>Quote requests received per product</li>
+<li>Hire Me enquiries related to their products</li>
+<li>Buyer geographic distribution</li>
+<li>Product performance trends over time</li>
+</ul>
+<p><strong>Market Trends Tab (platform-wide, anonymized):</strong></p>
+<ul>
+<li>Material category demand trends (which types are searched most)</li>
+<li>Emerging finish and style trends derived from search query analysis</li>
+<li>Seasonal demand patterns</li>
+<li>Competitive positioning signals</li>
+</ul>
+<p><strong>Platform-Wide Tab (Admin/Owner only):</strong></p>
+<ul>
+<li>Cross-factory product performance</li>
+<li>User acquisition, activation, retention cohort analysis</li>
+<li>Revenue and credit consumption trends</li>
+<li>AI model performance and cost efficiency</li>
+<li>Search quality metrics</li>
+</ul>
+<p>This analytics layer is a significant standalone upsell — providing market intelligence that currently requires expensive industry research reports or trade show attendance.</p>
+<hr>
+<h2>Production Metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Active users</td>
+<td>5,000+</td>
+</tr>
+<tr>
+<td>PDFs processed</td>
+<td>1,000+</td>
+</tr>
+<tr>
+<td>Products cataloged</td>
+<td>10,000+</td>
+</tr>
+<tr>
+<td>Platform uptime</td>
+<td>99.5%+</td>
+</tr>
+<tr>
+<td>Search accuracy</td>
+<td>85–95%</td>
+</tr>
+<tr>
+<td>Product detection accuracy (PDF)</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Material recognition accuracy</td>
+<td>90%+</td>
+</tr>
+<tr>
+<td>Image classification accuracy</td>
+<td>88%+</td>
+</tr>
+<tr>
+<td>Search response time</td>
+<td>200–800ms</td>
+</tr>
+<tr>
+<td>Concurrent query capacity</td>
+<td>1,000+/minute</td>
+</tr>
+<tr>
+<td>API endpoints</td>
+<td>170+</td>
+</tr>
+<tr>
+<td>AI models integrated</td>
+<td>20+ across 8 providers</td>
+</tr>
+<tr>
+<td>Edge functions deployed</td>
+<td>60+</td>
+</tr>
+<tr>
+<td>Database tables</td>
+<td>40+</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Technology Differentiation — Why This Is Hard to Replicate</h2>
+<p><strong>1. 7-Vector Fusion Search</strong>
+Most platforms use one or two embedding types. Fusing 7 specialized vectors with dynamic per-query weight profiles requires custom ML infrastructure, tuned weight profiles per query intent, and deep integration between the vision analysis pipeline and the search layer. This compound in value as more products are added.</p>
+<p><strong>2. Understanding Embeddings (Novel Architecture)</strong>
+Qwen3-VL 32B generates structured JSON analysis of every product image — material properties, surface characteristics, visible dimensions, finish type. This JSON is then embedded via Voyage AI into a 1024D &quot;understanding&quot; vector. This enables queries like <em>&quot;find matte surfaces with slight veining, suitable for wet external areas&quot;</em> — which no traditional image or keyword search can handle. This is a proprietary architecture not seen replicated elsewhere.</p>
+<p><strong>3. Full Vertical Integration</strong>
+Ingestion + enrichment + search + design generation + VR visualization + quote management + marketplace in one product. Each layer creates switching costs. A user with their catalog ingested, moodboards saved, and project quotes tracked is not going to migrate to a competitor easily.</p>
+<p><strong>4. 14-Stage Pipeline with Checkpoint Recovery</strong>
+Enterprise-grade PDF processing at 95%+ accuracy with YOLO layout detection, table extraction, and 9-stage checkpoint recovery. This took significant engineering and handles everything from scanned PDFs to complex multi-product catalogs.</p>
+<p><strong>5. Halfvec Storage (50% Infrastructure Cost)</strong>
+All 7 embedding types stored as float16 via pgvector. Halves vector storage costs with zero accuracy loss — critical for scaling to millions of products.</p>
+<p><strong>6. Real-Time Automation + Background Agents</strong>
+Event-driven flows and autonomous background agents keep improving product data and automating connections without human intervention. Compounds value over time.</p>
+<p><strong>7. Social-to-Platform Flywheel</strong>
+Every interior design created on the platform can be published directly to Instagram, LinkedIn, TikTok, etc. via the built-in social media suite. This turns users into organic distributors of platform-created content, each post pointing back to a professional profile on materialshub.gr. No competitor offers this closed loop from design → social publication.</p>
+<p><strong>8. Full Vertical Integration of the Design Workflow</strong>
+No competitor currently offers: ingestion → AI search → agent interaction → 3D generation → virtual staging → region editing → interior video → VR walkthrough → social publication → quote → project tracking — all in one product. Each feature layer increases switching costs. A user who has cataloged products, built moodboards, generated designs, and tracked a project on this platform has strong reasons to stay.</p>
+<hr>
+<h2>Competitive Landscape</h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Category</th>
+<th>Gap We Fill</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Architonic / Archiproducts</td>
+<td>Manual product directory</td>
+<td>AI ingestion (zero manual effort), 7-vector search, agent interactions, buyer tools</td>
+</tr>
+<tr>
+<td>Material Bank</td>
+<td>Physical sample delivery</td>
+<td>Fully digital, globally accessible, no logistics dependency</td>
+</tr>
+<tr>
+<td>Trade Shows (Coverings, Salone del Mobile)</td>
+<td>Periodic offline discovery</td>
+<td>Always-on, searchable, data-driven</td>
+</tr>
+<tr>
+<td>Manufacturer websites</td>
+<td>Brand-specific catalogs</td>
+<td>Cross-manufacturer search, buyer-side design and procurement tools</td>
+</tr>
+<tr>
+<td>Generic AI chatbots (ChatGPT, etc.)</td>
+<td>General Q&amp;A</td>
+<td>Deep material domain knowledge, live catalog integration, visual search, full procurement workflow</td>
+</tr>
+<tr>
+<td>BIM tools (Revit, ArchiCAD)</td>
+<td>Design software</td>
+<td>Complementary discovery layer — not competing</td>
+</tr>
+<tr>
+<td>Spec platforms (NBS, Arcom)</td>
+<td>Technical specification databases</td>
+<td>Richer visual and AI-assisted discovery, broader product coverage, integrated procurement</td>
+</tr>
+</tbody></table>
+<p><strong>The defensible position:</strong> No competitor currently offers the combination of auto-ingestion + multi-modal AI search + AI design generation + VR visualization + marketplace in one product. Each element alone is replicable; the vertical integration combined with 7-vector search and the understanding embedding architecture creates a meaningful moat.</p>
+<hr>
+<h2>Roadmap</h2>
+<h3>Live in Production (March 2026)</h3>
+<ul>
+<li>7-vector fusion search with query-adaptive weight profiles</li>
+<li>Understanding embeddings (spec-based search via Qwen3-VL + Voyage AI)</li>
+<li>AI search re-ranking (Claude post-retrieval re-ordering with explanations)</li>
+<li>PDF ingestion pipeline (14 stages, 9 checkpoints, YOLO layout detection)</li>
+<li>Web scraping ingestion (Firecrawl)</li>
+<li>XML import with AI field mapping</li>
+<li>KAI unified agent (material search, KB RAG, visual search, B2B research, SEO)</li>
+<li>Interior Designer agent (room analysis, 3D generation, material matching, cost estimation)</li>
+<li>14 Replicate generation models (7 text-to-image, 7 image-to-image)</li>
+<li>Gemini interior generation (4 modes: text-to-image, image-edit, floor-plan-render, floor-plan-text)</li>
+<li>Virtual staging (AI-furnished rooms from empty photos — Replicate proplabs, 20cr)</li>
+<li>Region editing / masked inpainting (SAM 2 + Grok Aurora, 20cr)</li>
+<li>Interior video generation (4 models: Veo-2 30cr, Kling v3.0 20cr, Wan 2.1 12cr, Runway 40cr)</li>
+<li>Social media suite (caption/image/video generation + Late.dev publishing across 8 platforms)</li>
+<li>VR world generation (WorldLabs Marble + Spark.js, orbit + first-person walk navigation)</li>
+<li>Professional marketplace (profiles, services, Hire Me, Discover directory)</li>
+<li>Moodboards (private + public, comments, featured board)</li>
+<li>Quotes system (buyer + supplier workflow, upsells, project timeline)</li>
+<li>Price monitoring (multi-source, alerts, trends)</li>
+<li>Knowledge Base &amp; RAG</li>
+<li>Flow builder &amp; automation engine (cron, webhook, event triggers; SMS/email/HTTP actions)</li>
+<li>Background agent framework (6 types: product enrichment, material tagging, social analytics, factory enrichment + auto-recovery)</li>
+<li>Factory Analytics dashboard (own data + market trends + platform-wide for admins)</li>
+<li>Full admin dashboard (analytics, monitoring, prompt management, CRM, campaigns, background agents, flows)</li>
+<li>Email system (Amazon SES, React Email, campaign management)</li>
+<li>Billing &amp; credits (Stripe subscriptions + credit packages, customer portal)</li>
+<li>Duplicate detection &amp; product merging (factory-scoped, undo capability)</li>
+<li>Collaborative filtering recommendations</li>
+<li>CRM (contacts, companies, users with role management)</li>
+</ul>
+<h3>Near-Term</h3>
+<ul>
+<li>Sourcing Agent elevated B2B tools (without requiring full admin role)</li>
+<li>Credit quota differentiation by user tier</li>
+<li>Verified factory elevated KAI agent tools</li>
+<li>User onboarding flow with professional type self-selection</li>
+<li>Hire Me transaction fee monetization layer</li>
+<li>Featured listing placements in Discover directory (paid)</li>
+</ul>
+<h3>Strategic / Long-Term</h3>
+<ul>
+<li>Mobile app — point camera at a material → instant catalog match</li>
+<li>White-label API for enterprise manufacturers (catalog intelligence as a service)</li>
+<li>Multi-language search and localization (CEE dual-language B2B queries partially implemented)</li>
+<li>Full marketplace transaction layer: RFQ → Quote → Purchase Order → Delivery tracking</li>
+<li>Verified badge subscription for professionals and suppliers</li>
+<li>Third-party integrations: Revit plugin, ArchiCAD plugin (material spec directly to BIM models)</li>
+<li>Carbon footprint and sustainability scoring per product (emerging EU regulatory requirement)</li>
+</ul>
+<hr>
+<h2>Platform &amp; Team</h2>
+<p><strong>Platform:</strong> materialshub.gr
+<strong>API:</strong> v1api.materialshub.gr/docs
+<strong>Repository:</strong> github.com/creativeghq/material-kai-vision-platform
+<strong>Status:</strong> Production — 5,000+ active users, 99.5%+ uptime
+<strong>Version:</strong> 3.5.0 — March 2026</p>
+<hr>
+<p><em>This document is confidential and intended for investors, strategic partners, and due diligence purposes only. All metrics are as of March 2026.</em></p>
+
+</div></body></html>
