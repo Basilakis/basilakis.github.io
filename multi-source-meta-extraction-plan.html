@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Multi-Source Meta Extraction Strategy</h1>
+<h2>Overview</h2>
+<p>This plan outlines a comprehensive strategy for extracting metadata from <strong>multiple sources</strong> to ensure the highest quality and completeness of product metadata. The system will leverage:</p>
+<ol>
+<li><strong>Text Extraction</strong> from PDF content (AI-powered)</li>
+<li><strong>Visual Analysis</strong> from product images (5 specialized embeddings)</li>
+<li><strong>Embedding-to-Text Conversion</strong> (convert visual embeddings to searchable text)</li>
+<li><strong>Pattern Matching</strong> from document chunks</li>
+<li><strong>Factory-Level Defaults</strong> (fallback for missing data)</li>
+</ol>
+<h2>Current System Architecture</h2>
+<h3>Embedding Types (6 Total)</h3>
+<ol>
+<li><strong>text_1536</strong> - OpenAI text embedding (1536D)</li>
+<li><strong>visual_512</strong> - SigLIP visual embedding (512D, downsampled from 1152D)</li>
+<li><strong>color_siglip_1152</strong> - Text-guided color embedding (1152D)</li>
+<li><strong>texture_siglip_1152</strong> - Text-guided texture embedding (1152D)</li>
+<li><strong>material_siglip_1152</strong> - Text-guided material embedding (1152D)</li>
+<li><strong>style_siglip_1152</strong> - Text-guided style embedding (1152D)</li>
+<li><strong>multimodal_2048</strong> - Fused text+visual embedding (2048D)</li>
+</ol>
+<h3>Text-Guided Prompts</h3>
+<p>The specialized embeddings are generated using text prompts that focus the model&#39;s attention: color embeddings focus on &quot;color palette and color relationships&quot;, texture embeddings on &quot;surface patterns and texture details&quot;, material embeddings on &quot;material type and physical properties&quot;, and style embeddings on &quot;design style and aesthetic elements&quot;.</p>
+<h2>Problem Statement</h2>
+<p><strong>Current Issue</strong>: Specialized embeddings (color, texture, material, style) are generated but <strong>NOT converted to text metadata</strong>. This means:</p>
+<ul>
+<li>❌ Color embeddings exist but no &quot;color: beige&quot; in metadata</li>
+<li>❌ Texture embeddings exist but no &quot;finish: matte&quot; in metadata</li>
+<li>❌ Material embeddings exist but no &quot;material: ceramic&quot; in metadata</li>
+<li>❌ Style embeddings exist but no &quot;style: modern&quot; in metadata</li>
+</ul>
+<p><strong>Impact</strong>: Search and filtering rely on text metadata, so visual information is not fully utilized.</p>
+<h2>Proposed Solution: Multi-Source Meta Extraction</h2>
+<h3>Architecture</h3>
+<p>┌─────────────────────────────────────────────────────────────┐
+│                    METADATA SOURCES                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. AI Text Extraction (Claude/GPT)                         │
+│     ├─ Product Discovery (Stage 0)                          │
+│     ├─ Dynamic Metadata Extractor (Stage 4)                 │
+│     └─ Confidence: 0.85-0.95                                │
+│                                                             │
+│  2. Visual Embedding Analysis (SigLIP)                      │
+│     ├─ Color Embedding → Color Text                         │
+│     ├─ Texture Embedding → Finish/Texture Text              │
+│     ├─ Material Embedding → Material Type Text              │
+│     ├─ Style Embedding → Design Style Text                  │
+│     └─ Confidence: 0.75-0.90                                │
+│                                                             │
+│  3. Pattern Matching (Chunks)                               │
+│     ├─ Regex patterns for technical specs                   │
+│     ├─ NLP extraction from chunk text                       │
+│     └─ Confidence: 0.60-0.80                                │
+│                                                             │
+│  4. Factory-Level Defaults                                  │
+│     ├─ Global metadata from factory documents               │
+│     ├─ Applied when product-specific data missing           │
+│     └─ Confidence: 0.50-0.70                                │
+│                                                             │
+│  5. Manual Overrides (Admin)                                │
+│     ├─ User-provided corrections                            │
+│     └─ Confidence: 1.00                                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              METADATA CONSOLIDATION ENGINE                  │
+├─────────────────────────────────────────────────────────────┤
+│  • Merge metadata from all sources                          │
+│  • Resolve conflicts using confidence scores                │
+│  • Track extraction source for each field                   │
+│  • Generate final product.metadata JSONB                    │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  FINAL PRODUCT METADATA                     │
+├─────────────────────────────────────────────────────────────┤
+│  {                                                          │
+│    &quot;color&quot;: &quot;beige&quot;,                                        │
+│    &quot;finish&quot;: &quot;matte&quot;,                                       │
+│    &quot;material&quot;: &quot;ceramic&quot;,                                   │
+│    &quot;style&quot;: &quot;modern minimalist&quot;,                            │
+│    &quot;slip_resistance&quot;: &quot;R11&quot;,                                │
+│    &quot;_extraction_metadata&quot;: {                                │
+│      &quot;color&quot;: {                                             │
+│        &quot;source&quot;: &quot;visual_embedding&quot;,                        │
+│        &quot;confidence&quot;: 0.88,                                  │
+│        &quot;alternatives&quot;: [&quot;warm beige&quot;, &quot;sand&quot;]               │
+│      },                                                     │
+│      &quot;slip_resistance&quot;: {                                   │
+│        &quot;source&quot;: &quot;ai_text_extraction&quot;,                      │
+│        &quot;confidence&quot;: 0.95                                   │
+│      }                                                      │
+│    }                                                        │
+│  }                                                          │
+└─────────────────────────────────────────────────────────────┘</p>
+<h2>Implementation Plan</h2>
+<h3>Phase 1: Embedding-to-Text Conversion Service</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/embedding_to_text_service.py</code></p>
+<p><strong>Purpose</strong>: Convert specialized embeddings to textual metadata</p>
+<p><strong>Method</strong>: Use SigLIP&#39;s text-image matching in reverse:</p>
+<ol>
+<li>Generate embedding for product image with text prompt &quot;focus on color palette&quot;</li>
+<li>Compare against predefined color embeddings (database of color names)</li>
+<li>Find top 3 matches with confidence scores</li>
+<li>Return: <code>[&quot;beige&quot;, &quot;warm tones&quot;, &quot;sand&quot;]</code> with scores <code>[0.92, 0.85, 0.78]</code></li>
+</ol>
+<p><strong>Predefined Vocabularies</strong>:</p>
+<ul>
+<li><strong>Colors</strong>: 50+ color names (beige, white, grey, black, blue, green, etc.)</li>
+<li><strong>Textures</strong>: 30+ texture terms (matte, glossy, textured, smooth, rough, etc.)</li>
+<li><strong>Materials</strong>: 40+ material types (ceramic, porcelain, stone, wood, metal, etc.)</li>
+<li><strong>Styles</strong>: 25+ design styles (modern, rustic, industrial, minimalist, etc.)</li>
+</ul>
+<h3>Phase 2: Multi-Source Metadata Consolidation</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/metadata_consolidation_service.py</code></p>
+<p><strong>Purpose</strong>: Merge metadata from all sources with conflict resolution</p>
+<p><strong>Algorithm</strong>: The <code>consolidate_metadata(sources)</code> function receives a dictionary of source names to their extracted metadata dictionaries. For each metadata field, it collects all candidate values from all sources along with their confidence scores (determined by source type). The candidate with the highest confidence becomes the final value, with alternatives tracked. The output is a flat metadata dictionary plus <code>_extraction_metadata</code> tracking source, confidence, and alternatives for each field.</p>
+<h3>Phase 3: Confidence Scoring System</h3>
+<p><strong>Confidence Levels by Source</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Confidence Range</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Manual Overrides</td>
+<td>1.00</td>
+<td>Admin corrections</td>
+</tr>
+<tr>
+<td>AI Text Extraction (Claude/GPT)</td>
+<td>0.85-0.95</td>
+<td>Explicit text in PDF</td>
+</tr>
+<tr>
+<td>Visual Embedding Analysis</td>
+<td>0.75-0.90</td>
+<td>Image-based inference</td>
+</tr>
+<tr>
+<td>Pattern Matching</td>
+<td>0.60-0.80</td>
+<td>Regex/NLP from chunks</td>
+</tr>
+<tr>
+<td>Factory Defaults</td>
+<td>0.50-0.70</td>
+<td>Fallback values</td>
+</tr>
+</tbody></table>
+<p><strong>Confidence Modifiers</strong>:</p>
+<ul>
+<li><strong>+0.05</strong>: Multiple sources agree</li>
+<li><strong>-0.10</strong>: Conflicting values from other sources</li>
+<li><strong>+0.10</strong>: Validated against prototype (material_properties table)</li>
+</ul>
+<h3>Phase 4: Integration into PDF Processing Pipeline</h3>
+<p><strong>Current Pipeline</strong> (9 stages):</p>
+<ol>
+<li>INITIALIZED</li>
+<li>PDF_EXTRACTED</li>
+<li>CHUNKS_CREATED</li>
+<li>TEXT_EMBEDDINGS_GENERATED</li>
+<li>IMAGES_EXTRACTED</li>
+<li>IMAGE_EMBEDDINGS_GENERATED ← <strong>Add embedding-to-text here</strong></li>
+<li>PRODUCTS_DETECTED</li>
+<li>PRODUCTS_CREATED ← <strong>Add metadata consolidation here</strong></li>
+<li>COMPLETED</li>
+</ol>
+<p><strong>New Stage 6.5: EMBEDDING_TO_TEXT_CONVERSION</strong></p>
+<ul>
+<li>After image embeddings generated</li>
+<li>Convert specialized embeddings to text metadata</li>
+<li>Store in temporary metadata cache</li>
+</ul>
+<p><strong>Enhanced Stage 8: PRODUCTS_CREATED</strong></p>
+<ul>
+<li>Collect metadata from all sources:<ol>
+<li>Product discovery metadata (Stage 0)</li>
+<li>Dynamic metadata extraction (Stage 4)</li>
+<li>Embedding-to-text metadata (Stage 6.5)</li>
+<li>Pattern matching from chunks</li>
+<li>Factory defaults</li>
+</ol>
+</li>
+<li>Consolidate using confidence scoring</li>
+<li>Save final metadata to products table</li>
+</ul>
+<h2>Database Schema Changes</h2>
+<h3>New Table: <code>metadata_vocabulary</code></h3>
+<p>A new <code>metadata_vocabulary</code> table stores: <code>id</code> (UUID), <code>field_name</code> (e.g., &#39;color&#39;, &#39;texture&#39;, &#39;material&#39;, &#39;style&#39;), <code>value</code> (e.g., &#39;beige&#39;, &#39;matte&#39;, &#39;ceramic&#39;, &#39;modern&#39;), <code>embedding</code> (VECTOR(1152) — pre-computed SigLIP embedding), <code>category</code> (e.g., &#39;warm_colors&#39;, &#39;neutral_colors&#39;), and <code>synonyms</code> (TEXT array). Indexes are created on <code>field_name</code> and on the embedding column using <code>ivfflat</code> with <code>vector_cosine_ops</code>.</p>
+<h3>Enhanced <code>products.metadata</code> Structure</h3>
+<p>The enriched metadata includes the core fields (color, finish, material, style, slip_resistance, fire_rating), plus an <code>_extraction_metadata</code> dictionary tracking source, confidence, alternatives, and extraction timestamp for each field, plus <code>_sources_used</code> (array of source names used) and <code>_overall_confidence</code> (float).</p>
+<h2>Implementation Steps</h2>
+<h3>Step 1: Create Extraction Prompts in Database ✅</h3>
+<p><strong>Action</strong>: Create AI prompts for embedding interpretation and metadata consolidation</p>
+<p><strong>Prompts Created</strong>:</p>
+<ol>
+<li><p><strong>Embedding-to-Text Interpretation</strong> (stage: image_analysis, category: embedding_to_text) — Contains vocabulary of 50+ colors, 30+ finishes, 40+ materials, 25+ styles. AI interprets embedding patterns and returns structured JSON with confidence scoring 0.60–1.00.</p>
+</li>
+<li><p><strong>Metadata Consolidation</strong> (stage: entity_creation, category: metadata_consolidation) — Priority order: manual &gt; AI text &gt; visual &gt; pattern &gt; factory defaults. Agreement bonus: +0.05 when sources agree. Conflict penalty: -0.10 when sources disagree. Returns consolidated metadata with extraction tracking.</p>
+</li>
+</ol>
+<h3>Step 2: Implement Embedding-to-Text Service ✅</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/embedding_to_text_service.py</code></p>
+<p><strong>Architecture</strong>: Prompt-based AI interpretation (not vocabulary similarity search)</p>
+<p><strong>Key Methods</strong>:</p>
+<ul>
+<li><code>convert_embeddings_to_metadata(image_id, embeddings)</code> - Main conversion using AI</li>
+<li><code>_load_prompt()</code> - Load prompt from database</li>
+<li><code>_calculate_cost(usage)</code> - Track AI costs</li>
+</ul>
+<p><strong>How It Works</strong>:</p>
+<ol>
+<li>Load prompt from <code>prompts</code> table (category: embedding_to_text)</li>
+<li>Pass embedding data to Claude Sonnet 4.5</li>
+<li>AI interprets embeddings using vocabulary guidelines in prompt</li>
+<li>Returns structured JSON with primary/secondary values and confidence scores</li>
+</ol>
+<h3>Step 3: Implement Metadata Consolidation Service ✅</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/metadata_consolidation_service.py</code></p>
+<p><strong>Architecture</strong>: Prompt-based AI consolidation (not hardcoded rules)</p>
+<p><strong>Key Methods</strong>:</p>
+<ul>
+<li><code>consolidate_metadata(product_id, sources, existing_metadata)</code> - Main consolidation using AI</li>
+<li><code>_load_prompt()</code> - Load prompt from database</li>
+<li><code>_calculate_cost(usage)</code> - Track AI costs</li>
+</ul>
+<p><strong>How It Works</strong>:</p>
+<ol>
+<li>Load prompt from <code>prompts</code> table (category: metadata_consolidation)</li>
+<li>Collect metadata from all 5 sources (manual, AI text, visual, pattern, factory)</li>
+<li>Pass all sources to Claude Sonnet 4.5</li>
+<li>AI intelligently merges with conflict resolution</li>
+<li>Returns consolidated metadata with extraction tracking</li>
+</ol>
+<h3>Step 4: Add visual_metadata Column to document_images ✅</h3>
+<p><strong>Migration</strong>: Added JSONB column <code>visual_metadata</code> (default <code>{}</code>) to <code>document_images</code> to store AI-extracted metadata from embeddings. The structure contains per-field objects with <code>primary</code> value, <code>secondary</code> alternatives array, and <code>confidence</code> score.</p>
+<h3>Step 5: Integrate into PDF Processing Pipeline ✅</h3>
+<p><strong>Stage 3.5: Embedding-to-Text Conversion</strong> (added to stage_3_images.py)</p>
+<ul>
+<li>Runs after specialized embeddings are generated</li>
+<li>Fetches embeddings from VECS collections</li>
+<li>Calls <code>EmbeddingToTextService</code> to convert to text</li>
+<li>Saves results to <code>document_images.visual_metadata</code></li>
+</ul>
+<p><strong>Stage 4: Metadata Consolidation</strong> (modified stage_4_products.py)</p>
+<ul>
+<li>Collects metadata from 3 sources:<ol>
+<li>AI text extraction (from product discovery)</li>
+<li>Visual embeddings (from document_images.visual_metadata)</li>
+<li>Factory defaults (from catalog)</li>
+</ol>
+</li>
+<li>Calls <code>MetadataConsolidationService</code> to merge intelligently</li>
+<li>Saves consolidated metadata to <code>products.metadata</code></li>
+</ul>
+<h2>Expected Results</h2>
+<h3>Before (Current System)</h3>
+<p>Product metadata only contains explicitly stated fields like designer, dimensions, and slip_resistance — missing color, finish, material, and style even though the visual embeddings for those properties exist.</p>
+<h3>After (Multi-Source System)</h3>
+<p>Product metadata includes all the above plus visually-derived fields (color, finish, material, style, texture), each tracked in <code>_extraction_metadata</code> with their source and confidence, and an <code>_overall_confidence</code> summary score.</p>
+<p><strong>Gained</strong>: 5 additional metadata fields from visual analysis!</p>
+<h2>Success Metrics</h2>
+<ol>
+<li><strong>Metadata Completeness</strong>: 80%+ of products have color, finish, material, style</li>
+<li><strong>Confidence Scores</strong>: Average confidence &gt; 0.85</li>
+<li><strong>Search Accuracy</strong>: Improved search results using visual metadata</li>
+<li><strong>User Satisfaction</strong>: Reduced manual metadata corrections</li>
+</ol>
+<h2>Implementation Status</h2>
+<ol>
+<li>✅ Create extraction prompts in database (Embedding-to-Text, Metadata Consolidation)</li>
+<li>✅ Implement EmbeddingToTextService (prompt-based AI interpretation)</li>
+<li>✅ Implement MetadataConsolidationService (prompt-based AI consolidation)</li>
+<li>✅ Add visual_metadata column to document_images table</li>
+<li>✅ Integrate Stage 3.5 (embedding-to-text conversion) into pipeline</li>
+<li>✅ Integrate metadata consolidation into Stage 4 (product creation)</li>
+<li>⏳ Test with Harmony PDF (14 products) - NEXT STEP</li>
+<li>⏳ Deploy to production</li>
+</ol>
+<h2>Key Differences from Original Plan</h2>
+<p><strong>Original Plan</strong>: Use vocabulary database with similarity search
+<strong>Actual Implementation</strong>: Use AI with database prompts (follows platform standards)</p>
+<p><strong>Why Changed</strong>:</p>
+<ul>
+<li>Platform uses prompt-based architecture for ALL extraction</li>
+<li>AI interpretation is more flexible than hardcoded vocabulary</li>
+<li>Vocabulary is embedded in prompts, not separate database table</li>
+<li>Easier to customize and update (just edit prompts)</li>
+<li>Consistent with other extraction services</li>
+</ul>
+<h2>Next Steps</h2>
+<ol>
+<li><p><strong>Test End-to-End</strong> with Harmony PDF</p>
+<ul>
+<li>Upload Harmony.pdf</li>
+<li>Verify 14 products extracted</li>
+<li>Check metadata completeness (color, finish, material, style)</li>
+<li>Validate confidence scores</li>
+<li>Review extraction tracking</li>
+</ul>
+</li>
+<li><p><strong>Monitor Performance</strong></p>
+<ul>
+<li>AI call costs (Claude Sonnet 4.5)</li>
+<li>Processing time impact</li>
+<li>Memory usage</li>
+</ul>
+</li>
+<li><p><strong>Iterate on Prompts</strong></p>
+<ul>
+<li>Refine vocabulary lists</li>
+<li>Adjust confidence thresholds</li>
+<li>Improve consolidation rules</li>
+</ul>
+</li>
+</ol>
+
+</div></body></html>

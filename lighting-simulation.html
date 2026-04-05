@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Lighting Simulation</h1>
+<p>Preview how materials look under different lighting conditions with real-time 3D rendering and AI-powered room re-lighting.</p>
+<hr>
+<h2>Overview</h2>
+<p>Two-layer lighting simulation system:</p>
+<p><strong>Layer 1 (AI Room Re-lighting):</strong> &quot;Lighting Variants&quot; dropdown on ProgressiveImageGrid generates the same room under 6 different lighting presets via Gemini AI edit.</p>
+<p><strong>Layer 2 (3D Material Preview):</strong> Standalone Three.js viewer renders individual materials with PBR (Physically Based Rendering) under controllable lighting with time-of-day and room orientation controls.</p>
+<hr>
+<h2>Layer 1: AI Lighting Variants</h2>
+<p>Available on the ProgressiveImageGrid action bar (next to Generate Video, VR World, etc.).</p>
+<p><strong>Presets:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Golden Hour</td>
+<td>Warm amber sunlight, long shadows</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Bright Midday</td>
+<td>Crisp, even natural light</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Soft Overcast</td>
+<td>Diffused, calm, serene</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Warm Evening</td>
+<td>Soft artificial glow</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Night</td>
+<td>Dark outside, warm interior</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Dramatic Spots</td>
+<td>Targeted accent beams</td>
+<td>6</td>
+</tr>
+</tbody></table>
+<p>Each preset triggers a Gemini edit with a lighting-specific prompt + spatial lock clause.</p>
+<hr>
+<h2>Layer 2: 3D PBR Viewer</h2>
+<p><strong>Components:</strong> <code>src/components/features/lighting/</code></p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MaterialLightingViewer</code></td>
+<td>React Three Fiber scene with PBR material + controls</td>
+</tr>
+<tr>
+<td><code>LightingPreviewModal</code></td>
+<td>Dialog wrapper for the viewer</td>
+</tr>
+<tr>
+<td><code>lightingPresets</code></td>
+<td>6 preset definitions with HDRI, sun, and light config</td>
+</tr>
+<tr>
+<td><code>useSunPosition</code></td>
+<td>Simplified solar position calculation hook</td>
+</tr>
+</tbody></table>
+<p><strong>Controls:</strong></p>
+<ul>
+<li>Preset selector (6 presets as pill buttons)</li>
+<li>Time-of-day slider (6AM - 9PM) with play/pause animation</li>
+<li>Room orientation (N/E/S/W compass buttons)</li>
+<li>Surface type (Wall, Floor, Column, Curved)</li>
+<li>Material tuning (roughness, clearcoat sliders)</li>
+<li>Screenshot + download</li>
+</ul>
+<p><strong>Material Defaults by Category:</strong></p>
+<ul>
+<li>Ceramic: roughness 0.4, clearcoat 0.3</li>
+<li>Wood: roughness 0.7, sheen 0.1</li>
+<li>Metal: metalness 0.9, roughness 0.2</li>
+<li>Fabric: roughness 0.9, sheen 0.5</li>
+<li>Stone: roughness 0.3, clearcoat 0.5</li>
+<li>Glass: roughness 0.1, clearcoat 0.8</li>
+</ul>
+<hr>
+<h2>Integration Points</h2>
+<ul>
+<li><strong>ProductCard</strong>: &quot;Lighting&quot; button (Sun icon)</li>
+<li><strong>ProgressiveImageGrid</strong>: &quot;Lighting Variants&quot; dropdown</li>
+<li>Uses PBR maps from <code>generate-pbr-maps</code> edge function (shared with AR)</li>
+</ul>
+
+</div></body></html>

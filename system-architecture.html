@@ -27,7 +27,7 @@
 <p>Complete technical architecture of Material Kai Vision Platform.</p>
 <hr>
 <h2>🏗️ Three-Tier Architecture</h2>
-<pre><code>┌─────────────────────────────────────────────────────────────┐
+<p>┌─────────────────────────────────────────────────────────────┐
 │ FRONTEND TIER (Vercel Edge Network)                         │
 │ React 18 + TypeScript + Vite + Shadcn/UI                   │
 │ - Materials Catalog                                         │
@@ -43,12 +43,15 @@
 │ API TIER (MIVAA - FastAPI)                                  │
 │ Python 3.11 + FastAPI + Uvicorn                            │
 │ Deployed: v1api.materialshub.gr                            │
-│ - 74+ REST API endpoints                                    │
-│ - 14-stage PDF processing pipeline                          │
-│ - RAG system (LlamaIndex)                                   │
-│ - Search APIs (Semantic, Vector, Hybrid)                   │
-│ - AI Services (Claude, GPT, Llama, CLIP)                   │
-│ - Product Management                                        │
+│ - 115 REST API endpoints (15 categories)                   │
+│ - 9-stage PDF processing pipeline (optimized)              │
+│ - Memory-safe image processing (10-15MB constant)          │
+│ - Real-time CLIP embedding generation                      │
+│ - RAG system (Claude 4.5 + Direct Vector DB)               │
+│ - Search APIs (Multi-Vector, Semantic, Hybrid)             │
+│ - AI Services (Claude 4.5, GPT, Qwen3-VL, SigLIP)          │
+│ - Product Management + Metadata Management                 │
+│ - Duplicate Detection &amp; Merging (factory-based)            │
 │ - Admin &amp; Monitoring                                        │
 │ - Background job processing                                 │
 └─────────────────────────────────────────────────────────────┘
@@ -64,21 +67,19 @@
 │ - Row-Level Security (RLS)                                  │
 │ - Real-time subscriptions                                   │
 │ - Storage (Supabase Storage)                                │
-└─────────────────────────────────────────────────────────────┘
-</code></pre>
+└─────────────────────────────────────────────────────────────┘</p>
 <hr>
 <h2>🔌 Hybrid Architecture Pattern</h2>
 <p><strong>Key Design</strong>: Frontend calls MIVAA directly (no proxy Edge Functions)</p>
-<pre><code>Frontend (Vercel)
+<p>Frontend (Vercel)
     ↓
     └─→ MIVAA API (v1api.materialshub.gr)
             ↓
             ├─→ Supabase (Data)
             ├─→ OpenAI (Embeddings)
             ├─→ Anthropic (Claude)
-            ├─→ Together AI (Llama)
-            └─→ Supabase Storage (Images)
-</code></pre>
+            ├─→ HuggingFace Endpoint (Qwen3-VL)
+            └─→ Supabase Storage (Images)</p>
 <p><strong>Benefits</strong>:</p>
 <ul>
 <li>✅ Reduced latency (no proxy layer)</li>
@@ -133,9 +134,9 @@
 </ul>
 <p><strong>embeddings</strong></p>
 <ul>
-<li>Vector storage (pgvector)</li>
-<li>6 types: text, visual, color, texture, application, semantic</li>
-<li>Similarity indexes</li>
+<li>Vector storage (pgvector 0.8.0, halfvec float16 — 50% storage savings)</li>
+<li>7 types: text, visual, understanding, color, texture, style, material</li>
+<li>HNSW + IVFFlat similarity indexes (halfvec_cosine_ops)</li>
 <li>Chunk/image references</li>
 </ul>
 <p><strong>background_jobs</strong></p>
@@ -180,84 +181,110 @@
 </li>
 </ol>
 <h3>Row-Level Security (RLS)</h3>
-<pre><code class="language-sql">-- Users can only access their workspace data
-CREATE POLICY &quot;workspace_isolation&quot;
-ON documents
-FOR SELECT
-USING (workspace_id = auth.uid());
-</code></pre>
+<p>All tables use RLS policies that restrict access based on workspace membership. Users can only read, insert, update, and delete data that belongs to their own workspace, enforced via <code>auth.uid()</code> checks.</p>
 <hr>
-<h2>🚀 API Endpoints (74+)</h2>
-<h3>9 Categories</h3>
+<h2>🚀 API Endpoints (108 - Consolidated from 113)</h2>
+<h3>14 Categories</h3>
 <ol>
-<li><p><strong>PDF Processing</strong> (12 endpoints)</p>
+<li><p><strong>RAG &amp; Document Processing</strong> (27 endpoints)</p>
 <ul>
-<li>Upload, extract, process PDFs</li>
+<li>Upload, extract, process PDFs (consolidated from <code>/api/pdf/extract/*</code>)</li>
 <li>Job status tracking</li>
 <li>Progress streaming</li>
+<li>Metadata management (scope detection, application, listing, statistics)</li>
+<li>Document upload, query, chat</li>
+<li>Search with multiple strategies</li>
 </ul>
 </li>
-<li><p><strong>Document Management</strong> (13 endpoints)</p>
-<ul>
-<li>CRUD operations</li>
-<li>Batch processing</li>
-<li>Content retrieval</li>
-</ul>
-</li>
-<li><p><strong>Search APIs</strong> (8 endpoints)</p>
+<li><p><strong>Search APIs</strong> (6 endpoints)</p>
 <ul>
 <li>Semantic search</li>
 <li>Vector search</li>
 <li>Hybrid search</li>
 <li>Visual search</li>
+<li>Material search</li>
+<li>Multi-vector search</li>
 </ul>
 </li>
-<li><p><strong>Image Analysis</strong> (5 endpoints)</p>
+<li><p><strong>Admin Routes</strong> (18 endpoints)</p>
+<ul>
+<li>Job management and monitoring</li>
+<li>System health and metrics</li>
+<li>Data backup and cleanup</li>
+<li>Metadata management</li>
+</ul>
+</li>
+<li><p><strong>Document Entities</strong> (5 endpoints)</p>
+<ul>
+<li>Certificates management</li>
+<li>Logos management</li>
+<li>Specifications management</li>
+<li>Entity relationships</li>
+</ul>
+</li>
+<li><p><strong>Products</strong> (3 endpoints)</p>
+<ul>
+<li>Product management</li>
+<li>Product relationships</li>
+</ul>
+</li>
+<li><p><strong>Images</strong> (5 endpoints)</p>
 <ul>
 <li>Image analysis</li>
 <li>Batch processing</li>
 <li>Similarity search</li>
+<li>OCR processing</li>
 </ul>
 </li>
-<li><p><strong>RAG System</strong> (7 endpoints)</p>
-<ul>
-<li>Document upload</li>
-<li>Query interface</li>
-<li>Chat functionality</li>
-<li>Statistics</li>
-</ul>
-</li>
-<li><p><strong>Embeddings</strong> (3 endpoints)</p>
-<ul>
-<li>Text embeddings</li>
-<li>Batch embeddings</li>
-<li>CLIP embeddings</li>
-</ul>
-</li>
-<li><p><strong>Products</strong> (6 endpoints)</p>
-<ul>
-<li>CRUD operations</li>
-<li>Similarity search</li>
-<li>Listing</li>
-</ul>
-</li>
-<li><p><strong>Admin &amp; Monitoring</strong> (8 endpoints)</p>
-<ul>
-<li>Job monitoring</li>
-<li>Progress tracking</li>
-<li>Health checks</li>
-<li>Metrics</li>
-</ul>
-</li>
-<li><p><strong>AI Services</strong> (11 endpoints)</p>
+<li><p><strong>AI Services</strong> (10 endpoints)</p>
 <ul>
 <li>Classification</li>
 <li>Boundary detection</li>
 <li>Validation</li>
 <li>Enrichment</li>
+<li>Product discovery</li>
+</ul>
+</li>
+<li><p><strong>Background Jobs</strong> (7 endpoints)</p>
+<ul>
+<li>Job creation</li>
+<li>Status tracking</li>
+<li>Progress updates</li>
+<li>Statistics</li>
+</ul>
+</li>
+<li><p><strong>Anthropic APIs</strong> (3 endpoints)</p>
+<ul>
+<li>Claude integration</li>
+<li>Vision analysis</li>
+</ul>
+</li>
+<li><p><strong>HuggingFace Endpoint APIs</strong> (3 endpoints)</p>
+<ul>
+<li>Qwen3-VL integration</li>
+<li>Vision analysis</li>
+</ul>
+</li>
+<li><p><strong>Monitoring Routes</strong> (3 endpoints)</p>
+<ul>
+<li>System health</li>
+<li>Service status</li>
+<li>Performance metrics</li>
+</ul>
+</li>
+<li><p><strong>AI Metrics Routes</strong> (2 endpoints)</p>
+<ul>
+<li>Model performance</li>
+<li>Usage statistics</li>
 </ul>
 </li>
 </ol>
+<p><strong>Consolidation Notes:</strong></p>
+<ul>
+<li>✅ PDF Extraction endpoints (<code>/api/pdf/extract/*</code>) consolidated into <code>/api/rag/documents/upload</code></li>
+<li>✅ All extraction functionality available via RAG pipeline with deep processing mode</li>
+<li>✅ Internal utilities preserved in <code>app/core/extractor.py</code></li>
+</ul>
 <hr>
 <h2>🤖 AI Integration</h2>
 <h3>12 AI Models</h3>
@@ -270,16 +297,24 @@ USING (workspace_id = auth.uid());
 <p><strong>OpenAI</strong>:</p>
 <ul>
 <li>GPT-4o (Alternative discovery)</li>
-<li>text-embedding-3-small (Text embeddings)</li>
-<li>CLIP (5 embedding types)</li>
+<li>text-embedding-3-small (Text embeddings, 1024D)</li>
 </ul>
-<p><strong>Together AI</strong>:</p>
+<p><strong>Voyage AI</strong>:</p>
 <ul>
-<li>Llama 4 Scout 17B Vision (Image analysis, OCR)</li>
+<li>voyage-3.5 (Text + understanding embeddings, 1024D)</li>
 </ul>
-<p><strong>LlamaIndex</strong>:</p>
+<p><strong>SigLIP2 (SLIG)</strong>:</p>
 <ul>
-<li>RAG system (Document indexing, retrieval)</li>
+<li>Visual embeddings (768D) via HuggingFace Cloud Endpoint</li>
+<li>5 collections: visual, color, texture, style, material</li>
+</ul>
+<p><strong>HuggingFace Endpoint</strong>:</p>
+<ul>
+<li>Qwen3-VL 32B Vision (Image analysis, OCR → feeds understanding embeddings via Voyage AI)</li>
+</ul>
+<p><strong>Direct Vector DB RAG</strong>:</p>
+<ul>
+<li>Claude 4.5 + Multi-Vector Search (Document retrieval, synthesis)</li>
 </ul>
 <hr>
 <h2>📈 Scalability</h2>
@@ -313,7 +348,7 @@ USING (workspace_id = auth.uid());
 </ul>
 <p><strong>Indexing</strong>:</p>
 <ul>
-<li>pgvector indexes for similarity search</li>
+<li>pgvector halfvec indexes for similarity search (HNSW + IVFFlat)</li>
 <li>Full-text search indexes</li>
 <li>Composite indexes</li>
 </ul>
@@ -326,39 +361,48 @@ USING (workspace_id = auth.uid());
 <hr>
 <h2>🔄 Data Flow</h2>
 <h3>PDF Upload Flow</h3>
-<pre><code>1. User uploads PDF (Frontend)
-   ↓
-2. Frontend calls MIVAA API
-   ↓
-3. MIVAA creates job record
-   ↓
-4. Background task starts
-   ↓
-5. 14-stage pipeline executes
-   ↓
-6. Progress updates to database
-   ↓
-7. Frontend polls for updates
-   ↓
-8. Results stored in database
-   ↓
-9. Frontend displays results
-</code></pre>
+<ol>
+<li>User uploads PDF (Frontend)
+↓</li>
+<li>Frontend calls MIVAA API
+↓</li>
+<li>MIVAA creates job record
+↓</li>
+<li>Background task starts
+↓</li>
+<li>14-stage pipeline executes
+↓</li>
+<li>Progress updates to database
+↓</li>
+<li>Frontend polls for updates
+↓</li>
+<li>Results stored in database
+↓</li>
+<li>Frontend displays results</li>
+</ol>
 <h3>Search Flow</h3>
-<pre><code>1. User enters search query (Frontend)
-   ↓
-2. Frontend calls MIVAA search API
-   ↓
-3. MIVAA generates query embedding
-   ↓
-4. pgvector similarity search
-   ↓
-5. Results ranked and filtered
-   ↓
-6. Results returned to frontend
-   ↓
-7. Frontend displays results
-</code></pre>
+<ol>
+<li>User enters search query (Frontend)
+↓</li>
+<li>Frontend calls MIVAA search API
+↓</li>
+<li>Query Understanding (GPT-4o-mini)
+→ Extracts: colors, finish, dimensions, pattern, style, material_type
+→ Selects weight profile (e.g., &quot;color_finish&quot;, &quot;specification&quot;, &quot;balanced&quot;)
+↓</li>
+<li>Dynamic weight profile applied to 7-vector fusion
+→ 7 profiles: product_name, color_finish, specification,
+  texture_pattern, style_aesthetic, material_search, balanced
+↓</li>
+<li>Parallel embedding search (asyncio.gather)
+→ Text + Visual + Understanding + Color + Texture + Style + Material
+↓</li>
+<li>Weighted score fusion using selected profile
+↓</li>
+<li>Metadata filtering + soft boosts
+↓</li>
+<li>Results returned to frontend (with weight_profile in metadata)</li>
+</ol>
 <hr>
 <h2>🛠️ Technology Stack</h2>
 <p><strong>Frontend</strong>:</p>
@@ -388,9 +432,9 @@ USING (workspace_id = auth.uid());
 <p><strong>AI Services</strong>:</p>
 <ul>
 <li>OpenAI API</li>
-<li>Anthropic API</li>
-<li>Together AI API</li>
-<li>LlamaIndex</li>
+<li>Anthropic API (Claude 4.5)</li>
+<li>HuggingFace Endpoint API (Qwen3-VL 32B)</li>
+<li>Voyage AI (Embeddings)</li>
 </ul>
 <p><strong>Infrastructure</strong>:</p>
 <ul>
@@ -426,18 +470,27 @@ USING (workspace_id = auth.uid());
 </ul>
 <hr>
 <h2>🔒 Security Measures</h2>
-<p>✅ HTTPS/TLS encryption<br>✅ JWT authentication<br>✅ Row-Level Security (RLS)<br>✅ API rate limiting<br>✅ Input validation<br>✅ SQL injection prevention<br>✅ CORS configuration<br>✅ Audit logging  </p>
+<p>✅ HTTPS/TLS encryption
+✅ JWT authentication
+✅ Row-Level Security (RLS)
+✅ API rate limiting
+✅ Input validation
+✅ SQL injection prevention
+✅ CORS configuration
+✅ Audit logging</p>
 <hr>
 <h2>📈 Production Metrics</h2>
 <ul>
 <li><strong>Uptime</strong>: 99.5%+</li>
-<li><strong>API Endpoints</strong>: 74+</li>
+<li><strong>API Endpoints</strong>: 110 (15 categories)</li>
 <li><strong>Processing Speed</strong>: 1-15 minutes per PDF</li>
 <li><strong>Accuracy</strong>: 95%+ product detection</li>
 <li><strong>Scalability</strong>: 5,000+ concurrent users</li>
 <li><strong>Data Volume</strong>: 100,000+ products indexed</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025<br><strong>Version</strong>: 1.0.0<br><strong>Status</strong>: Production</p>
+<p><strong>Last Updated</strong>: November 3, 2025
+<strong>Version</strong>: 1.0.0
+<strong>Status</strong>: Production</p>
 
 </div></body></html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Interior Video Generation</h1>
+<p>Multi-model AI video generation for interior design — cinematic walkthroughs, product spotlights, before/after reveals, and social reels.</p>
+<hr>
+<h2>Overview</h2>
+<p>The <code>generate-interior-video-v2</code> edge function routes to the optimal AI video model based on video type or an explicit model override. It handles the full lifecycle: model selection, async polling, timeout handling, and storage.</p>
+<p><strong>Edge Function:</strong> <code>generate-interior-video-v2</code></p>
+<hr>
+<h2>Models</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+<th>Speed</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>veo-2</code></td>
+<td>30</td>
+<td>~2-3 min</td>
+<td>Cinematic walkthroughs, floor-plan flythroughs</td>
+</tr>
+<tr>
+<td><code>kling-v3.0</code></td>
+<td>20</td>
+<td>~60-90s</td>
+<td>Product spotlights, before/after, social reels</td>
+</tr>
+<tr>
+<td><code>wan2.1-i2v-720p</code></td>
+<td>12</td>
+<td>~90s</td>
+<td>Budget option, general purpose</td>
+</tr>
+<tr>
+<td><code>runway-gen4-turbo</code></td>
+<td>40</td>
+<td>~2-3 min</td>
+<td>Premium quality output</td>
+</tr>
+</tbody></table>
+<p>Kling uses the native Kling SDK. Wan and Runway use Replicate. Veo-2 uses Google&#39;s API.</p>
+<hr>
+<h2>Video Types &amp; Auto-Routing</h2>
+<p>If you pass <code>video_type</code> without <code>model</code>, the function auto-selects:</p>
+<table>
+<thead>
+<tr>
+<th>Video Type</th>
+<th>Auto-Selected Model</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>walkthrough</code></td>
+<td><code>veo-2</code></td>
+</tr>
+<tr>
+<td><code>floorplan_flythrough</code></td>
+<td><code>veo-2</code></td>
+</tr>
+<tr>
+<td><code>product_spotlight</code></td>
+<td><code>kling-v3.0</code></td>
+</tr>
+<tr>
+<td><code>before_after</code></td>
+<td><code>kling-v3.0</code></td>
+</tr>
+<tr>
+<td><code>social_reel</code></td>
+<td><code>kling-v3.0</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>API</h2>
+<pre><code>POST /functions/v1/generate-interior-video-v2
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+</code></pre>
+<h3>Request Body</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Source room image URL</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Text description of motion/camera movement</td>
+</tr>
+<tr>
+<td><code>video_type</code></td>
+<td>string</td>
+<td>No*</td>
+<td><code>walkthrough</code> | <code>product_spotlight</code> | <code>before_after</code> | <code>floorplan_flythrough</code> | <code>social_reel</code></td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string</td>
+<td>No*</td>
+<td>Explicit model override (see table above)</td>
+</tr>
+<tr>
+<td><code>aspect_ratio</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>16:9</code> (default) | <code>9:16</code> | <code>1:1</code></td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td>number</td>
+<td>No</td>
+<td>Duration in seconds (model-dependent max)</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>For credit deduction</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>For server-to-server calls</td>
+</tr>
+</tbody></table>
+<p>*One of <code>video_type</code> or <code>model</code> is required.</p>
+<h3>Aspect Ratios</h3>
+<table>
+<thead>
+<tr>
+<th>Ratio</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>16:9</code></td>
+<td>Standard landscape (walkthroughs, web)</td>
+</tr>
+<tr>
+<td><code>9:16</code></td>
+<td>Vertical (Instagram Reels, TikTok)</td>
+</tr>
+<tr>
+<td><code>1:1</code></td>
+<td>Square (Instagram feed)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Response</h2>
+<h3>Synchronous (generation completed within ~55s)</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;video_url&quot;: &quot;https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1/object/public/generation-videos/...&quot;,
+  &quot;model&quot;: &quot;kling-v3.0&quot;,
+  &quot;credits_used&quot;: 20,
+  &quot;duration_ms&quot;: 42000
+}
+</code></pre>
+<h3>Async (generation exceeded 55s timeout)</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;prediction_id&quot;: &quot;replicate-prediction-id&quot;,
+  &quot;model&quot;: &quot;veo-2&quot;,
+  &quot;credits_used&quot;: 30,
+  &quot;message&quot;: &quot;Video generation in progress. Poll /functions/v1/generate-interior-video-v2?job_id=...&quot;
+}
+</code></pre>
+<p>Poll with <code>GET /functions/v1/generate-interior-video-v2?job_id=&lt;uuid&gt;</code> until <code>status = &#39;completed&#39;</code>.</p>
+<hr>
+<h2>Async Polling Pattern</h2>
+<p>Replicate-backed models (Wan, Runway) and Veo-2 can take 2-5 minutes. If the edge function&#39;s 55s polling window elapses:</p>
+<ol>
+<li><code>prediction_id</code> is stored in the <code>generation_videos</code> table</li>
+<li>Response returns <code>job_id</code> and <code>status: &#39;processing&#39;</code></li>
+<li>Frontend polls the endpoint with <code>?job_id=</code> on a 5-10s interval</li>
+<li>Once Replicate/Veo reports <code>succeeded</code>, video is downloaded → re-uploaded to Supabase Storage → <code>generation_videos</code> updated</li>
+</ol>
+<hr>
+<h2>Storage</h2>
+<p>Generated videos are stored at:</p>
+<pre><code>generation-videos/{job-uuid}.mp4
+</code></pre>
+<hr>
+<h2>Credit Handling</h2>
+<p>Credits are debited upfront before the model call. They are <strong>non-refundable</strong> (generation infrastructure costs are incurred regardless of output quality).</p>
+<hr>
+<h2>Database</h2>
+<p>Generated videos are tracked in the <code>generation_videos</code> table:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>Job UUID</td>
+</tr>
+<tr>
+<td><code>prediction_id</code></td>
+<td>Replicate/external prediction ID</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>processing</code> | <code>completed</code> | <code>failed</code></td>
+</tr>
+<tr>
+<td><code>video_url</code></td>
+<td>Final Supabase Storage URL</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>Model used</td>
+</tr>
+<tr>
+<td><code>credits_debited</code></td>
+<td>Credits consumed</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>Owner workspace</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Social Video Generation</h2>
+<p>For social-media-specific short videos, the separate <code>generate-social-video</code> edge function provides a simplified interface:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kling-1.6-pro</code></td>
+<td>15</td>
+</tr>
+<tr>
+<td><code>veo-2</code> (delegated to <code>generate-interior-video-v2</code>)</td>
+<td>30</td>
+</tr>
+</tbody></table>
+<pre><code>POST /functions/v1/generate-social-video
+{
+  &quot;prompt&quot;: &quot;...&quot;,
+  &quot;image_url&quot;: &quot;...&quot;,
+  &quot;model&quot;: &quot;kling-1.6-pro&quot;,
+  &quot;aspect_ratio&quot;: &quot;9:16&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<hr>
+<p><strong>Last Updated:</strong> March 2026</p>
+
+</div></body></html>

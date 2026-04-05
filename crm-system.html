@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>CRM System</h1>
+<p>Customer Relationship Management — contacts, companies, and user account management for workspace admins.</p>
+<hr>
+<h2>Overview</h2>
+<p>The CRM provides workspace admins with a unified view of contacts, companies, and platform users. It integrates with the messaging system (SMS/email campaigns) and quotes system.</p>
+<p><strong>Admin Route:</strong> <code>/admin/crm</code></p>
+<p><strong>Edge Functions:</strong></p>
+<ul>
+<li><code>crm-contacts-api</code> — Contact CRUD, user linking</li>
+<li><code>crm-companies-api</code> — Company records, contact associations</li>
+<li><code>crm-users-api</code> — Platform user management and role control</li>
+<li><code>crm-stripe-api</code> — Subscription and credit billing (see <a href="billing-credits-system.md">billing-credits-system.md</a>)</li>
+</ul>
+<p><strong>Individual API Docs:</strong></p>
+<ul>
+<li><a href="api/crm-contacts-api.md">crm-contacts-api.md</a></li>
+<li><a href="api/crm-companies-api.md">crm-companies-api.md</a></li>
+<li><a href="api/crm-users-api.md">crm-users-api.md</a></li>
+</ul>
+<hr>
+<h2>Entities</h2>
+<h3>Contacts</h3>
+<p>Individual people (customers, suppliers, prospects).</p>
+<p><strong>Key fields:</strong> name, email, phone, company_id, role, tags, notes, linked_user_id</p>
+<p><strong>Linking:</strong> Contacts can be linked to platform user accounts (<code>linked_user_id → auth.users</code>). A linked contact gives admins visibility into which platform user corresponds to a CRM contact.</p>
+<p><strong>Routes:</strong></p>
+<ul>
+<li><code>/admin/crm</code> (contacts list)</li>
+<li><code>/admin/crm/contacts/:id</code> (contact detail)</li>
+<li><code>ContactDetailPage.tsx</code></li>
+</ul>
+<h3>Companies</h3>
+<p>Organisation records (manufacturers, suppliers, clients).</p>
+<p><strong>Key fields:</strong> name, domain, industry, address, website, contact_count, linked_contacts[]</p>
+<p><strong>Routes:</strong></p>
+<ul>
+<li><code>/admin/crm</code> (companies tab)</li>
+<li><code>/admin/crm/companies/:id</code> (company detail)</li>
+<li><code>CompanyDetailPage.tsx</code></li>
+</ul>
+<h3>Users</h3>
+<p>Platform user accounts. Admins can view all workspace users, update roles, and manage permissions.</p>
+<p><strong>Key fields:</strong> email, role, workspace_id, created_at, last_sign_in_at, subscription status</p>
+<p><strong>Roles:</strong> <code>admin</code>, <code>owner</code>, <code>manager</code>, <code>member</code>, <code>factory</code></p>
+<p><strong>Routes:</strong></p>
+<ul>
+<li><code>/admin/crm/users/:id</code> (user detail)</li>
+<li><code>UserDetailPage.tsx</code></li>
+</ul>
+<hr>
+<h2>Access Control</h2>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Contacts</th>
+<th>Companies</th>
+<th>Users</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>admin</code> / <code>owner</code></td>
+<td>Full CRUD</td>
+<td>Full CRUD</td>
+<td>View + role update</td>
+</tr>
+<tr>
+<td><code>manager</code></td>
+<td>Read + write</td>
+<td>Read + write</td>
+<td>Read only</td>
+</tr>
+<tr>
+<td><code>factory</code></td>
+<td>Read own</td>
+<td>Read own</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>member</code></td>
+<td>None</td>
+<td>None</td>
+<td>None</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>CRM + Messaging Integration</h2>
+<p>Contacts from the CRM can be targeted in messaging campaigns:</p>
+<ol>
+<li>Admin selects contacts/segments in <code>/admin/messaging</code></li>
+<li>Campaign uses <code>messaging-api</code> to send SMS or WhatsApp to contact phone numbers</li>
+<li>Delivery status and analytics sync back to <code>message_logs</code></li>
+</ol>
+<hr>
+<h2>CRM + Quotes Integration</h2>
+<p>Contacts can be associated with quotes:</p>
+<ul>
+<li><code>quotes.contact_id</code> → links a quote to a CRM contact</li>
+<li>Contact detail page shows quote history</li>
+<li>Admin can initiate a quote from a contact record</li>
+</ul>
+<hr>
+<h2>Database Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>crm_contacts</code></td>
+<td>Individual contact records</td>
+</tr>
+<tr>
+<td><code>crm_companies</code></td>
+<td>Company records</td>
+</tr>
+<tr>
+<td><code>crm_contact_company</code></td>
+<td>Junction: contacts ↔ companies</td>
+</tr>
+<tr>
+<td><code>crm_tags</code></td>
+<td>Custom tags for contacts</td>
+</tr>
+<tr>
+<td><code>crm_contact_tags</code></td>
+<td>Junction: contacts ↔ tags</td>
+</tr>
+<tr>
+<td><code>crm_notes</code></td>
+<td>Notes attached to contacts/companies</td>
+</tr>
+<tr>
+<td><code>crm_activities</code></td>
+<td>Activity log (calls, emails, meetings)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Search &amp; Filtering</h2>
+<p>All CRM list views support:</p>
+<ul>
+<li>Full-text search (name, email, company)</li>
+<li>Filter by role, tag, company, linked status</li>
+<li>Sort by name, created_at, last activity</li>
+</ul>
+<hr>
+<p><strong>Last Updated:</strong> March 2026</p>
+
+</div></body></html>
