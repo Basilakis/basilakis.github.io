@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Metadata Prototype Validation System</h1>
+<h2>Overview</h2>
+<p>The Metadata Prototype Validation System is a semantic validation system that standardizes AI-extracted material metadata using CLIP text embeddings. It eliminates inconsistent naming, enables fuzzy search, validates AI outputs, and improves search accuracy by comparing extracted values to prototype embeddings and standardizing them to canonical values.</p>
+<h3>Key Features</h3>
+<ul>
+<li>Uses <code>material_properties</code> table as single source of truth</li>
+<li>Integrates with all search endpoints (multi-vector, semantic, material, etc.)</li>
+<li>Enabled by default in multi-vector search (recommended strategy)</li>
+<li>Non-breaking integration with existing DynamicMetadataExtractor</li>
+<li>Semantic matching capabilities (e.g., &quot;shiny&quot; → &quot;glossy&quot;)</li>
+</ul>
+<h3>Search Integration</h3>
+<ul>
+<li><strong>Multi-vector search</strong>: Fuzzy metadata matching + validation scoring (enabled by default)</li>
+<li><strong>Material property search</strong>: Semantic value matching</li>
+<li><strong>All strategies search</strong>: Validated filters passed to all strategies</li>
+<li><strong>Multimodal search</strong>: Metadata validation scoring</li>
+<li><strong>Material visual search</strong>: Prototype-based filtering</li>
+</ul>
+<hr>
+<h2>🎯 Overview</h2>
+<p>The <strong>Metadata Prototype Validation System</strong> enhances MIVAA&#39;s existing dynamic metadata extraction by adding <strong>semantic validation</strong> using CLIP text embeddings. This ensures that Qwen Vision&#39;s free-text metadata extractions are standardized to consistent, validated property values.</p>
+<hr>
+<h2>🔄 Dynamic Custom Metadata Integration</h2>
+<h3>How Current System Works (Preserved)</h3>
+<p><strong>DynamicMetadataExtractor</strong> discovers metadata in 3 tiers:</p>
+<ol>
+<li><p><strong>Critical Metadata</strong> (Always extracted):</p>
+<ul>
+<li><code>material_category</code>, <code>factory_name</code>, <code>factory_group_name</code></li>
+<li>Stored directly in <code>products.metadata</code> JSONB</li>
+<li>Required for product classification</li>
+</ul>
+</li>
+<li><p><strong>Discovered Metadata</strong> (200+ dynamic fields):</p>
+<ul>
+<li>AI discovers ANY metadata present in PDF</li>
+<li>Organized into 9 categories:<ul>
+<li><code>material_properties</code>: composition, texture, finish, pattern, weight, density</li>
+<li><code>dimensions</code>: length, width, height, thickness, diameter, size</li>
+<li><code>appearance</code>: color, color_code, gloss_level, sheen, transparency</li>
+<li><code>performance</code>: water_resistance, fire_rating, slip_resistance, wear_rating</li>
+<li><code>application</code>: recommended_use, installation_method, room_type, traffic_level</li>
+<li><code>compliance</code>: certifications, standards, eco_friendly, sustainability_rating</li>
+<li><code>design</code>: designer, studio, collection, series, aesthetic_style</li>
+<li><code>manufacturing</code>: factory, manufacturer, country_of_origin</li>
+<li><code>commercial</code>: pricing, availability, supplier, sku, warranty</li>
+</ul>
+</li>
+<li>Stored in <code>products.metadata</code> JSONB</li>
+<li><strong>NO validation</strong> - free text values accepted as-is</li>
+</ul>
+</li>
+<li><p><strong>Unknown Metadata</strong> (Custom fields):</p>
+<ul>
+<li>AI finds metadata NOT in predefined categories</li>
+<li>Stored in <code>products.metadata</code> with <code>_custom_</code> prefix</li>
+<li>Examples: <code>_custom_installation_time</code>, <code>_custom_warranty_years</code>, <code>_custom_special_coating</code></li>
+<li>Completely dynamic - no schema required</li>
+</ul>
+</li>
+</ol>
+<p><strong>Storage Example</strong>: Products have a <code>metadata</code> JSONB field containing critical fields (e.g., <code>material_category: &quot;ceramic_tile&quot;</code>, <code>factory_name: &quot;Castellón Ceramics&quot;</code>), discovered fields (e.g., <code>finish: &quot;shiny&quot;</code> — inconsistent, should be &quot;glossy&quot;), and custom fields with <code>_custom_</code> prefix. This illustrates the problem the validation system solves.</p>
+<h3>How New System Enhances This (Non-Breaking)</h3>
+<p><strong>MetadataPrototypeValidator</strong> adds a validation layer WITHOUT changing storage:</p>
+<ol>
+<li><p><strong>Check if property has prototypes</strong>: Query the <code>material_properties</code> table. If the property has <code>prototype_descriptions</code>, validate the extracted value against them. Otherwise, store as-is (custom metadata).</p>
+</li>
+<li><p><strong>Validate against prototypes</strong> (if they exist): Generate a CLIP embedding for the extracted value, compare it to the prototype embedding using cosine similarity. If similarity exceeds 0.80, return the standardized prototype value with <code>validated: True</code> and the confidence score. Otherwise, keep the original with <code>validated: False</code>.</p>
+</li>
+<li><p><strong>Track validation metadata</strong>: The <code>metadata._validation</code> dictionary stores per-property validation details including <code>original_value</code>, <code>validated_value</code>, <code>confidence</code>, <code>prototype_matched</code>, and <code>timestamp</code>.</p>
+</li>
+</ol>
+<p><strong>Key Benefits</strong>:</p>
+<ul>
+<li>Custom metadata still works (no validation required)</li>
+<li>Predefined properties get validated (if prototypes exist)</li>
+<li>Validation is optional - system works without it</li>
+<li>Admin can promote custom properties to validated properties later</li>
+</ul>
+<hr>
+<h2>📊 Identifying New Keywords for Prototypes</h2>
+<h3>Problem Statement</h3>
+<p><strong>Question</strong>: How do we identify when new prototype values should be added?</p>
+<p><strong>Example Scenario</strong>:</p>
+<ul>
+<li>System has prototypes for <code>finish</code>: glossy, matte, satin, textured, brushed</li>
+<li>AI extracts &quot;brushed metal&quot; from 23 different products</li>
+<li>Should &quot;brushed metal&quot; be added as a new prototype value?</li>
+</ul>
+<h3>Solution: Frequency Analysis + Admin Review</h3>
+<h4>Phase 1: Automatic Frequency Tracking</h4>
+<p>Track all extracted values for each property using a <code>metadata_value_frequency</code> table with columns: <code>property_key</code>, <code>extracted_value</code>, <code>frequency_count</code>, <code>first_seen_at</code>, <code>last_seen_at</code>, <code>workspace_ids</code> (UUID array), <code>product_ids</code> (UUID array), and <code>validation_status</code> (unvalidated/validated/rejected). A unique constraint on <code>(property_key, extracted_value)</code> prevents duplicates. After each metadata extraction, an upsert increments the frequency count and appends the workspace and product IDs.</p>
+<h4>Phase 2: Admin Review Dashboard</h4>
+<p><strong>Admin Panel</strong> (<code>/admin/metadata-prototypes</code>) shows:</p>
+<p>┌─────────────────────────────────────────────────────────────────┐
+│ Metadata Prototype Management                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Property: finish                                                 │
+│ Current Prototypes: 9 values (glossy, matte, satin, ...)       │
+│                                                                  │
+│ Suggested Additions (frequency &gt; 10):                           │
+│                                                                  │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ &quot;brushed metal&quot; (23 occurrences)                         │   │
+│ │ Similarity to existing: brushed (0.78)                   │   │
+│ │ Products: HAR-001, HAR-002, ...                          │   │
+│ │ [Add as New] [Merge with &quot;brushed&quot;] [Ignore]            │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ &quot;semi-gloss&quot; (18 occurrences)                            │   │
+│ │ Similarity to existing: satin (0.87), glossy (0.72)      │   │
+│ │ Products: CER-045, CER-046, ...                          │   │
+│ │ [Add as New] [Merge with &quot;satin&quot;] [Ignore]              │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</p>
+<p>The API endpoint <code>GET /api/admin/metadata-prototypes/suggestions</code> queries unvalidated values with frequency &gt;= a threshold, calculates CLIP embedding similarity against existing prototypes for each suggestion, and returns enriched suggestions ordered by frequency.</p>
+<h4>Phase 3: Admin Actions</h4>
+<p><strong>Action 1: Add as New Prototype</strong> — <code>POST /api/admin/metadata-prototypes/add</code> updates the <code>prototype_descriptions</code> JSONB on the <code>material_properties</code> row, regenerates the CLIP embedding for the property, marks the value as validated in the frequency table, and queues a re-validation job for all affected products.</p>
+<p><strong>Action 2: Merge with Existing</strong> — <code>POST /api/admin/metadata-prototypes/merge</code> adds the extracted value as a variation of an existing prototype, regenerates the embedding, updates all products that had the extracted value to use the target prototype, and marks the value as validated.</p>
+<p><strong>Action 3: Ignore</strong> — <code>POST /api/admin/metadata-prototypes/ignore</code> marks the suggestion as rejected so it won&#39;t appear in the dashboard again.</p>
+<hr>
+<h2>🎯 ANSWERS TO KEY QUESTIONS</h2>
+<h3>Question 1: How do we track user search patterns to identify missing prototypes?</h3>
+<p><strong>Answer</strong>: Implemented comprehensive search query tracking system.</p>
+<p><strong>Architecture</strong>:</p>
+<ol>
+<li><p>A <code>search_query_tracking</code> table records every search with: <code>workspace_id</code>, <code>query_text</code>, <code>query_metadata</code> (JSONB, e.g., <code>{&quot;finish&quot;: &quot;shiny&quot;}</code>), <code>search_type</code>, <code>result_count</code>, <code>zero_results</code> flag, <code>searched_terms</code> array, <code>matched_terms</code> array (those that validated), <code>unmatched_terms</code> array (those that didn&#39;t), <code>validation_results</code> JSONB, and <code>response_time_ms</code>.</p>
+</li>
+<li><p>An <code>unmatched_term_frequency</code> table aggregates patterns with: <code>term</code>, <code>property_key</code>, <code>frequency_count</code>, <code>workspace_ids</code>, <code>similar_prototypes</code> JSONB (e.g., <code>[{&quot;prototype&quot;: &quot;glossy&quot;, &quot;similarity&quot;: 0.78}]</code>), and <code>review_status</code> (pending/approved/rejected).</p>
+</li>
+</ol>
+<p><strong>How It Works</strong>: The <code>multi_vector_search</code> function automatically tracks each query asynchronously. The tracker validates each filter term against prototypes, identifies unmatched terms, updates frequency counts, and flags zero-result queries.</p>
+<p><strong>Admin Dashboard</strong> (<code>/admin/prototype-suggestions</code>):</p>
+<p>┌─────────────────────────────────────────────────────────────┐
+│ Unmatched Terms Requiring Review                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Property: finish                                             │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐  │
+│ │ &quot;shiny&quot; (47 searches, 0 results)                       │  │
+│ │ Similar to: glossy (0.92), polished (0.85)             │  │
+│ │ Workspaces: 12 different workspaces                    │  │
+│ │ [Add as &quot;glossy&quot; variation] [Create new prototype]    │  │
+│ └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐  │
+│ │ &quot;semi-gloss&quot; (23 searches, 0 results)                  │  │
+│ │ Similar to: satin (0.87), glossy (0.72)                │  │
+│ │ [Add as &quot;satin&quot; variation] [Create new prototype]     │  │
+│ └────────────────────────────────────────────────────────┘  │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘</p>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li>Identifies missing prototypes from real user behavior</li>
+<li>Prioritizes by frequency (most-searched terms first)</li>
+<li>Shows semantic similarity to existing prototypes</li>
+<li>Enables data-driven prototype expansion</li>
+</ul>
+<hr>
+<h3>Question 2: Is metadata validation enabled by default in multi-vector search?</h3>
+<p><strong>Answer</strong>: YES - Enabled by default with automatic scoring boost.</p>
+<p><strong>Implementation</strong>: In <code>rag_service.py</code>, the <code>multi_vector_search</code> function automatically applies validation scoring when <code>material_filters</code> and results are both present. It loads the <code>MetadataPrototypeValidator</code>, calculates a metadata boost (up to +20% of the original score) for each result based on how well the product&#39;s validated metadata matches the query filters, and re-sorts results by their enhanced scores.</p>
+<p><strong>Scoring Formula</strong>: For each query filter field and value, the system checks whether the product has validation metadata. If both are validated and match the same prototype, the field scores 1.0. If they&#39;re different prototypes, cosine similarity determines a partial score (if &gt; 0.70). Unvalidated product values receive an exact-match score of 0.8 or a fuzzy match with 0.8× penalty. Unvalidated properties use exact match only. The per-field scores are averaged and multiplied by 0.2 to produce the final boost factor.</p>
+<p><strong>Example</strong>:</p>
+<p>Query: <code>{&quot;finish&quot;: &quot;shiny&quot;, &quot;slip_resistance&quot;: &quot;R-11&quot;}</code></p>
+<p><strong>Product A</strong> (validated): <code>finish: &quot;glossy&quot;</code> (validated from &quot;shiny&quot;, confidence 0.92), <code>slip_resistance: &quot;R11&quot;</code> (validated from &quot;R-11&quot;, confidence 1.0). Metadata boost: (0.92 + 1.0) / 2 = 0.96. Final score: 0.85 × 1.192 = <strong>1.013</strong> ✅</p>
+<p><strong>Product B</strong> (unvalidated): <code>finish: &quot;shiny surface&quot;</code>, <code>slip_resistance: &quot;R-11&quot;</code>. Metadata boost: 0.0. Final score: 0.85 × 1.0 = <strong>0.85</strong> ❌</p>
+<p><strong>Result</strong>: Product A ranks 19% higher!</p>
+<p><strong>Configuration</strong>:</p>
+<ul>
+<li>Enabled by default (no flag needed)</li>
+<li>Confidence threshold: 0.80</li>
+<li>Max boost: 20% of original score</li>
+<li>Graceful fallback if validation fails</li>
+</ul>
+<hr>
+<h3>Question 3: How does this work with dynamic property creation?</h3>
+<p><strong>Answer</strong>: Fully integrated - new properties automatically get validation support.</p>
+<p><strong>Flow</strong>:</p>
+<p>┌─────────────────────────────────────────────────────────────┐
+│ 1. AI Discovers New Metadata Field                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ DynamicMetadataExtractor finds:                             │
+│   &quot;installation_time&quot;: &quot;2 hours&quot;                             │
+│                                                              │
+│ This field is NOT in predefined categories                  │
+│ → Classified as &quot;unknown&quot; metadata                          │
+│ → Stored with <em>custom</em> prefix                               │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Auto-Create material_properties Entry                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ _ensure_properties_exist() automatically creates:           │
+│                                                              │
+│ INSERT INTO material_properties (                           │
+│   property_key: &quot;_custom_installation_time&quot;,                │
+│   name: &quot;Installation Time&quot;,                                │
+│   data_type: &quot;string&quot;,                                      │
+│   is_searchable: true,                                      │
+│   is_filterable: true,                                      │
+│   is_ai_extractable: true,                                  │
+│   category: &quot;custom&quot;,                                       │
+│   prototype_descriptions: NULL,  ← No prototypes yet        │
+│   text_embedding_512: NULL                                  │
+│ )                                                            │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Property Stored Without Validation (Initially)           │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ products.metadata = {                                        │
+│   &quot;_custom_installation_time&quot;: &quot;2 hours&quot;,                   │
+│   &quot;_validation&quot;: {}  ← No validation (no prototypes)        │
+│ }                                                            │
+│                                                              │
+│ Search behavior:                                             │
+│ - Exact match only (no semantic matching)                   │
+│ - No validation boost                                       │
+│ - Still searchable and filterable                           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Frequency Tracking Identifies Pattern                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ After 50 products extracted with this field:                │
+│                                                              │
+│ unmatched_term_frequency:                                   │
+│   term: &quot;2 hours&quot; (frequency: 23)                           │
+│   term: &quot;1 hour&quot; (frequency: 15)                            │
+│   term: &quot;3-4 hours&quot; (frequency: 12)                         │
+│   property_key: &quot;_custom_installation_time&quot;                 │
+│                                                              │
+│ Admin sees suggestion:                                       │
+│ &quot;Add prototypes for _custom_installation_time?&quot;             │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. Admin Adds Prototypes                                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Admin creates prototypes:                                    │
+│   &quot;quick&quot;: [&quot;1 hour&quot;, &quot;fast&quot;, &quot;quick install&quot;]              │
+│   &quot;standard&quot;: [&quot;2 hours&quot;, &quot;2-3 hours&quot;, &quot;normal&quot;]            │
+│   &quot;extended&quot;: [&quot;3-4 hours&quot;, &quot;4+ hours&quot;, &quot;complex&quot;]          │
+│                                                              │
+│ System generates 512D CLIP embeddings                       │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 6. Future Extractions Get Validated                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Next PDF extraction:                                         │
+│   AI extracts: &quot;fast installation&quot;                          │
+│   Validator matches: &quot;quick&quot; (confidence 0.89)              │
+│                                                              │
+│ products.metadata = {                                        │
+│   &quot;_custom_installation_time&quot;: &quot;quick&quot;,  ← Standardized!    │
+│   &quot;_validation&quot;: {                                           │
+│     &quot;_custom_installation_time&quot;: {                          │
+│       &quot;original_value&quot;: &quot;fast installation&quot;,                │
+│       &quot;validated_value&quot;: &quot;quick&quot;,                           │
+│       &quot;confidence&quot;: 0.89,                                   │
+│       &quot;prototype_matched&quot;: true                             │
+│     }                                                        │
+│   }                                                          │
+│ }                                                            │
+│                                                              │
+│ Search now supports:                                         │
+│ - Semantic matching (&quot;fast&quot; finds &quot;quick&quot;)                  │
+│ - Validation boost in scoring                               │
+│ - Consistent terminology                                    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘</p>
+<p><strong>Key Points</strong>:</p>
+<ol>
+<li><p><strong>Automatic Property Creation</strong>: Every discovered field gets a <code>material_properties</code> entry. No manual intervention needed. Enables future prototype addition.</p>
+</li>
+<li><p><strong>Graceful Degradation</strong>: Properties without prototypes still work (exact match only). No validation errors or failures. System remains functional.</p>
+</li>
+<li><p><strong>Progressive Enhancement</strong>: Start with no prototypes (exact match), add prototypes when patterns emerge, automatically upgrade to semantic matching.</p>
+</li>
+<li><p><strong>Data-Driven Workflow</strong>: Frequency tracking identifies candidates, admin reviews and approves, system learns from real usage.</p>
+</li>
+</ol>
+<p><strong>Example Timeline</strong>:</p>
+<p>Day 1:  AI discovers &quot;_custom_warranty_years&quot;
+        → Auto-created in material_properties (no prototypes)
+        → Stored as-is: &quot;10 years&quot;, &quot;5 years&quot;, &quot;lifetime&quot;</p>
+<p>Day 30: Frequency analysis shows:
+        → &quot;10 years&quot; (45 occurrences)
+        → &quot;5 years&quot; (32 occurrences)
+        → &quot;lifetime&quot; (18 occurrences)</p>
+<p>Day 31: Admin adds prototypes:
+        → &quot;standard&quot;: [&quot;5 years&quot;, &quot;5-year&quot;, &quot;five years&quot;]
+        → &quot;extended&quot;: [&quot;10 years&quot;, &quot;10-year&quot;, &quot;decade&quot;]
+        → &quot;lifetime&quot;: [&quot;lifetime&quot;, &quot;permanent&quot;, &quot;forever&quot;]</p>
+<p>Day 32: New extractions get validated:
+        → &quot;5-year warranty&quot; → &quot;standard&quot; (confidence 0.95)
+        → &quot;decade coverage&quot; → &quot;extended&quot; (confidence 0.88)</p>
+<hr>
+<h2>🏗️ Architecture</h2>
+<h3>Integration with Existing System</h3>
+<p>┌─────────────────────────────────────────────────────────────────────┐
+│ EXISTING: PDF Processing Pipeline (UNCHANGED)                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Stage 0A: Product Discovery                                        │
+│  └── Discover products with basic metadata                          │
+│                                                                      │
+│  Stage 0B: Metadata Extraction (DynamicMetadataExtractor)           │
+│  └── Extract 200+ fields across 9 categories                        │
+│      Returns critical metadata and discovered metadata              │
+│                                                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│ NEW: Prototype Validation Layer (ADDED)                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Stage 0C: Metadata Validation (MetadataPrototypeValidator)         │
+│  └── Validate extracted metadata against prototypes                 │
+│      Input: {&quot;finish&quot;: &quot;glossy&quot;, &quot;slip_resistance&quot;: &quot;R11&quot;}          │
+│      Process:                                                        │
+│        1. Generate CLIP embedding for &quot;glossy&quot;                      │
+│        2. Compare to finish prototypes (glossy, matte, satin)       │
+│        3. Return best match with confidence                         │
+│      Output: validated value, validated flag, confidence score      │
+│                                                                      │
+│  Stage 1-8: Continue as normal (UNCHANGED)                          │
+│  └── Image extraction, embeddings, chunking, etc.                   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘</p>
+<h3>Key Principle: <strong>NON-BREAKING ADDITION</strong></h3>
+<p><strong>Existing functionality preserved:</strong></p>
+<ul>
+<li>DynamicMetadataExtractor continues to work exactly as before</li>
+<li>All 200+ metadata fields still extracted</li>
+<li>Confidence scores still calculated</li>
+<li>Manual overrides still supported</li>
+</ul>
+<p><strong>New validation layer added:</strong></p>
+<ul>
+<li>Runs AFTER extraction, BEFORE database storage</li>
+<li>Validates and standardizes property values</li>
+<li>Adds validation metadata without changing structure</li>
+<li>Falls back gracefully if validation fails</li>
+</ul>
+<hr>
+<h2>Implementation Status</h2>
+<h3>Core Features</h3>
+<ul>
+<li>Database schema with 3 new columns</li>
+<li>36 material properties populated</li>
+<li>52 prototype values defined for 6 properties</li>
+<li>512D CLIP embeddings generated</li>
+<li>MetadataPrototypeValidator service created</li>
+<li>Integrated into PDF processing pipeline</li>
+</ul>
+<h3>Search Integration</h3>
+<ul>
+<li>Multi-vector search with metadata validation scoring (enabled by default)</li>
+<li>Search query tracking for zero-result discovery</li>
+<li>Unmatched term frequency analysis</li>
+<li>Automatic prototype suggestions</li>
+</ul>
+<h3>Dynamic Property Creation</h3>
+<ul>
+<li>Auto-create material_properties entries for new discovered fields</li>
+<li>Integrated with DynamicMetadataExtractor</li>
+<li>Support for custom fields with <em>custom</em> prefix</li>
+</ul>
+<hr>
+<h2>🔍 Relevancy Scoring Enhancement</h2>
+<h3>Current Search Scoring (Before Prototype Validation)</h3>
+<p>The current scoring formula weights: 40% text similarity, 30% visual similarity, 20% metadata match (exact), 10% confidence score.</p>
+<p><strong>Problem</strong>: Metadata matching is binary (exact match or no match)</p>
+<ul>
+<li>&quot;shiny&quot; doesn&#39;t match &quot;glossy&quot; (even though they&#39;re semantically similar)</li>
+<li>&quot;R-11&quot; doesn&#39;t match &quot;R11&quot; (formatting variation)</li>
+<li>&quot;ceramic tiles&quot; doesn&#39;t match &quot;ceramic&quot; (plural variation)</li>
+</ul>
+<h3>Enhanced Scoring with Prototype Validation</h3>
+<p>For each query filter field, the system checks whether the property has prototype validation. If so, and the product&#39;s value is prototype-matched, it scores 1.0 for an exact prototype match or a cosine similarity score (if &gt; 0.70) for a different prototype. Unvalidated product values receive fuzzy match scores with a penalty. Properties without prototypes use exact match only. Scores are averaged across all query fields to produce <code>metadata_prototype_match</code>.</p>
+<p>The new scoring formula weights: 30% text similarity, 30% visual similarity, 20% metadata_prototype_match (NEW), 10% metadata_match (reduced, exact fallback), 10% confidence score.</p>
+<p><strong>Benefits</strong>:</p>
+<ol>
+<li><strong>Semantic Matching</strong>: &quot;shiny&quot; query finds &quot;glossy&quot; products (0.92 similarity)</li>
+<li><strong>Fuzzy Matching</strong>: &quot;R-11&quot; query finds &quot;R11&quot; products (formatting normalized)</li>
+<li><strong>Validation Boost</strong>: Products with validated metadata rank higher</li>
+<li><strong>Consistent Terminology</strong>: All products use standardized values</li>
+</ol>
+<h3>Example Scoring Comparison</h3>
+<p><strong>Query</strong>: <code>{&quot;finish&quot;: &quot;shiny&quot;, &quot;slip_resistance&quot;: &quot;R-11&quot;}</code></p>
+<p><strong>Product A</strong> (validated metadata): <code>finish: &quot;glossy&quot;</code> validated from &quot;shiny&quot; at confidence 0.92, <code>slip_resistance: &quot;R11&quot;</code> validated from &quot;R-11&quot; at confidence 1.0. <strong>Metadata Score</strong>: (0.92 + 1.0) / 2 = 0.96 ✅ High score</p>
+<p><strong>Product B</strong> (unvalidated metadata): <code>finish: &quot;shiny surface&quot;</code> not validated, <code>slip_resistance: &quot;R-11&quot;</code> not validated. <strong>Metadata Score</strong>: approximately 0.28 ❌ Low score</p>
+<p><strong>Result</strong>: Product A ranks significantly higher despite not having exact text match!</p>
+<h3>Integration Points</h3>
+<p><strong>1. Multi-Vector Search</strong> (<code>rag_service.py</code>): Results are scored using <code>_score_with_metadata_validation</code> with <code>enable_prototype_matching=True</code> (enabled by default).</p>
+<p><strong>2. Material Visual Search</strong> (<code>material_visual_search_service.py</code>, line 411): The category filter value is validated against prototypes before being used to filter products.</p>
+<p><strong>3. Semantic Search</strong> (<code>rag_service.py</code>): Each result&#39;s score is multiplied by <code>(1.0 + validation_boost * 0.2)</code> where <code>validation_boost</code> is calculated from the product&#39;s validation metadata.</p>
+<hr>
+<h2>📊 Database Schema</h2>
+<h3>material_properties Table (ENHANCED)</h3>
+<p><strong>Existing Columns</strong> (UNCHANGED): <code>id</code>, <code>property_key</code> (unique), <code>name</code>, <code>display_name</code>, <code>description</code>, <code>data_type</code> (string/number/enum/boolean), <code>validation_rules</code> (JSONB), <code>is_searchable</code>, <code>is_filterable</code>, <code>is_ai_extractable</code>.</p>
+<p><strong>NEW Columns</strong> (ADDED):</p>
+<ul>
+<li><code>prototype_descriptions</code> — JSONB mapping value names to arrays of 3-5 prototype descriptions. For example, the &quot;finish&quot; property maps &quot;glossy&quot; to descriptions like &quot;High gloss reflective surface, Polished shiny appearance, Mirror-like finish&quot;.</li>
+<li><code>text_embedding_512</code> — VECTOR(512) containing the averaged CLIP embedding for all prototypes of that property</li>
+<li><code>prototype_updated_at</code> — TIMESTAMP of last update</li>
+</ul>
+<p>A vector index using <code>ivfflat</code> with <code>vector_cosine_ops</code> is created on <code>text_embedding_512</code> for fast similarity search.</p>
+<hr>
+<h2>🔄 How Prototype Validation Works</h2>
+<h3>Step-by-Step Process</h3>
+<p><strong>1. Qwen Extracts Free Text</strong>: The vision model produces structured property values such as <code>finish: &quot;glossy&quot;</code> and <code>pattern: &quot;marble-like veining&quot;</code>.</p>
+<p><strong>2. Prototype Validator Processes Each Field</strong>: The <code>MetadataPrototypeValidator.validate_property(property_key, extracted_value)</code> method is called for each field. It returns the best-matching prototype value, a <code>validated</code> boolean, a <code>confidence</code> score, and the similarity scores against all prototypes.</p>
+<p><strong>3. Validation Algorithm</strong>: A CLIP embedding is generated for the extracted value. The property&#39;s prototypes are retrieved from the database. Cosine similarity is computed between the extracted embedding and each prototype embedding. The best match is selected; if its similarity exceeds 0.80, the prototype value is returned as validated, otherwise the original value is kept.</p>
+<p><strong>4. Store Validated Metadata</strong>: The product metadata is saved with both validated values and a <code>_validation_metadata</code> dictionary tracking which properties were validated and at what confidence.</p>
+<hr>
+<h2>🔍 Integration with Search</h2>
+<h3>Enhanced Search Capabilities</h3>
+<p><strong>1. Exact Metadata Filtering (EXISTING - UNCHANGED)</strong>: Search products by exact metadata values using <code>POST /api/search/products</code> with a <code>filters</code> object (e.g., <code>{&quot;metadata.finish&quot;: &quot;glossy&quot;, &quot;metadata.slip_resistance&quot;: &quot;R11&quot;}</code>).</p>
+<p><strong>2. Semantic Metadata Search (NEW - ADDED)</strong>: Search using natural language via <code>POST /api/search/products/semantic</code> with <code>use_metadata_prototypes: true</code>. The system generates CLIP embeddings for query terms (e.g., &quot;shiny&quot; → matches &quot;glossy&quot; prototype at 0.89), then boosts products whose validated metadata matches the inferred prototypes.</p>
+<p><strong>3. Metadata Similarity Scoring (NEW - ADDED)</strong>: The combined score formula now includes a 20% weight for <code>metadata_prototype_match</code> alongside text similarity (40%), visual similarity (30%), and confidence score (10%).</p>
+<h3>Search Enhancement Benefits</h3>
+<p><strong>Better Fuzzy Matching</strong>: &quot;shiny&quot; → &quot;glossy&quot;, &quot;non-slip&quot; → &quot;R11&quot;
+<strong>Standardized Filters</strong>: All variations map to same validated value
+<strong>Confidence Boosting</strong>: High-confidence validated metadata ranks higher
+<strong>Semantic Understanding</strong>: Natural language queries match technical terms</p>
+<hr>
+<h2>📋 Property Prototypes Definition</h2>
+<h3>Core Material Properties</h3>
+<p><strong>material_type</strong> (Primary classification) has prototypes for: &quot;ceramic&quot; (glazed surfaces, interior applications), &quot;marble&quot; (natural stone with veining, polished high gloss), &quot;porcelain&quot; (high density, low water absorption, vitrified), &quot;wood&quot; (natural grain, hardwood flooring, organic texture), and &quot;granite&quot; (speckled appearance, crystalline structure, exceptional hardness). Each prototype value has 3 descriptive sentences for averaging.</p>
+<p><strong>finish</strong> (Surface treatment) has prototypes for: &quot;glossy&quot; (high gloss reflective surface, mirror-like quality, brilliant shine), &quot;matte&quot; (non-reflective flat surface, no shine, ideal for hiding imperfections), and &quot;satin&quot; (semi-gloss with subtle sheen, between matte and glossy, soft luster).</p>
+<p><strong>slip_resistance</strong> (Safety rating) has prototypes for R9 (low, dry interior areas), R10 (medium, wet areas/bathrooms), R11 (high, commercial wet areas), and R12 (very high, industrial/outdoor). Each has 3 descriptive sentences.</p>
+<hr>
+<h2>Technical Implementation</h2>
+<h3>Database Schema</h3>
+<p>Three new columns are added to <code>material_properties</code>: <code>prototype_descriptions</code> (JSONB, default <code>{}</code>), <code>text_embedding_512</code> (VECTOR(512)), and <code>prototype_updated_at</code> (TIMESTAMP). A vector index using <code>ivfflat</code> with <code>vector_cosine_ops</code> is created on <code>text_embedding_512</code>.</p>
+<h3>Property Population</h3>
+<p>The <code>material_properties</code> table is populated with 50+ meta fields organized into categories: Material Properties, Dimensions, Appearance, Performance, Application, Compliance, Design, Manufacturing, and Commercial.</p>
+<h3>Prototype Definitions</h3>
+<p>A <code>PROPERTY_PROTOTYPES</code> dictionary maps property keys to value names, each with 3-5 descriptive sentences. For example, <code>material_type</code> → <code>ceramic</code> → list of 3 descriptions. This dictionary is used to populate the database.</p>
+<h3>Embedding Generation</h3>
+<p>For each property/value combination, embeddings are generated for all descriptions and then averaged to produce a single representative embedding that is stored in the database.</p>
+<h3>Validation Service</h3>
+<p>The <code>MetadataPrototypeValidator</code> class provides three main methods: <code>validate_property(property_key, extracted_value)</code> for single-field validation, <code>validate_metadata(metadata)</code> for batch validation, and <code>get_property_prototypes(property_key)</code> for inspection. The validator generates CLIP embeddings for extracted values, compares them against all prototype embeddings for the property, returns the best match with confidence, uses a 0.80 confidence threshold, and falls back to the original value if confidence is below threshold.</p>
+<h3>Pipeline Integration</h3>
+<p>After metadata extraction, the <code>MetadataPrototypeValidator</code> is called to validate the extracted values. The validated results are merged with validation tracking metadata before being stored in the database.</p>
+<h3>Search Integration</h3>
+<p>The system integrates prototype validation into all search endpoints:</p>
+<ol>
+<li><code>/api/rag/search?strategy=multi_vector</code> (PRIMARY - enabled by default)</li>
+<li><code>/api/rag/search?strategy=material</code></li>
+<li><code>/api/rag/search?strategy=all</code></li>
+<li><code>/api/search/multimodal</code></li>
+<li><code>/api/search/material-visual</code></li>
+</ol>
+<p>In multi-vector search, filter values are validated against prototypes before building SQL conditions, and similar values (similarity &gt; 0.7) are also included in the match. The combined score is recalculated to include a 10% weight for the metadata validation match score.</p>
+<hr>
+<h2>Benefits</h2>
+<h3>For Metadata Extraction</h3>
+<ul>
+<li><strong>Standardization</strong>: Qwen&#39;s free text → validated property values</li>
+<li><strong>Consistency</strong>: Same material gets same label across PDFs</li>
+<li><strong>Validation</strong>: Prevents hallucinations and invalid values</li>
+<li><strong>Confidence</strong>: Semantic similarity scores for each validation</li>
+</ul>
+<h3>For Search</h3>
+<ul>
+<li><strong>Better Matching</strong>: &quot;shiny&quot; finds &quot;glossy&quot; products</li>
+<li><strong>Fuzzy Filters</strong>: Variations map to standard values</li>
+<li><strong>Semantic Search</strong>: Natural language queries work better</li>
+<li><strong>Ranking</strong>: Validated metadata boosts search scores</li>
+</ul>
+<h3>For System Architecture</h3>
+<ul>
+<li><strong>Single Source of Truth</strong>: <code>material_properties</code> table for everything</li>
+<li><strong>No Duplication</strong>: Categories merged into meta system</li>
+<li><strong>Extensible</strong>: Add new properties without code changes</li>
+<li><strong>Non-Breaking</strong>: Existing functionality preserved</li>
+</ul>
+<hr>
+<h2>🔧 API Endpoints</h2>
+<h3>Validation Endpoints (NEW)</h3>
+<p><strong>Populate Property Prototypes</strong> — <code>POST /api/metadata/properties/populate-prototypes</code> with optional <code>property_key</code> (specific property) and <code>regenerate</code> (boolean) fields.</p>
+<p><strong>Validate Metadata</strong> — <code>POST /api/metadata/validate</code> with a <code>metadata</code> object containing property key-value pairs. Returns a <code>validated_metadata</code> object where each field has <code>value</code>, <code>validated</code> (boolean), and <code>confidence</code>.</p>
+<p><strong>Get Property Prototypes</strong> — <code>GET /api/metadata/properties/{property_key}/prototypes</code> returns the property&#39;s <code>prototypes</code> dictionary mapping value names to their description arrays.</p>
+<hr>
+<h2>📝 Notes</h2>
+<ul>
+<li><strong>Backward Compatibility</strong>: All existing metadata extraction continues to work</li>
+<li><strong>Gradual Rollout</strong>: Prototypes can be added incrementally (start with top 20 properties)</li>
+<li><strong>Fallback Logic</strong>: If validation fails, original extracted value is preserved</li>
+<li><strong>Admin Control</strong>: Prototypes can be edited via admin panel</li>
+<li><strong>Performance</strong>: CLIP embedding generation cached, validation is fast (&lt;100ms)</li>
+</ul>
+
+</div></body></html>

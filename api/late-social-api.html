@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Late.dev Social Media API</h1>
+<p><strong>Functions:</strong> <code>late-oauth</code>, <code>late-publish</code>, <code>late-analytics</code>, <code>late-webhook-handler</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/</code>
+<strong>Auth:</strong> Authenticated users (JWT required)</p>
+<p>Full documentation: <a href="../social-media-system.md">social-media-system.md</a></p>
+<hr>
+<h2>OAuth — Connect / Disconnect Accounts</h2>
+<p><strong>Function:</strong> <code>late-oauth</code></p>
+<h3>Connect a social account</h3>
+<pre><code>POST /functions/v1/late-oauth
+{
+  &quot;action&quot;: &quot;connect&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> <code>{ &quot;oauth_url&quot;: &quot;https://app.late.dev/oauth/...&quot; }</code></p>
+<p>Redirect the user to <code>oauth_url</code>. Late.dev handles the platform OAuth and returns control to your <code>callback</code> endpoint.</p>
+<h3>OAuth callback (called after user completes Late.dev OAuth)</h3>
+<pre><code>POST /functions/v1/late-oauth
+{
+  &quot;action&quot;: &quot;callback&quot;,
+  &quot;late_account_id&quot;: &quot;late-acc-...&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Fetches account details from Late.dev and upserts into <code>social_accounts</code>.</p>
+<h3>Disconnect an account</h3>
+<pre><code>POST /functions/v1/late-oauth
+{
+  &quot;action&quot;: &quot;disconnect&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<h3>List connected accounts</h3>
+<pre><code>GET /functions/v1/late-oauth?action=list&amp;workspace_id=&lt;uuid&gt;
+</code></pre>
+<p><strong>Supported platforms:</strong> <code>instagram</code> · <code>facebook</code> · <code>linkedin</code> · <code>tiktok</code> · <code>pinterest</code> · <code>youtube</code> · <code>twitter</code> · <code>threads</code></p>
+<hr>
+<h2>Publishing</h2>
+<p><strong>Function:</strong> <code>late-publish</code></p>
+<h3>Publish immediately</h3>
+<pre><code>POST /functions/v1/late-publish
+{
+  &quot;action&quot;: &quot;publish_now&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;,
+  &quot;content&quot;: &quot;Caption text with #hashtags&quot;,
+  &quot;media_url&quot;: &quot;https://...&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<h3>Schedule a post</h3>
+<pre><code>POST /functions/v1/late-publish
+{
+  &quot;action&quot;: &quot;schedule&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;,
+  &quot;content&quot;: &quot;Caption text&quot;,
+  &quot;media_url&quot;: &quot;https://...&quot;,
+  &quot;scheduled_at&quot;: &quot;2026-04-01T14:00:00Z&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p><strong>No credit cost</strong> — uses the workspace&#39;s Late.dev subscription.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;late_post_id&quot;: &quot;late-post-...&quot;,
+  &quot;status&quot;: &quot;published&quot; | &quot;scheduled&quot;
+}
+</code></pre>
+<hr>
+<h2>Analytics</h2>
+<p><strong>Function:</strong> <code>late-analytics</code></p>
+<h3>Sync post analytics</h3>
+<pre><code>POST /functions/v1/late-analytics
+{
+  &quot;action&quot;: &quot;get_post_analytics&quot;,
+  &quot;post_ids&quot;: [&quot;uuid-1&quot;, &quot;uuid-2&quot;],
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Fetches engagement metrics (likes, comments, shares, reach) from Late.dev and writes to <code>social_post_analytics</code>.</p>
+<h3>Sync account insights</h3>
+<pre><code>POST /functions/v1/late-analytics
+{
+  &quot;action&quot;: &quot;get_account_insights&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Syncs follower count, reach, impressions to <code>social_account_insights</code>.</p>
+<h3>Get best posting times</h3>
+<pre><code>POST /functions/v1/late-analytics
+{
+  &quot;action&quot;: &quot;get_best_time&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> <code>{ &quot;best_times&quot;: [{ &quot;day&quot;: &quot;Monday&quot;, &quot;hour&quot;: 18 }, ...] }</code></p>
+<hr>
+<h2>Social Content Generation</h2>
+<p><strong>Function:</strong> <code>generate-social-content</code>
+<strong>Credits:</strong> 2 per generation</p>
+<pre><code>POST /functions/v1/generate-social-content
+{
+  &quot;topic&quot;: &quot;Marble bathroom renovation&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;tone&quot;: &quot;professional&quot;,
+  &quot;product_info&quot;: { &quot;name&quot;: &quot;Calacatta Gold Marble&quot;, &quot;category&quot;: &quot;stone&quot; },
+  &quot;include_hashtags&quot;: true,
+  &quot;hashtag_count&quot;: 10,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Returns 3 caption variants tailored to platform character limits, tone, and hashtag conventions.</p>
+<p><strong>Supported platforms:</strong> <code>instagram</code> · <code>facebook</code> · <code>linkedin</code> · <code>tiktok</code> · <code>pinterest</code> · <code>youtube</code> · <code>twitter</code> · <code>threads</code></p>
+<hr>
+<h2>Social Image Generation</h2>
+<p><strong>Function:</strong> <code>generate-social-image</code></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Image Type</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>xAI Aurora</td>
+<td><code>lifestyle</code> / <code>people</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td>Gemini Imagen</td>
+<td><code>product</code> / <code>interior</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td>FLUX Dev</td>
+<td><code>artistic</code> / <code>textured</code></td>
+<td>6</td>
+</tr>
+</tbody></table>
+<pre><code>POST /functions/v1/generate-social-image
+{
+  &quot;prompt&quot;: &quot;Luxury marble bathroom, natural light, editorial photography&quot;,
+  &quot;image_type&quot;: &quot;interior&quot;,
+  &quot;aspect_ratio&quot;: &quot;4:5&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Pass <code>model</code> to override auto-selection. Aspect ratios: <code>1:1</code> · <code>4:5</code> · <code>9:16</code> · <code>16:9</code>.</p>
+<hr>
+<h2>Database Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>social_accounts</code></td>
+<td>Connected accounts per user (OAuth tokens)</td>
+</tr>
+<tr>
+<td><code>social_posts</code></td>
+<td>Draft / scheduled / published posts</td>
+</tr>
+<tr>
+<td><code>social_post_analytics</code></td>
+<td>Per-post engagement metrics</td>
+</tr>
+<tr>
+<td><code>social_account_insights</code></td>
+<td>Account-level follower/reach snapshots</td>
+</tr>
+</tbody></table>
+
+</div></body></html>

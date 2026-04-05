@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Flow Engine — Workflow Automation System</h1>
+<p>Visual drag-and-drop workflow automation built on xyflow. Create flows that connect triggers, conditions, and actions into automated pipelines.</p>
+<hr>
+<h2>Overview</h2>
+<p>The Flow Engine lets workspace admins build multi-step automations without code. Flows are stored as xyflow graph definitions (nodes + edges) and executed server-side by the <code>flow-engine</code> edge function.</p>
+<p><strong>Access:</strong> <code>/admin/flows</code></p>
+<p><strong>Edge Functions:</strong></p>
+<ul>
+<li><code>flow-engine</code> — Executes and tests flows</li>
+<li><code>flow-scheduler-cron</code> — Runs scheduled flows on cron intervals</li>
+<li><code>flow-webhook</code> — Triggers flows from external webhooks</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<pre><code>Admin builds flow (drag-and-drop xyflow canvas)
+    ↓
+Flow saved to DB (flows table — nodes + edges JSON)
+    ↓
+Triggered by: cron schedule | incoming webhook | manual | event emission
+    ↓
+flow-engine edge function walks the graph:
+  - Resolves {{template}} variables from execution context
+  - Evaluates condition nodes (branches to true/false/case_N)
+  - Executes action nodes (SMS, email, HTTP, notification, etc.)
+    ↓
+Execution log written to flow_runs table
+</code></pre>
+<hr>
+<h2>Node Types</h2>
+<h3>Trigger Nodes</h3>
+<p>Define when a flow starts. One trigger node per flow.</p>
+<table>
+<thead>
+<tr>
+<th>Trigger Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>manual</code></td>
+<td>Triggered via UI or API call</td>
+</tr>
+<tr>
+<td><code>cron</code></td>
+<td>Runs on a schedule (managed by <code>flow-scheduler-cron</code>)</td>
+</tr>
+<tr>
+<td><code>webhook</code></td>
+<td>Triggered by incoming webhook POST to <code>flow-webhook</code></td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>Fires on platform events (product created, quote submitted, etc.)</td>
+</tr>
+</tbody></table>
+<h3>Condition Nodes</h3>
+<p>Branch the flow based on data values.</p>
+<table>
+<thead>
+<tr>
+<th>Condition Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>if_else</code></td>
+<td>Evaluates field vs value → <code>true</code> / <code>false</code> branches</td>
+</tr>
+<tr>
+<td><code>switch</code></td>
+<td>Matches field against N cases → <code>case_0</code>, <code>case_1</code>, … branches</td>
+</tr>
+<tr>
+<td><code>filter</code></td>
+<td>Evaluates multiple conditions with AND / OR logic</td>
+</tr>
+<tr>
+<td><code>delay</code></td>
+<td>Pauses execution for a duration (capped at 30s in edge function)</td>
+</tr>
+</tbody></table>
+<p><strong>Supported Operators for <code>if_else</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>equals</code></td>
+<td>Exact match</td>
+</tr>
+<tr>
+<td><code>not_equals</code></td>
+<td>Not equal</td>
+</tr>
+<tr>
+<td><code>contains</code></td>
+<td>String contains substring</td>
+</tr>
+<tr>
+<td><code>not_contains</code></td>
+<td>String does not contain</td>
+</tr>
+<tr>
+<td><code>starts_with</code></td>
+<td>String prefix</td>
+</tr>
+<tr>
+<td><code>ends_with</code></td>
+<td>String suffix</td>
+</tr>
+<tr>
+<td><code>gt</code> / <code>gte</code></td>
+<td>Greater than / greater than or equal</td>
+</tr>
+<tr>
+<td><code>lt</code> / <code>lte</code></td>
+<td>Less than / less than or equal</td>
+</tr>
+<tr>
+<td><code>is_empty</code></td>
+<td>Empty string, undefined, or null</td>
+</tr>
+<tr>
+<td><code>is_not_empty</code></td>
+<td>Non-empty value</td>
+</tr>
+</tbody></table>
+<h3>Action Nodes</h3>
+<p>Perform side effects. Templated values like <code>{{trigger.data.user_email}}</code> are resolved at runtime.</p>
+<table>
+<thead>
+<tr>
+<th>Action Type</th>
+<th>What it does</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>send_sms</code></td>
+<td>Sends SMS via <code>messaging-api</code></td>
+<td>Twilio per-message</td>
+</tr>
+<tr>
+<td><code>send_email</code></td>
+<td>Sends email via <code>email-api</code></td>
+<td>SES per-message</td>
+</tr>
+<tr>
+<td><code>http_request</code></td>
+<td>Makes outbound HTTP call (GET/POST/PUT/DELETE)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>create_notification</code></td>
+<td>Inserts record into <code>notifications</code> table</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>send_quote</code></td>
+<td>Generates and sends quote PDF via <code>generate-quote-pdf</code></td>
+<td>Included</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Template Variables</h2>
+<p>Action configs support <code>{{path.to.value}}</code> syntax. The context is built from execution data:</p>
+<pre><code>{{trigger.data.field}}          — data from the trigger event
+{{node_id.output.field}}        — output of a previous node
+</code></pre>
+<p><strong>Example:</strong> An SMS action with <code>to: &quot;{{trigger.data.customer_phone}}&quot;</code> resolves the phone number from whatever data triggered the flow.</p>
+<hr>
+<h2>Execution Modes</h2>
+<h3><code>execute-flow</code></h3>
+<p>Runs the flow for real. All actions fire (SMS sent, emails sent, etc.).</p>
+<pre><code class="language-json">POST /functions/v1/flow-engine
+{
+  &quot;action&quot;: &quot;execute-flow&quot;,
+  &quot;flow_id&quot;: &quot;uuid&quot;,
+  &quot;trigger_data&quot;: { &quot;customer_phone&quot;: &quot;+30...&quot;, &quot;name&quot;: &quot;Basil&quot; }
+}
+</code></pre>
+<h3><code>test-flow</code></h3>
+<p>Dry-run. Templates are resolved but no external actions fire. Returns the resolved config for each node so you can verify the output.</p>
+<pre><code class="language-json">POST /functions/v1/flow-engine
+{
+  &quot;action&quot;: &quot;test-flow&quot;,
+  &quot;flow_id&quot;: &quot;uuid&quot;,
+  &quot;trigger_data&quot;: { &quot;customer_phone&quot;: &quot;+30...&quot;, &quot;name&quot;: &quot;Basil&quot; }
+}
+</code></pre>
+<h3><code>trigger-event</code></h3>
+<p>Auto-dispatch mode used by DB triggers and internal services. Finds all flows with <code>trigger_type = &#39;event&#39;</code> and <code>event_type</code> matching the event, then runs them.</p>
+<pre><code class="language-json">POST /functions/v1/flow-engine
+{
+  &quot;action&quot;: &quot;trigger-event&quot;,
+  &quot;event_type&quot;: &quot;quote.submitted&quot;,
+  &quot;event_data&quot;: { ... }
+}
+</code></pre>
+<hr>
+<h2>Scheduling</h2>
+<p><code>flow-scheduler-cron</code> runs every minute (pg_cron). It:</p>
+<ol>
+<li>Queries all flows where <code>trigger_type = &#39;cron&#39;</code> and <code>enabled = true</code></li>
+<li>Checks if the cron schedule is due (uses cron expression from flow config)</li>
+<li>Invokes <code>flow-engine</code> with <code>action: &#39;execute-flow&#39;</code> for each due flow</li>
+<li>Updates <code>last_run_at</code> and <code>next_run_at</code> in the flows table</li>
+</ol>
+<hr>
+<h2>Webhooks</h2>
+<p><code>flow-webhook</code> exposes a public endpoint for external systems to trigger flows:</p>
+<pre><code>POST /functions/v1/flow-webhook?flow_id=&lt;uuid&gt;
+Content-Type: application/json
+
+{ &quot;any&quot;: &quot;payload&quot;, &quot;from&quot;: &quot;external-system&quot; }
+</code></pre>
+<p>The payload is passed as <code>trigger.data</code> in the execution context.</p>
+<p><strong>Security:</strong> Flows with webhook triggers can optionally require an HMAC signature header (<code>X-Webhook-Signature</code>).</p>
+<hr>
+<h2>Database Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>flows</code></td>
+<td>Flow definitions (name, graph JSON, trigger config, enabled state)</td>
+</tr>
+<tr>
+<td><code>flow_runs</code></td>
+<td>Execution log (status, duration, node results, errors)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Credit Usage</h2>
+<p>Individual actions may consume credits (e.g., <code>send_sms</code> via Twilio, <code>http_request</code> to paid APIs). Credit deduction is handled by the individual invoked functions, not the flow engine itself.</p>
+<hr>
+<h2>Error Handling</h2>
+<ul>
+<li><strong>Node failure</strong>: Execution stops at the failed node; <code>flow_runs</code> records the error and which node failed.</li>
+<li><strong>Timeout</strong>: Edge function has a 60s wall-clock limit. Use <code>delay</code> nodes conservatively (capped at 30s).</li>
+<li><strong>Template resolution failure</strong>: Unresolvable <code>{{path}}</code> returns the literal <code>{{path}}</code> string — execution continues.</li>
+</ul>
+<hr>
+<p><strong>Last Updated:</strong> March 2026</p>
+
+</div></body></html>

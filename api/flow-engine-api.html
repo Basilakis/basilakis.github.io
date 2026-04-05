@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Flow Engine API</h1>
+<p><strong>Function:</strong> <code>flow-engine</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/flow-engine</code>
+<strong>Auth:</strong> Authenticated users (JWT required)</p>
+<p>Full documentation: <a href="../flow-engine.md">flow-engine.md</a></p>
+<hr>
+<h2>Execute a flow</h2>
+<pre><code>POST /functions/v1/flow-engine
+{
+  &quot;action&quot;: &quot;execute-flow&quot;,
+  &quot;flow_id&quot;: &quot;uuid&quot;,
+  &quot;trigger_data&quot;: { &quot;key&quot;: &quot;value&quot; }
+}
+</code></pre>
+<h2>Test a flow (dry-run)</h2>
+<pre><code>POST /functions/v1/flow-engine
+{
+  &quot;action&quot;: &quot;test-flow&quot;,
+  &quot;flow_id&quot;: &quot;uuid&quot;,
+  &quot;trigger_data&quot;: { &quot;key&quot;: &quot;value&quot; }
+}
+</code></pre>
+<p>Returns resolved configs without firing real actions.</p>
+<h2>Trigger by event type</h2>
+<pre><code>POST /functions/v1/flow-engine
+{
+  &quot;action&quot;: &quot;trigger-event&quot;,
+  &quot;event_type&quot;: &quot;quote.submitted&quot;,
+  &quot;event_data&quot;: { ... }
+}
+</code></pre>
+<p>Dispatches all enabled flows listening for this <code>event_type</code>.</p>
+<hr>
+<h2>Response</h2>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;run_id&quot;: &quot;uuid&quot;,
+  &quot;nodes_executed&quot;: 4,
+  &quot;duration_ms&quot;: 320,
+  &quot;result&quot;: { ... }
+}
+</code></pre>
+<h2>Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code></td>
+<td>Missing <code>flow_id</code> or invalid action</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Missing / invalid JWT</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Flow not found</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Execution error (check <code>error</code> field for failing node)</td>
+</tr>
+</tbody></table>
+
+</div></body></html>

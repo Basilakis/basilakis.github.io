@@ -32,13 +32,13 @@
 <h2>📚 Documentation</h2>
 <h3>🎯 Start Here</h3>
 <p><strong><a href="INDEX.md">INDEX.md</a></strong> - Complete documentation index with learning paths
-<strong><a href="BLOG-POST-OVERVIEW.md">BLOG-POST-OVERVIEW.md</a></strong> - Comprehensive blog post overview (6,000+ words)</p>
+<strong><a href="overview.md">overview.md</a></strong> - Platform overview and key features</p>
 <h3>📖 Core Documentation</h3>
 <p><strong><a href="overview.md">overview.md</a></strong> - Complete platform overview</p>
 <ul>
 <li>Executive summary with key metrics</li>
 <li>Architecture overview</li>
-<li>AI models integration (12 models)</li>
+<li>AI models integration (8 models across 4 providers)</li>
 <li>14-stage PDF processing pipeline</li>
 <li>Multi-modal search capabilities</li>
 <li>Database architecture</li>
@@ -50,18 +50,72 @@
 <li>Hybrid architecture pattern</li>
 <li>Technology stack</li>
 <li>Authentication &amp; security</li>
-<li>API endpoints (113)</li>
+<li>API endpoints (115)</li>
 <li>Scalability &amp; monitoring</li>
+</ul>
+<p><strong><a href="duplicate-detection-merging.md">duplicate-detection-merging.md</a></strong> - Duplicate detection &amp; merging</p>
+<ul>
+<li>Factory-based duplicate detection</li>
+<li>Product merging with undo capability</li>
+<li>Similarity scoring algorithm</li>
+<li>Merge history tracking</li>
+<li>7 API endpoints</li>
+<li>Database schema</li>
+</ul>
+<p><strong><a href="data-import-system.md">data-import-system.md</a></strong> - Data import system ✨ NEW</p>
+<ul>
+<li>XML import with AI-powered field mapping</li>
+<li>Dynamic field mapping (Claude Sonnet 4.5)</li>
+<li>Batch processing (10 products at a time)</li>
+<li>Concurrent image downloads (5 parallel)</li>
+<li>Cron-based scheduling for recurring imports</li>
+<li>Manual re-run functionality</li>
+<li>Checkpoint recovery</li>
+<li>Real-time progress tracking</li>
+<li>4 API endpoints</li>
+<li>Phase 1 &amp; 2 complete</li>
 </ul>
 <p><strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models reference</p>
 <ul>
-<li>12 AI models overview</li>
-<li>Claude Sonnet 4.5 &amp; Haiku 4.5</li>
-<li>GPT-4o &amp; embeddings</li>
-<li>Llama 4 Scout 17B Vision</li>
-<li>OpenAI CLIP (5 types)</li>
+<li>12+ AI models across 5 providers</li>
+<li>Anthropic: Claude Sonnet 4.5, Claude Haiku 4.5</li>
+<li>OpenAI: GPT-4o, GPT-4o-mini</li>
+<li>Voyage AI: voyage-3.5 (primary text + understanding embeddings, 1024D)</li>
+<li>HuggingFace Endpoint: Qwen3-VL 32B Vision + SigLIP2 (768D visual embeddings)</li>
+<li>WorldLabs Marble: 3D Gaussian Splat generation</li>
 <li>Model usage by stage</li>
 <li>Cost optimization</li>
+</ul>
+<p><strong><a href="agent-system.md">agent-system.md</a></strong> - AI Agent system ✨ NEW</p>
+<ul>
+<li>Database-driven agent prompts</li>
+<li>3 specialized agents (PDF Processor, Search, Product)</li>
+<li>Admin UI for prompt management</li>
+<li>LangChain.js tool orchestration</li>
+<li>Real-time updates (no deployment)</li>
+<li>Role-based access control</li>
+<li>Best practices &amp; troubleshooting</li>
+</ul>
+<p><strong><a href="search-strategies.md">search-strategies.md</a></strong> - Search system guide</p>
+<ul>
+<li>6 search strategies (100% complete)</li>
+<li>Semantic, Vector, Multi-Vector, Hybrid, Material, Image</li>
+<li>All strategies combined mode</li>
+<li>Performance metrics (&lt;800ms for all)</li>
+<li>Database schema and indexes</li>
+<li>Usage examples and best practices</li>
+</ul>
+<p><strong><a href="comprehensive-metadata-fields-guide.md">comprehensive-metadata-fields-guide.md</a></strong> - Comprehensive metadata fields guide ✨ NEW</p>
+<ul>
+<li>200+ metadata fields across 9 categories</li>
+<li>Material Properties, Dimensions, Appearance, Performance</li>
+<li>Application, Compliance, Design, Manufacturing, Commercial</li>
+<li>AI-powered dynamic extraction (Claude/GPT)</li>
+<li>Complete field reference with examples</li>
+<li>API usage and frontend display</li>
+<li>Step-by-step extraction process</li>
+<li>Confidence scoring system</li>
+<li>Best practices and troubleshooting</li>
 </ul>
 <p><strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - PDF processing pipeline</p>
 <ul>
@@ -75,21 +129,22 @@
 </ul>
 <p><strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - API reference</p>
 <ul>
-<li>113 endpoints across 14 categories</li>
-<li>RAG Routes (25)</li>
+<li>119 endpoints across 16 categories</li>
+<li>RAG Routes (27)</li>
 <li>Admin Routes (18)</li>
-<li>Search Routes (18)</li>
-<li>Documents Routes (11)</li>
-<li>AI Services Routes (10)</li>
-<li>Images Routes (5)</li>
-<li>Document Entities Routes (5) ✨ NEW</li>
-<li>PDF Routes (4)</li>
+<li>Search Routes (6)</li>
+<li>Document Entities Routes (5)</li>
 <li>Products Routes (3)</li>
+<li>Images Routes (5)</li>
 <li>Embeddings Routes (3)</li>
-<li>Together AI Routes (3)</li>
+<li>AI Services Routes (10)</li>
+<li>Background Jobs (7)</li>
+<li>HuggingFace/Qwen Routes (3)</li>
 <li>Anthropic Routes (3)</li>
 <li>Monitoring Routes (3)</li>
 <li>AI Metrics Routes (2)</li>
+<li>Duplicate Detection Routes (7)</li>
+<li>Data Import Routes (4) ✨ NEW</li>
 </ul>
 <p><strong><a href="database-schema-complete.md">database-schema-complete.md</a></strong> - Database schema</p>
 <ul>
@@ -103,6 +158,16 @@
 <li>Storage capacity</li>
 <li>Backup &amp; recovery</li>
 </ul>
+<p><strong><a href="relevancy-system.md">relevancy-system.md</a></strong> - Relevancy &amp; entity linking</p>
+<ul>
+<li>Chunk → Product relationships</li>
+<li>Product → Image relationships</li>
+<li>Chunk → Image relationships</li>
+<li>Relevance scoring algorithms (3 algorithms)</li>
+<li>Relationship types and priorities</li>
+<li>Implementation details</li>
+<li>Best practices</li>
+</ul>
 <p><strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job queue &amp; async processing</p>
 <ul>
 <li>Supabase-native job queue</li>
@@ -111,6 +176,47 @@
 <li>Real-time progress tracking</li>
 <li>Priority queuing</li>
 <li>Health monitoring</li>
+</ul>
+<p><strong><a href="monitoring-analytics-system.md">monitoring-analytics-system.md</a></strong> - Monitoring &amp; analytics ✨ NEW</p>
+<ul>
+<li>Real-time PDF processing monitor</li>
+<li>Comprehensive analytics dashboard</li>
+<li>AI model usage and cost tracking</li>
+<li>Search analytics and query patterns</li>
+<li>Agent chat analytics</li>
+<li>System performance metrics</li>
+<li>Sentry integration</li>
+<li>9 checkpoint stages with full metrics</li>
+<li>Real-time updates via Supabase subscriptions</li>
+</ul>
+<p><strong><a href="email-system.md">email-system.md</a></strong> - Email system with Amazon SES</p>
+<ul>
+<li>Domain verification and management</li>
+<li>React Email template system</li>
+<li>Delivery tracking and analytics</li>
+<li>Bounce and complaint handling</li>
+<li>SNS webhook integration</li>
+<li>Admin dashboard at /admin/emails</li>
+<li>Complete API reference</li>
+</ul>
+<p><strong><a href="campaign-system.md">campaign-system.md</a></strong> - Email campaign management ✨ NEW</p>
+<ul>
+<li>Bulk email campaigns with targeting</li>
+<li>Recipient tracking and analytics</li>
+<li>Campaign scheduling and automation</li>
+<li>Template personalization</li>
+<li>Real-time delivery monitoring</li>
+<li>Admin interface for campaign management</li>
+<li>Complete workflow documentation</li>
+</ul>
+<p><strong><a href="quotes-system-architecture.md">quotes-system-architecture.md</a></strong> - Quotes management system</p>
+<ul>
+<li>Multiple independent quotes per user</li>
+<li>Custom requests and product quotes</li>
+<li>Status tags and timeline tracking</li>
+<li>Upsells/extras management</li>
+<li>Quote acceptance workflow</li>
+<li>Admin management interface</li>
 </ul>
 <p><strong><a href="features-guide.md">features-guide.md</a></strong> - Platform features</p>
 <ul>
@@ -138,6 +244,15 @@
 <li>Monitoring &amp; alerts</li>
 <li>Rollback procedures</li>
 </ul>
+<p><strong><a href="supabase-types-automation.md">supabase-types-automation.md</a></strong> - Supabase types automation</p>
+<ul>
+<li>Automated TypeScript type generation</li>
+<li>GitHub Actions integration</li>
+<li>Weekly scheduled updates</li>
+<li>Type validation scripts</li>
+<li>Manual generation commands</li>
+<li>Setup instructions</li>
+</ul>
 <p><strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues &amp; solutions</p>
 <ul>
 <li>Critical issues (API down, database, OOM)</li>
@@ -154,6 +269,34 @@
 <li>API endpoints for entity management</li>
 <li>Future extensibility (marketing, bank statements)</li>
 </ul>
+<p><strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Metadata management system</p>
+<ul>
+<li>Dynamic metadata extraction (250+ attributes)</li>
+<li>Scope detection (product-specific vs catalog-general)</li>
+<li>Implicit catalog-general metadata detection</li>
+<li>Override logic and processing order</li>
+<li>Metadata API endpoints</li>
+<li>Integration with PDF processing pipeline</li>
+</ul>
+<p><strong><a href="metadata-normalization-system.md">metadata-normalization-system.md</a></strong> - Metadata normalization system ✨ NEW</p>
+<ul>
+<li>Two-layer normalization architecture (prevention + correction)</li>
+<li>Semantic similarity-based field standardization (60% threshold)</li>
+<li>Automatic consolidation (individual fields → objects, single → arrays)</li>
+<li>Integrated into extraction pipeline</li>
+<li>Migration script for existing products</li>
+<li>95%+ field standardization accuracy</li>
+</ul>
+<p><strong><a href="prompt-enhancement-system.md">prompt-enhancement-system.md</a></strong> - Dynamic prompt system ✨ NEW</p>
+<ul>
+<li>Database-driven extraction prompts (extraction_prompts table)</li>
+<li>Custom vs default prompt priority (is_custom flag)</li>
+<li>Version control and workspace isolation</li>
+<li>4 stages: discovery, chunking, image_analysis, entity_creation</li>
+<li>4 categories: products, certificates, logos, specifications</li>
+<li>Automatic placeholder replacement</li>
+<li>Phase 1 complete (metadata extraction), Phases 2-4 pending</li>
+</ul>
 <hr>
 <h2>🎓 Learning Paths</h2>
 <h3>For New Developers</h3>
@@ -161,6 +304,7 @@
 <li><a href="overview.md">overview.md</a> - Understand the platform</li>
 <li><a href="system-architecture.md">system-architecture.md</a> - Learn the architecture</li>
 <li><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a> - Understand the pipeline</li>
+<li><a href="agent-system.md">agent-system.md</a> - Learn the AI agent system</li>
 <li><a href="job-queue-system.md">job-queue-system.md</a> - Learn async job processing</li>
 <li><a href="api-endpoints.md">api-endpoints.md</a> - Learn the API</li>
 <li><a href="deployment-guide.md">deployment-guide.md</a> - Understand deployment</li>
@@ -193,10 +337,9 @@
 <ul>
 <li><strong>5,000+</strong> users in production</li>
 <li><strong>99.5%+</strong> uptime SLA</li>
-<li><strong>12</strong> AI models integrated</li>
+<li><strong>8</strong> AI models across 4 providers</li>
 <li><strong>14</strong> processing pipeline stages</li>
-<li><strong>74+</strong> API endpoints</li>
-<li><strong>9</strong> API categories</li>
+<li><strong>108</strong> API endpoints (14 categories)</li>
 <li><strong>6</strong> embedding types</li>
 <li><strong>200+</strong> metafield types</li>
 <li><strong>95%+</strong> product detection accuracy</li>
@@ -208,7 +351,7 @@
 <li><strong>Frontend</strong>: React 18, TypeScript, Vite, Shadcn/ui, Vercel</li>
 <li><strong>Backend</strong>: FastAPI, Python 3.11, Uvicorn, self-hosted</li>
 <li><strong>Database</strong>: PostgreSQL 15, pgvector, Supabase</li>
-<li><strong>AI</strong>: Claude, GPT-4o, Llama, CLIP, LlamaIndex</li>
+<li><strong>AI</strong>: Claude 4.5, GPT-4o, Qwen3-VL, SigLIP, Voyage AI, Multi-Vector CLIP</li>
 </ul>
 <h3>API Categories</h3>
 <ol>
@@ -245,13 +388,13 @@
 <h2>📝 Documentation Standards</h2>
 <p>All documentation follows these standards:</p>
 <ul>
-<li>✅ Clear, concise language</li>
-<li>✅ Code examples where applicable</li>
-<li>✅ Structured with headers</li>
-<li>✅ Links to related docs</li>
-<li>✅ No task lists or planning documents</li>
-<li>✅ Production-focused content</li>
-<li>✅ Updated regularly</li>
+<li>Clear, concise language</li>
+<li>Code examples where applicable</li>
+<li>Structured with headers</li>
+<li>Links to related docs</li>
+<li>No task lists or planning documents</li>
+<li>Production-focused content</li>
+<li>Updated regularly</li>
 </ul>
 <hr>
 <h2>� Support</h2>
@@ -263,11 +406,26 @@
 <li>GitHub Issues: <a href="https://github.com/creativeghq/material-kai-vision-platform/issues">https://github.com/creativeghq/material-kai-vision-platform/issues</a></li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: October 31, 2025
-<strong>Version</strong>: 1.0.1
+<p><strong>Last Updated</strong>: January 18, 2026
+<strong>Version</strong>: 3.0.0
 <strong>Status</strong>: Production
-<strong>Total Documentation</strong>: 11 comprehensive guides
-<strong>Total Lines</strong>: 6,000+
-<strong>Coverage</strong>: 100% of platform features</p>
+<strong>Total Documentation</strong>: 55+ comprehensive guides
+<strong>Total Lines</strong>: 15,000+
+<strong>Coverage</strong>: 100% of platform features
+<strong>API Endpoints</strong>: 150+ across 16 categories</p>
+<p><strong>Recent Additions</strong>:</p>
+<ul>
+<li>✨ <strong>NEW</strong>: web-scraping-integration.md - Firecrawl integration guide</li>
+<li>✨ <strong>NEW</strong>: price-monitoring-system.md - Competitive price tracking</li>
+<li>✨ <strong>NEW</strong>: price-monitoring-deployment-guide.md - Setup instructions</li>
+<li>✨ <strong>NEW</strong>: saved-searches-deduplication.md - AI-powered search deduplication</li>
+<li>✨ <strong>NEW</strong>: interior-design-models.md - 14 AI models inventory</li>
+<li>✨ <strong>NEW</strong>: interior-design-data-flow.md - Generation workflow</li>
+<li>✨ <strong>NEW</strong>: interior-designer-agent-user-guide.md - User guide</li>
+<li>✨ <strong>NEW</strong>: internal-pricing-credit-system.md - Credit system documentation</li>
+<li>✨ Updated README.md and CHANGELOG.md with all new features</li>
+<li>✨ Documented async processing and concurrency limits</li>
+<li>✨ Added production hardening documentation</li>
+</ul>
 
 </div></body></html>
