@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Billing &amp; Credits System</h1>
+<p>Subscription plans and credit-based usage billing via Stripe.</p>
+<hr>
+<h2>Overview</h2>
+<p>The platform uses a two-track billing model:</p>
+<ol>
+<li><strong>Subscriptions</strong> — Monthly/annual plans that include a credit allowance and feature access</li>
+<li><strong>Credits</strong> — Consumable units spent on AI generation features (images, video, VR worlds, etc.)</li>
+</ol>
+<p><strong>Frontend Routes:</strong></p>
+<ul>
+<li><code>/billing/subscriptions</code> — Manage subscription plan</li>
+<li><code>/billing/credits</code> — View balance, purchase credit top-ups</li>
+</ul>
+<p><strong>Edge Functions:</strong></p>
+<ul>
+<li><code>crm-stripe-api</code> — Subscriptions + credit purchases (action-based routing)</li>
+<li><code>stripe-checkout</code> — Creates Stripe Checkout sessions</li>
+<li><code>stripe-customer-portal</code> — Opens Stripe&#39;s hosted billing portal</li>
+<li><code>stripe-webhooks</code> — Processes Stripe webhook events (payment success, subscription changes)</li>
+</ul>
+<hr>
+<h2>Credits</h2>
+<p>Credits are workspace-scoped. Each generation feature deducts a fixed amount.</p>
+<h3>Credit Costs by Feature</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Credits</th>
+<th>Edge Function</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Interior image (Gemini flash)</td>
+<td>6</td>
+<td><code>generate-interior-gemini</code></td>
+</tr>
+<tr>
+<td>Interior image (Gemini pro / 4K)</td>
+<td>15</td>
+<td><code>generate-interior-gemini</code></td>
+</tr>
+<tr>
+<td>Region edit (Grok inpainting)</td>
+<td>20</td>
+<td><code>generate-region-edit</code></td>
+</tr>
+<tr>
+<td>Virtual staging</td>
+<td>20</td>
+<td><code>generate-virtual-staging</code></td>
+</tr>
+<tr>
+<td>Social caption generation</td>
+<td>2</td>
+<td><code>generate-social-content</code></td>
+</tr>
+<tr>
+<td>Social image (Gemini)</td>
+<td>5</td>
+<td><code>generate-social-image</code></td>
+</tr>
+<tr>
+<td>Social image (FLUX Dev)</td>
+<td>6</td>
+<td><code>generate-social-image</code></td>
+</tr>
+<tr>
+<td>Social image (xAI Aurora)</td>
+<td>10</td>
+<td><code>generate-social-image</code></td>
+</tr>
+<tr>
+<td>Social video (Kling 1.6 Pro)</td>
+<td>15</td>
+<td><code>generate-social-video</code></td>
+</tr>
+<tr>
+<td>Interior video (Wan 2.1)</td>
+<td>12</td>
+<td><code>generate-interior-video-v2</code></td>
+</tr>
+<tr>
+<td>Interior video (Kling v3.0)</td>
+<td>20</td>
+<td><code>generate-interior-video-v2</code></td>
+</tr>
+<tr>
+<td>Interior video (Veo-2)</td>
+<td>30</td>
+<td><code>generate-interior-video-v2</code></td>
+</tr>
+<tr>
+<td>Interior video (Runway Gen4 Turbo)</td>
+<td>40</td>
+<td><code>generate-interior-video-v2</code></td>
+</tr>
+<tr>
+<td>VR World (Marble mini)</td>
+<td>50</td>
+<td><code>generate-vr-world</code></td>
+</tr>
+<tr>
+<td>VR World (Marble plus)</td>
+<td>200</td>
+<td><code>generate-vr-world</code></td>
+</tr>
+<tr>
+<td>AI search re-ranking</td>
+<td>Usage-based</td>
+<td><code>ai-rerank</code></td>
+</tr>
+</tbody></table>
+<h3>Credit Balance</h3>
+<p>Stored in <code>user_credits</code> table:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user_id</code></td>
+<td>Owner</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>Workspace scope</td>
+</tr>
+<tr>
+<td><code>balance</code></td>
+<td>Current credit balance</td>
+</tr>
+<tr>
+<td><code>total_purchased</code></td>
+<td>Lifetime credits purchased</td>
+</tr>
+<tr>
+<td><code>total_used</code></td>
+<td>Lifetime credits consumed</td>
+</tr>
+<tr>
+<td><code>stripe_customer_id</code></td>
+<td>Linked Stripe customer</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Subscriptions</h2>
+<p>Subscription plans are defined in the <code>subscription_plans</code> table and managed via Stripe Products + Prices.</p>
+<h3>Database Tables</h3>
+<p><strong><code>subscription_plans</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>UUID primary key</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>Plan name (e.g., &quot;Starter&quot;, &quot;Pro&quot;, &quot;Enterprise&quot;)</td>
+</tr>
+<tr>
+<td><code>price</code></td>
+<td>Monthly price</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Plan description</td>
+</tr>
+<tr>
+<td><code>stripe_price_id</code></td>
+<td>Stripe Price ID for recurring billing</td>
+</tr>
+<tr>
+<td><code>credits_included</code></td>
+<td>Credits included per billing period</td>
+</tr>
+<tr>
+<td><code>features</code></td>
+<td>JSONB feature flags</td>
+</tr>
+</tbody></table>
+<p><strong><code>user_subscriptions</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user_id</code></td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>plan_id</code></td>
+<td>FK to <code>subscription_plans</code></td>
+</tr>
+<tr>
+<td><code>stripe_subscription_id</code></td>
+<td>Stripe subscription ID</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>active</code> | <code>past_due</code> | <code>cancelled</code> | <code>trialing</code></td>
+</tr>
+<tr>
+<td><code>current_period_start</code></td>
+<td>Billing period start</td>
+</tr>
+<tr>
+<td><code>current_period_end</code></td>
+<td>Billing period end</td>
+</tr>
+</tbody></table>
+<p><strong><code>credit_packages</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td><code>credits</code></td>
+<td>Credit amount in package</td>
+</tr>
+<tr>
+<td><code>stripe_price_id</code></td>
+<td>Stripe Price ID for one-time charge</td>
+</tr>
+<tr>
+<td><code>price</code></td>
+<td>Display price</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>API Endpoints</h2>
+<h3>Create subscription checkout</h3>
+<pre><code>POST /functions/v1/crm-stripe-api
+Content-Type: application/json
+
+{
+  &quot;path&quot;: [&quot;subscriptions&quot;, &quot;create-checkout&quot;],
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;plan_id&quot;: &quot;uuid&quot;,
+  &quot;success_url&quot;: &quot;https://...&quot;,
+  &quot;cancel_url&quot;: &quot;https://...&quot;
+}
+</code></pre>
+<p>Returns: Stripe Checkout session URL.</p>
+<h3>Purchase credits</h3>
+<pre><code>POST /functions/v1/crm-stripe-api
+
+{
+  &quot;path&quot;: [&quot;credits&quot;, &quot;purchase&quot;],
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;package_id&quot;: &quot;uuid&quot;,
+  &quot;success_url&quot;: &quot;https://...&quot;,
+  &quot;cancel_url&quot;: &quot;https://...&quot;
+}
+</code></pre>
+<p>Returns: Stripe Checkout session URL.</p>
+<h3>Get current subscription</h3>
+<pre><code>POST /functions/v1/crm-stripe-api
+
+{
+  &quot;path&quot;: [&quot;subscriptions&quot;],
+  &quot;method&quot;: &quot;GET&quot;
+}
+</code></pre>
+<p>Returns: Current subscription with plan details.</p>
+<h3>Get credit balance</h3>
+<pre><code>POST /functions/v1/crm-stripe-api
+
+{
+  &quot;path&quot;: [&quot;credits&quot;],
+  &quot;method&quot;: &quot;GET&quot;
+}
+</code></pre>
+<p>Returns: <code>{ balance, total_purchased, total_used }</code>.</p>
+<h3>Create Stripe Checkout session directly</h3>
+<pre><code>POST /functions/v1/stripe-checkout
+Authorization: Bearer &lt;jwt&gt;
+
+{
+  &quot;type&quot;: &quot;subscription&quot; | &quot;credit_purchase&quot;,
+  &quot;priceId&quot;: &quot;price_...&quot;,
+  &quot;credits&quot;: 100,
+  &quot;price&quot;: 9.99,
+  &quot;successUrl&quot;: &quot;https://...&quot;,
+  &quot;cancelUrl&quot;: &quot;https://...&quot;
+}
+</code></pre>
+<h3>Open customer billing portal</h3>
+<pre><code>POST /functions/v1/stripe-customer-portal
+Authorization: Bearer &lt;jwt&gt;
+
+{
+  &quot;return_url&quot;: &quot;https://...&quot;
+}
+</code></pre>
+<p>Returns: Stripe Customer Portal URL for self-service plan changes and payment method updates.</p>
+<hr>
+<h2>Webhook Processing</h2>
+<p><code>stripe-webhooks</code> handles Stripe events:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>checkout.session.completed</code></td>
+<td>Activates subscription or adds credits</td>
+</tr>
+<tr>
+<td><code>customer.subscription.updated</code></td>
+<td>Updates <code>user_subscriptions</code> status</td>
+</tr>
+<tr>
+<td><code>customer.subscription.deleted</code></td>
+<td>Cancels subscription</td>
+</tr>
+<tr>
+<td><code>invoice.payment_failed</code></td>
+<td>Marks subscription <code>past_due</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Stripe Customer Management</h2>
+<p>On first purchase, a Stripe Customer is created for the user and the <code>stripe_customer_id</code> is stored in <code>user_profiles</code> and <code>user_credits</code>. Subsequent purchases reuse the same customer.</p>
+<hr>
+<p><strong>Last Updated:</strong> March 2026</p>
+
+</div></body></html>

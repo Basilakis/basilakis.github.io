@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Virtual Staging</h1>
+<p>AI-powered room staging that transforms empty room photos into fully furnished interior renders.</p>
+<hr>
+<h2>Overview</h2>
+<p>Virtual staging uses Replicate&#39;s <code>proplabs/virtual-staging</code> model to place realistic furniture and décor into empty room photos. Users provide a room image, select a room type and furniture style, and receive a furnished render within ~56 seconds.</p>
+<p><strong>Edge Function:</strong> <code>generate-virtual-staging</code>
+<strong>Credit Cost:</strong> 20 credits per generation
+<strong>Model:</strong> <code>proplabs/virtual-staging</code> via Replicate (~56s average)</p>
+<hr>
+<h2>How it Works</h2>
+<ol>
+<li>User provides a public image URL of an empty room</li>
+<li>User selects room type (bedroom, living room, kitchen, etc.) and furniture style</li>
+<li>Edge function calls Replicate API with the image + parameters</li>
+<li>Replicate runs the <code>proplabs/virtual-staging</code> model (~56s)</li>
+<li>Result image is downloaded and re-uploaded to Supabase Storage (<code>generation-images</code> bucket)</li>
+<li>Permanent public URL returned to caller</li>
+</ol>
+<hr>
+<h2>API</h2>
+<pre><code>POST /functions/v1/generate-virtual-staging
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+</code></pre>
+<h3>Request Body</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source_image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Public URL of empty room photo</td>
+</tr>
+<tr>
+<td><code>room</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Room type (see options below)</td>
+</tr>
+<tr>
+<td><code>furniture_style</code></td>
+<td>string</td>
+<td>No</td>
+<td>Style preset (see options below)</td>
+</tr>
+<tr>
+<td><code>furniture_items</code></td>
+<td>string</td>
+<td>No</td>
+<td>Free-text description of specific items to add</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>Workspace ID for credit deduction</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>Required for server-to-server calls from agent-chat</td>
+</tr>
+</tbody></table>
+<h3>Room Types</h3>
+<p><code>living_room</code>, <code>bedroom</code>, <code>dining_room</code>, <code>kitchen</code>, <code>bathroom</code>, <code>home_office</code>, <code>kids_room</code>, <code>outdoor</code></p>
+<h3>Furniture Styles</h3>
+<p><code>modern</code>, <code>scandinavian</code>, <code>industrial</code>, <code>traditional</code>, <code>bohemian</code>, <code>minimalist</code>, <code>luxury</code>, <code>rustic</code></p>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;image_url&quot;: &quot;https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1/object/public/generation-images/virtual-staging/job-uuid.jpg&quot;,
+  &quot;credits_used&quot;: 20
+}
+</code></pre>
+<h3>Error Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: &quot;Insufficient credits&quot;,
+  &quot;credits_required&quot;: 20,
+  &quot;credits_available&quot;: 5
+}
+</code></pre>
+<hr>
+<h2>Credit Handling</h2>
+<ul>
+<li>Credits are checked <strong>before</strong> the Replicate call</li>
+<li>Credits are debited on <strong>success only</strong> — failed generations are not charged</li>
+<li>Minimum 20 credits required in workspace balance</li>
+</ul>
+<hr>
+<h2>Storage</h2>
+<p>Generated images are stored at:</p>
+<pre><code>generation-images/virtual-staging/{job-uuid}.{jpg|png}
+</code></pre>
+<p>Public URL format:</p>
+<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1/object/public/generation-images/virtual-staging/...
+</code></pre>
+<hr>
+<h2>Integration with KAI Agent</h2>
+<p>The <code>generate-virtual-staging</code> function is accessible as a KAI agent tool. When the agent detects a staging request in conversation, it calls this function with the user&#39;s image and infers room type / style from context.</p>
+<hr>
+<h2>Before/After Comparison &amp; Quality Analysis</h2>
+<p>Virtual staging results are displayed using the <code>VirtualStagingViewer</code> component, which provides:</p>
+<h3>Before/After Slider</h3>
+<p>The viewer includes an interactive <strong>comparison slider</strong> that lets users drag between the original empty room and the staged result. The <code>source_image_url</code> is now included in the <code>virtual_staging_ready</code> chunk alongside the result image, enabling side-by-side comparison.</p>
+<ul>
+<li><strong>CSS clip-path based</strong> — no external library dependency</li>
+<li><strong>Pointer-drag interaction</strong> — works on desktop and mobile</li>
+<li><strong>Toggle button</strong> — &quot;Before / After&quot; shows/hides the comparison mode</li>
+</ul>
+<h3>Quality Analysis</h3>
+<p>An <strong>&quot;Analyze Quality&quot;</strong> button triggers a Claude Vision assessment of the staging result. The system sends both the original and staged images to the KAI agent, which evaluates:</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>What is assessed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Lighting consistency</td>
+<td>Does staged light match original source direction and warmth?</td>
+</tr>
+<tr>
+<td>Perspective accuracy</td>
+<td>Are walls/floors at correct angles relative to camera?</td>
+</tr>
+<tr>
+<td>Furniture scale</td>
+<td>Are proportions realistic for the room size?</td>
+</tr>
+<tr>
+<td>Material realism</td>
+<td>Do textures read naturally at render resolution?</td>
+</tr>
+<tr>
+<td>Style fidelity</td>
+<td>Does result match the requested furniture style?</td>
+</tr>
+<tr>
+<td>Edge blending</td>
+<td>Are furniture edges cleanly composited?</td>
+</tr>
+</tbody></table>
+<p>Each dimension is scored 1–10 with specific feedback.</p>
+<h3>Data Flow</h3>
+<pre><code>Edge Function (generation-tools.ts)
+  → onChunk({ type: &#39;virtual_staging_ready&#39;, source_image_url, image_url, ... })
+  → AgentHub chunk handler stores source_image_url in virtualStagingData
+  → VirtualStagingViewer renders comparison slider
+</code></pre>
+<p>For direct calls (non-agent path via <code>handleGenerateVirtualStaging</code>), the <code>imageUrl</code> parameter is stored as <code>source_image_url</code> in the staging message.</p>
+<hr>
+<p><strong>Last Updated:</strong> April 2026</p>
+
+</div></body></html>

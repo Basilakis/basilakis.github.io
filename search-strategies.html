@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material Search</h1>
+<h2>Overview</h2>
+<p>The Material KAI Vision Platform provides powerful search capabilities to help you find exactly the materials you need. The search system understands natural language, recognizes visual patterns, and can filter by specific material properties.</p>
+<h2>How Search Works</h2>
+<h3>Intelligent Multi-Dimensional Search</h3>
+<p>When you search for materials, the platform analyzes your query in multiple ways simultaneously:</p>
+<ul>
+<li><strong>Semantic Understanding</strong> - Understands the meaning and context of your search</li>
+<li><strong>Visual Similarity</strong> - Finds materials that look similar</li>
+<li><strong>Vision Understanding</strong> - Matches against detailed AI analysis of material properties, dimensions, finishes, and specifications</li>
+<li><strong>Color Matching</strong> - Identifies materials with matching color palettes</li>
+<li><strong>Texture Recognition</strong> - Finds materials with similar surface patterns</li>
+<li><strong>Style Matching</strong> - Discovers materials with similar design aesthetics</li>
+<li><strong>Material Type</strong> - Filters by specific material categories</li>
+</ul>
+<p>All 7 dimensions are combined intelligently to give you the most relevant results.</p>
+<h3>Specification-Based Search</h3>
+<p>The Understanding embedding enables searching by technical specifications:</p>
+<ul>
+<li>&quot;Porcelain tile 60x120cm matt finish&quot;</li>
+<li>&quot;R10 slip rating bathroom floor&quot;</li>
+<li>&quot;Fire-rated fabric Class 1&quot;</li>
+<li>&quot;3mm thickness vinyl plank&quot;</li>
+</ul>
+<p>This works because the platform embeds Qwen3-VL&#39;s structured analysis of each image (material type, dimensions, finishes, properties) via Voyage AI.</p>
+<h3>Natural Language Search</h3>
+<p>Simply describe what you&#39;re looking for in plain language:</p>
+<ul>
+<li>&quot;Modern ceramic tiles with blue tones&quot;</li>
+<li>&quot;Soft fabric for upholstery&quot;</li>
+<li>&quot;Wood-look flooring with natural texture&quot;</li>
+<li>&quot;Metallic finish for accent walls&quot;</li>
+</ul>
+<p>The system automatically understands your requirements and finds matching materials.</p>
+<h2>Search Features</h2>
+<h3>Text-Based Search</h3>
+<p>Search using descriptions, product names, or material properties:</p>
+<ul>
+<li><strong>Product Names</strong> - Find specific products by name or code</li>
+<li><strong>Descriptions</strong> - Search through product descriptions and specifications</li>
+<li><strong>Properties</strong> - Filter by material properties like color, texture, finish</li>
+<li><strong>Applications</strong> - Find materials suitable for specific uses</li>
+</ul>
+<h3>Image-Based Search</h3>
+<p>Upload an image to find similar materials:</p>
+<ul>
+<li><strong>Visual Similarity</strong> - Find materials that look similar overall</li>
+<li><strong>Color Matching</strong> - Match specific color schemes</li>
+<li><strong>Texture Matching</strong> - Find materials with similar surface patterns</li>
+<li><strong>Style Matching</strong> - Discover materials with similar design aesthetics</li>
+</ul>
+<h3>Property Filters</h3>
+<p>Refine your search with specific material properties:</p>
+<ul>
+<li><strong>Material Type</strong> - Fabric, tile, wood, metal, etc.</li>
+<li><strong>Color</strong> - Specific colors or color families</li>
+<li><strong>Texture</strong> - Smooth, rough, patterned, etc.</li>
+<li><strong>Finish</strong> - Matte, glossy, satin, etc.</li>
+<li><strong>Application</strong> - Flooring, walls, furniture, etc.</li>
+<li><strong>Manufacturer</strong> - Filter by specific brands or suppliers</li>
+</ul>
+<h2>Search Results</h2>
+<h3>Relevancy Ranking</h3>
+<p>Results are ranked by how well they match your search:</p>
+<ul>
+<li><strong>High Relevance</strong> - Materials that closely match all your criteria</li>
+<li><strong>Medium Relevance</strong> - Materials that match most criteria</li>
+<li><strong>Related Materials</strong> - Materials that might interest you based on your search</li>
+</ul>
+<h3>Result Information</h3>
+<p>Each search result includes:</p>
+<ul>
+<li><strong>Product Images</strong> - Multiple views of the material</li>
+<li><strong>Product Details</strong> - Name, description, specifications</li>
+<li><strong>Material Properties</strong> - Color, texture, finish, dimensions</li>
+<li><strong>Manufacturer Information</strong> - Brand, collection, product code</li>
+<li><strong>Availability</strong> - Stock status and ordering information</li>
+</ul>
+<h2>Search Tips</h2>
+<h3>Getting Better Results</h3>
+<ul>
+<li><strong>Be Specific</strong> - More detailed descriptions give better results</li>
+<li><strong>Use Multiple Terms</strong> - Combine different aspects (color, texture, style)</li>
+<li><strong>Try Different Approaches</strong> - Use both text and image search</li>
+<li><strong>Refine with Filters</strong> - Narrow down results with property filters</li>
+</ul>
+<h3>Common Search Patterns</h3>
+<p><strong>Finding Alternatives:</strong></p>
+<ul>
+<li>Search for similar materials to one you like</li>
+<li>Upload an image to find matching options</li>
+<li>Filter by the same material type or application</li>
+</ul>
+<p><strong>Exploring Collections:</strong></p>
+<ul>
+<li>Search by manufacturer or collection name</li>
+<li>Browse materials with similar styles</li>
+<li>Discover coordinating materials</li>
+</ul>
+<p><strong>Specific Requirements:</strong></p>
+<ul>
+<li>Use property filters for exact specifications</li>
+<li>Combine multiple filters for precise results</li>
+<li>Search by product codes for specific items</li>
+</ul>
+<h2>Search Performance</h2>
+<p>The search system is optimized for speed and accuracy:</p>
+<ul>
+<li><strong>Fast Results</strong> - Most searches return in under 200 milliseconds</li>
+<li><strong>High Accuracy</strong> - Intelligent ranking ensures relevant results appear first</li>
+<li><strong>Scalable</strong> - Handles large catalogs without slowing down</li>
+<li><strong>Reliable</strong> - Built on enterprise-grade infrastructure</li>
+</ul>
+<h2>Advanced Features</h2>
+<h3>Query Understanding</h3>
+<p>The system automatically understands complex queries:</p>
+<ul>
+<li><strong>Automatic Filter Extraction</strong> - Identifies properties mentioned in your search</li>
+<li><strong>Context Awareness</strong> - Understands relationships between terms</li>
+<li><strong>Intent Recognition</strong> - Determines what you&#39;re really looking for</li>
+</ul>
+<h3>Query-Adaptive Weight Profiles</h3>
+<p>The 7-vector fusion search dynamically adjusts embedding weights based on what the query is about. Instead of using fixed weights for every search, the system analyzes the parsed query fields and selects the optimal weight profile.</p>
+<p><strong>How It Works:</strong></p>
+<ol>
+<li>GPT-4o-mini parses the natural language query into structured fields (colors, finish, material_type, dimensions, pattern, style, designer, collection)</li>
+<li><code>_select_weight_profile()</code> examines which fields are present and selects the best profile</li>
+<li>The selected weights are applied to the 7-vector fusion scoring</li>
+</ol>
+<p><strong>Available Profiles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Trigger</th>
+<th>Text</th>
+<th>Visual</th>
+<th>Understanding</th>
+<th>Color</th>
+<th>Texture</th>
+<th>Style</th>
+<th>Material</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>product_name</strong></td>
+<td>Product name or brand detected</td>
+<td>40%</td>
+<td>25%</td>
+<td>15%</td>
+<td>5%</td>
+<td>5%</td>
+<td>5%</td>
+<td>5%</td>
+</tr>
+<tr>
+<td><strong>color_finish</strong></td>
+<td>Colors or finish terms present</td>
+<td>10%</td>
+<td>20%</td>
+<td>15%</td>
+<td>30%</td>
+<td>5%</td>
+<td>15%</td>
+<td>5%</td>
+</tr>
+<tr>
+<td><strong>specification</strong></td>
+<td>Dimensions detected (e.g., 60x120cm)</td>
+<td>25%</td>
+<td>10%</td>
+<td>40%</td>
+<td>5%</td>
+<td>5%</td>
+<td>5%</td>
+<td>10%</td>
+</tr>
+<tr>
+<td><strong>texture_pattern</strong></td>
+<td>Pattern terms present</td>
+<td>10%</td>
+<td>25%</td>
+<td>15%</td>
+<td>5%</td>
+<td>30%</td>
+<td>10%</td>
+<td>5%</td>
+</tr>
+<tr>
+<td><strong>style_aesthetic</strong></td>
+<td>Style or application terms</td>
+<td>10%</td>
+<td>25%</td>
+<td>15%</td>
+<td>10%</td>
+<td>10%</td>
+<td>25%</td>
+<td>5%</td>
+</tr>
+<tr>
+<td><strong>material_search</strong></td>
+<td>Explicit material type</td>
+<td>15%</td>
+<td>15%</td>
+<td>25%</td>
+<td>5%</td>
+<td>10%</td>
+<td>5%</td>
+<td>25%</td>
+</tr>
+<tr>
+<td><strong>balanced</strong></td>
+<td>No specific signal (default)</td>
+<td>15%</td>
+<td>15%</td>
+<td>20%</td>
+<td>12.5%</td>
+<td>12.5%</td>
+<td>12.5%</td>
+<td>12.5%</td>
+</tr>
+</tbody></table>
+<p><strong>Selection Priority:</strong> dimensions → colors/finish → pattern → material → style/application → balanced</p>
+<p><strong>Examples:</strong></p>
+<ul>
+<li><code>&quot;MAISON by ONSET&quot;</code> → <strong>product_name</strong> (text weight 40%, find by name)</li>
+<li><code>&quot;matte beige tiles&quot;</code> → <strong>color_finish</strong> (color weight 30%, match the beige)</li>
+<li><code>&quot;60x120cm porcelain R10&quot;</code> → <strong>specification</strong> (understanding weight 40%, match specs)</li>
+<li><code>&quot;wood grain pattern ceramic&quot;</code> → <strong>texture_pattern</strong> (texture weight 30%, match the grain)</li>
+<li><code>&quot;minimalist bathroom design&quot;</code> → <strong>style_aesthetic</strong> (style weight 25%, match the aesthetic)</li>
+</ul>
+<p><strong>Monitoring:</strong></p>
+<ul>
+<li>Weight profile selection is logged in <code>ai_call_logs</code> for every query</li>
+<li><code>search_query_tracking</code> table records <code>weight_profile</code>, <code>dynamic_weights</code>, and <code>weight_profile_source</code></li>
+<li>Admin monitoring dashboards show which profiles are being selected</li>
+</ul>
+<p><strong>Implementation:</strong> <code>unified_search_service.py</code> → <code>WEIGHT_PROFILES</code> dict + <code>_select_weight_profile()</code> method</p>
+<h3>Result Diversity</h3>
+<p>Search results include variety while maintaining relevance:</p>
+<ul>
+<li><strong>Balanced Results</strong> - Mix of exact matches and related options</li>
+<li><strong>Avoid Duplicates</strong> - Similar products are grouped intelligently</li>
+<li><strong>Explore Options</strong> - Discover materials you might not have considered</li>
+</ul>
+<h2>Explainable Search Spec</h2>
+<p>When the KAI agent calls <code>material_search</code>, it now provides a structured <strong>search specification</strong> that decomposes the user&#39;s query across all 7 embedding dimensions. This spec is displayed as a collapsible <code>SearchSpecCard</code> above the product results in the chat.</p>
+<p><strong>Fields in the search spec:</strong></p>
+<ul>
+<li><code>intent</code> — brief description of what the user is looking for</li>
+<li><code>color_keywords</code> / <code>color_hex</code> — extracted color terms and approximate hex codes</li>
+<li><code>material_types</code> — detected material types (e.g., porcelain, marble, wood)</li>
+<li><code>style_keywords</code> — aesthetic/style terms (e.g., minimalist, japandi, industrial)</li>
+<li><code>texture_finish</code> — texture or surface finish description</li>
+<li><code>specifications</code> — technical specs if mentioned (e.g., R11 slip-resistant, outdoor-rated)</li>
+</ul>
+<p>The spec is generated by the LLM as part of its tool call (no extra API call) and emitted via <code>onChunk</code> with type <code>search_spec</code> for real-time display in the frontend.</p>
+<p><strong>Why it matters:</strong> Architects and specifiers need to justify material choices to clients. The search spec shows <em>why</em> each result was selected — turning a black-box search into an explainable recommendation.</p>
+<hr>
+<h2>Design Inspiration URL Search</h2>
+<p>Users can paste any design URL (Houzz, Pinterest, Dezeen, ArchDaily, manufacturer sites) and the <code>analyze_inspiration_url</code> tool will:</p>
+<ol>
+<li>Scrape the page using Firecrawl API</li>
+<li>Extract design tokens via Claude Haiku: colors (with hex codes), materials, textures, styles, room type</li>
+<li>Search the catalog for matching products using the 7-vector fusion search</li>
+<li>Display results as an <code>InspirationCard</code> (color swatches, material/style tags, source thumbnail) followed by matched products</li>
+</ol>
+<p><strong>Accessible to all users</strong> via the Globe icon button in the chat toolbar, which opens a modal for URL input with an optional surface focus selector (floors, walls, countertops, etc.).</p>
+<p><strong>Credit cost:</strong> 1 credit for the Firecrawl scrape + Haiku token cost for extraction.</p>
+<hr>
+<h2>Related Features</h2>
+<ul>
+<li><strong>Image Search</strong> - Find materials using images instead of text</li>
+<li><strong>Saved Searches</strong> - Save and reuse your favorite searches</li>
+<li><strong>Search Suggestions</strong> - Get suggestions as you type</li>
+</ul>
+
+</div></body></html>
