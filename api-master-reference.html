@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>API Master Reference</h1>
+<p>Single source of truth for every API surface in the platform. Two layers:</p>
+<ol>
+<li><strong>Supabase Edge Functions</strong> (Deno/TypeScript) — 68 functions, base URL <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/{name}</code></li>
+<li><strong>MIVAA Python API</strong> (FastAPI) — 140+ endpoints, base URL <code>https://v1api.materialshub.gr</code></li>
+</ol>
+<p>For deep per-endpoint docs see <a href="api/"><code>docs/api/</code></a> (edge) and <a href="api-endpoints.md"><code>docs/api-endpoints.md</code></a> (Python).</p>
+<hr>
+<h2>Auth models</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Header</th>
+<th>Who uses it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>JWT</strong></td>
+<td><code>Authorization: Bearer &lt;supabase_access_token&gt;</code></td>
+<td>Frontend (normal user sessions)</td>
+</tr>
+<tr>
+<td><strong>Service-role</strong></td>
+<td><code>Authorization: Bearer &lt;SUPABASE_SERVICE_ROLE_KEY&gt;</code></td>
+<td>Cron jobs, server-to-server, admin-only functions</td>
+</tr>
+<tr>
+<td><strong>Webhook signature</strong></td>
+<td>Provider-specific (Svix <code>svix-signature</code>, Stripe <code>stripe-signature</code>, Twilio <code>x-twilio-signature</code>, AWS SNS, Late.dev)</td>
+<td>Inbound webhooks — no bearer token</td>
+</tr>
+<tr>
+<td><strong>API key</strong></td>
+<td><code>Authorization: Bearer &lt;MIVAA_API_KEY&gt;</code></td>
+<td>Server-to-server calls into MIVAA Python backend</td>
+</tr>
+<tr>
+<td><strong>Public</strong></td>
+<td>—</td>
+<td>Health checks, OAuth callbacks, debug stubs</td>
+</tr>
+</tbody></table>
+<p>All responses use consistent error shape:</p>
+<pre><code class="language-json">{ &quot;success&quot;: false, &quot;error&quot;: &quot;…&quot;, &quot;code&quot;: &quot;OPTIONAL_CODE&quot;, &quot;details&quot;: { } }
+</code></pre>
+<p>Common status codes: <code>200</code> ok · <code>201</code> created · <code>400</code> validation · <code>401</code> unauth · <code>403</code> forbidden · <code>404</code> not found · <code>429</code> rate-limited · <code>500</code> server · <code>503</code> upstream unavailable.</p>
+<p>Default rate limits: 60 req/min user (standard), 30 req/min user (streaming), webhooks uncapped (verified by signature).</p>
+<hr>
+<h2>1. Supabase Edge Functions (68)</h2>
+<p>Base URL: <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/{function-name}</code></p>
+<h3>1.1 AI Agents &amp; Chat</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent-chat</code></td>
+<td>POST (SSE)</td>
+<td>JWT</td>
+<td>Unified multi-agent chat (kai / interior-designer / demo). RBAC-gated tools, multimodal, skills.</td>
+<td><a href="api/agent-chat-api.md">agent-chat-api</a>, <a href="agent-system.md">agent-system</a></td>
+</tr>
+<tr>
+<td><code>agent-chat-debug</code></td>
+<td>POST</td>
+<td>public</td>
+<td>Dev-only echo/debug stub</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>background-agent-runner</code></td>
+<td>POST</td>
+<td>JWT or service-role</td>
+<td>Universal executor for <code>kai-task</code>, <code>product-enrichment</code>, <code>material-tagger</code>, <code>factory-enrichment</code>, <code>social-analytics-sync</code>, <code>social-insights-sync</code>. Accepts <code>?catalog=1</code> GET for type listing.</td>
+<td><a href="background-agents.md">background-agents</a></td>
+</tr>
+</tbody></table>
+<h3>1.2 AI Generation (image / video / 3D / VR / PBR)</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Credits</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>generate-interior-gemini</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>4 modes: text-to-image / image-edit / floor-plan-render / floor-plan-text. Two-step style-transfer pipeline.</td>
+<td>6 (flash) / 15 (pro)</td>
+<td><a href="api/generate-interior-gemini-api.md">generate-interior-gemini-api</a></td>
+</tr>
+<tr>
+<td><code>generate-interior-video-v2</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Auto-routes by video type to Veo-2, Kling v3.0, Wan 2.1, Runway Gen4. Async polling.</td>
+<td>12–40</td>
+<td><a href="api/generate-interior-video-v2-api.md">generate-interior-video-v2-api</a></td>
+</tr>
+<tr>
+<td><code>generate-virtual-staging</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Furnishes empty room photos (Replicate proplabs, 8 room types × 8 styles).</td>
+<td>20</td>
+<td><a href="api/generate-virtual-staging-api.md">generate-virtual-staging-api</a></td>
+</tr>
+<tr>
+<td><code>generate-region-edit</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Masked inpainting with Grok Aurora. SAM 2 auto-mask + Pillow fallback.</td>
+<td>20</td>
+<td><a href="api/generate-region-edit-api.md">generate-region-edit-api</a></td>
+</tr>
+<tr>
+<td><code>generate-vr-world</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>WorldLabs Marble → 3D Gaussian Splat worlds (models: <code>marble-1.0-draft</code> / <code>marble-1.1</code>). Stored in <code>vr_worlds</code>.</td>
+<td>18 / 190</td>
+<td><a href="vr-world-generation.md">vr-world-generation</a></td>
+</tr>
+<tr>
+<td><code>generate-pbr-maps</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>PBR texture maps (albedo / normal / roughness / metalness) for AR preview.</td>
+<td>8</td>
+<td><a href="ar-material-preview.md">ar-material-preview</a></td>
+</tr>
+<tr>
+<td><code>generate-quote-pdf</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Branded quote PDFs with cover/backcover templates from <code>quote-templates</code> storage bucket.</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<h3>1.3 SEO suite (admin/owner only)</h3>
+<p>All POST, all JWT-authenticated.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>seo-research</code></td>
+<td>Keyword research via DataForSEO (6 parallel API calls, volumes + SERP analysis)</td>
+</tr>
+<tr>
+<td><code>seo-plan</code></td>
+<td>Generate article structure + meta tags + FAQ schema from research output</td>
+</tr>
+<tr>
+<td><code>seo-write</code></td>
+<td>Full article generation from plan via Claude Sonnet</td>
+</tr>
+<tr>
+<td><code>seo-analyze</code></td>
+<td>15+ SEO quality checks; auto-fix issues via Gemini</td>
+</tr>
+<tr>
+<td><code>seo-pipeline</code></td>
+<td>Orchestrator: research → plan → write → analyze in one call</td>
+</tr>
+</tbody></table>
+<p>Reference: the KAI agent exposes <code>seo_*</code> sub-agent tools that call these.</p>
+<h3>1.4 Knowledge Base &amp; Embeddings</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kb-generate-embedding</code></td>
+<td>POST</td>
+<td>JWT or service-role</td>
+<td>Generate Voyage AI 1024D embedding for a <code>kb_docs</code> row (triggered on insert/content change). Idempotent via content hash.</td>
+</tr>
+</tbody></table>
+<h3>1.5 Search &amp; Re-rank</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ai-rerank</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Claude-powered re-ordering of search results. Sonnet/Haiku model choice, optional per-item explanations.</td>
+<td><a href="api/ai-rerank-api.md">ai-rerank-api</a></td>
+</tr>
+</tbody></table>
+<h3>1.6 Background agents &amp; cron jobs</h3>
+<p>All service-role-authenticated (pg_cron invokes them). No user-facing API.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Schedule</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent-scheduler-cron</code></td>
+<td>every 1 min</td>
+<td>Dispatches background agents whose cron schedule is due</td>
+</tr>
+<tr>
+<td><code>auto-recovery-cron</code></td>
+<td>every 5 min</td>
+<td>Re-dispatches stuck runs (&gt;8 min no heartbeat, &lt;3 recovery attempts); marks <code>failed</code> after 3</td>
+</tr>
+<tr>
+<td><code>job-cleanup-cron</code></td>
+<td>weekly</td>
+<td>Purges old jobs, logs, stale progress (retention 5–90 days per table)</td>
+</tr>
+<tr>
+<td><code>flow-scheduler-cron</code></td>
+<td>every 1 min</td>
+<td>Runs due scheduled flows</td>
+</tr>
+<tr>
+<td><code>ai-pricing-updater</code></td>
+<td>weekly</td>
+<td>Syncs AI model pricing from provider sources into <code>ai_model_pricing</code></td>
+</tr>
+<tr>
+<td><code>campaign-processor</code></td>
+<td>every 1 min</td>
+<td>Dispatches scheduled email campaigns via Resend (rate-limited 8/min)</td>
+</tr>
+<tr>
+<td><code>check-material-alerts</code></td>
+<td>daily</td>
+<td>Runs saved-search queries, emails matching results to subscribers</td>
+</tr>
+<tr>
+<td><code>price-monitoring-cron</code></td>
+<td>every 4 hr</td>
+<td>Executes due price checks against competitor URLs</td>
+</tr>
+<tr>
+<td><code>scheduled-import-runner</code></td>
+<td>every 5 min</td>
+<td>Runs due XML imports</td>
+</tr>
+<tr>
+<td><code>messaging-processor</code></td>
+<td>every 1 min</td>
+<td>Batches outbound SMS/WhatsApp (10/batch, Twilio)</td>
+</tr>
+</tbody></table>
+<h3>1.7 CRM</h3>
+<p>All JWT-authenticated. Role-gated (admin/manager/factory for mutations).</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Methods</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>crm-companies-api</code></td>
+<td>GET/POST/PATCH/DELETE</td>
+<td>Companies CRUD + contact linking + search</td>
+<td><a href="api/crm-companies-api.md">crm-companies-api</a></td>
+</tr>
+<tr>
+<td><code>crm-contacts-api</code></td>
+<td>GET/POST/PATCH/DELETE</td>
+<td>Contacts CRUD + user linking + custom fields</td>
+<td><a href="api/crm-contacts-api.md">crm-contacts-api</a></td>
+</tr>
+<tr>
+<td><code>crm-users-api</code></td>
+<td>GET/POST/PATCH</td>
+<td>User account + workspace + role management (admin only)</td>
+<td><a href="api/crm-users-api.md">crm-users-api</a></td>
+</tr>
+<tr>
+<td><code>crm-stripe-api</code></td>
+<td>GET</td>
+<td>Stripe invoice / subscription history for CRM contacts</td>
+<td><a href="api/crm-stripe-api.md">crm-stripe-api</a></td>
+</tr>
+</tbody></table>
+<h3>1.8 Stripe / billing</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stripe-checkout</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Create checkout session for credit packages and subscription plans</td>
+</tr>
+<tr>
+<td><code>stripe-customer-portal</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Create customer portal session (subscription / payment method mgmt)</td>
+</tr>
+<tr>
+<td><code>stripe-webhooks</code></td>
+<td>POST</td>
+<td>signature</td>
+<td>Handle Stripe events — sub created/updated/cancelled, invoice paid, payment failed. See <a href="api/stripe-webhooks-api.md">stripe-webhooks-api</a></td>
+</tr>
+</tbody></table>
+<h3>1.9 Messaging (email / SMS / WhatsApp)</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>email-api</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Send transactional email via AWS SES. Templates, analytics, domain verification.</td>
+<td><a href="api/email-api.md">email-api</a></td>
+</tr>
+<tr>
+<td><code>messaging-api</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Send SMS / WhatsApp via Twilio. Actions: <code>send</code>, <code>create-campaign</code>, Twilio Content API for WA templates.</td>
+<td><a href="api/messaging-api.md">messaging-api</a></td>
+</tr>
+<tr>
+<td><code>messaging-processor</code></td>
+<td>POST</td>
+<td>service-role</td>
+<td>Batch dispatcher (cron-invoked, see §1.6)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>messaging-webhook</code></td>
+<td>POST</td>
+<td>signature (Twilio)</td>
+<td>Delivery status callbacks (delivered/failed/read receipts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>email-webhook</code></td>
+<td>POST</td>
+<td>signature (Resend)</td>
+<td>Campaign email events (delivered/bounced/opened/clicked)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>email-webhooks</code></td>
+<td>POST</td>
+<td>signature (Svix/Resend)</td>
+<td>Transactional email events</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>ses-webhook</code></td>
+<td>POST</td>
+<td>signature (SNS)</td>
+<td>Amazon SES bounce/complaint notifications</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<h3>1.10 Quotes</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Methods</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>quotes-api</code></td>
+<td>GET/POST/PATCH/DELETE</td>
+<td>JWT</td>
+<td>Quote CRUD + proposal lifecycle + FF&amp;E fields (room, dimensions, installation, delivery) + pricing audit fields on <code>quote_items</code> (<code>price_source</code>, <code>price_lookup_call_id</code>). Actions: <code>list</code>, <code>create</code>, <code>update</code>, <code>delete</code>, <code>addItem</code>, <code>addCustomItem</code>.</td>
+<td><a href="api/quotes-api.md">quotes-api</a></td>
+</tr>
+</tbody></table>
+<h3>1.10.1 Pricing (admin-only, 2026-04)</h3>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent-chat</code> tool <code>price_lookup</code></td>
+<td>POST (SSE)</td>
+<td>JWT (admin/owner)</td>
+<td>AI-mode price composition from the KB &quot;Pricing&quot; category. Emits <code>tool_call_ids</code>, <code>price_lookup_matches</code>, <code>price_proposal</code> chunks.</td>
+<td><a href="api/pricing-api.md">pricing-api</a></td>
+</tr>
+<tr>
+<td><code>mivaa-gateway</code> action <code>search_knowledge_base</code> + <code>category_slug:&quot;pricing&quot;</code></td>
+<td>POST</td>
+<td>JWT (admin)</td>
+<td>Quick-pick direct semantic search — no LLM cost</td>
+<td>↑</td>
+</tr>
+<tr>
+<td>PostgREST <code>/rest/v1/product_prices</code></td>
+<td>POST / PATCH</td>
+<td>JWT (admin/owner via RLS)</td>
+<td>Commit confirmed prices with source doc IDs and <code>price_lookup_call_id</code> audit link</td>
+<td>↑</td>
+</tr>
+<tr>
+<td>PostgREST <code>/rest/v1/quote_items</code></td>
+<td>PATCH</td>
+<td>JWT (admin/owner via RLS)</td>
+<td>Writes <code>unit_price</code> + <code>price_source</code> + <code>price_lookup_call_id</code> for auditable quote pricing</td>
+<td>↑</td>
+</tr>
+</tbody></table>
+<h3>1.11 Social (Late.dev)</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>late-oauth</code></td>
+<td>GET/POST</td>
+<td>public</td>
+<td>Late.dev OAuth callback handler</td>
+<td><a href="api/late-social-api.md">late-social-api</a></td>
+</tr>
+<tr>
+<td><code>late-publish</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Publish / schedule posts to 8 platforms via Late.dev</td>
+<td>↑</td>
+</tr>
+<tr>
+<td><code>late-analytics</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Actions: <code>get-post-analytics</code>, <code>get-account-insights</code>, <code>get-best-time</code></td>
+<td>↑</td>
+</tr>
+<tr>
+<td><code>late-webhook-handler</code></td>
+<td>POST</td>
+<td>signature</td>
+<td>Receives <code>post.published</code> / <code>post.failed</code> events</td>
+<td>↑</td>
+</tr>
+<tr>
+<td><code>generate-social-content</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>3 caption variants + hashtags per platform</td>
+<td>↑</td>
+</tr>
+<tr>
+<td><code>generate-social-image</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Routes to best image model (Aurora / Gemini / FLUX) by content type</td>
+<td>↑</td>
+</tr>
+<tr>
+<td><code>generate-social-video</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Short-form video (Kling / Veo2 via Replicate)</td>
+<td>↑</td>
+</tr>
+</tbody></table>
+<h3>1.12 Pinterest</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pinterest-oauth</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Actions: <code>get-auth-url</code>, <code>callback</code>, <code>get-boards</code>, <code>get-board-pins</code>, <code>disconnect</code>. Token stored in <code>social_accounts</code>.</td>
+</tr>
+<tr>
+<td><code>pinterest-import</code></td>
+<td>POST</td>
+<td>JWT or public</td>
+<td>Actions: <code>extract-pin</code>, <code>import-pin</code>, <code>import-pins-bulk</code>. Also works pre-OAuth via oEmbed.</td>
+</tr>
+</tbody></table>
+<h3>1.13 Price monitoring</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>price-monitoring</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Actions: <code>start-monitoring</code>, <code>stop-monitoring</code>, <code>check-now</code>, <code>get-status</code>. See <a href="api/price-monitoring-cron-api.md">price-monitoring-cron-api</a> for cron variant.</td>
+</tr>
+</tbody></table>
+<h3>1.14 Data import &amp; scraping</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>xml-import-orchestrator</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Intelligent XML imports with AI field mapping. See <a href="api/xml-import-orchestrator-api.md">xml-import-orchestrator-api</a></td>
+</tr>
+<tr>
+<td><code>scheduled-import-runner</code></td>
+<td>POST</td>
+<td>service-role</td>
+<td>Cron runner (see §1.6)</td>
+</tr>
+<tr>
+<td><code>scrape-session-manager</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Multi-page scrape sessions (start/pause/resume/stop). See <a href="api/scrape-session-manager-api.md">scrape-session-manager-api</a></td>
+</tr>
+<tr>
+<td><code>scrape-preview</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Preview materials from URL before full import</td>
+</tr>
+<tr>
+<td><code>scrape-single-page</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Extract materials from a single URL with custom schema</td>
+</tr>
+<tr>
+<td><code>parse-sitemap</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Parse <code>sitemap.xml</code> and enumerate URLs</td>
+</tr>
+<tr>
+<td><code>firecrawl-webhook</code></td>
+<td>POST</td>
+<td>signature</td>
+<td>Receive async crawl results from Firecrawl</td>
+</tr>
+<tr>
+<td><code>field-templates</code></td>
+<td>GET/POST/PATCH</td>
+<td>JWT</td>
+<td>Field-mapping template CRUD (reusable across imports)</td>
+</tr>
+<tr>
+<td><code>suggest-fields</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>AI-suggested field mappings by analyzing website HTML</td>
+</tr>
+<tr>
+<td><code>pdf-batch-process</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Batch PDF upload → MIVAA extraction. See <a href="api/pdf-batch-process-api.md">pdf-batch-process-api</a></td>
+</tr>
+</tbody></table>
+<h3>1.15 Flows</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+<th>Deep docs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>flow-engine</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Execute / test / dry-run flows. Template variable resolution.</td>
+<td><a href="api/flow-engine-api.md">flow-engine-api</a></td>
+</tr>
+<tr>
+<td><code>flow-scheduler-cron</code></td>
+<td>POST</td>
+<td>service-role</td>
+<td>Cron runner (see §1.6)</td>
+<td>↑</td>
+</tr>
+<tr>
+<td><code>flow-webhook</code></td>
+<td>POST</td>
+<td>signature</td>
+<td>Routes external HTTP webhooks to matching flows</td>
+<td>↑</td>
+</tr>
+</tbody></table>
+<h3>1.16 Admin &amp; maintenance</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Method</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>reset-platform</code></td>
+<td>POST</td>
+<td>service-role</td>
+<td>Wipes derived data + VECS + MIVAA <code>/tmp</code>, preserves accounts/KB/CRM/prompts. See <a href="deployment-guide.md#-platform-reset-admin-destructive-operation">deployment-guide § Platform Reset</a></td>
+</tr>
+<tr>
+<td><code>health-check</code></td>
+<td>GET</td>
+<td>public</td>
+<td>Aggregated status: AI providers + MIVAA + external APIs</td>
+</tr>
+<tr>
+<td><code>batch-update-sessions</code></td>
+<td>POST</td>
+<td>JWT + admin key</td>
+<td>Admin bulk-update of scraping sessions</td>
+</tr>
+<tr>
+<td><code>trigger-factory-enrichment</code></td>
+<td>POST</td>
+<td>service-role</td>
+<td>Propagate factory data, queue enrichment job if needed</td>
+</tr>
+<tr>
+<td><code>notification-dispatcher</code></td>
+<td>POST</td>
+<td>JWT</td>
+<td>Send push notifications + webhook deliveries</td>
+</tr>
+<tr>
+<td><code>mivaa-gateway</code></td>
+<td>POST</td>
+<td>JWT or API key</td>
+<td>Thin auth-passthrough to MIVAA Python backend (see §2). See <a href="api/mivaa-gateway-api.md">mivaa-gateway-api</a></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. MIVAA Python API (FastAPI, 140+ endpoints)</h2>
+<p>Base: <code>https://v1api.materialshub.gr</code>
+Auth: <code>Authorization: Bearer &lt;JWT&gt;</code> (Supabase JWT passed through via <code>mivaa-gateway</code>) OR <code>Authorization: Bearer &lt;MIVAA_API_KEY&gt;</code> for server-to-server.</p>
+<p>Live interactive docs:</p>
+<ul>
+<li>Swagger UI — <code>https://v1api.materialshub.gr/docs</code></li>
+<li>ReDoc — <code>https://v1api.materialshub.gr/redoc</code></li>
+<li>OpenAPI JSON — <code>https://v1api.materialshub.gr/openapi.json</code></li>
+</ul>
+<p>Full endpoint-by-endpoint reference: <a href="api-endpoints.md">api-endpoints.md</a> (1940 lines, all 19 route groups).</p>
+<h3>High-level route groups</h3>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Prefix</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Core</td>
+<td><code>/health</code>, <code>/status</code></td>
+<td>Liveness / readiness</td>
+</tr>
+<tr>
+<td>RAG</td>
+<td><code>/api/rag/*</code></td>
+<td><strong>Consolidated</strong>: upload, search (<code>?strategy=multi_vector|semantic|vector|hybrid|image|color|texture|style|material_type</code>), query, relationships</td>
+</tr>
+<tr>
+<td>Knowledge Base</td>
+<td><code>/api/kb/*</code></td>
+<td>Document CRUD with auto-embedding (Voyage AI 1024D), categories, attachments, versions, comments, search analytics</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td><code>/api/admin/*</code></td>
+<td>Management ops. Incl. <code>POST /api/system/cleanup-temp-files?max_age_hours=0&amp;dry_run=false</code> used by reset-platform</td>
+</tr>
+<tr>
+<td>Search</td>
+<td><code>/api/search/*</code></td>
+<td>Lower-level search primitives (usually use <code>/api/rag/search</code> instead)</td>
+</tr>
+<tr>
+<td>Document Entities</td>
+<td><code>/api/document-entities/*</code></td>
+<td>Certificates, logos, specifications extracted from PDFs</td>
+</tr>
+<tr>
+<td>Products</td>
+<td><code>/api/products/*</code></td>
+<td>Product CRUD, embeddings status, deduplication</td>
+</tr>
+<tr>
+<td>Images</td>
+<td><code>/api/images/*</code></td>
+<td>Incl. <code>POST /api/images/reclassify/{image_id}</code> — re-run AI material vs non-material classification</td>
+</tr>
+<tr>
+<td>Embeddings</td>
+<td><code>/api/embeddings/*</code></td>
+<td>Manual embedding generation, backfill</td>
+</tr>
+<tr>
+<td>Metadata</td>
+<td><code>/api/metadata/*</code></td>
+<td>Scope detection, field application, stats (4 endpoints)</td>
+</tr>
+<tr>
+<td>Duplicate Detection</td>
+<td><code>/api/duplicates/*</code></td>
+<td>Factory-based duplicate detection, product merging</td>
+</tr>
+<tr>
+<td>Agents (Python)</td>
+<td><code>/api/agents/*</code></td>
+<td>Backend agent execution — edge <code>background-agent-runner</code> delegates here via <code>DelegateToMivaaError</code> for &gt;25s tasks</td>
+</tr>
+<tr>
+<td>Internal</td>
+<td><code>/api/internal/*</code></td>
+<td>Admin observability. Incl. <code>GET /api/internal/document-extraction-status/{document_id}</code> (Document Health panel) and <code>POST /api/internal/run-catalog-knowledge/{document_id}?force=true</code> (re-run Layer 1/2)</td>
+</tr>
+<tr>
+<td>Data Import</td>
+<td><code>/api/import/*</code></td>
+<td>XML import with AI field mapping, web scraping, field templates</td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td><code>/api/messaging/*</code></td>
+<td>SMS/WhatsApp (backend Twilio bridge)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. Typical call patterns</h2>
+<h3>Frontend (browser) → Edge function</h3>
+<pre><code class="language-ts">import { supabase } from &#39;@/integrations/supabase/client&#39;;
+
+const { data: { session } } = await supabase.auth.getSession();
+
+// Via supabase-js helper (recommended)
+const { data, error } = await supabase.functions.invoke(&#39;quotes-api&#39;, {
+  body: { action: &#39;list&#39;, workspaceId },
+});
+
+// Or raw fetch (needed for SSE streams like agent-chat)
+const res = await fetch(
+  &#39;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/agent-chat&#39;,
+  {
+    method: &#39;POST&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session?.access_token}`,
+      &#39;Content-Type&#39;: &#39;application/json&#39;,
+    },
+    body: JSON.stringify({ messages, agentId: &#39;kai&#39;, images: [] }),
+  },
+);
+</code></pre>
+<h3>Frontend → MIVAA (via gateway)</h3>
+<p>Always go through <code>mivaa-gateway</code> — it injects the shared <code>MIVAA_API_KEY</code> and handles CORS. Do not call <code>v1api.materialshub.gr</code> directly from the browser.</p>
+<pre><code class="language-ts">import { mivaaApi } from &#39;@/services/mivaaApiClient&#39;;
+
+const result = await mivaaApi.get(
+  `/api/internal/document-extraction-status/${documentId}`,
+);
+</code></pre>
+<h3>Server-to-server (edge function → MIVAA)</h3>
+<pre><code class="language-ts">const res = await fetch(`${MIVAA_GATEWAY_URL}/api/agents/run`, {
+  method: &#39;POST&#39;,
+  headers: {
+    Authorization: `Bearer ${MIVAA_API_KEY}`,
+    &#39;Content-Type&#39;: &#39;application/json&#39;,
+  },
+  body: JSON.stringify({ job_type, input }),
+});
+</code></pre>
+<hr>
+<h2>4. Related docs</h2>
+<ul>
+<li><a href="api/README.md">api/README.md</a> — per-edge-function deep docs index</li>
+<li><a href="api-endpoints.md">api-endpoints.md</a> — MIVAA Python endpoint-by-endpoint reference</li>
+<li><a href="api-docs.md">api-docs.md</a> — MIVAA search-strategy focused reference</li>
+<li><a href="api/swagger.md">api/swagger.md</a> — OpenAPI/Swagger export</li>
+<li><a href="agent-system.md">agent-system.md</a>, <a href="background-agents.md">background-agents.md</a>, <a href="flow-engine.md">flow-engine.md</a>, <a href="deployment-guide.md">deployment-guide.md</a></li>
+</ul>
+<hr>
+<p><strong>Last Updated:</strong> April 15, 2026</p>
+
+</div></body></html>

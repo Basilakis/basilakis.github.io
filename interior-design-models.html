@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Interior Design AI Models - Complete List</h1>
+<h2>📊 Model Inventory</h2>
+<h3>Text-to-Image Models (7 models)</h3>
+<p>Used when user provides <strong>only a text prompt</strong> (no reference image)</p>
+<table>
+<thead>
+<tr>
+<th>Model ID</th>
+<th>Name</th>
+<th>Provider</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>flux-dev</code></td>
+<td>FLUX.1-dev</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>flux-schnell</code></td>
+<td>FLUX.1-schnell</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>sdxl</code></td>
+<td>SDXL</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>playground-v2.5</code></td>
+<td>Playground v2.5</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>stable-diffusion-3</code></td>
+<td>Stable Diffusion 3</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>kandinsky-2.2</code></td>
+<td>Kandinsky 2.2</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>proteus-v0.2</code></td>
+<td>Proteus v0.2</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+</tbody></table>
+<h3>Image-to-Image Models (7 models)</h3>
+<p>Used when user provides <strong>reference image + prompt</strong> for interior transformation</p>
+<table>
+<thead>
+<tr>
+<th>Model ID</th>
+<th>Name</th>
+<th>Provider</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>jschoormans/comfyui-interior-remodel</code></td>
+<td>ComfyUI Interior Remodel</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>julian-at/interiorly-gen1-dev</code></td>
+<td>Interiorly Gen1 Dev</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>davisbrown/designer-architecture</code></td>
+<td>Designer Architecture</td>
+<td>Replicate</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td><code>erayyavuz/interior-ai</code></td>
+<td>Interior AI</td>
+<td>Replicate</td>
+<td>❌ Failing</td>
+</tr>
+<tr>
+<td><code>jschoormans/interior-v2</code></td>
+<td>Interior V2</td>
+<td>Replicate</td>
+<td>❌ Failing</td>
+</tr>
+<tr>
+<td><code>adirik/interior-design</code></td>
+<td>Adirik Interior Design</td>
+<td>Replicate</td>
+<td>❌ Failing</td>
+</tr>
+<tr>
+<td><code>rocketdigitalai/interior-design-sdxl</code></td>
+<td>Interior Design SDXL</td>
+<td>Replicate</td>
+<td>❌ Failing</td>
+</tr>
+</tbody></table>
+<h2>🎯 Smart Model Selection Logic</h2>
+<h3>Scenario 1: Text-to-Image Request</h3>
+<p>When the user provides only a text prompt (e.g., &quot;Generate a modern minimalist bedroom with oak flooring&quot;), all 7 text-to-image models are used: FLUX.1-dev, FLUX.1-schnell, SDXL, Playground v2.5, Stable Diffusion 3, Kandinsky 2.2, and Proteus v0.2. This produces 7 different variations.</p>
+<h3>Scenario 2: Image-to-Image Request</h3>
+<p>When the user provides a reference image along with a prompt (e.g., &quot;Transform this into a modern minimalist style&quot;), only the 3 working image-to-image models are used: ComfyUI Interior Remodel, Interiorly Gen1 Dev, and Designer Architecture. This produces 3 transformed variations.</p>
+<h3>Scenario 3: Custom Model Selection</h3>
+<p>When the user specifies particular models in the request (e.g., <code>&quot;models&quot;: [&quot;flux-dev&quot;, &quot;sdxl&quot;]</code>), only those specified models are used, producing the corresponding number of variations.</p>
+<h2>🔧 API Behavior</h2>
+<h3>Default Behavior (No Models Specified)</h3>
+<p>When no models are specified in the request:</p>
+<ul>
+<li>If there is no reference image, all text-to-image models are used (all 7 models).</li>
+<li>If a reference image is provided, only the working image-to-image models are used (filtering out any with status &quot;failing&quot;), resulting in 3 models.</li>
+</ul>
+<h3>Custom Model Selection</h3>
+<p>When a models array is provided in the request, the API filters the full model list to include only those whose IDs appear in the request array.</p>
+<h2>📈 Expected Results</h2>
+<table>
+<thead>
+<tr>
+<th>Request Type</th>
+<th>Models Used</th>
+<th>Expected Images</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Text-to-image (default)</td>
+<td>7</td>
+<td>7 variations</td>
+</tr>
+<tr>
+<td>Image-to-image (default)</td>
+<td>3</td>
+<td>3 transformations</td>
+</tr>
+<tr>
+<td>Custom selection</td>
+<td>Variable</td>
+<td>As specified</td>
+</tr>
+</tbody></table>
+<h2>✅ Complete Model Count: 14 Total</h2>
+<ul>
+<li>7 Text-to-Image</li>
+<li>7 Image-to-Image (3 working, 4 failing)</li>
+</ul>
+
+</div></body></html>

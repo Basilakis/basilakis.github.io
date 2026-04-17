@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>AR Material Preview</h1>
+<p>View materials applied to real-world surfaces using AR, or preview them as 3D textured swatches with interactive rotation.</p>
+<hr>
+<h2>Overview</h2>
+<p>The AR Material Preview feature lets designers see how materials look on real surfaces. On Android (Chrome), it uses WebXR for camera-based AR. On iOS, it falls back to a 3D swatch viewer. On desktop, a QR code enables phone handoff.</p>
+<p><strong>Components:</strong> <code>src/components/features/ar/</code>
+<strong>Edge Function:</strong> <code>generate-pbr-maps/index.ts</code>
+<strong>Route:</strong> <code>/ar/:productId</code> (standalone page for QR handoff)
+<strong>Credit Cost:</strong> 8 credits for PBR map generation, viewing is free</p>
+<hr>
+<h2>AR Detection</h2>
+<p>The <code>useARSupport()</code> hook detects device capabilities:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Device</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>webxr</code></td>
+<td>Android Chrome</td>
+<td>WebXR Hit Test API</td>
+</tr>
+<tr>
+<td><code>quicklook</code></td>
+<td>iOS Safari</td>
+<td>model-viewer + USDZ Quick Look</td>
+</tr>
+<tr>
+<td><code>desktop</code></td>
+<td>Desktop browsers</td>
+<td>QR code + 3D preview</td>
+</tr>
+<tr>
+<td><code>none</code></td>
+<td>Unsupported</td>
+<td>Button hidden</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Components</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ViewInARButton</code></td>
+<td>Context-aware button (shows AR/QR based on device)</td>
+</tr>
+<tr>
+<td><code>ARPreviewModal</code></td>
+<td>Full-screen 3D material swatch viewer</td>
+</tr>
+<tr>
+<td><code>ARPage</code></td>
+<td>Standalone route for <code>/ar/:productId</code></td>
+</tr>
+<tr>
+<td><code>useARSupport</code></td>
+<td>Hook for AR capability detection</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>PBR Map Generation</h2>
+<p>The <code>generate-pbr-maps</code> edge function creates PBR texture maps from product images:</p>
+<ol>
+<li>Source image stored as albedo</li>
+<li>MIVAA SVBRDF extraction attempted first (produces normal, roughness, metalness)</li>
+<li>Replicate fallback for normal map generation</li>
+<li>Optional tileable texture generation via Stable Diffusion</li>
+<li>Maps stored in Supabase Storage: <code>generation-images/pbr-maps/{product_id}/</code></li>
+<li>Product metadata updated with <code>pbr_maps</code> object</li>
+</ol>
+<hr>
+<h2>Integration Points</h2>
+<ul>
+<li><strong>ProductCard</strong>: &quot;AR View&quot; button (Smartphone icon)</li>
+<li><strong>ProductDetailModal</strong>: AR preview tab</li>
+<li><strong>MoodBoardDetailPage</strong>: AR option per item</li>
+<li><strong>QR Handoff</strong>: Desktop shows QR code linking to <code>/ar/:productId</code></li>
+</ul>
+<hr>
+<h2>Future Enhancements</h2>
+<ul>
+<li><code>@react-three/xr</code> for full WebXR surface detection on Android</li>
+<li><code>@google/model-viewer</code> for iOS USDZ Quick Look</li>
+<li><code>qrcode.react</code> for rendered QR codes</li>
+</ul>
+
+</div></body></html>

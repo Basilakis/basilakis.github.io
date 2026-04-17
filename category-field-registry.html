@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Category Field Registry (Frontend Display Config)</h1>
+<p>Frontend display configuration for the 10 material categories. Mirrors the Python <code>category_field_registry.py</code> on the MIVAA backend — the Python registry decides which fields the AI extracts; this TypeScript registry decides which fields the UI shows and how they&#39;re grouped.</p>
+<p><strong>File</strong>: <a href="../src/lib/categoryFieldRegistry.ts"><code>src/lib/categoryFieldRegistry.ts</code></a> (~1000 lines)</p>
+<hr>
+<h2>The 10 categories</h2>
+<p>These match the <code>material_categories</code> DB table exactly:</p>
+<p><code>tiles</code> · <code>wood</code> · <code>decor</code> · <code>furniture</code> · <code>general_materials</code> · <code>paint_wall_decor</code> · <code>heating</code> · <code>sanitary</code> · <code>kitchen</code> · <code>lighting</code></p>
+<p>Adding an 11th category requires changes in three places: the DB enum, the Python registry, and this TypeScript registry. Drift between the three is a bug.</p>
+<hr>
+<h2>Schema</h2>
+<pre><code class="language-ts">type UploadCategory = &#39;tiles&#39; | &#39;wood&#39; | &#39;decor&#39; | &#39;furniture&#39; | ...;
+
+interface DisplaySection {
+  key:    string;                                 // React key + conditional logic id
+  label:  string;                                 // Section heading
+  fields: Array&lt;{ key: string; label: string }&gt;;  // Ordered field list
+}
+
+interface CategoryDisplayConfig {
+  displayName:     string;                        // Human-readable category name
+  themeColor:      string;                        // Hex color for badge / accent
+  sections:        DisplaySection[];              // Modal sections, in render order
+  controlledVocab: string[];                      // AI-extracted slugs that map here
+}
+
+const CATEGORY_DISPLAY_REGISTRY: Record&lt;UploadCategory, CategoryDisplayConfig&gt;;
+</code></pre>
+<hr>
+<h2>How sections render</h2>
+<p><code>ProductDetailModal</code> reads <code>CATEGORY_DISPLAY_REGISTRY[product.category].sections</code> and renders each section as a heading + key/value list. For each <code>field</code> in the section:</p>
+<ol>
+<li>Look up <code>field.key</code> in <code>product.metadata</code> (merged with <code>properties</code> and <code>specifications</code>)</li>
+<li>If a value exists, render <code>field.label: value</code></li>
+<li>If empty/missing, skip — no empty rows</li>
+</ol>
+<p>This means the AI extraction can populate any subset of the fields and the UI degrades cleanly. To add a new field to the modal: register it in the section&#39;s <code>fields</code> array — no React changes needed.</p>
+<hr>
+<h2>controlledVocab → category resolution</h2>
+<p>The AI extractor returns a fine-grained <code>material_category</code> (e.g. <code>floor_tile</code>, <code>oak_plank</code>, <code>pendant_lamp</code>). <code>resolveUploadCategory()</code> maps these back to one of the 10 top-level categories using each config&#39;s <code>controlledVocab</code> array.</p>
+<p>Example: any of <code>floor_tile</code>, <code>wall_tile</code>, <code>bathroom_tile</code>, <code>porcelain_tile</code>, <code>ceramic_tile</code>, <code>tile</code>, <code>porcelain</code>, <code>ceramic</code> resolves to <code>tiles</code>.</p>
+<p>When adding a new fine-grained label upstream, add the slug to the matching <code>controlledVocab</code> here so products land in the right category.</p>
+<hr>
+<h2>Per-category section layout (current)</h2>
+<p>Most categories share these section keys, in this order:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Typical fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>appearance</code></td>
+<td>colors, primary_color_hex, patterns, texture, finish, visual_effect</td>
+</tr>
+<tr>
+<td><code>performance</code></td>
+<td>category-specific ratings (PEI, slip resistance, water absorption, fire rating, hardness, etc.)</td>
+</tr>
+<tr>
+<td><code>application</code></td>
+<td>recommended use, installation method, traffic level</td>
+</tr>
+<tr>
+<td><code>dimensions</code></td>
+<td>width, height, thickness, weight</td>
+</tr>
+<tr>
+<td><code>compliance</code></td>
+<td>certifications, standards (CE, EN, ISO, …)</td>
+</tr>
+<tr>
+<td><code>sustainability</code></td>
+<td>recyclability, VOC, eco labels</td>
+</tr>
+</tbody></table>
+<p>Categories with niche needs add their own sections (e.g. <code>wood</code> → <code>species</code>; <code>lighting</code> → <code>electrical</code>; <code>heating</code> → <code>thermal_output</code>).</p>
+<p>The exact section list per category is the source of truth in <a href="../src/lib/categoryFieldRegistry.ts"><code>categoryFieldRegistry.ts</code></a> — read that file when in doubt.</p>
+<hr>
+<h2>Editing rules</h2>
+<ol>
+<li><strong>Don&#39;t rename a <code>field.key</code></strong> unless the same key also gets renamed in the Python registry and any DB metadata that&#39;s already populated. Otherwise existing products silently lose that field in the UI.</li>
+<li><strong>Don&#39;t reorder <code>controlledVocab</code> values</strong> — order doesn&#39;t matter (membership lookup), but consistency helps PR review.</li>
+<li><strong>Theme color</strong> drives the category badge tint. Pick something that works on the dark background (see <a href="design-system.md"><code>design-system.md</code></a>).</li>
+<li><strong>New section?</strong> Pick a <code>key</code> not already used by other categories so cross-category logic (filters, aggregations) doesn&#39;t accidentally collide.</li>
+</ol>
+<hr>
+<h2>Related</h2>
+<ul>
+<li>Python counterpart: <code>mivaa-pdf-extractor/app/services/extraction/category_field_registry.py</code></li>
+<li>Consumer: <a href="../src/components/features/products/ProductDetailModal.tsx"><code>src/components/features/products/ProductDetailModal.tsx</code></a></li>
+<li>Resolver: <code>resolveUploadCategory()</code> exported from the same <a href="../src/lib/categoryFieldRegistry.ts"><code>categoryFieldRegistry.ts</code></a> (re-exported by <a href="../src/lib/materialCategories.ts"><code>materialCategories.ts</code></a> for legacy import paths)</li>
+<li>DB table: <code>material_categories</code></li>
+</ul>
+
+</div></body></html>
