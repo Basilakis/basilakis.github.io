@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Design System</h1>
+<p>The full reference lives at <a href="../.claude/design-system.md"><code>.claude/design-system.md</code></a> (1060 lines — every token, component, pattern). This doc is the high-level summary plus the most recent layout/theme changes that anyone touching the UI needs to know.</p>
+<hr>
+<h2>Theme — Dark mode</h2>
+<p>The platform shipped a dark-theme migration in April 2026. All components assume a near-black background and light foreground.</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>HSL</th>
+<th>Hex (approx)</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--background</code></td>
+<td><code>0 0% 7%</code></td>
+<td><code>#121212</code></td>
+<td>App background</td>
+</tr>
+<tr>
+<td><code>--foreground</code></td>
+<td><code>0 0% 92%</code></td>
+<td><code>#ebebeb</code></td>
+<td>Default text</td>
+</tr>
+<tr>
+<td><code>--primary</code></td>
+<td><code>330 50% 35%</code></td>
+<td>brightened plum</td>
+<td>CTA buttons, active tab background, links</td>
+</tr>
+<tr>
+<td><code>--primary-foreground</code></td>
+<td><code>0 0% 98%</code></td>
+<td>near-white</td>
+<td>Text on primary surfaces</td>
+</tr>
+<tr>
+<td><code>--accent</code></td>
+<td><code>22 60% 18%</code></td>
+<td>dark warm brown</td>
+<td>Hover surfaces, secondary highlights</td>
+</tr>
+<tr>
+<td><code>--card</code> (glass)</td>
+<td><code>rgba(255,255,255,0.05)</code> + <code>backdrop-filter: blur(12px)</code></td>
+<td>—</td>
+<td>All admin/dashboard cards</td>
+</tr>
+</tbody></table>
+<p>The old beige/light theme is gone. There is no light mode toggle.</p>
+<hr>
+<h2>Layout — Floating glass top nav (desktop) + drawer (mobile)</h2>
+<p>The previous left sidebar was replaced with a horizontal top navigation in the April 2026 redesign.</p>
+<pre><code>   m-4 ─────────────────────────────────────────────────────────────
+  ┌───────────────────────────────────────────────────────────────┐
+  │ [Logo] [Search …]                          [Profile menu]     │   h-20, rounded-3xl
+  │  glass-panel · bg-white/5 · border-white/8 · sticky top-0     │   floating, not flush
+  └───────────────────────────────────────────────────────────────┘
+                              Page content
+</code></pre>
+<ul>
+<li><strong>Header height</strong>: <code>h-20</code> (80px), sticky, with <code>m-4 rounded-3xl</code> so it floats as a glass card rather than touching screen edges</li>
+<li><strong>Style</strong>: <code>glass-panel bg-white/5 border border-white/8</code> (matches <code>.dashboard-card</code> aesthetic)</li>
+<li><strong>Logo</strong>: left-aligned, <code>w-10 h-10 rounded-2xl</code> icon container</li>
+<li><strong>Search bar</strong>: centered, <code>max-w-xl h-12</code></li>
+<li><strong>Profile/account menu</strong>: right-aligned, <code>h-10 w-10 rounded-full</code> avatar trigger</li>
+<li><strong>Admin pages</strong>: accessed via the <code>/admin</code> landing page (a grid of feature boxes), not a separate left rail</li>
+</ul>
+<p>Components: <a href="../src/components/core/Header.tsx"><code>src/components/core/Header.tsx</code></a> for desktop. <a href="../src/components/core/Sidebar.tsx"><code>src/components/core/Sidebar.tsx</code></a> is still a real component but only renders as a mobile <code>Sheet</code> drawer (triggered by a hamburger button on small screens) — desktop users never see it. Don&#39;t add new desktop sidebar UI.</p>
+<hr>
+<h2>Typography</h2>
+<ul>
+<li><strong>Font</strong>: Open Sans</li>
+<li><strong>Global weight remap</strong> (intentional — headings are light by design):<ul>
+<li><code>font-bold</code> → 300</li>
+<li><code>font-semibold</code> → 400</li>
+<li><code>font-medium</code> → 400</li>
+</ul>
+</li>
+<li>Don&#39;t fight the remap with inline <code>style={{ fontWeight: ... }}</code> — change the design instead.</li>
+</ul>
+<hr>
+<h2>Buttons</h2>
+<p>All buttons are pill-shaped (<code>rounded-full</code>). Variants: <code>default</code> (plum), <code>outline</code>, <code>secondary</code>, <code>ghost</code>, <code>destructive</code>, <code>link</code>.</p>
+<blockquote>
+<p><strong>Common mistake</strong>: do <strong>not</strong> add <code>rounded-full</code> to <code>TabsTrigger</code>. Pill shape is for buttons only — tabs use the standard rounded-md.</p>
+</blockquote>
+<hr>
+<h2>Tabs</h2>
+<pre><code class="language-tsx">&lt;TabsList className=&quot;w-full h-auto flex-wrap justify-start gap-2 bg-transparent p-0&quot;&gt;
+  &lt;TabsTrigger
+    className=&quot;flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground&quot;
+  &gt;
+    Tab name
+  &lt;/TabsTrigger&gt;
+&lt;/TabsList&gt;
+</code></pre>
+<p>Active tab uses <code>--primary</code> background. No pill, no underline.</p>
+<hr>
+<h2>Cards</h2>
+<p>Use the <code>.dashboard-card</code> utility class — it bundles the glass effect (rgba white 0.05 + blur 12px on dark background). Never recreate the styling inline.</p>
+<pre><code class="language-tsx">&lt;div className=&quot;dashboard-card p-6&quot;&gt;…&lt;/div&gt;
+</code></pre>
+<hr>
+<h2>Tables</h2>
+<pre><code class="language-tsx">&lt;Card&gt;
+  &lt;CardContent className=&quot;p-0&quot;&gt;
+    &lt;Table&gt;…&lt;/Table&gt;
+  &lt;/CardContent&gt;
+&lt;/Card&gt;
+</code></pre>
+<p>Rules:</p>
+<ul>
+<li><code>&lt;CardContent className=&quot;p-0&quot;&gt;</code> — no inner padding around the table</li>
+<li>No wrapper div around the <code>&lt;Table&gt;</code></li>
+<li>No fixed column widths — let Radix/Tailwind size naturally</li>
+</ul>
+<hr>
+<h2>Image optimization</h2>
+<p>All Supabase Storage image URLs should be passed through <a href="../src/utils/imageOptimization.ts"><code>getOptimizedImageUrl()</code></a> before rendering. This appends Supabase imgproxy query params (<code>width</code>, <code>quality</code>, <code>format=origin</code>) so the storage layer returns a transformed image instead of the full original.</p>
+<pre><code class="language-ts">import { getOptimizedImageUrl } from &#39;@/utils/imageOptimization&#39;;
+
+// Thumbnail / list view
+&lt;img src={getOptimizedImageUrl(product.image_url, { width: 400, quality: 80 })} /&gt;
+
+// Card / preview
+&lt;img src={getOptimizedImageUrl(product.image_url, { width: 800, quality: 85 })} /&gt;
+
+// External URLs (Pinterest, Replicate, etc.) pass through unchanged
+&lt;img src={getOptimizedImageUrl(&#39;https://example.com/x.jpg&#39;, { width: 400 })} /&gt;
+</code></pre>
+<p><strong>Behaviour</strong>:</p>
+<ul>
+<li>URL contains <code>/storage/v1/object/public/</code> → transform params appended</li>
+<li>Any other URL (CDN, data URI, blob) → returned untouched</li>
+<li>Defaults: <code>quality = 75</code>, <code>width</code> omitted (= no resize)</li>
+<li>Existing query strings on the URL are preserved (the function appends with <code>&amp;</code>)</li>
+</ul>
+<p><strong>When to use which width</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Context</th>
+<th>Width</th>
+<th>Quality</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>List/table thumbnail</td>
+<td>200–400</td>
+<td>75–80</td>
+</tr>
+<tr>
+<td>Card preview</td>
+<td>600–800</td>
+<td>80–85</td>
+</tr>
+<tr>
+<td>Modal hero / detail</td>
+<td>1200–1600</td>
+<td>85–90</td>
+</tr>
+<tr>
+<td>Full-screen / lightbox</td>
+<td>omit width</td>
+<td>90</td>
+</tr>
+</tbody></table>
+<p>Used by: <code>ProductCard</code>, <code>SearchResultCard</code>, <code>MoodBoardDetailPage</code>, <code>ProgressiveImageGrid</code>, both <code>ImagesTab</code> admin views, <code>ProductStrip</code>.</p>
+<hr>
+<h2>Related</h2>
+<ul>
+<li><a href="../.claude/design-system.md"><code>.claude/design-system.md</code></a> — full token reference and component recipes</li>
+<li><a href="../src/index.css"><code>src/index.css</code></a> — CSS variable definitions</li>
+<li><a href="../CLAUDE.md">CLAUDE.md</a> — &quot;Design System Summary&quot; section</li>
+</ul>
+
+</div></body></html>

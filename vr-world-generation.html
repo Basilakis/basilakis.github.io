@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>VR World Generation</h1>
+<p>Generate explorable 3D Gaussian Splat worlds from interior design images using the WorldLabs Marble API, rendered in-browser via Spark.js.</p>
+<hr>
+<h2>Overview</h2>
+<p>The VR World Generation feature converts any interior design image into a fully explorable 3D environment. Users can orbit, walk through, and inspect rooms in real time directly inside the Agent Hub chat interface — no external application required.</p>
+<p><strong>Key capabilities:</strong></p>
+<ul>
+<li>One-click &quot;Generate VR&quot; button on any interior design image</li>
+<li>3D Gaussian Splat rendering via Spark.js (Three.js-based, code-split)</li>
+<li>Orbit controls + first-person WASD navigation with mode toggle</li>
+<li>3 quality levels (Draft, Standard, Full)</li>
+<li>Credit-based pricing with automatic refund on failure</li>
+<li>Worlds persist in the database across chat sessions</li>
+</ul>
+<hr>
+<h2>Models</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+<th>Generation Time</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>marble-1.0-draft</code></td>
+<td>18 credits</td>
+<td>~30–45 seconds</td>
+<td>Quick previews</td>
+</tr>
+<tr>
+<td><code>marble-1.1</code></td>
+<td>190 credits</td>
+<td>~5 minutes</td>
+<td>High-quality finals</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>The legacy <code>marble-0.1-mini</code> and <code>marble-0.1-plus</code> models were deprecated by WorldLabs and are no longer accepted by the API. Pricing: $1 = 1,250 WL credits × 1.50 internal markup.</p>
+</blockquote>
+<hr>
+<h2>Output Assets</h2>
+<p>Each generated world produces:</p>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SPZ file (100k)</td>
+<td>Draft quality Gaussian Splat (smallest)</td>
+</tr>
+<tr>
+<td>SPZ file (500k)</td>
+<td>Standard quality Gaussian Splat</td>
+</tr>
+<tr>
+<td>SPZ file (full)</td>
+<td>Full quality Gaussian Splat (largest)</td>
+</tr>
+<tr>
+<td>Collider GLB</td>
+<td>Collision mesh for first-person navigation</td>
+</tr>
+<tr>
+<td>Panorama image</td>
+<td>360° equirectangular render</td>
+</tr>
+<tr>
+<td>Thumbnail</td>
+<td>Preview image</td>
+</tr>
+<tr>
+<td>Caption</td>
+<td>AI-generated scene description</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Architecture</h2>
+<h3>Components</h3>
+<p>DesignCanvas (Frontend)
+  └─ &quot;Generate VR&quot; button
+       │
+       ▼
+Supabase Edge Function: generate-vr-world</p>
+<ol>
+<li>Upload image to WorldLabs</li>
+<li>POST /worlds/generate (draft or 1.1 model; pass <code>is_pano: true</code> for 360° source images)</li>
+<li>Poll /worlds/{world_id} until status = completed</li>
+<li>Store asset URLs in vr_worlds table
+  │
+  ▼
+vr_worlds table (PostgreSQL)</li>
+</ol>
+<ul>
+<li>world_id, model, status</li>
+<li>splat_100k_url, splat_500k_url, splat_full_url</li>
+<li>collider_glb_url, panorama_url, thumbnail_url, caption
+   │
+   ▼
+WorldViewer component (Frontend)</li>
+<li>Loads Spark.js dynamically (code-split, ~496KB)</li>
+<li>Renders Gaussian Splat via SparkRenderer</li>
+<li>Orbit / Walk navigation toggle</li>
+<li>Quality selector (100k / 500k / full)</li>
+<li>Fullscreen mode</li>
+</ul>
+<h3>Files</h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>supabase/functions/generate-vr-world/index.ts</code></td>
+<td>Edge function orchestration</td>
+</tr>
+<tr>
+<td><code>src/components/features/ai/WorldViewer.tsx</code></td>
+<td>3D splat viewer component</td>
+</tr>
+<tr>
+<td><code>src/services/vrWorldService.ts</code></td>
+<td>Frontend API service</td>
+</tr>
+<tr>
+<td>Database: <code>vr_worlds</code> table</td>
+<td>World asset storage</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>User Flow</h2>
+<ol>
+<li>User generates an interior design image via the Interior Designer agent</li>
+<li>A &quot;Generate VR&quot; button appears on the image in the DesignCanvas panel</li>
+<li>User selects model (draft or 1.1) and clicks the button</li>
+<li>Edge function uploads the image to WorldLabs and triggers world generation</li>
+<li>The UI shows an animated loading state while polling for completion</li>
+<li>Once complete, WorldViewer renders the 3D Gaussian Splat inline</li>
+<li>User can orbit (drag + scroll) or switch to Walk mode (WASD + mouse look, Shift for speed boost)</li>
+<li>User can select quality level (Draft / Standard / Full)</li>
+<li>User can enter fullscreen mode</li>
+<li>The world persists in the database and reloads on future sessions</li>
+</ol>
+<hr>
+<h2>Frontend Integration</h2>
+<h3>WorldViewer Component</h3>
+<p>The WorldViewer component accepts <code>worldId</code>, <code>splatUrls</code> (draft/standard/full), <code>colliderUrl</code>, and <code>caption</code> props. It is rendered inline within agent chat message output.</p>
+<h3>Navigation Controls</h3>
+<p><strong>Orbit Mode</strong> (default):</p>
+<ul>
+<li>Drag: Rotate camera around scene</li>
+<li>Scroll: Zoom in/out</li>
+<li>Right-click drag: Pan</li>
+</ul>
+<p><strong>Walk Mode</strong> (WASD):</p>
+<ul>
+<li>W/S: Move forward/backward</li>
+<li>A/D: Strafe left/right</li>
+<li>Mouse: Look around</li>
+<li>Shift: Speed boost</li>
+</ul>
+<hr>
+<h2>Edge Function</h2>
+<h3>Endpoint</h3>
+<p><code>POST /functions/v1/generate-vr-world</code></p>
+<p>The frontend polls the <code>vr_worlds</code> table via Supabase real-time subscriptions until <code>status = &#39;completed&#39;</code>.</p>
+<h3>Environment Variable</h3>
+<p><code>WORLDLABS_API_KEY</code> is required in Supabase Edge Function secrets.</p>
+<hr>
+<h2>Database Schema</h2>
+<p>The <code>vr_worlds</code> table stores: <code>id</code>, <code>workspace_id</code>, <code>message_id</code>, <code>world_id</code> (WorldLabs world ID), <code>model</code> (marble-1.0-draft or marble-1.1), <code>status</code> (generating / completed / failed), <code>splat_100k_url</code>, <code>splat_500k_url</code>, <code>splat_full_url</code>, <code>collider_glb_url</code>, <code>panorama_url</code>, <code>thumbnail_url</code>, <code>caption</code>, <code>credits_used</code>, <code>created_at</code>, and <code>updated_at</code>.</p>
+<hr>
+<h2>Credits &amp; Billing</h2>
+<p>Credits are deducted when generation starts and <strong>refunded automatically on failure</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Cost</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>marble-1.0-draft</td>
+<td>18 credits</td>
+<td>~30–45s</td>
+</tr>
+<tr>
+<td>marble-1.1</td>
+<td>190 credits</td>
+<td>~5 min</td>
+</tr>
+</tbody></table>
+<p>Credit balance is tracked in the internal credit system. See <a href="internal-pricing-credit-system.md">internal-pricing-credit-system.md</a> for details.</p>
+<hr>
+<h2>Technical Details</h2>
+<h3>Spark.js (Gaussian Splat Renderer)</h3>
+<ul>
+<li>Package: <code>@sparkjsdev/spark</code> v0.1.10+</li>
+<li>Requires: <code>three@0.178</code> (<code>THREE.Matrix2</code> dependency)</li>
+<li>Code-split via <code>React.lazy()</code> — the ~496KB renderer loads only when WorldViewer mounts</li>
+<li><code>SparkRenderer</code> constructor requires <code>@ts-expect-error</code> due to missing types</li>
+</ul>
+<h3>halfvec Storage</h3>
+<p>VR worlds do not use vector embeddings, but all related product embeddings in the platform use <code>halfvec</code> (float16) for 50% storage savings. See <a href="system-architecture.md">system-architecture.md</a>.</p>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>World stuck in &quot;generating&quot; status</h3>
+<ol>
+<li>Check Supabase Edge Function logs for <code>generate-vr-world</code></li>
+<li>Verify <code>WORLDLABS_API_KEY</code> is set and valid</li>
+<li>Check WorldLabs API status at their dashboard</li>
+<li>Generation can take up to 10 minutes for the <code>marble-1.1</code> model under load</li>
+</ol>
+<h3>Viewer blank / not rendering</h3>
+<ol>
+<li>Ensure <code>three@0.178</code> is installed (not 0.160 or earlier)</li>
+<li>Check browser console for WebGL errors</li>
+<li>Spark.js requires a WebGL2-capable browser</li>
+</ol>
+<h3>Credits not refunded on failure</h3>
+<ol>
+<li>Check edge function logs for refund call</li>
+<li>Verify credit system is reachable from edge function</li>
+<li>Manual credit adjustment via admin dashboard</li>
+</ol>
+<hr>
+<h2>Related Documentation</h2>
+<ul>
+<li><strong><a href="features-guide.md">features-guide.md</a></strong> — Feature 17: VR World Generation</li>
+<li><strong><a href="interior-design-models.md">interior-design-models.md</a></strong> — Interior design generation models</li>
+<li><strong><a href="agent-system.md">agent-system.md</a></strong> — Interior Designer agent</li>
+<li><strong><a href="internal-pricing-credit-system.md">internal-pricing-credit-system.md</a></strong> — Credit system</li>
+</ul>
+<hr>
+<p><strong>Last Updated</strong>: April 15, 2026
+<strong>Version</strong>: 1.1.0
+<strong>Status</strong>: Production</p>
+
+</div></body></html>

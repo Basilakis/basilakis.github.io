@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Pricing API</h1>
+<p>Admin-only API for sourcing, composing, and committing product prices from
+the &quot;Pricing&quot; category of the Knowledge Base. Added 2026-04.</p>
+<blockquote>
+<p><strong>Access control.</strong> Every endpoint in this document requires the caller to
+have <code>admin</code> or <code>owner</code> role in the target workspace. Non-admin callers
+get no tool, no endpoint, no data.</p>
+</blockquote>
+<h2>Architecture (one picture)</h2>
+<pre><code>          ┌──────────────────────────────────────────────┐
+          │          KB &quot;Pricing&quot; category               │
+          │  docs tagged with price_doc_type:            │
+          │    price_list | discount_rule |              │
+          │    contract_terms | promotion                │
+          └────────────┬─────────────────┬───────────────┘
+                       │                 │
+   ┌───────────────────▼───────┐   ┌─────▼────────────────┐
+   │ agent-chat                │   │ mivaa-gateway        │
+   │   tool: price_lookup      │   │   action:            │
+   │   (AI mode — reasoning)   │   │   search_knowledge_… │
+   │                           │   │   (quick pick,       │
+   │ tool_call_ids chunk       │   │    no LLM)           │
+   │   → log_id (uuid)         │   │                      │
+   │ price_lookup_matches      │   │ raw chunks with      │
+   │ price_proposal            │   │ price_doc_type       │
+   └───────────────┬───────────┘   └─────┬────────────────┘
+                   │                     │
+                   └─────────┬───────────┘
+                             │
+                  Admin clicks &quot;Use this price&quot;
+                             │
+          ┌──────────────────┴──────────────────┐
+          │                                     │
+┌─────────▼──────────┐              ┌───────────▼──────────┐
+│ quote_items        │              │ product_prices       │
+│  price_source      │              │  price_lookup_call_id│
+│  price_lookup_call_id              │  source_kb_doc_ids  │
+└────────────────────┘              └──────────────────────┘
+          │                                     │
+          └───────────────┬─────────────────────┘
+                          ▼
+                 agent_tool_call_logs
+                 (traceable audit chain)
+</code></pre>
+<h2>1. Setup — create the Pricing category (one-time)</h2>
+<pre><code class="language-bash">POST https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/mivaa-gateway
+Authorization: Bearer &lt;admin_token&gt;
+Content-Type: application/json
+
+{
+  &quot;action&quot;: &quot;kb_create_category&quot;,
+  &quot;payload&quot;: {
+    &quot;workspace_id&quot;: &quot;&lt;uuid&gt;&quot;,
+    &quot;name&quot;: &quot;Pricing&quot;,
+    &quot;slug&quot;: &quot;pricing&quot;,
+    &quot;access_level&quot;: &quot;admin&quot;,
+    &quot;trigger_keyword&quot;: &quot;price&quot;
+  }
+}
+</code></pre>
+<p>Or directly against MIVAA: <code>POST /api/kb/categories</code> with the same payload.</p>
+<h2>2. Ingest price docs</h2>
+<p>Admins upload markdown files (or edit inline) under the Pricing category.
+Each doc must set <code>price_doc_type</code> so the agent can reason about how to
+combine it.</p>
+<pre><code class="language-bash">POST https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/mivaa-gateway
+{
+  &quot;action&quot;: &quot;kb_create_document&quot;,
+  &quot;payload&quot;: {
+    &quot;workspace_id&quot;: &quot;&lt;uuid&gt;&quot;,
+    &quot;title&quot;: &quot;Factory X Q2 2026&quot;,
+    &quot;category_id&quot;: &quot;&lt;pricing_category_uuid&gt;&quot;,
+    &quot;status&quot;: &quot;published&quot;,
+    &quot;price_doc_type&quot;: &quot;price_list&quot;,
+    &quot;content&quot;: &quot;# Q2 2026 pricing\n\n| SKU | Name | Price / m² |\n|---|---|---|\n| CM-6060 | Carrara 60×60 | €85 |\n...&quot;
+  }
+}
+</code></pre>
+<p>Re-uploading a doc with the same <code>(workspace_id, title, category_id)</code>
+<strong>updates</strong> the existing row in place and re-embeds only if <code>content</code>
+changed. Use this for quarterly price list refreshes.</p>
+<h3>Sub-type semantics</h3>
+<table>
+<thead>
+<tr>
+<th><code>price_doc_type</code></th>
+<th>When to use it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>price_list</code></td>
+<td>Tables / catalogs with rows of SKU → price</td>
+</tr>
+<tr>
+<td><code>discount_rule</code></td>
+<td>Blanket rules like &quot;Eurolamp: all items 50% off&quot;</td>
+</tr>
+<tr>
+<td><code>contract_terms</code></td>
+<td>Negotiated terms for a manufacturer</td>
+</tr>
+<tr>
+<td><code>promotion</code></td>
+<td>Time-limited offers (must include an effective range in the content)</td>
+</tr>
+</tbody></table>
+<p>The agent combines them at composition time:
+<code>final = list_price × (1 − discount_percent)</code>, with specific SKU prices
+beating general rules.</p>
+<h2>3. Look up a price — AI mode</h2>
+<p>Streams <code>agent-chat</code> with a prompt that triggers the <code>price_lookup</code> tool.
+Returns a full reasoning chain and <code>agent_tool_call_logs.id</code> for audit.</p>
+<pre><code class="language-bash">POST https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/agent-chat
+Authorization: Bearer &lt;admin_token&gt;
+Content-Type: application/json
+
+{
+  &quot;agentId&quot;: &quot;kai&quot;,
+  &quot;messages&quot;: [
+    {
+      &quot;role&quot;: &quot;user&quot;,
+      &quot;content&quot;: &quot;Look up the current price for:\n- Name: Carrara Marble Tile 60×60\n- SKU: CM-6060\n- Manufacturer: Factory X\n- Quantity: 12\n- Expected unit: m²\n- Product ID: 7a3b…\n\nCall the price_lookup tool with category_slug=\&quot;pricing\&quot; and compose a price_proposal chunk with a full reasoning chain.&quot;
+    }
+  ],
+  &quot;context&quot;: { &quot;source&quot;: &quot;price_lookup_drawer&quot;, &quot;product_id&quot;: &quot;7a3b…&quot; }
+}
+</code></pre>
+<p>Response is newline-delimited JSON. Chunks to capture:</p>
+<table>
+<thead>
+<tr>
+<th>Chunk type</th>
+<th>What to do with it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tool_call_ids</code></td>
+<td>Find the entry with <code>tool_name: &quot;price_lookup&quot;</code> and store <code>log_id</code></td>
+</tr>
+<tr>
+<td><code>price_lookup_matches</code></td>
+<td>Render source snippets in the UI</td>
+</tr>
+<tr>
+<td><code>price_proposal</code></td>
+<td>The final answer — all pricing fields + reasoning</td>
+</tr>
+</tbody></table>
+<p>The <code>price_proposal</code> chunk is the contract:</p>
+<pre><code class="language-typescript">{
+  type: &#39;price_proposal&#39;,
+  product_id?: string,
+  product_name?: string,
+  list_price: number | null,
+  discount_percent: number | null,
+  final_unit_price: number | null,
+  currency: string,
+  unit: string | null,
+  quantity_applied: number | null,
+  total: number | null,
+  source_doc_ids: string[],      // kb_docs.id values
+  source_titles: string[],
+  reasoning_chain: string[],
+  warnings: string[],
+  confidence: &#39;high&#39; | &#39;medium&#39; | &#39;low&#39;,
+  effective_through: string | null
+}
+</code></pre>
+<p>The agent never fabricates numbers — when it cannot determine a reliable
+price (no base price, conflicting docs, expired rules), <code>final_unit_price</code>
+is <code>null</code>, <code>confidence</code> is <code>low</code>, and <code>warnings</code> explains the gap.</p>
+<h3>Cost</h3>
+<ul>
+<li>LLM: ~1–3K input tokens + ~500–1500 output tokens (Claude Sonnet 4.6)</li>
+<li>Embedding: one query embedding via Voyage AI per call (~$0.00006)</li>
+<li>No external API fees beyond the LLM call</li>
+</ul>
+<h2>4. Look up a price — Quick pick (no AI cost)</h2>
+<p>Bypasses the agent entirely. Goes straight to MIVAA&#39;s semantic KB search
+filtered to <code>category_slug: &#39;pricing&#39;</code>. Returns raw matches — admin reads
+snippets and composes the price manually.</p>
+<pre><code class="language-bash">POST https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/mivaa-gateway
+Authorization: Bearer &lt;admin_token&gt;
+
+{
+  &quot;action&quot;: &quot;search_knowledge_base&quot;,
+  &quot;payload&quot;: {
+    &quot;workspace_id&quot;: &quot;&lt;uuid&gt;&quot;,
+    &quot;query&quot;: &quot;Carrara Marble Tile 60×60 CM-6060 Factory X&quot;,
+    &quot;search_types&quot;: [&quot;kb_docs&quot;],
+    &quot;top_k&quot;: 8,
+    &quot;similarity_threshold&quot;: 0.35,
+    &quot;caller&quot;: &quot;admin&quot;,
+    &quot;category_slug&quot;: &quot;pricing&quot;
+  }
+}
+</code></pre>
+<p>Response chunks each include:</p>
+<pre><code class="language-typescript">{
+  id: string,                // kb_docs.id
+  document_title: string,
+  content: string,           // chunk text
+  category_slug: &#39;pricing&#39;,
+  category_name: &#39;Pricing&#39;,
+  price_doc_type: &#39;price_list&#39; | &#39;discount_rule&#39; | ...,
+  relevance_score: number
+}
+</code></pre>
+<h3>When to use which</h3>
+<table>
+<thead>
+<tr>
+<th>Use case</th>
+<th>Mode</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>High-volume price entry, want full audit + reasoning</td>
+<td>AI</td>
+</tr>
+<tr>
+<td>You already know the number, just want to confirm source</td>
+<td>Quick</td>
+</tr>
+<tr>
+<td>Debugging why a price came out wrong</td>
+<td>Quick (see raw chunks)</td>
+</tr>
+<tr>
+<td>Processing a batch of quote lines</td>
+<td>AI (reasoning scales with admin review)</td>
+</tr>
+</tbody></table>
+<h2>5. Commit a price</h2>
+<p>Commit is explicit — no auto-fill. Two target tables depending on where
+the price came from.</p>
+<h3>To a quote line</h3>
+<pre><code class="language-bash">PATCH https://bgbavxtjlbvgplozizxu.supabase.co/rest/v1/quote_items?id=eq.&lt;item_id&gt;
+Authorization: Bearer &lt;admin_token&gt;
+apikey: &lt;anon_or_service_key&gt;
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  &quot;unit_price&quot;: 85.00,
+  &quot;discounted_price&quot;: 62.00,
+  &quot;price_source&quot;: &quot;kb:ai:&lt;price_lookup_call_id&gt;&quot;,
+  &quot;price_lookup_call_id&quot;: &quot;&lt;price_lookup_call_id&gt;&quot;,
+  &quot;notes&quot;: &quot;Applied Factory X Q2 2026 contract discount&quot;
+}
+</code></pre>
+<p><code>price_source</code> values:</p>
+<ul>
+<li><code>manual</code> — admin typed the number</li>
+<li><code>catalog</code> — from products catalog row</li>
+<li><code>kb:ai:&lt;log_id&gt;</code> — AI mode lookup (log_id is an <code>agent_tool_call_logs.id</code>)</li>
+<li><code>kb:quick:&lt;doc_id&gt;</code> — Quick pick (doc_id is a <code>kb_docs.id</code>)</li>
+<li><code>product_price:&lt;id&gt;</code> — inherited from <code>product_prices</code></li>
+</ul>
+<h3>To the product cache</h3>
+<pre><code class="language-bash">POST https://bgbavxtjlbvgplozizxu.supabase.co/rest/v1/product_prices
+Authorization: Bearer &lt;admin_token&gt;
+apikey: &lt;anon_or_service_key&gt;
+Prefer: resolution=merge-duplicates,return=representation
+
+{
+  &quot;workspace_id&quot;: &quot;&lt;uuid&gt;&quot;,
+  &quot;product_id&quot;: &quot;&lt;product_uuid&gt;&quot;,
+  &quot;list_price&quot;: 85.00,
+  &quot;discount_price&quot;: 62.00,
+  &quot;discount_percent&quot;: 27.00,
+  &quot;currency&quot;: &quot;EUR&quot;,
+  &quot;unit&quot;: &quot;m²&quot;,
+  &quot;source_kb_doc_ids&quot;: [&quot;&lt;kb_doc_uuid&gt;&quot;],
+  &quot;source_snippet&quot;: &quot;CM-6060 Carrara 60×60 €85/m²&quot;,
+  &quot;price_lookup_call_id&quot;: &quot;&lt;price_lookup_call_id&gt;&quot;,
+  &quot;confirmed_by&quot;: &quot;&lt;user_uuid&gt;&quot;,
+  &quot;notes&quot;: &quot;Applied Q2 2026 contract discount&quot;
+}
+</code></pre>
+<p><code>(workspace_id, product_id)</code> is a unique constraint — <code>Prefer: resolution=merge-duplicates</code> upserts.</p>
+<h2>6. Audit a committed price</h2>
+<pre><code class="language-sql">-- Quote line → original agent call
+SELECT
+  qi.id, qi.unit_price, qi.discounted_price, qi.price_source,
+  atcl.created_at     AS lookup_ran_at,
+  atcl.tool_args,     -- original product name, SKU, manufacturer
+  atcl.result_summary -- match count, hints, timing
+FROM quote_items qi
+LEFT JOIN agent_tool_call_logs atcl
+  ON atcl.id = qi.price_lookup_call_id
+WHERE qi.id = &#39;&lt;item_id&gt;&#39;;
+
+-- Product cache → source docs
+SELECT
+  pp.list_price, pp.discount_price, pp.source_kb_doc_ids,
+  kd.title        AS source_doc_title,
+  kd.price_doc_type
+FROM product_prices pp
+LEFT JOIN kb_docs kd
+  ON kd.id = ANY (ARRAY(SELECT jsonb_array_elements_text(pp.source_kb_doc_ids))::uuid[])
+WHERE pp.product_id = &#39;&lt;product_uuid&gt;&#39;;
+</code></pre>
+<h2>7. Observability</h2>
+<p>All AI-mode price lookups are logged to <code>agent_tool_call_logs</code> with
+<code>tool_name = &#39;price_lookup&#39;</code>. Frontends can query this table directly
+(admin RLS) to render analytics.</p>
+<p>Useful aggregates:</p>
+<pre><code class="language-sql">-- Last 30-day commit rate (AI mode)
+WITH calls AS (
+  SELECT id, zero_result FROM agent_tool_call_logs
+  WHERE tool_name = &#39;price_lookup&#39;
+    AND created_at &gt; now() - interval &#39;30 days&#39;
+),
+committed AS (
+  SELECT DISTINCT price_lookup_call_id AS id FROM quote_items
+  WHERE price_lookup_call_id IN (SELECT id FROM calls)
+  UNION
+  SELECT DISTINCT price_lookup_call_id FROM product_prices
+  WHERE price_lookup_call_id IN (SELECT id FROM calls)
+)
+SELECT
+  (SELECT count(*) FROM calls) AS total,
+  (SELECT count(*) FROM committed) AS committed,
+  (SELECT count(*) FROM calls WHERE zero_result) AS no_match;
+</code></pre>
+<p>Quick-pick lookups never hit <code>agent_tool_call_logs</code> (no tool call) — they
+are out of scope for these metrics by design.</p>
+<h2>Schema reference</h2>
+<ul>
+<li><code>kb_docs.price_doc_type</code> — enum, nullable</li>
+<li><code>quote_items.price_source</code> — text, nullable</li>
+<li><code>quote_items.price_lookup_call_id</code> — uuid FK → <code>agent_tool_call_logs.id</code></li>
+<li><code>product_prices</code> — admin-RLS table, <code>(workspace_id, product_id)</code> unique</li>
+<li><code>kb_match_docs</code> RPC — accepts <code>match_category_id</code>, <code>match_category_slug</code>,
+<code>match_price_doc_type</code>, <code>require_published</code> (default <code>true</code>)</li>
+</ul>
+<h2>Related docs</h2>
+<ul>
+<li><a href="./mivaa-gateway-api.md">MIVAA Gateway API</a> — underlying endpoints + actions</li>
+<li><a href="./agent-chat-api.md">Agent Chat API</a> — streaming protocol + tool contract</li>
+<li><a href="./quotes-api.md">Quotes API</a> — quote_items schema and pricing fields</li>
+</ul>
+
+</div></body></html>

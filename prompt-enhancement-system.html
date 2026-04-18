@@ -35,7 +35,7 @@
 </ul>
 <hr>
 <h2>Architecture</h2>
-<pre><code>┌─────────────────┐
+<p>┌─────────────────┐
 │  Agent Request  │  &quot;Search for Nova&quot;
 └────────┬────────┘
          │
@@ -60,17 +60,17 @@
          ▼
 ┌─────────────────┐
 │  Claude/GPT AI  │  Processes with full context
-└─────────────────┘
-</code></pre>
+└─────────────────┘</p>
 <hr>
 <h2>How It Works</h2>
 <h3>1. Agent Sends Simple Prompt</h3>
-<p><strong>Example Agent Requests:</strong></p>
-<pre><code>&quot;extract products&quot;
-&quot;search for NOVA&quot;
-&quot;find certificates&quot;
-&quot;get all logos&quot;
-</code></pre>
+<p>Agent requests are intentionally simple, such as:</p>
+<ul>
+<li>&quot;extract products&quot;</li>
+<li>&quot;search for NOVA&quot;</li>
+<li>&quot;find certificates&quot;</li>
+<li>&quot;get all logos&quot;</li>
+</ul>
 <h3>2. System Enhances Prompt</h3>
 <p>The <code>PromptEnhancementService</code> enhances the prompt by:</p>
 <ol>
@@ -108,29 +108,10 @@
 <hr>
 <h2>Admin Prompt Management</h2>
 <h3>Database Schema</h3>
-<p><strong>Table: <code>extraction_prompts</code></strong></p>
-<pre><code class="language-sql">CREATE TABLE extraction_prompts (
-    id UUID PRIMARY KEY,
-    workspace_id UUID NOT NULL,
-    stage TEXT NOT NULL,  -- &#39;discovery&#39;, &#39;chunking&#39;, &#39;image_analysis&#39;, &#39;entity_creation&#39;
-    category TEXT NOT NULL,  -- &#39;products&#39;, &#39;certificates&#39;, &#39;logos&#39;, &#39;specifications&#39;
-    name TEXT NOT NULL,
-    template TEXT NOT NULL,  -- The actual prompt template
-    description TEXT,
-    quality_threshold FLOAT DEFAULT 0.7,
-    is_active BOOLEAN DEFAULT true,
-    version INTEGER DEFAULT 1,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    created_by UUID,
-    updated_by UUID
-);
-</code></pre>
+<p><strong>Table: <code>prompts</code></strong> (Unified table for all AI prompts)</p>
+<p>The table stores the following fields: id, workspace_id, prompt_type (e.g., &#39;extraction&#39;, &#39;agent&#39;), stage (e.g., &#39;discovery&#39;, &#39;chunking&#39;, &#39;image_analysis&#39;, &#39;entity_creation&#39;), category (e.g., &#39;products&#39;, &#39;certificates&#39;, &#39;logos&#39;, &#39;specifications&#39;), name, prompt_text (the actual prompt template), system_prompt (optional), description, quality_threshold (default 0.7), is_active (default true), is_custom (default false), version (default 1), created_at, updated_at, created_by, and updated_by.</p>
 <h3>Default Prompts</h3>
-<p>Default prompts are seeded using:</p>
-<pre><code class="language-bash">cd mivaa-pdf-extractor
-python scripts/seed_default_prompts.py
-</code></pre>
+<p>Default prompts are seeded using a seed script located at <code>cd mivaa-pdf-extractor</code> then running <code>python scripts/seed_default_prompts.py</code>.</p>
 <p><strong>Default Prompts Include:</strong></p>
 <ul>
 <li><code>discovery/products</code> - Comprehensive product extraction</li>
@@ -140,20 +121,7 @@ python scripts/seed_default_prompts.py
 </ul>
 <h3>Customizing Prompts</h3>
 <p><strong>Via Admin API:</strong></p>
-<pre><code class="language-bash"># Get current prompt
-GET /api/admin/extraction-prompts/discovery/products
-
-# Update prompt
-PUT /api/admin/extraction-prompts/discovery/products
-{
-  &quot;template&quot;: &quot;Your custom prompt template...&quot;,
-  &quot;quality_threshold&quot;: 0.8,
-  &quot;description&quot;: &quot;Updated for better accuracy&quot;
-}
-
-# View history
-GET /api/admin/extraction-prompts/history/{prompt_id}
-</code></pre>
+<p>The admin API provides endpoints to get the current prompt for a given stage and category, update a prompt with a new template, quality threshold, and description, and view the version history for a prompt.</p>
 <p><strong>Via Admin Panel:</strong></p>
 <ol>
 <li>Navigate to Admin → Extraction Prompts</li>
@@ -164,135 +132,33 @@ GET /api/admin/extraction-prompts/history/{prompt_id}
 </ol>
 <hr>
 <h2>Example: &quot;Search for Nova&quot;</h2>
-<h3>Input</h3>
-<pre><code class="language-json">{
-  &quot;agent_prompt&quot;: &quot;search for NOVA&quot;,
-  &quot;categories&quot;: [&quot;products&quot;],
-  &quot;workspace_id&quot;: &quot;ffafc28b-1b8b-4b0d-b226-9f9a6154004e&quot;
-}
-</code></pre>
 <h3>Enhancement Process</h3>
-<p><strong>Step 1: Parse Intent</strong></p>
-<pre><code class="language-python">{
-  &quot;action&quot;: &quot;search&quot;,
-  &quot;target&quot;: &quot;NOVA&quot;,
-  &quot;category&quot;: &quot;products&quot;,
-  &quot;specificity&quot;: &quot;high&quot;
-}
-</code></pre>
-<p><strong>Step 2: Load Admin Template</strong></p>
-<pre><code>Analyze this PDF catalog and identify ALL products with complete metadata.
-
-**REQUIRED INFORMATION:**
-- Product name and all variants
-- Page ranges where product appears
-- Designer/brand/studio information
-...
-</code></pre>
-<p><strong>Step 3: Add Context</strong></p>
-<pre><code class="language-python">{
-  &quot;workspace_settings&quot;: {
-    &quot;quality_threshold&quot;: 0.7,
-    &quot;preferred_models&quot;: [&quot;claude-sonnet-4-5&quot;]
-  },
-  &quot;document_context&quot;: {
-    &quot;total_pages&quot;: 52,
-    &quot;pdf_preview&quot;: &quot;HARMONY COLLECTION...&quot;
-  }
-}
-</code></pre>
-<p><strong>Step 4: Build Enhanced Prompt</strong></p>
-<pre><code>You are analyzing a material/product catalog PDF with 52 pages.
-
-**USER REQUEST:** &quot;search for NOVA&quot;
-
-Your task is to identify and extract content across the following categories:
-
-**PRODUCTS:**
-Analyze this PDF catalog and identify ALL products with complete metadata.
-[Full admin template...]
-
-**SPECIAL HANDLING FOR USER REQUEST:**
-- User mentioned specific product name: &quot;NOVA&quot;
-- Prioritize finding this product
-- Provide comprehensive results with high confidence scores
-- Include all variants, dimensions, and metadata for NOVA
-
-**OUTPUT FORMAT (JSON):**
-{
-  &quot;products&quot;: [
-    {
-      &quot;name&quot;: &quot;NOVA&quot;,
-      &quot;designer&quot;: &quot;...&quot;,
-      ...
-    }
-  ],
-  ...
-}
-
-**PDF CONTENT:**
-[First 50,000 characters of PDF text]
-
-Analyze the above content and return ONLY valid JSON...
-</code></pre>
-<h3>Output</h3>
-<pre><code class="language-json">{
-  &quot;products&quot;: [
-    {
-      &quot;name&quot;: &quot;NOVA&quot;,
-      &quot;designer&quot;: &quot;SG NY&quot;,
-      &quot;studio&quot;: &quot;SG NY&quot;,
-      &quot;page_range&quot;: [12, 13, 14],
-      &quot;dimensions&quot;: [&quot;15×38&quot;, &quot;20×40&quot;],
-      &quot;variants&quot;: [
-        {&quot;type&quot;: &quot;color&quot;, &quot;value&quot;: &quot;beige&quot;},
-        {&quot;type&quot;: &quot;finish&quot;, &quot;value&quot;: &quot;matte&quot;}
-      ],
-      &quot;category&quot;: &quot;tiles&quot;,
-      &quot;metafields&quot;: {
-        &quot;slip_resistance&quot;: &quot;R11&quot;,
-        &quot;fire_rating&quot;: &quot;A1&quot;,
-        &quot;thickness&quot;: &quot;8mm&quot;
-      },
-      &quot;confidence&quot;: 0.95
-    }
-  ],
-  &quot;total_products&quot;: 1,
-  &quot;confidence_score&quot;: 0.95
-}
-</code></pre>
+<p><strong>Step 1: Parse Intent</strong> — The system identifies the action as &quot;search&quot;, the target as &quot;NOVA&quot;, the category as &quot;products&quot;, and the specificity as &quot;high&quot;.</p>
+<p><strong>Step 2: Load Admin Template</strong> — The full admin template is retrieved from the database, containing detailed instructions for analyzing the PDF catalog and identifying all products with complete metadata.</p>
+<p><strong>Step 3: Add Context</strong> — Workspace settings such as quality threshold and preferred models are combined with document context such as total page count and PDF preview text.</p>
+<p><strong>Step 4: Build Enhanced Prompt</strong> — The final prompt combines the user request, the full admin template instructions, special handling directives to prioritize finding the named product, the required JSON output format, and the PDF content.</p>
 <hr>
 <h2>API Integration</h2>
 <h3>Upload with Agent Prompt</h3>
-<pre><code class="language-bash">POST /api/rag/documents/upload
-Content-Type: multipart/form-data
-
-file: harmony.pdf
-categories: products
-agent_prompt: search for NOVA
-enable_prompt_enhancement: true
-workspace_id: ffafc28b-1b8b-4b0d-b226-9f9a6154004e
-</code></pre>
+<p>Send a multipart form upload to <code>POST /api/rag/documents/upload</code> including the PDF file, categories (e.g., &quot;products&quot;), agent_prompt (e.g., &quot;search for NOVA&quot;), enable_prompt_enhancement set to true, and workspace_id.</p>
 <h3>Response</h3>
-<pre><code class="language-json">{
-  &quot;job_id&quot;: &quot;abc-123&quot;,
-  &quot;document_id&quot;: &quot;doc-456&quot;,
-  &quot;status&quot;: &quot;processing&quot;,
-  &quot;message&quot;: &quot;Document upload started with products extraction&quot;,
-  &quot;status_url&quot;: &quot;/api/rag/documents/job/abc-123&quot;,
-  &quot;categories&quot;: [&quot;products&quot;],
-  &quot;discovery_model&quot;: &quot;claude&quot;,
-  &quot;prompt_enhancement_enabled&quot;: true
-}
-</code></pre>
+<p>The response includes a job_id, document_id, processing status, a status URL for polling, the categories being extracted, the discovery model being used, and a flag confirming prompt enhancement is enabled.</p>
 <hr>
 <h2>Benefits</h2>
 <h3>For Admins</h3>
-<p>✅ <strong>Full Control</strong>: Customize extraction prompts without code changes<br>✅ <strong>Version History</strong>: Track all prompt changes with audit trail<br>✅ <strong>Quality Tuning</strong>: Adjust quality thresholds per category<br>✅ <strong>Testing</strong>: Test prompts before deploying to production  </p>
+<p>✅ <strong>Full Control</strong>: Customize extraction prompts without code changes
+✅ <strong>Version History</strong>: Track all prompt changes with audit trail
+✅ <strong>Quality Tuning</strong>: Adjust quality thresholds per category
+✅ <strong>Testing</strong>: Test prompts before deploying to production</p>
 <h3>For Agents</h3>
-<p>✅ <strong>Simplicity</strong>: Send simple requests like &quot;search for Nova&quot;<br>✅ <strong>Consistency</strong>: Always get high-quality, detailed results<br>✅ <strong>Flexibility</strong>: No need to know extraction details  </p>
+<p>✅ <strong>Simplicity</strong>: Send simple requests like &quot;search for Nova&quot;
+✅ <strong>Consistency</strong>: Always get high-quality, detailed results
+✅ <strong>Flexibility</strong>: No need to know extraction details</p>
 <h3>For System</h3>
-<p>✅ <strong>Maintainability</strong>: Update prompts without code deployment<br>✅ <strong>Scalability</strong>: Easy to add new categories and stages<br>✅ <strong>Quality</strong>: Consistent extraction across all documents<br>✅ <strong>Auditability</strong>: Full history of prompt changes  </p>
+<p>✅ <strong>Maintainability</strong>: Update prompts without code deployment
+✅ <strong>Scalability</strong>: Easy to add new categories and stages
+✅ <strong>Quality</strong>: Consistent extraction across all documents
+✅ <strong>Auditability</strong>: Full history of prompt changes</p>
 <hr>
 <h2>Best Practices</h2>
 <h3>Writing Good Prompts</h3>
@@ -303,15 +169,6 @@ workspace_id: ffafc28b-1b8b-4b0d-b226-9f9a6154004e
 <li><strong>Handle Edge Cases</strong>: Account for variations in documents</li>
 <li><strong>Use Structured Output</strong>: Request JSON for easy parsing</li>
 </ol>
-<h3>Testing Prompts</h3>
-<pre><code class="language-bash">POST /api/admin/extraction-prompts/test
-{
-  &quot;stage&quot;: &quot;discovery&quot;,
-  &quot;category&quot;: &quot;products&quot;,
-  &quot;template&quot;: &quot;Your test prompt...&quot;,
-  &quot;test_content&quot;: &quot;Sample PDF text...&quot;
-}
-</code></pre>
 <h3>Monitoring Performance</h3>
 <ul>
 <li>Track confidence scores per prompt version</li>
@@ -321,12 +178,13 @@ workspace_id: ffafc28b-1b8b-4b0d-b226-9f9a6154004e
 </ul>
 <hr>
 <h2>Future Enhancements</h2>
+<p>The following enhancements are planned for future releases:</p>
 <ul>
-<li><input disabled="" type="checkbox"> A/B testing for prompts</li>
-<li><input disabled="" type="checkbox"> Auto-optimization based on results</li>
-<li><input disabled="" type="checkbox"> Multi-language prompt support</li>
-<li><input disabled="" type="checkbox"> Prompt templates marketplace</li>
-<li><input disabled="" type="checkbox"> AI-assisted prompt generation</li>
+<li><strong>A/B Testing for Prompts</strong>: Test multiple prompt variations to optimize extraction quality</li>
+<li><strong>Auto-Optimization</strong>: Automatically improve prompts based on extraction results and feedback</li>
+<li><strong>Multi-Language Support</strong>: Support for prompts in multiple languages for international documents</li>
+<li><strong>Prompt Templates Marketplace</strong>: Community-driven marketplace for sharing and discovering prompt templates</li>
+<li><strong>AI-Assisted Prompt Generation</strong>: Use AI to automatically generate and refine extraction prompts</li>
 </ul>
 
 </div></body></html>

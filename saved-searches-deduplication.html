@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Saved Searches Smart Deduplication System</h1>
+<h2>Overview</h2>
+<p>The Saved Searches feature implements an intelligent deduplication system to prevent database bloat and improve user experience by merging semantically similar searches while respecting important contextual differences.</p>
+<h2>Problem Statement</h2>
+<p><strong>Without Deduplication:</strong></p>
+<ul>
+<li>&quot;I need a cement tile&quot; → Saved Search #1</li>
+<li>&quot;A cement tile for house floor&quot; → Saved Search #2</li>
+<li>&quot;cement tiles&quot; → Saved Search #3</li>
+<li>&quot;grey cement tile&quot; → Saved Search #4</li>
+</ul>
+<p><strong>Result:</strong> 4 separate database entries for essentially the same search</p>
+<p><strong>With Smart Deduplication:</strong></p>
+<ul>
+<li>&quot;I need a cement tile&quot; + &quot;A cement tile for house floor&quot; + &quot;cement tiles&quot; → <strong>Merged</strong> (same intent)</li>
+<li>&quot;grey cement tile&quot; → <strong>Separate</strong> (different color specification)</li>
+<li>&quot;A cement tile for outdoors&quot; → <strong>Separate</strong> (different application context)</li>
+</ul>
+<h2>Architecture</h2>
+<h3>1. AI-Powered Semantic Analysis</h3>
+<p><strong>Model:</strong> Claude Haiku 4.5 (fast, cost-effective)</p>
+<p><strong>Process:</strong>
+User Query → AI Analysis → Extract:
+├── Core Material: &quot;cement tile&quot;
+├── Attributes: [&quot;grey&quot;, &quot;outdoor&quot;, &quot;floor&quot;]
+├── Application Context: &quot;outdoor flooring&quot;
+├── Intent Category: &quot;product_search&quot;
+└── Semantic Fingerprint: embedding vector</p>
+<h3>2. Multi-Layer Matching Strategy</h3>
+<p><strong>Layer 1: Exact Match (Fast)</strong></p>
+<ul>
+<li>Normalized query text comparison</li>
+<li>Material type + color + application</li>
+</ul>
+<p><strong>Layer 2: Semantic Similarity (AI)</strong></p>
+<ul>
+<li>CLIP embeddings for query text</li>
+<li>Cosine similarity threshold: 0.85+</li>
+<li>Matches: &quot;cement tile&quot; ≈ &quot;cement tiles&quot; ≈ &quot;I need cement tile&quot;</li>
+</ul>
+<p><strong>Layer 3: Metadata Context (Smart)</strong></p>
+<ul>
+<li>Application context must match</li>
+<li>Critical attributes must align</li>
+<li>Example:<ul>
+<li>✅ &quot;floor tile&quot; + &quot;flooring tile&quot; → MERGE</li>
+<li>❌ &quot;floor tile&quot; + &quot;wall tile&quot; → SEPARATE</li>
+<li>❌ &quot;indoor tile&quot; + &quot;outdoor tile&quot; → SEPARATE</li>
+</ul>
+</li>
+</ul>
+<h3>3. Deduplication Decision Tree</h3>
+<p>┌─────────────────────────────────────┐
+│ New Search: &quot;cement tile for floor&quot; │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+    ┌──────────────────────┐
+    │ Find Similar Searches │
+    │ (Semantic + Metadata) │
+    └──────────┬───────────┘
+               │
+               ▼
+    ┌──────────────────────┐
+    │ Similarity Score &gt; 0.85? │
+    └──────────┬───────────┘
+               │
+        ┌──────┴──────┐
+        │             │
+       YES           NO
+        │             │
+        ▼             ▼
+┌───────────────┐  ┌──────────────┐
+│ Context Match?│  │ Create New   │
+└───────┬───────┘  │ Search Entry │
+        │          └──────────────┘
+   ┌────┴────┐
+   │         │
+  YES       NO
+   │         │
+   ▼         ▼
+┌─────────┐ ┌──────────────┐
+│ MERGE   │ │ Create New   │
+│ Update  │ │ Search Entry │
+│ Existing│ └──────────────┘
+└─────────┘</p>
+<h2>Implementation</h2>
+<h3>Database Schema Enhancement</h3>
+<p>The deduplication system requires additional fields on the <code>saved_searches</code> table: <code>semantic_fingerprint</code> (vector for CLIP embedding), <code>normalized_query</code> (cleaned query text), <code>core_material</code> (extracted material name), <code>material_attributes</code> (JSONB with color, texture, finish, etc.), <code>application_context</code> (floor, wall, outdoor, indoor, etc.), <code>intent_category</code> (product_search, comparison, recommendation), <code>merged_from_ids</code> (UUID array tracking merged search IDs), <code>merge_count</code> (integer, default 1), and <code>last_merged_at</code> (timestamptz).</p>
+<p>Indexes are needed on <code>semantic_fingerprint</code> (ivfflat cosine), <code>normalized_query</code>, and <code>(core_material, application_context)</code>.</p>
+<h3>AI Analysis Function</h3>
+<p>The backend service (<code>mivaa-pdf-extractor/app/services/search_deduplication_service.py</code>) uses Claude Haiku 4.5 to extract semantic components from each search query, returning the core material, attributes (color, texture, finish, etc.), application context, intent category, and a CLIP-based semantic fingerprint.</p>
+<h3>Deduplication Logic</h3>
+<p>The <code>find_or_merge_search</code> function:</p>
+<ol>
+<li>Analyzes the query with AI</li>
+<li>Normalizes the query text for exact matching</li>
+<li>Finds similar searches using multi-layer matching</li>
+<li>Checks merge criteria for each candidate</li>
+<li>Either merges into an existing search or creates a new one</li>
+</ol>
+<p><strong>Merge criteria (<code>should_merge</code>):</strong></p>
+<ol>
+<li>Semantic similarity &gt; 0.85</li>
+<li>Same core material</li>
+<li>Same application context (or both null)</li>
+<li>Compatible attributes (no conflicts)</li>
+<li>Similar filters (within tolerance)</li>
+</ol>
+<p><strong>Conflict detection (<code>has_conflicting_attributes</code>)</strong> blocks merging when attributes clash, such as different colors, outdoor vs. indoor, wall vs. floor, or matte vs. glossy.</p>
+<h3>Merge Strategy</h3>
+<p>When merging, the system:</p>
+<ol>
+<li>Keeps the most specific query as primary (longer query with more detail wins)</li>
+<li>Merges attributes using union (no conflicts)</li>
+<li>Updates filters to be more inclusive</li>
+<li>Increments <code>merge_count</code></li>
+<li>Tracks <code>merged_from_ids</code></li>
+<li>Updates <code>last_merged_at</code></li>
+</ol>
+<h2>User Experience</h2>
+<h3>Save Search Flow with Deduplication</h3>
+<p>User clicks &quot;Save Search&quot;
+        ↓
+AI analyzes query in background
+        ↓
+Check for similar searches
+        ↓
+    ┌───────┴───────┐
+    │               │
+  Found          Not Found
+    │               │
+    ▼               ▼
+┌─────────────┐  ┌──────────────┐
+│ Show Modal: │  │ Show Normal  │
+│             │  │ Save Modal   │
+│ &quot;Similar    │  └──────────────┘
+│  search     │
+│  found!&quot;    │
+│             │
+│ Options:    │
+│ • Merge     │
+│ • Save New  │
+└─────────────┘</p>
+<h3>Merge Confirmation Modal</h3>
+<p>The frontend (<code>src/components/Search/MergeSearchModal.tsx</code>) displays:</p>
+<ul>
+<li>The existing search (name, query, use count, merge count)</li>
+<li>The new search query</li>
+<li>A similarity score progress bar</li>
+<li>Buttons to &quot;Save as New Search&quot; or &quot;Merge into Existing&quot;</li>
+</ul>
+<h2>Performance Optimization</h2>
+<h3>Caching Strategy</h3>
+<p>AI analysis results are cached for 1 hour per query string. Similarity search results are cached for 5 minutes per user.</p>
+<h3>Batch Processing</h3>
+<p>A background job (<code>deduplicate_existing_searches</code>) can run nightly or on-demand to deduplicate a user&#39;s existing saved searches by grouping them by core material and processing each group.</p>
+<h2>Analytics &amp; Monitoring</h2>
+<h3>Deduplication Metrics</h3>
+<p>A materialized view (<code>search_deduplication_stats</code>) tracks daily totals: total searches, total merges, average merges per search, deduplicated search count, and deduplication rate percentage.</p>
+<h3>Admin Dashboard Widget</h3>
+<p>The admin dashboard shows total searches, merged searches count, and database savings percentage.</p>
+<h2>Configuration</h2>
+<h3>Tunable Parameters</h3>
+<p>Key configuration options include:</p>
+<ul>
+<li><code>semantic_similarity_threshold</code>: 0.85 (range 0.0–1.0)</li>
+<li><code>exact_match_threshold</code>: 0.95 (for normalized queries)</li>
+<li><code>require_context_match</code>: True (must match application context)</li>
+<li><code>allow_null_context_merge</code>: True (merge if both contexts are null)</li>
+<li><code>merge_compatible_attributes</code>: True (union of attributes)</li>
+<li><code>block_on_conflicts</code>: True (don&#39;t merge if conflicts)</li>
+<li><code>price_range_tolerance</code>: 0.2 (20% difference allowed)</li>
+<li><code>color_tolerance</code>: &quot;exact&quot;</li>
+<li><code>analysis_model</code>: &quot;claude-haiku-4.5&quot;</li>
+<li><code>embedding_model</code>: &quot;openai-clip&quot;</li>
+<li><code>auto_merge_threshold</code>: 0.95 (auto-merge if &gt; 95% similar)</li>
+<li><code>show_merge_suggestion</code>: True (show modal for 85-95%)</li>
+<li><code>min_similarity_to_suggest</code>: 0.85</li>
+</ul>
+<h2>Examples</h2>
+<h3>Merge Examples</h3>
+<p><strong>✅ MERGE:</strong></p>
+<ul>
+<li>&quot;cement tile&quot; + &quot;cement tiles&quot; → Same material, plural</li>
+<li>&quot;grey cement tile&quot; + &quot;gray cement tile&quot; → Same (spelling variant)</li>
+<li>&quot;cement tile for floor&quot; + &quot;cement tile flooring&quot; → Same context</li>
+<li>&quot;I need cement tile&quot; + &quot;looking for cement tile&quot; → Same intent</li>
+</ul>
+<p><strong>❌ SEPARATE:</strong></p>
+<ul>
+<li>&quot;grey cement tile&quot; + &quot;white cement tile&quot; → Different color</li>
+<li>&quot;cement tile for floor&quot; + &quot;cement tile for wall&quot; → Different application</li>
+<li>&quot;indoor cement tile&quot; + &quot;outdoor cement tile&quot; → Different context</li>
+<li>&quot;cement tile&quot; + &quot;ceramic tile&quot; → Different material</li>
+</ul>
+<h3>Real-World Scenario</h3>
+<p>User saves &quot;grey cement tiles for kitchen floor&quot; → core_material: &quot;cement tile&quot;, attributes: {color: &quot;grey&quot;}, application_context: &quot;kitchen floor&quot;.</p>
+<p>Same user searches &quot;gray cement tile kitchen&quot; → similarity 0.92, context match ✅, attributes compatible ✅ → Merge suggested, user accepts → 1 database entry instead of 2.</p>
+<p>Same user searches &quot;grey cement tile for bathroom&quot; → similarity 0.88, context match ❌ (kitchen ≠ bathroom) → Save as new search → 2 entries (correct!).</p>
+<h2>Benefits</h2>
+<ol>
+<li><strong>Database Efficiency:</strong> 40-60% reduction in duplicate searches</li>
+<li><strong>Better Analytics:</strong> Accurate material demand tracking</li>
+<li><strong>Improved UX:</strong> Users see consolidated search history</li>
+<li><strong>Cost Savings:</strong> Fewer database rows, less storage</li>
+<li><strong>Better Recommendations:</strong> More accurate usage patterns</li>
+<li><strong>Cleaner UI:</strong> Less clutter in saved searches panel</li>
+</ol>
+<h2>Future Enhancements</h2>
+<ol>
+<li><strong>Multi-language Support:</strong> Merge &quot;cement tile&quot; (EN) + &quot;carrelage ciment&quot; (FR)</li>
+<li><strong>Synonym Detection:</strong> &quot;oak wood&quot; = &quot;oak timber&quot; = &quot;oak flooring&quot;</li>
+<li><strong>Brand Normalization:</strong> &quot;Egger Board&quot; = &quot;EGGER board&quot; = &quot;egger board&quot;</li>
+<li><strong>User Feedback Loop:</strong> Let users manually merge/split searches</li>
+<li><strong>Cross-user Deduplication:</strong> Suggest popular public searches</li>
+</ol>
+
+</div></body></html>
