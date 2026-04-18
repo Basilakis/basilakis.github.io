@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Social Media System</h1>
+<h2>Overview</h2>
+<p>The Social Media system is built as <strong>KAI agent tools</strong> (same pattern as B2B/SEO tools) using <a href="https://docs.getlate.dev/">Late.dev</a> as the publishing backbone. Each user connects their own social accounts from their profile — accounts are per-user, not per-workspace-admin.</p>
+<hr>
+<h2>Architecture</h2>
+<pre><code>User Profile → SocialAccountsTab → late-oauth (edge fn) → Late.dev OAuth
+KAI Agent   → Social Tools       → late-publish / late-analytics (edge fns) → Late.dev API
+Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, social_accounts)
+</code></pre>
+<hr>
+<h2>Database Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>social_accounts</code></td>
+<td>OAuth tokens per user per platform</td>
+</tr>
+<tr>
+<td><code>social_posts</code></td>
+<td>Draft / scheduled / published posts</td>
+</tr>
+<tr>
+<td><code>social_post_analytics</code></td>
+<td>Per-post engagement metrics</td>
+</tr>
+<tr>
+<td><code>social_account_insights</code></td>
+<td>Account-level follower/reach snapshots</td>
+</tr>
+</tbody></table>
+<p><strong>RLS policies on <code>social_accounts</code>:</strong></p>
+<ul>
+<li>Workspace members can read all workspace accounts (admin view)</li>
+<li>Users can only manage their own accounts (<code>user_id = auth.uid()</code>)</li>
+</ul>
+<hr>
+<h2>Edge Functions</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+<th>Secrets needed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>late-oauth</code></td>
+<td>Connect / disconnect / list social accounts via Late.dev OAuth</td>
+<td><code>LATE_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>late-publish</code></td>
+<td>Publish or schedule posts via Late.dev</td>
+<td><code>LATE_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>late-analytics</code></td>
+<td>Fetch post analytics + account insights from Late.dev</td>
+<td><code>LATE_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>late-webhook-handler</code></td>
+<td>Receive Late.dev webhooks (post.published, post.failed, etc.)</td>
+<td><code>LATE_WEBHOOK_SECRET</code></td>
+</tr>
+<tr>
+<td><code>generate-social-content</code></td>
+<td>Claude Haiku generates 3 caption variants + hashtags</td>
+<td><em>(uses shared ANTHROPIC_API_KEY)</em></td>
+</tr>
+<tr>
+<td><code>generate-social-image</code></td>
+<td>Image generation — routes by type (lifestyle/product/artistic)</td>
+<td><code>XAI_API_KEY</code>, <code>GOOGLE_AI_API_KEY</code>, <code>REPLICATE_API_TOKEN</code></td>
+</tr>
+<tr>
+<td><code>generate-social-video</code></td>
+<td>Video generation via Kling 1.6 Pro or Veo</td>
+<td><code>REPLICATE_API_TOKEN</code>, <code>GOOGLE_AI_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>generate-interior-video-v2</code></td>
+<td>Multi-model interior video (Veo 2 / Kling / Wan / Runway)</td>
+<td><code>REPLICATE_API_TOKEN</code>, <code>GOOGLE_AI_API_KEY</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Required Secrets</h2>
+<p>Add these in <strong>Supabase Dashboard → Project Settings → Edge Functions → Secrets</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Where to get it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LATE_API_KEY</code></td>
+<td><a href="https://app.getlate.dev">Late.dev Dashboard</a> → API Keys</td>
+</tr>
+<tr>
+<td><code>LATE_WEBHOOK_SECRET</code></td>
+<td>Late.dev Dashboard → Webhooks → copy the signing secret</td>
+</tr>
+<tr>
+<td><code>XAI_API_KEY</code></td>
+<td><a href="https://console.x.ai">x.ai console</a></td>
+</tr>
+<tr>
+<td><code>GOOGLE_AI_API_KEY</code></td>
+<td>Google AI Studio or Google Cloud → Gemini API</td>
+</tr>
+<tr>
+<td><code>REPLICATE_API_TOKEN</code></td>
+<td><a href="https://replicate.com/account/api-tokens">replicate.com/account/api-tokens</a></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note</strong>: <code>ANTHROPIC_API_KEY</code> and <code>OPENAI_API_KEY</code> are already set if KAI agent is working.</p>
+</blockquote>
+<hr>
+<h2>Late.dev Setup</h2>
+<ol>
+<li><strong>Plan</strong>: Accelerate ($49/mo) — required for API access + multi-account + analytics</li>
+<li><strong>OAuth redirect URL</strong> to register in Late.dev:<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/late-oauth?action=callback
+</code></pre>
+</li>
+<li><strong>Webhook URL</strong> to register in Late.dev:<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/late-webhook-handler
+</code></pre>
+</li>
+<li><strong>Supported platforms</strong>: Instagram, Facebook, LinkedIn, TikTok, Pinterest, YouTube, Twitter/X, Threads</li>
+</ol>
+<hr>
+<h2>Image Generation Routing</h2>
+<table>
+<thead>
+<tr>
+<th><code>image_type</code> param</th>
+<th>Model</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>lifestyle</code></td>
+<td>xAI Aurora (<code>grok-2-aurora</code>)</td>
+<td>10 cr</td>
+</tr>
+<tr>
+<td><code>product</code> or <code>interior</code></td>
+<td>Imagen 3.0 (<code>imagen-3.0-generate-002</code>)</td>
+<td>5 cr</td>
+</tr>
+<tr>
+<td><code>artistic</code></td>
+<td>FLUX Dev (Replicate)</td>
+<td>6 cr</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Video Generation (Interior Designer)</h2>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Model auto-selected</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>walkthrough</code> / <code>floorplan</code></td>
+<td>Google Veo 2 (30 cr)</td>
+</tr>
+<tr>
+<td><code>product</code> / <code>before_after</code> / <code>social_reel</code></td>
+<td>Kling 1.6 Pro via Replicate (15 cr)</td>
+</tr>
+</tbody></table>
+<p>Replicate calls are async — if they exceed 50s the function stores the <code>replicate_prediction_id</code> and returns a <code>job_id</code> for frontend polling.</p>
+<hr>
+<h2>KAI Agent Tools (11 social tools)</h2>
+<p>All injected in <code>agent-chat/index.ts</code> under the <code>if (isAdmin)</code> RBAC gate:</p>
+<table>
+<thead>
+<tr>
+<th>Tool name</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>connect_social_account</code></td>
+<td>Returns Late.dev OAuth URL for a platform</td>
+</tr>
+<tr>
+<td><code>list_social_accounts</code></td>
+<td>Lists connected accounts for the user</td>
+</tr>
+<tr>
+<td><code>disconnect_social_account</code></td>
+<td>Disconnects a social account</td>
+</tr>
+<tr>
+<td><code>generate_social_post</code></td>
+<td>Claude generates 3 captions + hashtags (2 cr)</td>
+</tr>
+<tr>
+<td><code>generate_social_image</code></td>
+<td>Routes to xAI / Gemini / FLUX</td>
+</tr>
+<tr>
+<td><code>generate_social_video</code></td>
+<td>Kling 1.6 Pro or Veo video</td>
+</tr>
+<tr>
+<td><code>publish_social_post</code></td>
+<td>Publishes immediately via Late.dev</td>
+</tr>
+<tr>
+<td><code>schedule_social_post</code></td>
+<td>Schedules for a future time via Late.dev</td>
+</tr>
+<tr>
+<td><code>get_best_posting_time</code></td>
+<td>Late.dev ML-based best time suggestion</td>
+</tr>
+<tr>
+<td><code>get_post_analytics</code></td>
+<td>Fetches engagement metrics for a post</td>
+</tr>
+<tr>
+<td><code>get_account_insights</code></td>
+<td>Fetches account-level follower/reach data</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Background Agents</h2>
+<p>Two agents sync data automatically:</p>
+<table>
+<thead>
+<tr>
+<th>Agent type</th>
+<th>Schedule</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>social-analytics-sync</code></td>
+<td>Every 2 hours</td>
+<td>Syncs published posts missing analytics from Late.dev</td>
+</tr>
+<tr>
+<td><code>social-insights-sync</code></td>
+<td>Daily at 6am</td>
+<td>Snapshots account-level insights</td>
+</tr>
+</tbody></table>
+<p>Both registered in <code>supabase/functions/_shared/agents/registry.ts</code>.</p>
+<hr>
+<h2>Admin Panel Routes</h2>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Component</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/admin/social-media/accounts</code></td>
+<td><code>SocialMediaAccountsPage</code> — read-only workspace overview of all connected accounts</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note:</strong> The Dashboard, Create, Calendar, and Analytics pages were removed. Social content creation is handled via the KAI agent (<code>/kai</code>). Account connection is per-user via <strong>My Profile → Social Accounts</strong>.</p>
+</blockquote>
+<h2>Per-User Account Connection</h2>
+<p>Users connect their own accounts from <strong>My Profile → Social Accounts</strong> (<code>/profile?tab=social-accounts</code>).</p>
+<p>The <code>SocialAccountsTab</code> component (<code>src/components/core/Profile/SocialAccountsTab.tsx</code>):</p>
+<ul>
+<li>Shows connected platforms with handle, follower count, last synced</li>
+<li>Connect button → calls <code>late-oauth</code> → opens Late.dev OAuth in new tab</li>
+<li>Disconnect button → marks account inactive in DB + notifies Late.dev</li>
+</ul>
+<hr>
+<h2>Credit Costs Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Caption generation (3 variants)</td>
+<td>2 cr</td>
+</tr>
+<tr>
+<td>Social image — lifestyle (xAI Aurora)</td>
+<td>10 cr</td>
+</tr>
+<tr>
+<td>Social image — product/interior (Gemini)</td>
+<td>5 cr</td>
+</tr>
+<tr>
+<td>Social image — artistic (FLUX Dev)</td>
+<td>6 cr</td>
+</tr>
+<tr>
+<td>Social video — Kling 1.6 Pro</td>
+<td>15 cr</td>
+</tr>
+<tr>
+<td>Social video — Veo 2</td>
+<td>30 cr</td>
+</tr>
+<tr>
+<td>Interior video — Veo 2</td>
+<td>30 cr</td>
+</tr>
+<tr>
+<td>Interior video — Kling 1.6 Pro</td>
+<td>15 cr</td>
+</tr>
+<tr>
+<td>Publishing via Late.dev</td>
+<td>0 cr (API cost covered by Late.dev plan)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Deployment Checklist</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Add secrets: <code>LATE_API_KEY</code>, <code>LATE_WEBHOOK_SECRET</code>, <code>XAI_API_KEY</code>, <code>GOOGLE_AI_API_KEY</code>, <code>REPLICATE_API_TOKEN</code></li>
+<li><input disabled="" type="checkbox"> Register webhook URL in Late.dev dashboard</li>
+<li><input disabled="" type="checkbox"> Register OAuth redirect URL in Late.dev dashboard</li>
+<li><input disabled="" type="checkbox"> Deploy edge functions (all 8 new functions are in <code>config.toml</code>)</li>
+<li><input disabled="" type="checkbox"> Verify <code>social_accounts</code>, <code>social_posts</code>, <code>social_post_analytics</code>, <code>social_account_insights</code> tables exist</li>
+<li><input disabled="" type="checkbox"> Verify background agents are registered in DB (<code>background_agents</code> table)</li>
+</ul>
+
+</div></body></html>

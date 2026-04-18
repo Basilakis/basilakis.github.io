@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Email API</h1>
+<h2>Overview</h2>
+<p>The Email API is a Supabase Edge Function that handles email sending, domain management, and analytics via <strong>Resend</strong>.</p>
+<p><strong>Edge Function:</strong> <code>email-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/email-api</code>
+<strong>Email Provider:</strong> <a href="https://resend.com">Resend</a></p>
+<blockquote>
+<p><strong>Migration note (2026-03-11):</strong> Email provider migrated from Amazon SES to Resend. Actions <code>verify-domain</code>, <code>check-domain</code>, <code>list-ses-domains</code>, and <code>sending-stats</code> have been removed. Domain verification is now managed directly in the <a href="https://resend.com/domains">Resend Dashboard</a>.</p>
+</blockquote>
+<hr>
+<h2>Authentication</h2>
+<p>All requests require a valid Supabase user JWT:</p>
+<pre><code class="language-http">Authorization: Bearer &lt;supabase_user_jwt_token&gt;
+apikey: &lt;SUPABASE_ANON_KEY&gt;
+</code></pre>
+<h3>cURL Example</h3>
+<pre><code class="language-bash">curl -X POST &quot;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/email-api&quot; \
+  -H &quot;Authorization: Bearer &lt;USER_JWT_TOKEN&gt;&quot; \
+  -H &quot;apikey: &lt;SUPABASE_ANON_KEY&gt;&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;action&quot;: &quot;send&quot;, &quot;to&quot;: &quot;user@example.com&quot;, &quot;subject&quot;: &quot;Test&quot;, &quot;html&quot;: &quot;&lt;p&gt;Hello&lt;/p&gt;&quot;}&#39;
+</code></pre>
+<hr>
+<h2>Actions</h2>
+<p>All requests use <code>POST</code> with an <code>action</code> field in the body.</p>
+<hr>
+<h3>1. Send Email</h3>
+<p>Send a transactional, marketing, or notification email. Supports plain HTML/text or a pre-saved template.</p>
+<p><strong>Action:</strong> <code>send</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;send&#39;,
+  to: string | string[],              // Required. Up to 50 recipients.
+  subject: string,                    // Required.
+  from?: string,                      // Sender email. Default: platform default from DB.
+  fromName?: string,                  // Sender display name.
+  html?: string,                      // HTML body (required if no template and no text).
+  text?: string,                      // Plain text body (auto-generated from html if omitted).
+  templateSlug?: string,              // Slug of a saved template in email_templates table.
+  variables?: Record&lt;string, string&gt;, // Template variable substitution values.
+  cc?: string[],                      // CC recipients.
+  bcc?: string[],                     // BCC recipients.
+  replyTo?: string,                   // Reply-to address.
+  tags?: Record&lt;string, string&gt;,      // Key-value tags for tracking (max 256 chars each).
+  emailType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;notification&#39;  // Default: &#39;transactional&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  messageId: string,  // Resend email ID (UUID)
+  logId: string       // email_logs record ID
+}
+</code></pre>
+<p><strong>Supabase SDK Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: {
+    action: &#39;send&#39;,
+    to: &#39;user@example.com&#39;,
+    subject: &#39;Welcome to Material Kai&#39;,
+    templateSlug: &#39;welcome&#39;,
+    variables: {
+      userName: &#39;John Doe&#39;,
+      loginUrl: &#39;https://app.materialkai.com/login&#39;
+    },
+    emailType: &#39;transactional&#39;
+  }
+});
+// Returns: { success: true, messageId: &quot;49a3999c-...&quot;, logId: &quot;uuid&quot; }
+</code></pre>
+<p><strong>cURL Example:</strong></p>
+<pre><code class="language-bash">curl -X POST &quot;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/email-api&quot; \
+  -H &quot;Authorization: Bearer &lt;USER_JWT&gt;&quot; \
+  -H &quot;apikey: &lt;ANON_KEY&gt;&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;action&quot;: &quot;send&quot;,
+    &quot;to&quot;: &quot;customer@example.com&quot;,
+    &quot;subject&quot;: &quot;Your order is confirmed&quot;,
+    &quot;html&quot;: &quot;&lt;h1&gt;Order Confirmed&lt;/h1&gt;&lt;p&gt;Thank you for your order!&lt;/p&gt;&quot;,
+    &quot;emailType&quot;: &quot;transactional&quot;
+  }&#39;
+</code></pre>
+<hr>
+<h3>2. Add Domain</h3>
+<p>Register a domain in the platform database. <strong>Requires admin role.</strong></p>
+<blockquote>
+<p>Domain DNS verification must be completed in the <a href="https://resend.com/domains">Resend Dashboard</a> before marking as verified.</p>
+</blockquote>
+<p><strong>Action:</strong> <code>add-domain</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;add-domain&#39;,
+  domain: string  // e.g. &#39;materialshub.gr&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  domain: {
+    id: string,
+    domain: string,
+    verification_status: &#39;pending&#39;,
+    created_at: string
+  },
+  message: string  // Instructions for Resend dashboard verification
+}
+</code></pre>
+<hr>
+<h3>3. Mark Domain Verified</h3>
+<p>Mark a domain as verified after confirming DNS records in the Resend dashboard. <strong>Requires admin role.</strong></p>
+<p><strong>Action:</strong> <code>mark-domain-verified</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;mark-domain-verified&#39;,
+  domain: string  // e.g. &#39;materialshub.gr&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true
+}
+</code></pre>
+<hr>
+<h3>4. List Domains</h3>
+<p>Get all email domains from the database.</p>
+<p><strong>Action:</strong> <code>domains</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;domains&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  domains: Array&lt;{
+    id: string,
+    domain: string,
+    verification_status: &#39;pending&#39; | &#39;verified&#39; | &#39;failed&#39;,
+    is_default: boolean,
+    bounce_rate: number,
+    complaint_rate: number,
+    reputation_status: &#39;healthy&#39; | &#39;warning&#39; | &#39;critical&#39;,
+    created_at: string,
+    created_by: string
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: { action: &#39;domains&#39; }
+});
+// Returns: { success: true, domains: [...] }
+</code></pre>
+<hr>
+<h3>5. Get Email Logs</h3>
+<p>Retrieve email sending logs with optional filters.</p>
+<p><strong>Action:</strong> <code>logs</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;logs&#39;,
+  status?: &#39;queued&#39; | &#39;sent&#39; | &#39;delivered&#39; | &#39;bounced&#39; | &#39;complained&#39; | &#39;failed&#39;,
+  emailType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;notification&#39;,
+  limit?: number  // Default: 50
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  logs: Array&lt;{
+    id: string,
+    template_id?: string,
+    domain_id?: string,
+    from_email: string,
+    from_name?: string,
+    to_email: string,
+    cc_emails?: string[],
+    bcc_emails?: string[],
+    reply_to?: string,
+    subject: string,
+    html_body?: string,
+    text_body?: string,
+    status: string,
+    message_id?: string,     // Resend email ID
+    email_type: string,
+    tags?: Record&lt;string, string&gt;,
+    variables?: Record&lt;string, string&gt;,
+    sent_at?: string,
+    delivered_at?: string,
+    opened_at?: string,
+    clicked_at?: string,
+    bounced_at?: string,
+    bounce_reason?: string,
+    created_at: string,
+    created_by: string
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: {
+    action: &#39;logs&#39;,
+    status: &#39;delivered&#39;,
+    emailType: &#39;transactional&#39;,
+    limit: 100
+  }
+});
+</code></pre>
+<hr>
+<h3>6. Get Analytics</h3>
+<p>Retrieve aggregated email analytics. Data is sourced from the <code>email_analytics</code> table, populated by Resend webhook events.</p>
+<p><strong>Action:</strong> <code>analytics</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: &#39;analytics&#39;,
+  dateRange?: {
+    start: string,  // ISO date string, e.g. &#39;2024-01-01&#39;
+    end: string     // ISO date string, e.g. &#39;2024-01-31&#39;
+  }
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  totalSent: number,
+  totalDelivered: number,
+  totalBounced: number,
+  totalComplained: number,
+  totalOpened: number,
+  totalClicked: number,
+  deliveryRate: number,    // Percentage (0–100)
+  bounceRate: number,      // Percentage (0–100)
+  complaintRate: number,   // Percentage (0–100)
+  openRate: number,        // Percentage (0–100)
+  clickRate: number,       // Percentage (0–100)
+  dailyData: Array&lt;{
+    date: string,
+    total_sent: number,
+    total_delivered: number,
+    total_bounced: number,
+    total_complained: number,
+    total_opened: number,
+    total_clicked: number
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data } = await supabase.functions.invoke(&#39;email-api&#39;, {
+  body: {
+    action: &#39;analytics&#39;,
+    dateRange: { start: &#39;2024-01-01&#39;, end: &#39;2024-01-31&#39; }
+  }
+});
+</code></pre>
+<hr>
+<h2>Actions Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+<th>Auth Required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>send</code></td>
+<td>Send an email (HTML, text, or template)</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>add-domain</code></td>
+<td>Add a domain to the database</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>mark-domain-verified</code></td>
+<td>Mark a domain verified after Resend confirmation</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>domains</code></td>
+<td>List all domains from database</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td>Get email sending logs</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>analytics</code></td>
+<td>Get aggregated email analytics</td>
+<td>User</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Webhook Events</h2>
+<p>Resend sends delivery events to:</p>
+<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/email-webhooks
+</code></pre>
+<p>Configure this endpoint in the <a href="https://resend.com/webhooks">Resend Dashboard → Webhooks</a>.</p>
+<p><strong>Events tracked:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Resend Event</th>
+<th>Internal Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>email.sent</code></td>
+<td><code>send</code></td>
+<td>Email accepted by Resend</td>
+</tr>
+<tr>
+<td><code>email.delivered</code></td>
+<td><code>delivery</code></td>
+<td>Successfully delivered to recipient</td>
+</tr>
+<tr>
+<td><code>email.delivery_delayed</code></td>
+<td><code>delivery_delayed</code></td>
+<td>Temporary delivery delay</td>
+</tr>
+<tr>
+<td><code>email.bounced</code></td>
+<td><code>bounce</code></td>
+<td>Permanent bounce</td>
+</tr>
+<tr>
+<td><code>email.complained</code></td>
+<td><code>complaint</code></td>
+<td>Spam complaint</td>
+</tr>
+<tr>
+<td><code>email.opened</code></td>
+<td><code>open</code></td>
+<td>Recipient opened the email</td>
+</tr>
+<tr>
+<td><code>email.clicked</code></td>
+<td><code>click</code></td>
+<td>Recipient clicked a link</td>
+</tr>
+</tbody></table>
+<p>Webhook signatures are verified using <code>RESEND_WEBHOOK_SECRET</code> (Svix HMAC-SHA256).</p>
+<hr>
+<h2>Error Handling</h2>
+<p>All errors return:</p>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string  // Human-readable error message
+}
+</code></pre>
+<p>Common errors:</p>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RESEND_API_KEY is not configured</code></td>
+<td>Secret not set in Supabase Edge Function secrets</td>
+</tr>
+<tr>
+<td><code>Template not found: &lt;slug&gt;</code></td>
+<td>Template slug doesn&#39;t exist or is inactive</td>
+</tr>
+<tr>
+<td><code>Either html or text body must be provided</code></td>
+<td>No content in send request</td>
+</tr>
+<tr>
+<td><code>Unauthorized: Admin access required</code></td>
+<td>Domain actions called by non-admin user</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../email-system.md">Email System Documentation</a></li>
+<li><a href="../deployment-guide.md">Deployment Guide — Secrets</a></li>
+<li><a href="https://resend.com/docs/api-reference/emails/send-email">Resend API Reference</a></li>
+</ul>
+
+</div></body></html>

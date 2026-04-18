@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Virtual Staging API</h1>
+<p><strong>Function:</strong> <code>generate-virtual-staging</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/generate-virtual-staging</code>
+<strong>Auth:</strong> Authenticated users (JWT required)
+<strong>Credits:</strong> 20 per generation</p>
+<p>Full documentation: <a href="../virtual-staging.md">virtual-staging.md</a></p>
+<hr>
+<h2>Stage a room</h2>
+<pre><code>POST /functions/v1/generate-virtual-staging
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{
+  &quot;source_image_url&quot;: &quot;https://...&quot;,
+  &quot;room&quot;: &quot;living_room&quot;,
+  &quot;furniture_style&quot;: &quot;scandinavian&quot;,
+  &quot;furniture_items&quot;: &quot;optional free-text override&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<h3>Room options</h3>
+<p><code>living_room</code> · <code>bedroom</code> · <code>dining_room</code> · <code>kitchen</code> · <code>bathroom</code> · <code>home_office</code> · <code>kids_room</code> · <code>outdoor</code></p>
+<h3>Style options</h3>
+<p><code>modern</code> · <code>scandinavian</code> · <code>industrial</code> · <code>traditional</code> · <code>bohemian</code> · <code>minimalist</code> · <code>luxury</code> · <code>rustic</code></p>
+<hr>
+<h2>Response</h2>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;image_url&quot;: &quot;https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1/object/public/generation-images/virtual-staging/uuid.jpg&quot;,
+  &quot;credits_used&quot;: 20
+}
+</code></pre>
+<h2>Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code></td>
+<td>Missing required fields</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Unauthorized</td>
+</tr>
+<tr>
+<td><code>402</code></td>
+<td>Insufficient credits</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Replicate model error</td>
+</tr>
+</tbody></table>
+
+</div></body></html>

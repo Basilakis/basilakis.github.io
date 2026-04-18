@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Background Agent Framework</h1>
+<p>Autonomous background agents that run on schedules, respond to events, or are triggered manually. Each agent is a typed, registered runner that operates on workspace data using Claude and the MIVAA API.</p>
+<hr>
+<h2>Overview</h2>
+<p>Background agents are long-running tasks that run outside the request/response cycle. They are stored as configuration records in the DB, and each execution is tracked end-to-end with logs and heartbeats.</p>
+<p><strong>Admin UI:</strong> <code>/admin/background-agents</code></p>
+<p><strong>Edge Functions:</strong></p>
+<ul>
+<li><code>background-agent-runner</code> — Universal executor for all agent types</li>
+<li><code>agent-scheduler-cron</code> — pg_cron every minute; dispatches agents due to run</li>
+<li><code>auto-recovery-cron</code> — Every 5 minutes; detects and recovers stuck runs</li>
+</ul>
+<hr>
+<h2>Architecture</h2>
+<pre><code>DB record (background_agents)
+    ↓
+Triggered by: cron | event | manual | chain (parent completion)
+    ↓
+agent-scheduler-cron / event emitter / UI invokes background-agent-runner
+    ↓
+Runner authenticates → fetches agent config → looks up runner in registry
+    ↓
+AgentRunner.run(context) executes (Claude, MIVAA API, Supabase)
+    ↓
+Tasks &gt;25s → throws DelegateToMivaaError → runner POSTs to Python backend
+    ↓
+Results written to agent_runs + agent_run_logs
+    ↓
+chain triggers: child agents with parent_agent_id auto-dispatch on completion
+</code></pre>
+<hr>
+<h2>Registered Agent Types</h2>
+<table>
+<thead>
+<tr>
+<th>Agent Type</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kai-task</code></td>
+<td>KAI Task Agent</td>
+<td>Runs arbitrary KAI agent tool calls autonomously</td>
+</tr>
+<tr>
+<td><code>product-enrichment</code></td>
+<td>Product Enrichment</td>
+<td>Fills missing product metadata using Claude + web search</td>
+</tr>
+<tr>
+<td><code>material-tagger</code></td>
+<td>Material Tagger</td>
+<td>Auto-tags products with structured material classifications</td>
+</tr>
+<tr>
+<td><code>social-analytics-sync</code></td>
+<td>Social Analytics Sync</td>
+<td>Syncs per-post engagement metrics from Late.dev</td>
+</tr>
+<tr>
+<td><code>social-insights-sync</code></td>
+<td>Social Insights Sync</td>
+<td>Syncs account-level follower/reach snapshots from Late.dev</td>
+</tr>
+<tr>
+<td><code>factory-enrichment</code></td>
+<td>Factory Enrichment</td>
+<td>Enriches factory/manufacturer records via Apollo, Firecrawl, Hunter.io</td>
+</tr>
+</tbody></table>
+<p>To add a new agent type: implement <code>AgentRunner</code> in <code>_shared/agents/your-agent.ts</code>, import and add to <code>_shared/agents/registry.ts</code>.</p>
+<hr>
+<h2>Trigger Types</h2>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>How it fires</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cron</code></td>
+<td><code>agent-scheduler-cron</code> checks schedule expression every minute</td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td><code>emitAgentEvent(eventType, data)</code> in <code>_shared/flow-events.ts</code> matches <code>event_type</code></td>
+</tr>
+<tr>
+<td><code>manual</code></td>
+<td>Admin clicks &quot;Run Now&quot; in UI; calls <code>background-agent-runner</code> directly</td>
+</tr>
+<tr>
+<td><code>chain</code></td>
+<td><code>trigger_type=&#39;chain&#39;</code> + <code>parent_agent_id</code> — auto-dispatched when parent <code>completed</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Database Tables</h2>
+<h3><code>background_agents</code></h3>
+<p>Configuration records. One row = one agent definition.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>uuid</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>text</td>
+<td>Human-readable name</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>What the agent does</td>
+</tr>
+<tr>
+<td><code>agent_type</code></td>
+<td>text</td>
+<td>Registry key (e.g., <code>product-enrichment</code>)</td>
+</tr>
+<tr>
+<td><code>trigger_type</code></td>
+<td>text</td>
+<td><code>cron</code> | <code>event</code> | <code>manual</code> | <code>chain</code></td>
+</tr>
+<tr>
+<td><code>schedule</code></td>
+<td>text</td>
+<td>Cron expression (when <code>trigger_type = &#39;cron&#39;</code>)</td>
+</tr>
+<tr>
+<td><code>event_type</code></td>
+<td>text</td>
+<td>Event to listen for (when <code>trigger_type = &#39;event&#39;</code>)</td>
+</tr>
+<tr>
+<td><code>parent_agent_id</code></td>
+<td>uuid</td>
+<td>Parent agent (when <code>trigger_type = &#39;chain&#39;</code>)</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>text</td>
+<td>Claude model override</td>
+</tr>
+<tr>
+<td><code>system_prompt_override</code></td>
+<td>text</td>
+<td>Custom system prompt</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>jsonb</td>
+<td>Agent-specific input config</td>
+</tr>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean</td>
+<td>Whether the agent will fire</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>uuid</td>
+<td>Scope (null = global)</td>
+</tr>
+<tr>
+<td><code>last_run_at</code></td>
+<td>timestamptz</td>
+<td>Last execution time</td>
+</tr>
+<tr>
+<td><code>last_run_status</code></td>
+<td>text</td>
+<td>Last execution result</td>
+</tr>
+<tr>
+<td><code>run_count</code></td>
+<td>int</td>
+<td>Total executions</td>
+</tr>
+</tbody></table>
+<h3><code>agent_runs</code></h3>
+<p>Execution records. One row = one agent run. Real-time enabled.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>uuid</td>
+<td>Run ID</td>
+</tr>
+<tr>
+<td><code>agent_id</code></td>
+<td>uuid</td>
+<td>FK to <code>background_agents</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>text</td>
+<td><code>pending</code> | <code>processing</code> | <code>completed</code> | <code>failed</code> | <code>cancelled</code></td>
+</tr>
+<tr>
+<td><code>triggered_by</code></td>
+<td>text</td>
+<td><code>cron</code> | <code>event</code> | <code>manual</code> | <code>chain</code> | <code>api</code></td>
+</tr>
+<tr>
+<td><code>input_data</code></td>
+<td>jsonb</td>
+<td>Config merged with runtime input overrides</td>
+</tr>
+<tr>
+<td><code>output_data</code></td>
+<td>jsonb</td>
+<td>Final output from agent</td>
+</tr>
+<tr>
+<td><code>error_message</code></td>
+<td>text</td>
+<td>Error detail on failure</td>
+</tr>
+<tr>
+<td><code>model_used</code></td>
+<td>text</td>
+<td>Claude model that ran</td>
+</tr>
+<tr>
+<td><code>input_tokens</code></td>
+<td>int</td>
+<td>LLM input token count</td>
+</tr>
+<tr>
+<td><code>output_tokens</code></td>
+<td>int</td>
+<td>LLM output token count</td>
+</tr>
+<tr>
+<td><code>credits_debited</code></td>
+<td>int</td>
+<td>Credits consumed</td>
+</tr>
+<tr>
+<td><code>started_at</code></td>
+<td>timestamptz</td>
+<td>Execution start</td>
+</tr>
+<tr>
+<td><code>completed_at</code></td>
+<td>timestamptz</td>
+<td>Execution end</td>
+</tr>
+<tr>
+<td><code>duration_ms</code></td>
+<td>int</td>
+<td>Wall-clock duration</td>
+</tr>
+<tr>
+<td><code>last_heartbeat</code></td>
+<td>timestamptz</td>
+<td>Updated every ~10s while running (used by auto-recovery)</td>
+</tr>
+<tr>
+<td><code>recovery_attempts</code></td>
+<td>int</td>
+<td>Times auto-recovery has re-dispatched this run</td>
+</tr>
+<tr>
+<td><code>delegated_to_python</code></td>
+<td>boolean</td>
+<td>True if delegated to MIVAA Python backend</td>
+</tr>
+<tr>
+<td><code>python_job_id</code></td>
+<td>text</td>
+<td>Background job ID on Python side</td>
+</tr>
+<tr>
+<td><code>parent_run_id</code></td>
+<td>uuid</td>
+<td>Parent run (for chain executions)</td>
+</tr>
+</tbody></table>
+<h3><code>agent_run_logs</code></h3>
+<p>Structured log entries per run. Real-time enabled.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>run_id</code></td>
+<td>uuid</td>
+<td>FK to <code>agent_runs</code></td>
+</tr>
+<tr>
+<td><code>level</code></td>
+<td>text</td>
+<td><code>debug</code> | <code>info</code> | <code>warn</code> | <code>error</code></td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td>text</td>
+<td>Log message</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>jsonb</td>
+<td>Structured log payload</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>timestamptz</td>
+<td>Log timestamp</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Cancellation</h2>
+<p>A run can be cancelled mid-flight by flipping <code>agent_runs.status</code> to <code>&#39;cancelled&#39;</code> (the admin dashboard&#39;s &quot;Cancel&quot; button does exactly this). The signal is picked up on the agent&#39;s next heartbeat:</p>
+<ol>
+<li><code>ctx.heartbeat()</code> does a combined update+read: bumps <code>last_heartbeat</code> and reads back <code>status</code> in one round-trip</li>
+<li>If <code>status === &#39;cancelled&#39;</code>, it throws <code>CancelledError</code></li>
+<li>The runner catches <code>CancelledError</code>, finalizes the run with <code>status=&#39;cancelled&#39;</code> (not <code>failed</code>), and skips failure notifications</li>
+</ol>
+<p>Agents do <strong>not</strong> need to handle <code>CancelledError</code> themselves — let it bubble. Just call <code>ctx.heartbeat()</code> periodically (every ~10s) inside any long loop so cancellation is detected quickly. Without heartbeats the run will only stop at completion.</p>
+<hr>
+<h2>Auto-Recovery</h2>
+<p><code>auto-recovery-cron</code> runs every 5 minutes and:</p>
+<ol>
+<li>Finds runs with <code>status = &#39;processing&#39;</code> and <code>last_heartbeat</code> older than 8 minutes</li>
+<li>If <code>recovery_attempts &lt; 3</code> → re-dispatches the agent run, increments <code>recovery_attempts</code></li>
+<li>If <code>recovery_attempts &gt;= 3</code> → marks run as <code>failed</code> with message &quot;Auto-recovery limit reached&quot;</li>
+</ol>
+<p>Detected job types: <code>pdf_processing</code>, <code>xml_import</code>, <code>web_scraping</code>, background agent runs.</p>
+<hr>
+<h2>Delegation to Python</h2>
+<p>Tasks expected to run longer than 25 seconds should throw <code>DelegateToMivaaError</code>:</p>
+<pre><code class="language-typescript">throw new DelegateToMivaaError({ job_type: &#39;your-long-task&#39;, input: context.inputData });
+</code></pre>
+<p>The runner catches this, POSTs to <code>https://v1api.materialshub.gr/api/agents/run</code> (Python endpoint: <code>agent_routes.py</code>), stores the returned <code>python_job_id</code> in the run record, and marks it as <code>delegated_to_python = true</code>.</p>
+<hr>
+<h2>API</h2>
+<h3>Run an agent</h3>
+<pre><code>POST /functions/v1/background-agent-runner
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{
+  &quot;agent_id&quot;: &quot;uuid&quot;,
+  &quot;triggered_by&quot;: &quot;manual&quot;,
+  &quot;input_data&quot;: {}        // optional — overrides config
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;run_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;duration_ms&quot;: 4200,
+  &quot;output&quot;: { ... }
+}
+</code></pre>
+<h3>Get agent type catalog</h3>
+<pre><code>GET /functions/v1/background-agent-runner?catalog=1
+</code></pre>
+<p>Returns the registered agent type catalog (name, description, default tools, default model) for the UI dropdown.</p>
+<hr>
+<h2>Frontend Components</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BackgroundAgentsPage</code></td>
+<td><code>/admin/background-agents</code></td>
+<td>List, create, enable/disable agents</td>
+</tr>
+<tr>
+<td><code>AgentRunHistoryDrawer</code></td>
+<td>Same page</td>
+<td>Slide-out panel with run history</td>
+</tr>
+<tr>
+<td><code>AgentLogsViewer</code></td>
+<td>Same page</td>
+<td>Real-time log stream for a run</td>
+</tr>
+<tr>
+<td><code>CreateAgentModal</code></td>
+<td>Same page</td>
+<td>Form to define a new agent</td>
+</tr>
+</tbody></table>
+<p>The dashboard supports filtering by status / agent type, viewing real-time logs, and cancelling in-flight runs (see <a href="#cancellation">Cancellation</a>). Subscribes to <code>agent_runs</code> and <code>agent_run_logs</code> via Supabase Realtime for live updates.</p>
+<h3>Status tabs</h3>
+<p>The page exposes one extra synthetic status beyond the DB enum:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>all</code> / <code>pending</code> / <code>processing</code> / <code>completed</code> / <code>failed</code> / <code>cancelled</code></td>
+<td>Direct match on <code>agent_runs.status</code></td>
+</tr>
+<tr>
+<td><code>stuck</code></td>
+<td><code>status=&#39;processing&#39;</code> AND <code>last_heartbeat</code> older than <code>STUCK_MS</code> (8 min — same threshold the auto-recovery cron uses before re-dispatching)</td>
+</tr>
+</tbody></table>
+<p><code>isStuck(run)</code> lives in <a href="../src/services/backgroundAgents.ts"><code>src/services/backgroundAgents.ts</code></a> and is the single source of truth for the threshold.</p>
+<h3>Agent-level alerts</h3>
+<p>In addition to per-run rows, the list surfaces synthetic &quot;agent alert&quot; rows for problems that aren&#39;t tied to any single run:</p>
+<table>
+<thead>
+<tr>
+<th>Alert kind</th>
+<th>Condition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>disabled</code></td>
+<td><code>enabled=false</code> AND <code>trigger_type</code> is <code>cron</code> or <code>event</code> (the agent will never fire)</td>
+</tr>
+<tr>
+<td><code>never-ran</code></td>
+<td><code>enabled=true</code> AND <code>trigger_type=&#39;cron&#39;</code> AND <code>last_run_at</code> is null (the schedule has never produced a run)</td>
+</tr>
+</tbody></table>
+<p>Alerts appear under the <code>all</code>, <code>failed</code>, and <code>stuck</code> tabs (folded into the <code>failed</code>/<code>stuck</code> counters so the tab badge matches what&#39;s visible).</p>
+<h3>Service API</h3>
+<p><code>src/services/backgroundAgents.ts</code> exposes:</p>
+<ul>
+<li><code>listAgents()</code> — all agent definitions</li>
+<li><code>listAllRuns(limit = 100)</code> — server-side ordered + limited query across every agent (single round-trip; replaces the old per-agent fan-out)</li>
+<li><code>listRuns(agentId, limit)</code> — runs for one agent (used by the history drawer)</li>
+<li><code>cancelRun(runId)</code> — flips <code>status</code> to <code>&#39;cancelled&#39;</code>; the running agent picks it up on its next heartbeat</li>
+<li><code>isStuck(run)</code> / <code>STUCK_MS</code> — stuck detection threshold</li>
+<li><code>formatDuration</code> / <code>statusColor</code> — display helpers</li>
+</ul>
+<hr>
+<p><strong>Last Updated:</strong> April 15, 2026</p>
+
+</div></body></html>

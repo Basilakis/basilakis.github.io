@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Quotes API</h1>
+<h2>Overview</h2>
+<p>The Quotes API manages quote requests and proposals in the system.</p>
+<p><strong>Edge Function:</strong> <code>quotes-api</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/quotes-api</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth:</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Endpoints</h2>
+<h3>1. Create Quote Request</h3>
+<p>Create a new quote request from a quote.</p>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/quote-requests</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  quote_id: string,        // Required - ID of the quote
+  workspace_id?: string,   // Optional workspace ID
+  notes?: string          // Optional notes for the quote request
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    user_id: string,
+    quote_id: string,
+    workspace_id: string | null,
+    status: &#39;pending&#39;,
+    items_count: number,
+    notes: string | null,
+    created_at: string,
+    updated_at: string
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/quotes-api/quote-requests`,
+  {
+    method: &#39;POST&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`,
+      &#39;Content-Type&#39;: &#39;application/json&#39;
+    },
+    body: JSON.stringify({
+      quote_id: &#39;quote-123&#39;,
+      workspace_id: &#39;workspace-456&#39;,
+      notes: &#39;Urgent request for Q1 project&#39;
+    })
+  }
+);
+</code></pre>
+<h3>2. List Quote Requests</h3>
+<p>Get all quote requests for the authenticated user.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/quote-requests</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: Array&lt;{
+    id: string,
+    user_id: string,
+    quote_id: string,
+    workspace_id: string | null,
+    status: &#39;pending&#39; | &#39;updated&#39; | &#39;approved&#39; | &#39;rejected&#39;,
+    items_count: number,
+    notes: string | null,
+    created_at: string,
+    updated_at: string
+  }&gt;
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/quotes-api/quote-requests`,
+  {
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    }
+  }
+);
+</code></pre>
+<h3>3. Get Quote Request</h3>
+<p>Get a specific quote request by ID.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/quote-requests/{quoteRequestId}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    user_id: string,
+    quote_id: string,
+    workspace_id: string | null,
+    status: &#39;pending&#39; | &#39;updated&#39; | &#39;approved&#39; | &#39;rejected&#39;,
+    items_count: number,
+    notes: string | null,
+    created_at: string,
+    updated_at: string
+  }
+}
+</code></pre>
+<h3>4. Update Quote Request Status</h3>
+<p>Update the status of a quote request.</p>
+<p><strong>Method:</strong> <code>PATCH</code><br><strong>Path:</strong> <code>/quote-requests/{quoteRequestId}</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  status: &#39;pending&#39; | &#39;updated&#39; | &#39;approved&#39; | &#39;rejected&#39;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    status: string,
+    updated_at: string
+    // ... other fields
+  }
+}
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const response = await fetch(
+  `${API_BASE}/quotes-api/quote-requests/${quoteRequestId}`,
+  {
+    method: &#39;PATCH&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`,
+      &#39;Content-Type&#39;: &#39;application/json&#39;
+    },
+    body: JSON.stringify({
+      status: &#39;approved&#39;
+    })
+  }
+);
+</code></pre>
+<h3>5. List Proposals</h3>
+<p>Get all proposals for the user&#39;s quote requests.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/proposals</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: Array&lt;{
+    id: string,
+    quote_request_id: string,
+    supplier_id: string,
+    total_price: number,
+    currency: string,
+    status: string,
+    valid_until: string,
+    notes: string | null,
+    created_at: string,
+    updated_at: string,
+    quote_requests: {
+      id: string,
+      quote_id: string,
+      status: string,
+      created_at: string
+    }
+  }&gt;
+}
+</code></pre>
+<h3>6. Get Proposal</h3>
+<p>Get a specific proposal by ID.</p>
+<p><strong>Method:</strong> <code>GET</code><br><strong>Path:</strong> <code>/proposals/{proposalId}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  data: {
+    id: string,
+    quote_request_id: string,
+    supplier_id: string,
+    total_price: number,
+    currency: string,
+    status: string,
+    valid_until: string,
+    notes: string | null,
+    items: Array&lt;{
+      id: string,
+      material_id: string,
+      quantity: number,
+      unit_price: number,
+      total_price: number
+    }&gt;,
+    created_at: string,
+    updated_at: string
+  }
+}
+</code></pre>
+<h2>Quote Request Status Flow</h2>
+<pre><code>pending → updated → approved
+                 ↘ rejected
+</code></pre>
+<ul>
+<li><strong>pending</strong>: Initial state when quote request is created</li>
+<li><strong>updated</strong>: Supplier has updated the quote</li>
+<li><strong>approved</strong>: User has approved the quote</li>
+<li><strong>rejected</strong>: User has rejected the quote</li>
+</ul>
+<h2>Quote Item Pricing Fields (2026-04)</h2>
+<p>Every row in <code>quote_items</code> carries optional audit metadata that tells you
+where its price came from. These fields are written by the admin &quot;Get price&quot;
+drawer (product detail page + quote builder) and are <strong>never</strong> written by
+customer-facing flows.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>unit_price</code></td>
+<td>numeric</td>
+<td>List / catalog price per unit</td>
+</tr>
+<tr>
+<td><code>discounted_price</code></td>
+<td>numeric</td>
+<td>Negotiated price per unit (optional)</td>
+</tr>
+<tr>
+<td><code>price_source</code></td>
+<td>text</td>
+<td>Provenance tag — see values below</td>
+</tr>
+<tr>
+<td><code>price_lookup_call_id</code></td>
+<td>uuid</td>
+<td>FK → <code>agent_tool_call_logs.id</code></td>
+</tr>
+</tbody></table>
+<p><strong><code>price_source</code> values:</strong></p>
+<ul>
+<li><code>manual</code> — admin typed the number by hand</li>
+<li><code>catalog</code> — inherited from the product catalog row</li>
+<li><code>kb:ai:&lt;agent_tool_call_logs.id&gt;</code> — composed by the <code>price_lookup</code> agent
+tool in AI mode. Full reasoning chain recoverable via the call id.</li>
+<li><code>kb:quick:&lt;kb_docs.id&gt;</code> — picked directly from a KB doc in quick-pick
+mode (no LLM). The document id tells you which price doc was sourced.</li>
+<li><code>product_price:&lt;product_prices.id&gt;</code> — inherited from a previously
+committed <code>product_prices</code> row.</li>
+</ul>
+<p><strong><code>price_lookup_call_id</code></strong> is populated only when the price was produced by
+the AI mode of the price lookup tool. When set, you can:</p>
+<pre><code class="language-sql">-- Full audit trail for a quote line
+SELECT
+  qi.unit_price, qi.discounted_price, qi.price_source,
+  atcl.created_at     AS lookup_ran_at,
+  atcl.tool_args,     -- the original search parameters
+  atcl.result_summary -- match count, hints, timing
+FROM quote_items qi
+LEFT JOIN agent_tool_call_logs atcl ON atcl.id = qi.price_lookup_call_id
+WHERE qi.id = &#39;&lt;item_id&gt;&#39;;
+</code></pre>
+<h3>Updating a quote item with pricing provenance</h3>
+<p>The Supabase <code>quote_items</code> table accepts these fields on <code>PATCH</code> / UPDATE.
+The frontend <code>QuotesService.updateItem()</code> signature accepts them directly:</p>
+<pre><code class="language-typescript">await quotesService.updateItem(itemId, {
+  unit_price: 62.00,
+  discounted_price: null,
+  price_source: &#39;kb:ai:f4a8...-...&#39;,
+  price_lookup_call_id: &#39;f4a8...-...&#39;,
+});
+</code></pre>
+<p>Third-party callers hitting Supabase REST / PostgREST should pass the same
+column names. RLS requires admin/owner role on the workspace owning the quote.</p>
+<h2>product_prices table (2026-04)</h2>
+<p>When an admin confirms a price from the product detail page, a row is
+upserted to <code>product_prices</code> keyed by <code>(workspace_id, product_id)</code>. This is
+the fast-lookup cache — subsequent &quot;Get price&quot; clicks on the same product
+return the cached row instantly instead of re-running the agent.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>uuid</td>
+<td>PK</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>uuid</td>
+<td>FK → workspaces; part of unique constraint</td>
+</tr>
+<tr>
+<td><code>product_id</code></td>
+<td>uuid</td>
+<td>FK → products; part of unique constraint</td>
+</tr>
+<tr>
+<td><code>list_price</code></td>
+<td>numeric(12,2)</td>
+<td>Catalog / MSRP</td>
+</tr>
+<tr>
+<td><code>discount_price</code></td>
+<td>numeric(12,2)</td>
+<td>Negotiated price</td>
+</tr>
+<tr>
+<td><code>discount_percent</code></td>
+<td>numeric(5,2)</td>
+<td>Stored percentage</td>
+</tr>
+<tr>
+<td><code>currency</code></td>
+<td>text</td>
+<td>Default <code>EUR</code></td>
+</tr>
+<tr>
+<td><code>unit</code></td>
+<td>text</td>
+<td>e.g. <code>m²</code>, <code>piece</code>, <code>box</code></td>
+</tr>
+<tr>
+<td><code>moq</code></td>
+<td>integer</td>
+<td>Minimum order quantity</td>
+</tr>
+<tr>
+<td><code>lead_time_days</code></td>
+<td>integer</td>
+<td>Delivery lead time</td>
+</tr>
+<tr>
+<td><code>source_kb_doc_ids</code></td>
+<td>jsonb</td>
+<td>Array of <code>kb_docs.id</code> values</td>
+</tr>
+<tr>
+<td><code>source_snippet</code></td>
+<td>text</td>
+<td>First matching chunk, for audit</td>
+</tr>
+<tr>
+<td><code>price_lookup_call_id</code></td>
+<td>uuid</td>
+<td>FK → <code>agent_tool_call_logs.id</code></td>
+</tr>
+<tr>
+<td><code>confirmed_by</code></td>
+<td>uuid</td>
+<td>FK → user_profiles</td>
+</tr>
+<tr>
+<td><code>confirmed_at</code></td>
+<td>timestamptz</td>
+<td>When the admin clicked &quot;Use this price&quot;</td>
+</tr>
+<tr>
+<td><code>valid_until</code></td>
+<td>date</td>
+<td>Optional hard expiry</td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>text</td>
+<td>Admin free-text</td>
+</tr>
+</tbody></table>
+<p><strong>RLS:</strong> all policies require <code>admin</code> or <code>owner</code> role in the workspace.
+Regular users cannot read this table.</p>
+<h2>Error Handling</h2>
+<p>All errors return a standard format:</p>
+<pre><code class="language-typescript">{
+  error: string  // Error message
+}
+</code></pre>
+<p><strong>Common Error Codes:</strong></p>
+<ul>
+<li><code>401</code> - Unauthorized (missing or invalid token)</li>
+<li><code>404</code> - Quote request or proposal not found</li>
+<li><code>400</code> - Bad request (missing quote_id, invalid status)</li>
+<li><code>500</code> - Internal server error</li>
+</ul>
+
+</div></body></html>

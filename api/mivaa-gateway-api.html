@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>MIVAA Gateway API</h1>
+<h2>Overview</h2>
+<p>The MIVAA Gateway is a Supabase Edge Function that acts as a proxy to the MIVAA Python backend service. It provides access to all backend APIs including RAG, search, AI services, and more.</p>
+<p><strong>Edge Function:</strong> <code>mivaa-gateway</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/mivaa-gateway</code><br><strong>Backend Service:</strong> <code>https://v1api.materialshub.gr</code></p>
+<h2>Authentication</h2>
+<p>Requests can use either:</p>
+<ol>
+<li>Supabase Auth token (recommended for user-specific operations)</li>
+<li>MIVAA API key (for service-to-service calls)</li>
+</ol>
+<pre><code class="language-typescript">// Option 1: Supabase Auth
+Authorization: Bearer &lt;supabase_access_token&gt;
+
+// Option 2: MIVAA API Key
+X-API-Key: &lt;mivaa_api_key&gt;
+</code></pre>
+<h2>Request Format</h2>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  action: string,              // Required - Endpoint action (see available actions below)
+  payload?: object,            // Optional - Request payload
+  params?: object,             // Optional - URL parameters
+  method?: string              // Optional - HTTP method override
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  data?: any,
+  error?: string,
+  metadata?: {
+    processingTime: number,
+    endpoint: string
+  }
+}
+</code></pre>
+<h2>Available Actions</h2>
+<h3>Core Endpoints</h3>
+<h4>Health Check</h4>
+<pre><code class="language-typescript">{
+  action: &#39;health_check&#39;
+}
+</code></pre>
+<h3>Knowledge Base Routes (NEW v2.3.0 · extended 2026-04 for pricing)</h3>
+<h4>Create Document (upsert-by-title)</h4>
+<pre><code class="language-typescript">{
+  action: &#39;kb_create_document&#39;,
+  payload: {
+    workspace_id: string,
+    title: string,
+    content: string,
+    content_markdown?: string,
+    summary?: string,
+    category_id?: string,
+    seo_keywords?: string[],
+    status?: &#39;draft&#39; | &#39;published&#39; | &#39;archived&#39;,
+    visibility?: &#39;workspace&#39; | &#39;private&#39; | &#39;public&#39;,
+    metadata?: object,
+    // Only valid when category is &quot;Pricing&quot;. Enables the price_lookup agent tool
+    // to classify how the doc contributes to a price composition.
+    price_doc_type?: &#39;price_list&#39; | &#39;discount_rule&#39; | &#39;contract_terms&#39; | &#39;promotion&#39;
+  }
+}
+</code></pre>
+<p><strong>Upsert semantics (2026-04):</strong> when a doc with the same <code>(workspace_id, title, category_id)</code>
+already exists, the endpoint updates it in place and only regenerates the embedding if
+the <code>content</code> field actually changed. Re-uploading a manufacturer price list with the
+same title therefore refreshes the prices without creating duplicates.</p>
+<h4>Update Document</h4>
+<pre><code class="language-typescript">{
+  action: &#39;kb_update_document&#39;,
+  params: { doc_id: string },
+  payload: {
+    title?: string,
+    content?: string,
+    content_markdown?: string,
+    summary?: string,
+    category_id?: string,
+    seo_keywords?: string[],
+    status?: &#39;draft&#39; | &#39;published&#39; | &#39;archived&#39;,
+    visibility?: &#39;workspace&#39; | &#39;private&#39; | &#39;public&#39;,
+    metadata?: object,
+    price_doc_type?: &#39;price_list&#39; | &#39;discount_rule&#39; | &#39;contract_terms&#39; | &#39;promotion&#39;
+  }
+}
+</code></pre>
+<h4>Search Documents (admin management)</h4>
+<pre><code class="language-typescript">{
+  action: &#39;kb_search&#39;,
+  payload: {
+    workspace_id: string,
+    query: string,
+    search_type?: &#39;semantic&#39; | &#39;full_text&#39; | &#39;hybrid&#39;,
+    limit?: number,
+    // All filters below are optional (added 2026-04)
+    category_id?: string,
+    category_slug?: string,     // e.g. &quot;pricing&quot; — restricts to one category
+    price_doc_type?: &#39;price_list&#39; | &#39;discount_rule&#39; | &#39;contract_terms&#39; | &#39;promotion&#39;,
+    allowed_access_levels?: (&#39;admin&#39; | &#39;agent&#39; | &#39;public&#39;)[],
+    // Admin search defaults to false (drafts included); set true to exclude drafts.
+    require_published?: boolean,
+    match_threshold?: number    // 0.0-1.0 for semantic, default 0.5
+  }
+}
+</code></pre>
+<p>Each result now includes:</p>
+<ul>
+<li><code>category_slug</code>, <code>category_name</code> — resolved from the joined category</li>
+<li><code>price_doc_type</code> — the sub-type when the doc is in the Pricing category</li>
+</ul>
+<h4>Search Knowledge Base (agent-facing)</h4>
+<pre><code class="language-typescript">{
+  action: &#39;search_knowledge_base&#39;,
+  payload: {
+    query: string,
+    workspace_id: string,
+    search_types?: (&#39;chunks&#39; | &#39;products&#39; | &#39;entities&#39; | &#39;kb_docs&#39; | &#39;images&#39;)[],
+    top_k?: number,
+    similarity_threshold?: number,
+    // &#39;admin&#39; sees all access levels, &#39;agent&#39; sees agent+public, &#39;public&#39; sees public only
+    caller?: &#39;admin&#39; | &#39;agent&#39; | &#39;public&#39;,
+    // NEW 2026-04 — scope the kb_docs portion of the search
+    category_id?: string,
+    category_slug?: string,
+    price_doc_type?: &#39;price_list&#39; | &#39;discount_rule&#39; | &#39;contract_terms&#39; | &#39;promotion&#39;
+  }
+}
+</code></pre>
+<p>When scoped to <code>category_slug: &#39;pricing&#39;</code>, chunks include <code>price_doc_type</code>,
+<code>category_slug</code>, and <code>category_name</code> so the <code>price_lookup</code> agent tool can
+classify each match when composing a price.</p>
+<h4>Create from PDF</h4>
+<pre><code class="language-typescript">{
+  action: &#39;kb_create_from_pdf&#39;,
+  payload: {
+    file_url: string,
+    title?: string,
+    category_id?: string
+  }
+}
+</code></pre>
+<h4>Create Category</h4>
+<pre><code class="language-typescript">{
+  action: &#39;kb_create_category&#39;,
+  payload: {
+    workspace_id: string,
+    name: string,
+    slug?: string,                // e.g. &quot;pricing&quot; — used by category filters
+    description?: string,
+    icon?: string,
+    color?: string,
+    access_level?: &#39;admin&#39; | &#39;agent&#39; | &#39;public&#39;,
+    trigger_keyword?: string      // optional gate for agent-level categories
+  }
+}
+</code></pre>
+<p><strong>Creating the &quot;Pricing&quot; category:</strong></p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;kb_create_category&quot;,
+  &quot;payload&quot;: {
+    &quot;workspace_id&quot;: &quot;&lt;uuid&gt;&quot;,
+    &quot;name&quot;: &quot;Pricing&quot;,
+    &quot;slug&quot;: &quot;pricing&quot;,
+    &quot;access_level&quot;: &quot;admin&quot;,
+    &quot;trigger_keyword&quot;: &quot;price&quot;
+  }
+}
+</code></pre>
+<h3>RAG Routes</h3>
+<h4>Upload Document</h4>
+<pre><code class="language-typescript">{
+  action: &#39;rag_upload&#39;,
+  payload: {
+    file_url: string,
+    category?: string,
+    workspace_id?: string,
+    title?: string
+  }
+}
+</code></pre>
+<h4>RAG Search</h4>
+<pre><code class="language-typescript">{
+  action: &#39;rag_search&#39;,
+  payload: {
+    query: string,
+    top_k?: number,
+    strategy?: &#39;semantic&#39; | &#39;vector&#39; | &#39;hybrid&#39; | &#39;mmr&#39; | &#39;multimodal&#39; | &#39;material&#39;,
+    include_metadata?: boolean
+  }
+}
+</code></pre>
+<h4>RAG Query</h4>
+<pre><code class="language-typescript">{
+  action: &#39;rag_query&#39;,
+  payload: {
+    query: string,
+    context_limit?: number,
+    include_sources?: boolean
+  }
+}
+</code></pre>
+<h4>Get Job Status</h4>
+<pre><code class="language-typescript">{
+  action: &#39;rag_get_job&#39;,
+  params: {
+    job_id: string
+  }
+}
+</code></pre>
+<h3>Search Routes</h3>
+<p>Use <code>rag_search</code> with a <code>strategy</code> parameter for all search operations. See <a href="#rag--document-processing">RAG/Document Processing actions</a> above.</p>
+<h3>AI Services</h3>
+<h4>Classify Document</h4>
+<pre><code class="language-typescript">{
+  action: &#39;ai_classify_document&#39;,
+  payload: {
+    document_id: string,
+    classification_type: string
+  }
+}
+</code></pre>
+<h4>Detect Product Boundaries</h4>
+<pre><code class="language-typescript">{
+  action: &#39;ai_detect_boundaries&#39;,
+  payload: {
+    chunks: Array&lt;object&gt;,
+    threshold?: number
+  }
+}
+</code></pre>
+<h4>Validate Product</h4>
+<pre><code class="language-typescript">{
+  action: &#39;ai_validate_product&#39;,
+  payload: {
+    product_data: object,
+    validation_rules?: object
+  }
+}
+</code></pre>
+<h3>Image Processing</h3>
+<h4>Analyze Image</h4>
+<pre><code class="language-typescript">{
+  action: &#39;images_analyze&#39;,
+  payload: {
+    image_url: string,
+    analysis_type?: &#39;classification&#39; | &#39;detection&#39; | &#39;segmentation&#39;
+  }
+}
+</code></pre>
+<h4>Image Search</h4>
+<pre><code class="language-typescript">{
+  action: &#39;images_search&#39;,
+  payload: {
+    query_image_url: string,
+    limit?: number
+  }
+}
+</code></pre>
+<h3>Admin Routes</h3>
+<h4>List Jobs</h4>
+<pre><code class="language-typescript">{
+  action: &#39;admin_list_jobs&#39;,
+  payload: {
+    status?: &#39;pending&#39; | &#39;processing&#39; | &#39;completed&#39; | &#39;failed&#39;,
+    limit?: number,
+    offset?: number
+  }
+}
+</code></pre>
+<h4>Job Statistics</h4>
+<pre><code class="language-typescript">{
+  action: &#39;admin_job_statistics&#39;
+}
+</code></pre>
+<h4>System Health</h4>
+<pre><code class="language-typescript">{
+  action: &#39;admin_system_health&#39;
+}
+</code></pre>
+<h2>File Upload</h2>
+<p>For file uploads (e.g., PDF processing), use multipart/form-data:</p>
+<pre><code class="language-typescript">const formData = new FormData();
+formData.append(&#39;file&#39;, fileBlob);
+formData.append(&#39;category&#39;, &#39;technical-specs&#39;);
+formData.append(&#39;workspace_id&#39;, &#39;workspace-123&#39;);
+
+const response = await fetch(
+  &#39;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/mivaa-gateway&#39;,
+  {
+    method: &#39;POST&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`
+    },
+    body: formData
+  }
+);
+</code></pre>
+<h2>Error Handling</h2>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string,
+  statusCode?: number,
+  details?: object
+}
+</code></pre>
+<p><strong>Common Error Codes:</strong></p>
+<ul>
+<li><code>400</code> - Bad request (invalid action or payload)</li>
+<li><code>401</code> - Unauthorized</li>
+<li><code>404</code> - Endpoint not found</li>
+<li><code>500</code> - Backend service error</li>
+<li><code>503</code> - Service unavailable</li>
+</ul>
+<h2>Complete Action List</h2>
+<p>See the full list of 100+ available actions in the <a href="../api-endpoints.md">API Endpoints Documentation</a>.</p>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../api-endpoints.md">API Endpoints</a></li>
+<li><a href="../pdf-processing-pipeline.md">RAG System</a></li>
+<li><a href="../knowledge-base-implementation.md">Knowledge Base Implementation</a></li>
+<li><a href="../ai-models-architecture.md">AI Services</a></li>
+</ul>
+
+</div></body></html>

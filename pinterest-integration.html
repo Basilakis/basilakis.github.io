@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Pinterest Integration</h1>
+<p>Import Pinterest pins into moodboards with automatic material matching from the catalog.</p>
+<hr>
+<h2>Overview</h2>
+<p>Two-phase integration:</p>
+<p><strong>Phase 1 (No OAuth):</strong> Paste a pin URL → extract metadata via oEmbed → import to moodboard → auto-match with catalog materials.</p>
+<p><strong>Phase 2 (OAuth):</strong> Connect Pinterest account → browse boards → select pins → bulk import.</p>
+<hr>
+<h2>Edge Functions</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pinterest-import</code></td>
+<td>Pin URL extraction + import (oEmbed, no auth needed)</td>
+</tr>
+<tr>
+<td><code>pinterest-oauth</code></td>
+<td>OAuth flow + board/pin API proxy</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 1: URL Import</h2>
+<p>No API key required. Uses Pinterest&#39;s public oEmbed endpoint.</p>
+<p><strong>Actions:</strong></p>
+<ul>
+<li><code>extract_pin</code> — extracts title, image URL, author from pin URL</li>
+<li><code>import_pin</code> — downloads image, uploads to storage, creates moodboard item, runs visual search</li>
+<li><code>import_pins_bulk</code> — batch import multiple URLs</li>
+</ul>
+<p><strong>Auto-matching:</strong> Each imported pin image is run through MIVAA visual search (<code>/api/rag/search</code> with <code>multi_vector</code> strategy) to find similar materials in the catalog. Top matches shown to user.</p>
+<hr>
+<h2>Phase 2: OAuth Board Browsing</h2>
+<p>Requires Pinterest developer app registration (~1-2 weeks approval).</p>
+<p><strong>Actions:</strong></p>
+<ul>
+<li><code>get_auth_url</code> — generates OAuth URL with CSRF state</li>
+<li><code>callback</code> — exchanges code for tokens, stores in <code>social_accounts</code> table</li>
+<li><code>get_boards</code> — fetches user&#39;s boards via Pinterest API v5</li>
+<li><code>get_board_pins</code> — fetches pins from a board (paginated)</li>
+<li><code>disconnect</code> — removes stored tokens</li>
+</ul>
+<p><strong>Token Management:</strong> Access tokens valid 30 days, refresh tokens 365 days. Auto-refresh on expiry with 5-minute buffer.</p>
+<hr>
+<h2>Frontend</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PinterestImportModal</code></td>
+<td>Main UI — single URL, bulk URL, board browser</td>
+</tr>
+<tr>
+<td><code>pinterestService.ts</code></td>
+<td>Frontend service for all Pinterest operations</td>
+</tr>
+</tbody></table>
+<p><strong>Integration:</strong> &quot;Import from Pinterest&quot; button on MoodBoardDetailPage header (stats row).</p>
+<hr>
+<h2>Environment Variables</h2>
+<pre><code>PINTEREST_APP_ID       — from developers.pinterest.com
+PINTEREST_APP_SECRET   — from developers.pinterest.com
+PINTEREST_REDIRECT_URI — https://{supabase-url}/functions/v1/pinterest-oauth
+</code></pre>
+<hr>
+<h2>Database</h2>
+<p>OAuth tokens stored in existing <code>social_accounts</code> table with <code>platform = &#39;pinterest&#39;</code>.
+Import tracking via <code>moodboard_items</code> with <code>media_type = &#39;image&#39;</code> and <code>media_title</code> prefixed with pin source.</p>
+
+</div></body></html>

@@ -1,0 +1,4149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Material KAI Vision Platform — Complete API Reference</h1>
+<blockquote>
+<p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co</code>
+<strong>Edge Functions Base</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1</code>
+<strong>REST API Base</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/rest/v1</code>
+<strong>Last Updated</strong>: 2026-04-17</p>
+</blockquote>
+<hr>
+<h2>Authentication</h2>
+<p>All endpoints require one of the following authentication methods:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Header</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>User JWT</strong></td>
+<td><code>Authorization: Bearer &lt;jwt-token&gt;</code></td>
+<td>Standard user authentication via Supabase Auth</td>
+</tr>
+<tr>
+<td><strong>Service Role Key</strong></td>
+<td><code>apikey: &lt;service-role-key&gt;</code> + <code>Authorization: Bearer &lt;service-role-key&gt;</code></td>
+<td>Admin/server-side access; bypasses Row Level Security</td>
+</tr>
+<tr>
+<td><strong>Anon Key</strong></td>
+<td><code>apikey: &lt;anon-key&gt;</code></td>
+<td>Public read-only access (RLS-restricted tables only)</td>
+</tr>
+</tbody></table>
+<p>Obtain tokens via <code>POST https://bgbavxtjlbvgplozizxu.supabase.co/auth/v1/token</code>.</p>
+<h3>CORS</h3>
+<p>All edge functions accept <code>*</code> for <code>Access-Control-Allow-Origin</code>. Send <code>OPTIONS</code> preflight — all functions respond with <code>200/204</code>.</p>
+<hr>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#1-ai-agent-chat">AI Agent Chat</a></li>
+<li><a href="#2-mivaa-gateway-ai-services-proxy">MIVAA Gateway (AI Services Proxy)</a></li>
+<li><a href="#3-ai-re-rank">AI Re-Rank</a></li>
+<li><a href="#4-quotes-and-proposals-api">Quotes and Proposals API</a></li>
+<li><a href="#5-crm-contacts">CRM Contacts</a></li>
+<li><a href="#6-crm-companies">CRM Companies</a></li>
+<li><a href="#7-crm-users-admin">CRM Users Admin</a></li>
+<li><a href="#8-crm-stripe-billing">CRM Stripe Billing</a></li>
+<li><a href="#9-stripe-checkout">Stripe Checkout</a></li>
+<li><a href="#10-stripe-customer-portal">Stripe Customer Portal</a></li>
+<li><a href="#11-email-api">Email API</a></li>
+<li><a href="#12-messaging-api-sms-whatsapp">Messaging API SMS WhatsApp</a></li>
+<li><a href="#13-recommendations-api">Recommendations API</a></li>
+<li><a href="#14-generate-vr-world">Generate VR World</a></li>
+<li><a href="#15-generate-quote-pdf">Generate Quote PDF</a></li>
+<li><a href="#16-web-scraping-session-manager">Web Scraping Session Manager</a></li>
+<li><a href="#17-web-scraping-single-page">Web Scraping Single Page</a></li>
+<li><a href="#18-web-scraping-sitemap-parser">Web Scraping Sitemap Parser</a></li>
+<li><a href="#19-web-scraping-preview">Web Scraping Preview</a></li>
+<li><a href="#20-pdf-batch-process">PDF Batch Process</a></li>
+<li><a href="#21-price-monitoring">Price Monitoring</a></li>
+<li><a href="#22-seo-pipeline">SEO Pipeline</a></li>
+<li><a href="#23-seo-sub-functions">SEO Sub-functions</a></li>
+<li><a href="#24-background-agent-runner">Background Agent Runner</a></li>
+<li><a href="#25-flow-engine-and-webhooks">Flow Engine and Webhooks</a></li>
+<li><a href="#26-field-templates-and-suggest-fields">Field Templates and Suggest Fields</a></li>
+<li><a href="#27-batch-update-sessions">Batch Update Sessions</a></li>
+<li><a href="#28-health-check">Health Check</a></li>
+<li><a href="#29-supabase-rest-api-direct-table-access">Supabase REST API Direct Table Access</a></li>
+<li><a href="#30-supabase-auth-api">Supabase Auth API</a></li>
+<li><a href="#31-supabase-storage-api">Supabase Storage API</a></li>
+<li><a href="#32-generate-interior-gemini">Generate Interior (Gemini)</a></li>
+<li><a href="#33-generate-interior-video-v2">Generate Interior Video v2</a></li>
+<li><a href="#34-generate-pbr-maps">Generate PBR Maps</a></li>
+<li><a href="#35-generate-region-edit">Generate Region Edit</a></li>
+<li><a href="#36-generate-virtual-staging">Generate Virtual Staging</a></li>
+<li><a href="#37-social-content-generation">Social Content Generation</a></li>
+<li><a href="#38-social-image-generation">Social Image Generation</a></li>
+<li><a href="#39-social-video-generation">Social Video Generation</a></li>
+<li><a href="#40-social-publishing-latedev">Social Publishing (Late.dev)</a></li>
+<li><a href="#41-pinterest-integration">Pinterest Integration</a></li>
+<li><a href="#42-webhook-receivers">Webhook Receivers</a></li>
+<li><a href="#43-internal-utilities">Internal Utilities</a></li>
+</ol>
+<hr>
+<h2>1. AI Agent Chat</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/agent-chat</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Streams AI agent responses using Claude. Supports multimodal input (images). Returns a Server-Sent Events stream.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;messages&quot;: [
+    { &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Show me marble tiles with warm tones&quot; }
+  ],
+  &quot;agentId&quot;: &quot;kai&quot;,
+  &quot;images&quot;: [&quot;data:image/jpeg;base64,...&quot;],
+  &quot;conversation_id&quot;: &quot;uuid-or-null&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>messages</code></td>
+<td><code>Array&lt;{role, content}&gt;</code></td>
+<td>Yes</td>
+<td>Conversation history. <code>role</code> is <code>&quot;user&quot;</code> or <code>&quot;assistant&quot;</code></td>
+</tr>
+<tr>
+<td><code>agentId</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td>Agent to invoke. Default: <code>&quot;kai&quot;</code></td>
+</tr>
+<tr>
+<td><code>images</code></td>
+<td><code>string[]</code></td>
+<td>No</td>
+<td>Base64 data URLs for image attachments</td>
+</tr>
+<tr>
+<td><code>conversation_id</code></td>
+<td><code>string or null</code></td>
+<td>No</td>
+<td>Supabase conversation ID for chat history persistence</td>
+</tr>
+</tbody></table>
+<h3>Available Agent IDs</h3>
+<table>
+<thead>
+<tr>
+<th><code>agentId</code></th>
+<th>Description</th>
+<th>Required Role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kai</code></td>
+<td>Default general-purpose KAI agent (Claude Sonnet)</td>
+<td>Any authenticated user</td>
+</tr>
+<tr>
+<td><code>interior-designer</code></td>
+<td>Interior design specialist</td>
+<td>Any authenticated user</td>
+</tr>
+<tr>
+<td><code>demo</code></td>
+<td>Demo agent (Claude Haiku, cheaper)</td>
+<td>Any authenticated user</td>
+</tr>
+<tr>
+<td><code>search</code></td>
+<td>Legacy alias resolves to <code>kai</code></td>
+<td>Any authenticated user</td>
+</tr>
+<tr>
+<td><code>insights</code></td>
+<td>Legacy alias resolves to <code>kai</code></td>
+<td>Any authenticated user</td>
+</tr>
+<tr>
+<td><code>seo</code></td>
+<td>Legacy alias resolves to <code>kai</code></td>
+<td>Any authenticated user</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Sub-agent tools, B2B manufacturer search, SEO tools, and the <code>price_lookup</code> tool are gated to <code>admin</code> or <code>owner</code> roles.</p>
+</blockquote>
+<h3>Admin-Only Tool: price_lookup (2026-04)</h3>
+<p>Searches the &quot;Pricing&quot; KB category and composes a price with a reasoning chain. Only available to admin/owner. See <a href="./pricing-api.md">pricing-api.md</a> for the full contract.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>product_name</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Full product name</td>
+</tr>
+<tr>
+<td><code>sku</code></td>
+<td>string</td>
+<td>No</td>
+<td>SKU for exact matching</td>
+</tr>
+<tr>
+<td><code>manufacturer</code></td>
+<td>string</td>
+<td>No</td>
+<td>Narrows discount rule scope</td>
+</tr>
+<tr>
+<td><code>quantity</code></td>
+<td>number</td>
+<td>No</td>
+<td>For MOQ/tier math</td>
+</tr>
+<tr>
+<td><code>unit</code></td>
+<td>string</td>
+<td>No</td>
+<td>Expected unit (m², piece, box)</td>
+</tr>
+<tr>
+<td><code>product_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>UUID threaded into <code>price_proposal</code></td>
+</tr>
+</tbody></table>
+<p>The agent emits these chunks during/after execution:</p>
+<ul>
+<li><code>tool_call_ids</code> — contains <code>log_id</code> (FK to <code>agent_tool_call_logs.id</code>) for each tool. Use the <code>price_lookup</code> entry to populate <code>quote_items.price_lookup_call_id</code> or <code>product_prices.price_lookup_call_id</code> on commit.</li>
+<li><code>price_lookup_matches</code> — raw KB chunks grouped by <code>price_doc_type</code></li>
+<li><code>price_proposal</code> — structured result: <code>list_price</code>, <code>discount_percent</code>, <code>final_unit_price</code>, <code>currency</code>, <code>unit</code>, <code>reasoning_chain[]</code>, <code>source_doc_ids[]</code>, <code>warnings[]</code>, <code>confidence</code></li>
+</ul>
+<h3>Response</h3>
+<p>Newline-delimited JSON stream (NOT SSE <code>data:</code> prefixed — each line is a raw JSON object followed by <code>\n</code>).</p>
+<pre><code>{&quot;type&quot;:&quot;status&quot;,&quot;message&quot;:&quot;Initializing agent...&quot;}
+{&quot;type&quot;:&quot;heartbeat&quot;,&quot;timestamp&quot;:1712345678901}
+{&quot;type&quot;:&quot;tool_progress&quot;,&quot;status&quot;:&quot;Searching price knowledge base...&quot;}
+{&quot;type&quot;:&quot;tool_call_ids&quot;,&quot;mapping&quot;:[{&quot;tool_name&quot;:&quot;price_lookup&quot;,&quot;log_id&quot;:&quot;&lt;uuid&gt;&quot;}]}
+{&quot;type&quot;:&quot;price_lookup_matches&quot;,&quot;matches&quot;:[...],&quot;hints&quot;:{...}}
+{&quot;type&quot;:&quot;price_proposal&quot;,&quot;list_price&quot;:85,&quot;discount_percent&quot;:27,&quot;final_unit_price&quot;:62,...}
+{&quot;type&quot;:&quot;text&quot;,&quot;text&quot;:&quot;Based on Factory X Q2 pricing...&quot;}
+{&quot;type&quot;:&quot;done&quot;}
+</code></pre>
+<h3>Error Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>401</code></td>
+<td>Missing or invalid authentication</td>
+</tr>
+<tr>
+<td><code>402</code></td>
+<td>Insufficient credits</td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>Agent requires higher role</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. MIVAA Gateway (AI Services Proxy)</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/mivaa-gateway</code>
+<strong>Auth</strong>: User JWT (billable) or Service Role Key (free)
+<strong>Description</strong>: Unified gateway to all Python AI backend services. Accepts <code>action</code> + <code>payload</code>. Handles credit billing, path parameter substitution, and response wrapping.</p>
+<h3>Standard Request Format</h3>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;&lt;action_name&gt;&quot;,
+  &quot;payload&quot;: { }
+}
+</code></pre>
+<h3>File Upload (multipart)</h3>
+<p>Send <code>multipart/form-data</code> directly — auto-routed to <code>POST /api/rag/documents/upload-async</code>.</p>
+<h3>Job Status Check (URL path)</h3>
+<p><code>GET /functions/v1/mivaa-gateway/job-status/{job_id}</code></p>
+<hr>
+<h3>Available Actions</h3>
+<h4>Knowledge Base</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+<th>Billable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kb_create_document</code></td>
+<td>POST</td>
+<td>Create/upsert KB document by (workspace, title, category) — accepts <code>price_doc_type</code> for Pricing category. Re-embeds only on content change.</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>kb_get_document</code></td>
+<td>GET</td>
+<td>Get document by ID (<code>doc_id</code> required)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_update_document</code></td>
+<td>PATCH</td>
+<td>Update document with smart re-embedding (<code>doc_id</code>). Accepts <code>price_doc_type</code>.</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>kb_delete_document</code></td>
+<td>DELETE</td>
+<td>Delete document (<code>doc_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_create_from_pdf</code></td>
+<td>POST</td>
+<td>Create document from PDF</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>kb_search</code></td>
+<td>POST</td>
+<td>Admin KB search (semantic/full-text/hybrid). Accepts <code>category_id</code>, <code>category_slug</code>, <code>price_doc_type</code>, <code>require_published</code> (default false), <code>allowed_access_levels</code>, <code>match_threshold</code>. Returns <code>category_slug</code>, <code>category_name</code>, <code>price_doc_type</code> per result.</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>search_knowledge_base</code></td>
+<td>POST</td>
+<td>Agent-facing multi-type KB search (products/entities/chunks/kb_docs). Accepts <code>category_slug</code>, <code>category_id</code>, <code>price_doc_type</code>, <code>caller</code> (<code>admin</code>/<code>agent</code>/<code>public</code>). Use with <code>category_slug:&quot;pricing&quot;</code> for price lookup quick-pick mode (no LLM). <strong>(2026-04)</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>kb_create_category</code></td>
+<td>POST</td>
+<td>Create KB category. Include <code>slug</code> (e.g. <code>&quot;pricing&quot;</code>), <code>access_level</code>, <code>trigger_keyword</code>.</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_list_categories</code></td>
+<td>GET</td>
+<td>List all KB categories</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_create_attachment</code></td>
+<td>POST</td>
+<td>Attach document to product</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_get_doc_attachments</code></td>
+<td>GET</td>
+<td>Get attachments for document (<code>doc_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_get_product_docs</code></td>
+<td>GET</td>
+<td>Get documents for product (<code>product_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>kb_health</code></td>
+<td>GET</td>
+<td>KB service health</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4>RAG / Document Processing</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+<th>Billable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rag_upload</code></td>
+<td>POST</td>
+<td>Upload file/URL for processing</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>rag_search</code></td>
+<td>POST</td>
+<td>Search with 6 strategies: semantic, visual, hybrid, etc.</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>rag_query</code></td>
+<td>POST</td>
+<td>RAG query with auto-detecting modality</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>rag_chat</code></td>
+<td>POST</td>
+<td>RAG chat completions</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>rag_get_job</code></td>
+<td>GET</td>
+<td>Get job status (<code>job_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_list_jobs</code></td>
+<td>GET</td>
+<td>List all jobs</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_get_checkpoints</code></td>
+<td>GET</td>
+<td>Get job checkpoints (<code>job_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_restart_job</code></td>
+<td>POST</td>
+<td>Restart failed job (<code>job_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_resume_job</code></td>
+<td>POST</td>
+<td>Resume job from checkpoint (<code>job_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_get_chunks</code></td>
+<td>GET</td>
+<td>Get document chunks (filter: <code>document_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_get_images</code></td>
+<td>GET</td>
+<td>Get document images (filter: <code>document_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_get_products</code></td>
+<td>GET</td>
+<td>Get products with filters</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_get_embeddings</code></td>
+<td>GET</td>
+<td>Get embeddings with filters</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_get_document_content</code></td>
+<td>GET</td>
+<td>Get full document content (<code>document_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_list_documents</code></td>
+<td>GET</td>
+<td>List all documents</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_delete_document</code></td>
+<td>DELETE</td>
+<td>Delete document (<code>document_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_health</code></td>
+<td>GET</td>
+<td>RAG service health</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_stats</code></td>
+<td>GET</td>
+<td>RAG statistics</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_search_mmr</code></td>
+<td>POST</td>
+<td>MMR diversity search</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>rag_search_advanced</code></td>
+<td>POST</td>
+<td>Advanced semantic query</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>rag_ai_tracking</code></td>
+<td>GET</td>
+<td>AI model usage for job (<code>job_id</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_ai_tracking_stage</code></td>
+<td>GET</td>
+<td>AI tracking by stage (<code>job_id</code>, <code>stage</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>rag_ai_tracking_model</code></td>
+<td>GET</td>
+<td>AI tracking by model (<code>job_id</code>, <code>model_name</code>)</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4>Admin</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>admin_list_jobs</code></td>
+<td>GET</td>
+<td>List all processing jobs</td>
+</tr>
+<tr>
+<td><code>admin_job_statistics</code></td>
+<td>GET</td>
+<td>Job statistics</td>
+</tr>
+<tr>
+<td><code>admin_get_job</code></td>
+<td>GET</td>
+<td>Get job details (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_get_job_status</code></td>
+<td>GET</td>
+<td>Get job status (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_delete_job</code></td>
+<td>DELETE</td>
+<td>Cancel/delete job (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_system_health</code></td>
+<td>GET</td>
+<td>System health</td>
+</tr>
+<tr>
+<td><code>admin_system_metrics</code></td>
+<td>GET</td>
+<td>System metrics</td>
+</tr>
+<tr>
+<td><code>admin_cleanup_data</code></td>
+<td>DELETE</td>
+<td>Cleanup old data</td>
+</tr>
+<tr>
+<td><code>admin_backup_data</code></td>
+<td>POST</td>
+<td>Create backup</td>
+</tr>
+<tr>
+<td><code>admin_export_data</code></td>
+<td>GET</td>
+<td>Export data</td>
+</tr>
+<tr>
+<td><code>admin_packages_status</code></td>
+<td>GET</td>
+<td>Package status</td>
+</tr>
+<tr>
+<td><code>admin_job_progress</code></td>
+<td>GET</td>
+<td>Job progress (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_active_progress</code></td>
+<td>GET</td>
+<td>Active jobs progress</td>
+</tr>
+<tr>
+<td><code>admin_job_pages</code></td>
+<td>GET</td>
+<td>Job page progress (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_job_stream</code></td>
+<td>GET</td>
+<td>Stream job progress SSE (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_job_products</code></td>
+<td>GET</td>
+<td>Product progress for job (<code>job_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_test_product</code></td>
+<td>POST</td>
+<td>Test product creation</td>
+</tr>
+<tr>
+<td><code>admin_process_ocr</code></td>
+<td>POST</td>
+<td>Process OCR for image (<code>image_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_generate_product_embeddings</code></td>
+<td>POST</td>
+<td>Generate product embeddings</td>
+</tr>
+</tbody></table>
+<h4>Admin Prompts</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>admin_prompts_list</code></td>
+<td>GET</td>
+<td>List all prompts</td>
+</tr>
+<tr>
+<td><code>admin_prompts_get</code></td>
+<td>GET</td>
+<td>Get prompt (<code>stage</code>, <code>category</code>)</td>
+</tr>
+<tr>
+<td><code>admin_prompts_update</code></td>
+<td>PUT</td>
+<td>Update prompt (<code>stage</code>, <code>category</code>)</td>
+</tr>
+<tr>
+<td><code>admin_prompts_history</code></td>
+<td>GET</td>
+<td>Prompt version history (<code>prompt_id</code>)</td>
+</tr>
+<tr>
+<td><code>admin_prompts_test</code></td>
+<td>POST</td>
+<td>Test a prompt</td>
+</tr>
+</tbody></table>
+<h4>Web Scraping</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>process_scraping_session</code></td>
+<td>POST</td>
+<td>Process session to products (<code>session_id</code>)</td>
+</tr>
+<tr>
+<td><code>get_scraping_session_status</code></td>
+<td>GET</td>
+<td>Session status (<code>session_id</code>)</td>
+</tr>
+<tr>
+<td><code>retry_scraping_session</code></td>
+<td>POST</td>
+<td>Retry failed session (<code>session_id</code>)</td>
+</tr>
+</tbody></table>
+<h4>Images</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+<th>Billable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>images_analyze</code></td>
+<td>POST</td>
+<td>Analyze single image</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>images_analyze_batch</code></td>
+<td>POST</td>
+<td>Analyze batch of images</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>images_search</code></td>
+<td>POST</td>
+<td>Image similarity search</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>images_upload_analyze</code></td>
+<td>POST</td>
+<td>Upload and analyze</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>images_reclassify</code></td>
+<td>POST</td>
+<td>Re-classify image (<code>image_id</code>)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>images_health</code></td>
+<td>GET</td>
+<td>Images service health</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4>Embeddings</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+<th>Billable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>embeddings_clip_image</code></td>
+<td>POST</td>
+<td>Generate CLIP image embedding</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>embeddings_clip_text</code></td>
+<td>POST</td>
+<td>Generate CLIP text embedding</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>embeddings_health</code></td>
+<td>GET</td>
+<td>Embeddings service health</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4>AI Services</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+<th>Billable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ai_classify_document</code></td>
+<td>POST</td>
+<td>Classify document</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_classify_batch</code></td>
+<td>POST</td>
+<td>Batch classification</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_detect_boundaries</code></td>
+<td>POST</td>
+<td>Detect product boundaries</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_group_by_product</code></td>
+<td>POST</td>
+<td>Group chunks by product</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_validate_product</code></td>
+<td>POST</td>
+<td>Validate product data</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_consensus_validate</code></td>
+<td>POST</td>
+<td>Consensus validation</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_is_critical</code></td>
+<td>GET</td>
+<td>Check if task type is critical (<code>task_type</code>)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>ai_escalation_stats</code></td>
+<td>GET</td>
+<td>Escalation statistics</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>ai_process_pdf_enhanced</code></td>
+<td>POST</td>
+<td>Enhanced PDF processing</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ai_services_health</code></td>
+<td>GET</td>
+<td>AI services health</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4>Anthropic (Claude) Direct</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+<th>Billable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>anthropic_validate_image</code></td>
+<td>POST</td>
+<td>Validate image with Claude</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>anthropic_enrich_product</code></td>
+<td>POST</td>
+<td>Enrich product with Claude</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>anthropic_test</code></td>
+<td>POST</td>
+<td>Test Claude integration</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+<h4>Search Analytics &amp; Recommendations</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>search_recommendations</code></td>
+<td>GET</td>
+<td>Search recommendations</td>
+</tr>
+<tr>
+<td><code>search_analytics</code></td>
+<td>POST</td>
+<td>Search analytics</td>
+</tr>
+</tbody></table>
+<h4>Search Suggestions</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>autocomplete</code></td>
+<td>POST</td>
+<td>Autocomplete suggestions</td>
+</tr>
+<tr>
+<td><code>trending_searches</code></td>
+<td>GET</td>
+<td>Trending searches</td>
+</tr>
+<tr>
+<td><code>typo_correction</code></td>
+<td>POST</td>
+<td>Typo correction</td>
+</tr>
+<tr>
+<td><code>query_expansion</code></td>
+<td>POST</td>
+<td>Query expansion</td>
+</tr>
+<tr>
+<td><code>track_suggestion_click</code></td>
+<td>POST</td>
+<td>Track suggestion click</td>
+</tr>
+</tbody></table>
+<h4>Monitoring</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>monitoring_supabase_status</code></td>
+<td>GET</td>
+<td>Supabase connectivity status</td>
+</tr>
+<tr>
+<td><code>monitoring_health</code></td>
+<td>GET</td>
+<td>Monitoring service health</td>
+</tr>
+<tr>
+<td><code>monitoring_storage_estimate</code></td>
+<td>GET</td>
+<td>Storage estimate</td>
+</tr>
+</tbody></table>
+<h4>Documentation</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>docs</code></td>
+<td>GET</td>
+<td>Swagger UI (HTML)</td>
+</tr>
+<tr>
+<td><code>redoc</code></td>
+<td>GET</td>
+<td>ReDoc (HTML)</td>
+</tr>
+<tr>
+<td><code>openapi_json</code></td>
+<td>GET</td>
+<td>OpenAPI schema JSON</td>
+</tr>
+</tbody></table>
+<h3>Path Parameters</h3>
+<p>Include path params directly in <code>payload</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Used in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>job_id</code></td>
+<td>All <code>rag_*</code> and <code>admin_*</code> job endpoints</td>
+</tr>
+<tr>
+<td><code>document_id</code></td>
+<td><code>rag_delete_document</code>, <code>rag_get_document_content</code></td>
+</tr>
+<tr>
+<td><code>doc_id</code></td>
+<td>KB document endpoints</td>
+</tr>
+<tr>
+<td><code>product_id</code></td>
+<td><code>kb_get_product_docs</code></td>
+</tr>
+<tr>
+<td><code>session_id</code></td>
+<td>Scraping endpoints</td>
+</tr>
+<tr>
+<td><code>image_id</code></td>
+<td><code>images_reclassify</code>, <code>admin_process_ocr</code></td>
+</tr>
+<tr>
+<td><code>entity_id</code></td>
+<td>Entity endpoints</td>
+</tr>
+<tr>
+<td><code>factory_name</code></td>
+<td><code>entities_by_factory</code></td>
+</tr>
+<tr>
+<td><code>task_type</code></td>
+<td><code>ai_is_critical</code></td>
+</tr>
+<tr>
+<td><code>model_name</code></td>
+<td><code>rag_ai_tracking_model</code></td>
+</tr>
+<tr>
+<td><code>stage</code></td>
+<td><code>admin_prompts_get/update</code>, <code>rag_ai_tracking_stage</code></td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td><code>admin_prompts_get/update</code></td>
+</tr>
+<tr>
+<td><code>prompt_id</code></td>
+<td><code>admin_prompts_history</code></td>
+</tr>
+</tbody></table>
+<h3>Credit Costs (Approximate)</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RAG search (text)</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>RAG search (visual)</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Image analysis</td>
+<td>1</td>
+</tr>
+<tr>
+<td>CLIP embedding</td>
+<td>0.25</td>
+</tr>
+<tr>
+<td>Document upload/process</td>
+<td>2</td>
+</tr>
+</tbody></table>
+<h3>Response Format</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: { }
+}
+</code></pre>
+<p>For async file upload (202 Accepted):</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;job_id&quot;: &quot;abc-123&quot;,
+    &quot;status&quot;: &quot;pending&quot;,
+    &quot;message&quot;: &quot;Document processing started. Use job_id to check status.&quot;
+  }
+}
+</code></pre>
+<hr>
+<h2>3. AI Re-Rank</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/ai-rerank</code>
+<strong>Auth</strong>: None required (open endpoint)
+<strong>Description</strong>: Re-ranks search results using Claude AI for improved relevance.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;query&quot;: &quot;warm marble tiles for bathroom&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;id&quot;: &quot;product-uuid&quot;,
+      &quot;name&quot;: &quot;Calacatta Gold Marble&quot;,
+      &quot;description&quot;: &quot;White marble with gold veining&quot;,
+      &quot;category&quot;: &quot;Natural Stone&quot;,
+      &quot;relevanceScore&quot;: 0.82,
+      &quot;semanticScore&quot;: 0.78,
+      &quot;understandingScore&quot;: 0.85
+    }
+  ],
+  &quot;maxResults&quot;: 10,
+  &quot;includeExplanations&quot;: false,
+  &quot;model&quot;: &quot;claude-sonnet-4-5&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>query</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>results</code></td>
+<td><code>SearchResult[]</code></td>
+<td>Yes</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>maxResults</code></td>
+<td><code>number</code></td>
+<td>No</td>
+<td>All results</td>
+</tr>
+<tr>
+<td><code>includeExplanations</code></td>
+<td><code>boolean</code></td>
+<td>No</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td><code>&quot;claude-sonnet-4-5&quot;</code></td>
+</tr>
+</tbody></table>
+<p>Valid models: <code>&quot;claude-sonnet-4-5&quot;</code> or <code>&quot;claude-haiku-4-5&quot;</code></p>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;rerankedResults&quot;: [...],
+  &quot;explanations&quot;: { &quot;product-uuid&quot;: &quot;Ranked #1 because...&quot; },
+  &quot;processingTimeMs&quot;: 420,
+  &quot;model&quot;: &quot;claude-sonnet-4-5&quot;,
+  &quot;cost&quot;: 0.0012,
+  &quot;usage&quot;: { &quot;inputTokens&quot;: 1200, &quot;outputTokens&quot;: 150 }
+}
+</code></pre>
+<hr>
+<h2>4. Quotes and Proposals API</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/quotes-api</code>
+<strong>Auth</strong>: User JWT or Service Role Key</p>
+<blockquote>
+<p><strong>Pricing audit fields (2026-04):</strong> <code>quote_items</code> rows now carry <code>price_source</code> (provenance tag: <code>manual | catalog | kb:ai:&lt;log_id&gt; | kb:quick:&lt;doc_id&gt; | product_price:&lt;id&gt;</code>) and <code>price_lookup_call_id</code> (FK → <code>agent_tool_call_logs.id</code>). Admin can update these via <code>PATCH /rest/v1/quote_items</code> directly or through the <code>QuotesService.updateItem()</code> frontend method. See <a href="./pricing-api.md">pricing-api.md</a> for full contract.</p>
+</blockquote>
+<h3>POST /functions/v1/quotes-api/quote-requests</h3>
+<p>Create a quote request.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;quote_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;notes&quot;: &quot;Optional notes&quot;
+}
+</code></pre>
+<p><strong>Response</strong> <code>201</code>:</p>
+<pre><code class="language-json">{ &quot;data&quot;: { } }
+</code></pre>
+<hr>
+<h3>GET /functions/v1/quotes-api/quote-requests</h3>
+<p>List current user&#39;s quote requests (ordered newest first).</p>
+<p><strong>Response</strong> <code>200</code>:</p>
+<pre><code class="language-json">{ &quot;data&quot;: [] }
+</code></pre>
+<hr>
+<h3>GET /functions/v1/quotes-api/quote-requests/{id}</h3>
+<p>Get specific quote request (must be owned by current user).</p>
+<hr>
+<h3>PATCH /functions/v1/quotes-api/quote-requests/{id}</h3>
+<p>Update quote request status.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{ &quot;status&quot;: &quot;pending&quot; }
+</code></pre>
+<p>Valid statuses: <code>&quot;pending&quot;</code>, <code>&quot;updated&quot;</code>, <code>&quot;approved&quot;</code>, <code>&quot;rejected&quot;</code></p>
+<hr>
+<h3>GET /functions/v1/quotes-api/proposals</h3>
+<p>List all proposals for current user&#39;s quote requests. Includes related <code>quote_requests</code> data.</p>
+<hr>
+<h3>GET /functions/v1/quotes-api/proposals/{id}</h3>
+<p>Get specific proposal. Verifies user owns the linked quote request.</p>
+<hr>
+<h3>PATCH /functions/v1/quotes-api/proposals/{id}</h3>
+<p>Accept or reject a proposal.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{ &quot;status&quot;: &quot;accepted&quot; }
+</code></pre>
+<p>Valid statuses: <code>&quot;accepted&quot;</code>, <code>&quot;rejected&quot;</code></p>
+<hr>
+<h2>5. CRM Contacts</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/crm-contacts-api</code>
+<strong>Auth</strong>: User JWT (requires <code>admin</code>, <code>manager</code>, or <code>factory</code> role) or Service Role Key</p>
+<h3>POST /functions/v1/crm-contacts-api</h3>
+<p>Create a contact.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;John Smith&quot;,
+  &quot;email&quot;: &quot;john@example.com&quot;,
+  &quot;phone&quot;: &quot;+1234567890&quot;,
+  &quot;company&quot;: &quot;Acme Corp&quot;,
+  &quot;notes&quot;: &quot;Met at trade show&quot;
+}
+</code></pre>
+<p><code>name</code> is required. All other fields are optional.</p>
+<hr>
+<h3>GET /functions/v1/crm-contacts-api</h3>
+<p>List contacts.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>limit</code></td>
+<td>number</td>
+<td>50</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>number</td>
+<td>0</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>GET /functions/v1/crm-contacts-api/{id}</h3>
+<p>Get contact by ID. Includes <code>crm_contact_relationships</code>.</p>
+<hr>
+<h3>PATCH /functions/v1/crm-contacts-api/{id}</h3>
+<p>Update contact. Pass any updatable fields in body.</p>
+<hr>
+<h3>DELETE /functions/v1/crm-contacts-api/{id}</h3>
+<p>Delete contact and all its relationships.</p>
+<hr>
+<h3>POST /functions/v1/crm-contacts-api/{id}/link-user</h3>
+<p>Link a platform user to a contact.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{ &quot;userId&quot;: &quot;auth-user-uuid&quot; }
+</code></pre>
+<hr>
+<h3>DELETE /functions/v1/crm-contacts-api/{id}/unlink-user</h3>
+<p>Unlink a user from a contact.</p>
+<hr>
+<h3>GET /functions/v1/crm-contacts-api/potential-matches</h3>
+<p>Find contacts whose emails match existing platform users (for bulk linking).</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;contact&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;name&quot;: &quot;...&quot;, &quot;email&quot;: &quot;...&quot; },
+      &quot;user&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;email&quot;: &quot;...&quot;, &quot;profile&quot;: {} }
+    }
+  ],
+  &quot;count&quot;: 3
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/crm-contacts-api/bulk-link</h3>
+<p>Bulk link contacts to users.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;links&quot;: [
+    { &quot;contactId&quot;: &quot;uuid&quot;, &quot;userId&quot;: &quot;auth-uuid&quot; }
+  ]
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [],
+  &quot;errors&quot;: [],
+  &quot;successCount&quot;: 2,
+  &quot;errorCount&quot;: 0
+}
+</code></pre>
+<hr>
+<h3>GET /functions/v1/crm-contacts-api/by-user/{userId}</h3>
+<p>Get the contact linked to a specific user ID.</p>
+<hr>
+<h2>6. CRM Companies</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/crm-companies-api</code>
+<strong>Auth</strong>: User JWT (requires <code>admin</code>, <code>manager</code>, or <code>factory</code> role) or Service Role Key</p>
+<h3>POST /functions/v1/crm-companies-api</h3>
+<p>Create a company.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Acme Corp&quot;,
+  &quot;website&quot;: &quot;https://acme.com&quot;,
+  &quot;industry&quot;: &quot;Manufacturing&quot;,
+  &quot;employee_count&quot;: 500,
+  &quot;annual_revenue&quot;: 10000000,
+  &quot;email&quot;: &quot;info@acme.com&quot;,
+  &quot;phone&quot;: &quot;+1234567890&quot;,
+  &quot;address&quot;: &quot;123 Main St&quot;,
+  &quot;city&quot;: &quot;Athens&quot;,
+  &quot;state&quot;: &quot;Attica&quot;,
+  &quot;postal_code&quot;: &quot;10431&quot;,
+  &quot;country&quot;: &quot;Greece&quot;,
+  &quot;linkedin&quot;: &quot;https://linkedin.com/company/acme&quot;,
+  &quot;twitter&quot;: &quot;@acme&quot;,
+  &quot;facebook&quot;: &quot;acme&quot;,
+  &quot;description&quot;: &quot;Tile manufacturer&quot;,
+  &quot;notes&quot;: &quot;Key supplier&quot;
+}
+</code></pre>
+<p><code>name</code> is required. All other fields are optional.</p>
+<hr>
+<h3>GET /functions/v1/crm-companies-api</h3>
+<p>List companies.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>limit</code></td>
+<td>number</td>
+<td>50</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>number</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>search</code></td>
+<td>string</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p>Search filters by <code>name</code>, <code>email</code>, and <code>website</code>.</p>
+<hr>
+<h3>GET /functions/v1/crm-companies-api/{id}</h3>
+<p>Get company with related contacts. Includes <code>crm_company_contacts</code> with nested <code>crm_contacts</code>.</p>
+<hr>
+<h3>PATCH /functions/v1/crm-companies-api/{id}</h3>
+<p>Update company. Pass any updatable fields.</p>
+<hr>
+<h3>DELETE /functions/v1/crm-companies-api/{id}</h3>
+<p>Delete company.</p>
+<hr>
+<h3>POST /functions/v1/crm-companies-api/{id}/contacts</h3>
+<p>Attach a contact to a company.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;contact_id&quot;: &quot;uuid&quot;,
+  &quot;role&quot;: &quot;CEO&quot;,
+  &quot;is_primary&quot;: true,
+  &quot;notes&quot;: &quot;Main decision maker&quot;
+}
+</code></pre>
+<p><code>contact_id</code> is required.</p>
+<hr>
+<h3>DELETE /functions/v1/crm-companies-api/{companyId}/contacts/{relationshipId}</h3>
+<p>Detach a contact from a company by relationship record ID.</p>
+<hr>
+<h2>7. CRM Users Admin</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/crm-users-api</code>
+<strong>Auth</strong>: User JWT (requires <code>admin</code> role) or Service Role Key</p>
+<h3>GET /functions/v1/crm-users-api</h3>
+<p>List all platform users. Merges auth users, profiles, and credits.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>limit</code></td>
+<td>number</td>
+<td>1000</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>number</td>
+<td>0</td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;profile-uuid&quot;,
+      &quot;user_id&quot;: &quot;auth-uuid&quot;,
+      &quot;email&quot;: &quot;user@example.com&quot;,
+      &quot;role_id&quot;: &quot;uuid&quot;,
+      &quot;subscription_tier&quot;: &quot;pro&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;credits&quot;: 150.0,
+      &quot;created_at&quot;: &quot;2026-01-01T00:00:00Z&quot;,
+      &quot;roles&quot;: { &quot;id&quot;: &quot;uuid&quot;, &quot;name&quot;: &quot;admin&quot;, &quot;level&quot;: 100 }
+    }
+  ],
+  &quot;count&quot;: 42
+}
+</code></pre>
+<hr>
+<h3>GET /functions/v1/crm-users-api/{userId}</h3>
+<p>Get single user with role, subscription, and credits.</p>
+<hr>
+<h3>GET /functions/v1/crm-users-api/{userId}/ai-usage</h3>
+<p>Get user AI usage history and cost summary.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>limit</code></td>
+<td>number</td>
+<td>50</td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;usage&quot;: [],
+    &quot;totals&quot;: {
+      &quot;total_calls&quot;: 120,
+      &quot;total_input_tokens&quot;: 450000,
+      &quot;total_output_tokens&quot;: 120000,
+      &quot;total_raw_cost_usd&quot;: 2.45,
+      &quot;total_billed_cost_usd&quot;: 3.67,
+      &quot;total_credits_debited&quot;: 367.0
+    },
+    &quot;byModel&quot;: [
+      { &quot;model&quot;: &quot;claude-sonnet-4-6&quot;, &quot;calls&quot;: 80, &quot;cost&quot;: 2.10, &quot;credits&quot;: 210 }
+    ]
+  }
+}
+</code></pre>
+<hr>
+<h3>PATCH /functions/v1/crm-users-api/{userId}</h3>
+<p>Update user role, status, or subscription tier.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;role_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;subscription_tier&quot;: &quot;pro&quot;
+}
+</code></pre>
+<p>Valid statuses: <code>&quot;active&quot;</code>, <code>&quot;suspended&quot;</code>
+Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quot;</code>, <code>&quot;pro&quot;</code>, <code>&quot;enterprise&quot;</code></p>
+<hr>
+<h3>DELETE /functions/v1/crm-users-api/{userId}</h3>
+<p>Delete user profile and credits. Does NOT delete the auth account.</p>
+<hr>
+<h2>8. CRM Stripe Billing</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/crm-stripe-api</code>
+<strong>Auth</strong>: User JWT or Service Role Key</p>
+<h3>POST /functions/v1/crm-stripe-api/subscriptions/create-checkout</h3>
+<p>Initiate subscription checkout.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{ &quot;plan_id&quot;: &quot;uuid&quot; }
+</code></pre>
+<hr>
+<h3>POST /functions/v1/crm-stripe-api/credits/purchase</h3>
+<p>Initiate credit package purchase.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{ &quot;package_id&quot;: &quot;uuid&quot; }
+</code></pre>
+<hr>
+<h3>GET /functions/v1/crm-stripe-api/subscriptions</h3>
+<p>Get current user&#39;s active subscription with plan details.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;current_period_start&quot;: &quot;2026-01-01T00:00:00Z&quot;,
+    &quot;current_period_end&quot;: &quot;2026-02-01T00:00:00Z&quot;,
+    &quot;subscription_plans&quot;: { &quot;name&quot;: &quot;Pro&quot;, &quot;price&quot;: 99, &quot;description&quot;: &quot;...&quot; }
+  }
+}
+</code></pre>
+<hr>
+<h3>GET /functions/v1/crm-stripe-api/credits</h3>
+<p>Get current user&#39;s credit balance.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{ &quot;data&quot;: { &quot;balance&quot;: 150.0, &quot;user_id&quot;: &quot;uuid&quot; } }
+</code></pre>
+<hr>
+<h2>9. Stripe Checkout</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/stripe-checkout</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Creates a Stripe Checkout session for credit purchases or subscriptions.</p>
+<h3>Request Body</h3>
+<p>For credit purchase:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;credit_purchase&quot;,
+  &quot;credits&quot;: 100,
+  &quot;price&quot;: 9.99,
+  &quot;successUrl&quot;: &quot;https://yourapp.com/success&quot;,
+  &quot;cancelUrl&quot;: &quot;https://yourapp.com/cancel&quot;
+}
+</code></pre>
+<p>For subscription:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;subscription&quot;,
+  &quot;priceId&quot;: &quot;price_stripe_id&quot;,
+  &quot;successUrl&quot;: &quot;https://yourapp.com/success&quot;,
+  &quot;cancelUrl&quot;: &quot;https://yourapp.com/cancel&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td><code>string</code></td>
+<td><code>&quot;credit_purchase&quot;</code> or <code>&quot;subscription&quot;</code></td>
+</tr>
+<tr>
+<td><code>priceId</code></td>
+<td><code>string</code></td>
+<td>Stripe price ID (subscription only)</td>
+</tr>
+<tr>
+<td><code>credits</code></td>
+<td><code>number</code></td>
+<td>Credits to grant (credit_purchase only)</td>
+</tr>
+<tr>
+<td><code>price</code></td>
+<td><code>number</code></td>
+<td>Price in EUR (credit_purchase only)</td>
+</tr>
+<tr>
+<td><code>successUrl</code></td>
+<td><code>string</code></td>
+<td>Redirect after success</td>
+</tr>
+<tr>
+<td><code>cancelUrl</code></td>
+<td><code>string</code></td>
+<td>Redirect after cancel</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{ &quot;url&quot;: &quot;https://checkout.stripe.com/c/pay/...&quot; }
+</code></pre>
+<hr>
+<h2>10. Stripe Customer Portal</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/stripe-customer-portal</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Creates a Stripe Customer Portal session for subscription management.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{ &quot;returnUrl&quot;: &quot;https://yourapp.com/settings/billing&quot; }
+</code></pre>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{ &quot;url&quot;: &quot;https://billing.stripe.com/session/...&quot; }
+</code></pre>
+<hr>
+<h2>11. Email API</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/email-api</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Action-based email service powered by <strong>Resend</strong>.</p>
+<blockquote>
+<p><strong>Migration note (2026-03-11):</strong> Email provider migrated from Amazon SES to Resend. Actions <code>verify-domain</code>, <code>check-domain</code>, <code>list-ses-domains</code>, and <code>sending-stats</code> have been removed. Domain verification is now managed directly in the <a href="https://resend.com/domains">Resend Dashboard</a>.</p>
+</blockquote>
+<p>All requests use <code>POST</code> with <code>{ &quot;action&quot;: &quot;&lt;action&gt;&quot;, ...params }</code> in the body.</p>
+<h3>Action: send</h3>
+<p>Send a transactional, marketing, or notification email. Supports plain HTML/text or a pre-saved template.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;send&quot;,
+  &quot;to&quot;: &quot;recipient@example.com&quot;,
+  &quot;from&quot;: &quot;sender@yourdomain.com&quot;,
+  &quot;fromName&quot;: &quot;Your Name&quot;,
+  &quot;subject&quot;: &quot;Hello!&quot;,
+  &quot;html&quot;: &quot;&lt;h1&gt;Hello&lt;/h1&gt;&quot;,
+  &quot;text&quot;: &quot;Hello&quot;,
+  &quot;templateSlug&quot;: &quot;welcome-email&quot;,
+  &quot;variables&quot;: { &quot;name&quot;: &quot;John&quot;, &quot;link&quot;: &quot;https://...&quot; },
+  &quot;cc&quot;: [&quot;cc@example.com&quot;],
+  &quot;bcc&quot;: [&quot;bcc@example.com&quot;],
+  &quot;replyTo&quot;: &quot;reply@example.com&quot;,
+  &quot;tags&quot;: { &quot;campaign&quot;: &quot;launch-2026&quot; },
+  &quot;emailType&quot;: &quot;transactional&quot;
+}
+</code></pre>
+<p>Either <code>html</code>/<code>text</code> or <code>templateSlug</code> is required. <code>templateSlug</code> renders a React Email or HTML template stored in the database.</p>
+<p><code>emailType</code> values: <code>&quot;transactional&quot;</code>, <code>&quot;marketing&quot;</code>, <code>&quot;notification&quot;</code></p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;messageId&quot;: &quot;resend-email-uuid&quot;, &quot;logId&quot;: &quot;uuid&quot; }
+</code></pre>
+<hr>
+<h3>Action: add-domain (Admin only)</h3>
+<p>Register a domain in the platform database. DNS verification must be completed separately in the <a href="https://resend.com/domains">Resend Dashboard</a>.</p>
+<pre><code class="language-json">{ &quot;action&quot;: &quot;add-domain&quot;, &quot;domain&quot;: &quot;yourdomain.com&quot; }
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;domain&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;domain&quot;: &quot;yourdomain.com&quot;,
+    &quot;verification_status&quot;: &quot;pending&quot;,
+    &quot;created_at&quot;: &quot;2026-03-11T00:00:00Z&quot;
+  },
+  &quot;message&quot;: &quot;Domain added. Verify it in your Resend dashboard at resend.com/domains, then mark it verified here.&quot;
+}
+</code></pre>
+<hr>
+<h3>Action: mark-domain-verified (Admin only)</h3>
+<p>Mark a domain as verified after confirming DNS records in the Resend dashboard.</p>
+<pre><code class="language-json">{ &quot;action&quot;: &quot;mark-domain-verified&quot;, &quot;domain&quot;: &quot;yourdomain.com&quot; }
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{ &quot;success&quot;: true }
+</code></pre>
+<hr>
+<h3>Action: domains</h3>
+<p>List all registered email domains from the database.</p>
+<pre><code class="language-json">{ &quot;action&quot;: &quot;domains&quot; }
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;domains&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;domain&quot;: &quot;yourdomain.com&quot;,
+      &quot;verification_status&quot;: &quot;verified&quot;,
+      &quot;is_default&quot;: true,
+      &quot;bounce_rate&quot;: 0.5,
+      &quot;complaint_rate&quot;: 0.1,
+      &quot;reputation_status&quot;: &quot;healthy&quot;,
+      &quot;created_at&quot;: &quot;2026-03-11T00:00:00Z&quot;
+    }
+  ]
+}
+</code></pre>
+<hr>
+<h3>Action: logs</h3>
+<p>Get email send logs.</p>
+<pre><code class="language-json">{ &quot;action&quot;: &quot;logs&quot; }
+</code></pre>
+<p>Optional body fields: <code>status</code>, <code>emailType</code>, <code>limit</code> (default 50).</p>
+<p>Valid <code>status</code> values: <code>&quot;queued&quot;</code>, <code>&quot;sent&quot;</code>, <code>&quot;delivered&quot;</code>, <code>&quot;bounced&quot;</code>, <code>&quot;complained&quot;</code>, <code>&quot;failed&quot;</code></p>
+<hr>
+<h3>Action: analytics</h3>
+<p>Get email delivery analytics. Data is sourced from the <code>email_analytics</code> table, populated by Resend webhook events.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;analytics&quot;,
+  &quot;dateRange&quot;: { &quot;start&quot;: &quot;2026-01-01&quot;, &quot;end&quot;: &quot;2026-01-31&quot; }
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;totalSent&quot;: 1500,
+  &quot;totalDelivered&quot;: 1450,
+  &quot;totalBounced&quot;: 25,
+  &quot;totalComplained&quot;: 3,
+  &quot;totalOpened&quot;: 600,
+  &quot;totalClicked&quot;: 120,
+  &quot;deliveryRate&quot;: 96.67,
+  &quot;bounceRate&quot;: 1.67,
+  &quot;complaintRate&quot;: 0.20,
+  &quot;openRate&quot;: 41.38,
+  &quot;clickRate&quot;: 20.0,
+  &quot;dailyData&quot;: []
+}
+</code></pre>
+<hr>
+<h3>Actions Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+<th>Auth</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>send</code></td>
+<td>Send an email (HTML, text, or template)</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>add-domain</code></td>
+<td>Add a domain to the database</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>mark-domain-verified</code></td>
+<td>Mark domain verified after Resend dashboard confirmation</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>domains</code></td>
+<td>List all domains from database</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td>Get email sending logs</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>analytics</code></td>
+<td>Get aggregated email analytics</td>
+<td>User</td>
+</tr>
+</tbody></table>
+<h3>Webhook Events</h3>
+<p>Resend sends delivery events to <code>POST /functions/v1/email-webhooks</code>. Configure this endpoint in the <a href="https://resend.com/webhooks">Resend Dashboard → Webhooks</a>. Signatures are verified using <code>RESEND_WEBHOOK_SECRET</code> (Svix HMAC-SHA256).</p>
+<table>
+<thead>
+<tr>
+<th>Resend Event</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>email.sent</code></td>
+<td>Email accepted by Resend</td>
+</tr>
+<tr>
+<td><code>email.delivered</code></td>
+<td>Successfully delivered to recipient</td>
+</tr>
+<tr>
+<td><code>email.delivery_delayed</code></td>
+<td>Temporary delivery delay</td>
+</tr>
+<tr>
+<td><code>email.bounced</code></td>
+<td>Permanent bounce</td>
+</tr>
+<tr>
+<td><code>email.complained</code></td>
+<td>Spam complaint</td>
+</tr>
+<tr>
+<td><code>email.opened</code></td>
+<td>Recipient opened the email</td>
+</tr>
+<tr>
+<td><code>email.clicked</code></td>
+<td>Recipient clicked a link</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>12. Messaging API SMS WhatsApp</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/messaging-api</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Action-based provider-agnostic messaging via Twilio. Supports SMS and WhatsApp.</p>
+<p>All requests use <code>POST</code> with <code>{ &quot;action&quot;: &quot;&lt;action&gt;&quot;, ...params }</code>.</p>
+<h3>Action: send</h3>
+<p>Send a message to one or more recipients.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;send&quot;,
+  &quot;channel&quot;: &quot;sms&quot;,
+  &quot;to&quot;: &quot;+1234567890&quot;,
+  &quot;content&quot;: &quot;Hello from Material KAI!&quot;,
+  &quot;from&quot;: &quot;+0987654321&quot;,
+  &quot;templateId&quot;: &quot;template-uuid&quot;,
+  &quot;templateVariables&quot;: { &quot;name&quot;: &quot;John&quot; },
+  &quot;mediaUrl&quot;: &quot;https://example.com/image.jpg&quot;,
+  &quot;messageType&quot;: &quot;transactional&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>channel</code></td>
+<td>string</td>
+<td><code>&quot;sms&quot;</code> or <code>&quot;whatsapp&quot;</code></td>
+</tr>
+<tr>
+<td><code>to</code></td>
+<td>string or string[]</td>
+<td>Phone number(s) in E.164 format</td>
+</tr>
+<tr>
+<td><code>messageType</code></td>
+<td>string</td>
+<td><code>&quot;transactional&quot;</code>, <code>&quot;marketing&quot;</code>, <code>&quot;otp&quot;</code>, <code>&quot;notification&quot;</code></td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;sent&quot;: 1,
+  &quot;failed&quot;: 0,
+  &quot;results&quot;: [{ &quot;success&quot;: true, &quot;messageId&quot;: &quot;SM...&quot;, &quot;status&quot;: &quot;queued&quot;, &quot;to&quot;: &quot;+1234567890&quot; }]
+}
+</code></pre>
+<hr>
+<h3>Action: send-bulk</h3>
+<p>Send to multiple recipients with per-recipient variable substitution.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;send-bulk&quot;,
+  &quot;channel&quot;: &quot;sms&quot;,
+  &quot;recipients&quot;: [
+    { &quot;to&quot;: &quot;+1234567890&quot;, &quot;variables&quot;: { &quot;name&quot;: &quot;John&quot; } },
+    { &quot;to&quot;: &quot;+0987654321&quot;, &quot;variables&quot;: { &quot;name&quot;: &quot;Jane&quot; } }
+  ],
+  &quot;content&quot;: &quot;Hi {{name}}, your order is ready!&quot;,
+  &quot;messageType&quot;: &quot;notification&quot;
+}
+</code></pre>
+<hr>
+<h3>Action: channels</h3>
+<p>List configured messaging channels.</p>
+<hr>
+<h3>Action: templates</h3>
+<p>List message templates.</p>
+<hr>
+<h3>Action: logs</h3>
+<p>Get message send logs.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;logs&quot;,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0,
+  &quot;channel&quot;: &quot;sms&quot;,
+  &quot;status&quot;: &quot;delivered&quot;
+}
+</code></pre>
+<hr>
+<h3>Action: analytics</h3>
+<p>Get messaging analytics for a date range.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;analytics&quot;,
+  &quot;startDate&quot;: &quot;2026-01-01T00:00:00Z&quot;,
+  &quot;endDate&quot;: &quot;2026-01-31T00:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;total&quot;: 500,
+  &quot;byStatus&quot;: { &quot;delivered&quot;: 480, &quot;failed&quot;: 20 },
+  &quot;byChannel&quot;: { &quot;sms&quot;: 400, &quot;whatsapp&quot;: 100 }
+}
+</code></pre>
+<hr>
+<h3>Action: balance</h3>
+<p>Get Twilio account balance.</p>
+<hr>
+<h3>Action: sync-channels</h3>
+<p>Sync phone numbers from Twilio account as messaging channels.</p>
+<hr>
+<h3>Action: send-test</h3>
+<p>Send a test message.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;send-test&quot;,
+  &quot;channel&quot;: &quot;sms&quot;,
+  &quot;testNumber&quot;: &quot;+1234567890&quot;,
+  &quot;content&quot;: &quot;Test message&quot;
+}
+</code></pre>
+<hr>
+<h3>Action: get-settings</h3>
+<p>Get messaging provider settings.</p>
+<hr>
+<h3>Action: update-settings</h3>
+<p>Update messaging settings.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;update-settings&quot;,
+  &quot;settings&quot;: { &quot;provider&quot;: &quot;twilio&quot; }
+}
+</code></pre>
+<hr>
+<h2>13. Recommendations API</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/recommendations-api</code>
+<strong>Auth</strong>: User JWT or Service Role Key</p>
+<h3>POST /functions/v1/recommendations-api/track-interaction</h3>
+<p>Track a user interaction with a material. Triggers recommendation cache invalidation.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;material_id&quot;: &quot;uuid&quot;,
+  &quot;interaction_type&quot;: &quot;view&quot;,
+  &quot;interaction_value&quot;: 1.0,
+  &quot;session_id&quot;: &quot;optional-session-id&quot;,
+  &quot;metadata&quot;: {}
+}
+</code></pre>
+<p>Valid <code>interaction_type</code> values: <code>view</code>, <code>click</code>, <code>save</code>, <code>purchase</code>, <code>rate</code>, <code>add_to_quote</code>, <code>share</code></p>
+<p><strong>Response</strong> <code>201</code>:</p>
+<pre><code class="language-json">{ &quot;data&quot;: {}, &quot;message&quot;: &quot;Interaction tracked successfully&quot; }
+</code></pre>
+<hr>
+<h3>GET /functions/v1/recommendations-api/for-user</h3>
+<p>Get recommendations for the current user (cache-first).</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>workspace_id</code></td>
+<td>Yes</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>No</td>
+<td>20</td>
+</tr>
+<tr>
+<td><code>algorithm</code></td>
+<td>No</td>
+<td><code>&quot;user_user&quot;</code></td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    { &quot;material_id&quot;: &quot;uuid&quot;, &quot;score&quot;: 0.92, &quot;confidence&quot;: 0.8, &quot;algorithm&quot;: &quot;user_user&quot; }
+  ],
+  &quot;cached&quot;: true
+}
+</code></pre>
+<hr>
+<h3>GET /functions/v1/recommendations-api/similar-materials/{material_id}</h3>
+<p>Get materials similar to a given material using item-item collaborative filtering.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>workspace_id</code></td>
+<td>Yes</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>No</td>
+<td>10</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>GET /functions/v1/recommendations-api/analytics/{workspace_id}</h3>
+<p>Get interaction and recommendation analytics for a workspace.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>days</code></td>
+<td>30</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>DELETE /functions/v1/recommendations-api/cache</h3>
+<p>Invalidate recommendation cache for the current user.</p>
+<p><strong>Query Params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>workspace_id</code></td>
+<td>Filter by workspace</td>
+</tr>
+<tr>
+<td><code>material_id</code></td>
+<td>Filter by material</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>14. Generate VR World</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-vr-world</code>
+<strong>Auth</strong>: User JWT (required)
+<strong>Description</strong>: Generates an explorable 3D Gaussian Splat world from an interior design image using WorldLabs Marble API. Debits credits on start and refunds on failure. Polls until complete synchronously.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;source_image_url&quot;: &quot;https://storage.supabase.co/...&quot;,
+  &quot;prompt&quot;: &quot;Modern living room with marble floors and warm lighting&quot;,
+  &quot;room_type&quot;: &quot;living_room&quot;,
+  &quot;style&quot;: &quot;modern&quot;,
+  &quot;model&quot;: &quot;marble-0.1-mini&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source_image_url</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td>Publicly accessible image URL</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td>Text description of the desired world</td>
+</tr>
+<tr>
+<td><code>room_type</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td>Room type hint (e.g. <code>&quot;living_room&quot;</code>)</td>
+</tr>
+<tr>
+<td><code>style</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td>Style hint (e.g. <code>&quot;modern&quot;</code>)</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td><code>&quot;marble-0.1-mini&quot;</code> or <code>&quot;marble-0.1-plus&quot;</code></td>
+</tr>
+</tbody></table>
+<h3>Credit Costs</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+<th>Estimated Time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>marble-0.1-mini</code></td>
+<td>75</td>
+<td>30-45 seconds</td>
+</tr>
+<tr>
+<td><code>marble-0.1-plus</code></td>
+<td>300</td>
+<td>~5 minutes</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;vr-world-uuid&quot;,
+    &quot;world_id&quot;: &quot;worldlabs-id&quot;,
+    &quot;status&quot;: &quot;completed&quot;,
+    &quot;splat_url_100k&quot;: &quot;https://...&quot;,
+    &quot;splat_url_500k&quot;: &quot;https://...&quot;,
+    &quot;splat_url_full&quot;: &quot;https://...&quot;,
+    &quot;collider_glb_url&quot;: &quot;https://...&quot;,
+    &quot;panorama_url&quot;: &quot;https://...&quot;,
+    &quot;thumbnail_url&quot;: &quot;https://...&quot;,
+    &quot;caption&quot;: &quot;A modern living room...&quot;,
+    &quot;credits_charged&quot;: 75,
+    &quot;completed_at&quot;: &quot;2026-03-07T12:00:00Z&quot;
+  }
+}
+</code></pre>
+<h3>Error Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>401</code></td>
+<td>Unauthorized</td>
+</tr>
+<tr>
+<td><code>402</code></td>
+<td>Insufficient credits</td>
+</tr>
+<tr>
+<td><code>405</code></td>
+<td>Method not allowed (not POST)</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Generation failed (credits automatically refunded)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>15. Generate Quote PDF</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-quote-pdf</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Generates a branded PDF for a quote and uploads to Supabase Storage. Returns a signed URL valid for 7 days.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;quote_id&quot;: &quot;uuid&quot;,
+  &quot;regenerate&quot;: false
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>quote_id</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td>Quote UUID from the <code>quotes</code> table</td>
+</tr>
+<tr>
+<td><code>regenerate</code></td>
+<td><code>boolean</code></td>
+<td>No</td>
+<td>Force regeneration even if PDF already exists</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;quote_number&quot;: &quot;Q-2026-001&quot;,
+  &quot;pdf_url&quot;: &quot;https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1/object/sign/...&quot;,
+  &quot;pdf_storage_path&quot;: &quot;quotes/{id}/quote-Q-2026-001.pdf&quot;
+}
+</code></pre>
+<hr>
+<h2>16. Web Scraping Session Manager</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/scrape-session-manager</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Controls the lifecycle of a web scraping session.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;sessionId&quot;: &quot;uuid&quot;,
+  &quot;action&quot;: &quot;start&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sessionId</code></td>
+<td><code>string</code></td>
+<td>UUID from <code>scraping_sessions</code> table</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td><code>string</code></td>
+<td><code>&quot;start&quot;</code>, <code>&quot;pause&quot;</code>, <code>&quot;resume&quot;</code>, <code>&quot;stop&quot;</code></td>
+</tr>
+</tbody></table>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;action&quot;: &quot;start&quot;,
+  &quot;sessionId&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Starting a session triggers async background processing. Pages are processed in batches of 3. On completion, automatically triggers product creation via the Python backend with exponential-backoff retry (up to 3 attempts).</p>
+<hr>
+<h2>17. Web Scraping Single Page</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/scrape-single-page</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Scrapes a single URL using Firecrawl v2 API and extracts material data using structured AI extraction.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;pageUrl&quot;: &quot;https://example.com/products/marble-tile&quot;,
+  &quot;sessionId&quot;: &quot;uuid&quot;,
+  &quot;pageId&quot;: &quot;uuid&quot;,
+  &quot;options&quot;: {
+    &quot;prompt&quot;: &quot;Extract all materials...&quot;,
+    &quot;systemPrompt&quot;: null,
+    &quot;schema&quot;: {},
+    &quot;timeout&quot;: 30000
+  }
+}
+</code></pre>
+<p>All three of <code>pageUrl</code>, <code>sessionId</code>, and <code>pageId</code> are required.</p>
+<h3>Response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;pageId&quot;: &quot;uuid&quot;,
+  &quot;materialsFound&quot;: 3,
+  &quot;processingTimeMs&quot;: 4200,
+  &quot;error&quot;: null
+}
+</code></pre>
+<hr>
+<h2>18. Web Scraping Sitemap Parser</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/parse-sitemap</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Parses a sitemap XML and extracts page URLs for scraping sessions.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://example.com/sitemap.xml&quot;
+}
+</code></pre>
+<hr>
+<h2>19. Web Scraping Preview</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/scrape-preview</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Preview extractable content from a URL without creating a session.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://example.com/products&quot;
+}
+</code></pre>
+<hr>
+<h2>20. PDF Batch Process</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/pdf-batch-process</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Batch-process up to 100 documents for PDF extraction. Returns immediately with a <code>batchId</code> for polling.</p>
+<h3>POST /functions/v1/pdf-batch-process</h3>
+<p>Create a batch processing job.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;documents&quot;: [
+    {
+      &quot;documentId&quot;: &quot;uuid&quot;,
+      &quot;extractionType&quot;: &quot;all&quot;,
+      &quot;priority&quot;: &quot;normal&quot;
+    }
+  ],
+  &quot;workspaceId&quot;: &quot;uuid&quot;,
+  &quot;options&quot;: {
+    &quot;includeImages&quot;: true,
+    &quot;includeMetadata&quot;: true,
+    &quot;chunkSize&quot;: 1000,
+    &quot;overlapSize&quot;: 100,
+    &quot;outputFormat&quot;: &quot;json&quot;,
+    &quot;maxConcurrent&quot;: 3,
+    &quot;notifyOnComplete&quot;: true,
+    &quot;webhookUrl&quot;: &quot;https://yourapp.com/webhook&quot;
+  }
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>extractionType</code></td>
+<td><code>&quot;markdown&quot;</code>, <code>&quot;tables&quot;</code>, <code>&quot;images&quot;</code>, <code>&quot;all&quot;</code></td>
+</tr>
+<tr>
+<td><code>priority</code></td>
+<td><code>&quot;low&quot;</code>, <code>&quot;normal&quot;</code>, <code>&quot;high&quot;</code></td>
+</tr>
+<tr>
+<td><code>maxConcurrent</code></td>
+<td>1 to 10</td>
+</tr>
+<tr>
+<td><code>chunkSize</code></td>
+<td>100 to 10000</td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong> <code>202</code>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;batchId&quot;: &quot;batch_1741234567_abc123&quot;,
+    &quot;status&quot;: &quot;queued&quot;,
+    &quot;totalDocuments&quot;: 5,
+    &quot;processedDocuments&quot;: 0,
+    &quot;failedDocuments&quot;: 0,
+    &quot;estimatedCompletionTime&quot;: &quot;2026-03-07T12:05:00Z&quot;,
+    &quot;results&quot;: [
+      { &quot;documentId&quot;: &quot;uuid&quot;, &quot;status&quot;: &quot;pending&quot; }
+    ]
+  }
+}
+</code></pre>
+<hr>
+<h3>GET /functions/v1/pdf-batch-process?batchId={id}</h3>
+<p>Poll batch job status and results.</p>
+<hr>
+<h3>DELETE /functions/v1/pdf-batch-process?batchId={id}</h3>
+<p>Cancel a queued or processing batch job.</p>
+<hr>
+<h2>21. Price Monitoring</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/price-monitoring</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Monitor competitor prices for products using Firecrawl web scraping.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;start_monitoring&quot;,
+  &quot;productId&quot;: &quot;uuid&quot;,
+  &quot;monitoringSettings&quot;: {
+    &quot;frequency&quot;: &quot;weekly&quot;,
+    &quot;enabled&quot;: true
+  }
+}
+</code></pre>
+<h3>Actions</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>start_monitoring</code></td>
+<td>Enable monitoring with frequency setting</td>
+</tr>
+<tr>
+<td><code>stop_monitoring</code></td>
+<td>Pause monitoring for a product</td>
+</tr>
+<tr>
+<td><code>check_now</code></td>
+<td>On-demand price check against all competitor sources</td>
+</tr>
+<tr>
+<td><code>get_status</code></td>
+<td>Get monitoring config, latest prices, and recent jobs</td>
+</tr>
+</tbody></table>
+<p>Valid frequencies: <code>&quot;hourly&quot;</code>, <code>&quot;daily&quot;</code>, <code>&quot;weekly&quot;</code>, <code>&quot;on_demand&quot;</code></p>
+<h3>Response for get_status</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;monitoring&quot;: {},
+  &quot;latestPrices&quot;: [],
+  &quot;recentJobs&quot;: [],
+  &quot;sources&quot;: []
+}
+</code></pre>
+<h3>Response for check_now</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Price check completed&quot;,
+  &quot;jobId&quot;: &quot;uuid&quot;,
+  &quot;results&quot;: {
+    &quot;sourcesChecked&quot;: 3,
+    &quot;pricesFound&quot;: 2,
+    &quot;creditsConsumed&quot;: 3
+  }
+}
+</code></pre>
+<hr>
+<h2>22. SEO Pipeline</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/seo-pipeline</code>
+<strong>Auth</strong>: User JWT (required)
+<strong>Description</strong>: Full 5-stage SEO article pipeline: Research → Plan → Write → Analyze → Finalize. Long-running (2 to 5 minutes). Creates an <code>seo_articles</code> record immediately; poll that record for progress updates.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;Marble bathroom tiles guide&quot;,
+  &quot;target_keyword&quot;: &quot;marble bathroom tiles&quot;,
+  &quot;language_code&quot;: &quot;en&quot;,
+  &quot;location_code&quot;: 2840,
+  &quot;content_brief&quot;: {
+    &quot;contentType&quot;: &quot;guide&quot;,
+    &quot;targetAudience&quot;: &quot;homeowners&quot;,
+    &quot;toneOfVoice&quot;: &quot;professional&quot;,
+    &quot;targetWordCount&quot;: 2000
+  },
+  &quot;additional_instructions&quot;: &quot;Focus on maintenance tips&quot;,
+  &quot;auto_fix&quot;: true,
+  &quot;max_fix_iterations&quot;: 3,
+  &quot;skip_research&quot;: false,
+  &quot;existing_research&quot;: null
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>topic</code></td>
+<td>Yes</td>
+<td>Article topic</td>
+</tr>
+<tr>
+<td><code>target_keyword</code></td>
+<td>Yes</td>
+<td>Primary SEO keyword</td>
+</tr>
+<tr>
+<td><code>language_code</code></td>
+<td>No</td>
+<td>Default: <code>&quot;en&quot;</code></td>
+</tr>
+<tr>
+<td><code>location_code</code></td>
+<td>No</td>
+<td>DataForSEO location code. Default: <code>2840</code> (US)</td>
+</tr>
+<tr>
+<td><code>content_brief</code></td>
+<td>No</td>
+<td>Content configuration object</td>
+</tr>
+<tr>
+<td><code>auto_fix</code></td>
+<td>No</td>
+<td>Auto-fix quality issues. Default: <code>true</code></td>
+</tr>
+<tr>
+<td><code>max_fix_iterations</code></td>
+<td>No</td>
+<td>Max auto-fix rounds. Default: <code>3</code></td>
+</tr>
+<tr>
+<td><code>skip_research</code></td>
+<td>No</td>
+<td>Skip keyword research (requires <code>existing_research</code>)</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;article_id&quot;: &quot;uuid&quot;,
+    &quot;article&quot;: {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;title&quot;: &quot;Complete Guide to Marble Bathroom Tiles&quot;,
+      &quot;contentMarkdown&quot;: &quot;# Complete Guide...&quot;,
+      &quot;contentHtml&quot;: &quot;&lt;h1&gt;Complete Guide...&lt;/h1&gt;&quot;,
+      &quot;wordCount&quot;: 2150,
+      &quot;metaTitle&quot;: &quot;...&quot;,
+      &quot;metaDescription&quot;: &quot;...&quot;,
+      &quot;slug&quot;: &quot;marble-bathroom-tiles-guide&quot;,
+      &quot;schemaMarkup&quot;: {},
+      &quot;faqSchema&quot;: [],
+      &quot;optimize&quot;: { &quot;contentScore&quot;: 87, &quot;avgCompetitorScore&quot;: 72 },
+      &quot;status&quot;: &quot;completed&quot;
+    }
+  }
+}
+</code></pre>
+<p>Poll the <code>seo_articles</code> table by <code>id</code> for <code>status</code>, <code>progress_percentage</code>, and <code>current_stage</code>.</p>
+<p><strong>Status values</strong>: <code>&quot;researching&quot;</code> → <code>&quot;planning&quot;</code> → <code>&quot;writing&quot;</code> → <code>&quot;analyzing&quot;</code> → <code>&quot;completed&quot;</code> / <code>&quot;failed&quot;</code></p>
+<hr>
+<h2>23. SEO Sub-functions</h2>
+<p>Called internally by <code>seo-pipeline</code> but also callable directly.</p>
+<h3>POST /functions/v1/seo-research</h3>
+<p>Keyword research via DataForSEO.</p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;marble tiles&quot;,
+  &quot;target_keyword&quot;: &quot;marble bathroom tiles&quot;,
+  &quot;language_code&quot;: &quot;en&quot;,
+  &quot;location_code&quot;: 2840,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/seo-plan</h3>
+<p>Generate article plan and structure from research data.</p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;marble tiles&quot;,
+  &quot;target_keyword&quot;: &quot;marble bathroom tiles&quot;,
+  &quot;keyword_research&quot;: {},
+  &quot;content_brief&quot;: {},
+  &quot;additional_instructions&quot;: &quot;...&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/seo-write</h3>
+<p>Write article content from a plan.</p>
+<pre><code class="language-json">{
+  &quot;article_plan&quot;: {},
+  &quot;content_brief&quot;: {},
+  &quot;keyword_research_summary&quot;: {},
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/seo-analyze</h3>
+<p>Analyze and optionally auto-fix article content for SEO quality.</p>
+<pre><code class="language-json">{
+  &quot;content_markdown&quot;: &quot;# Article content...&quot;,
+  &quot;article_plan&quot;: {},
+  &quot;content_brief&quot;: {},
+  &quot;auto_fix&quot;: true,
+  &quot;max_iterations&quot;: 3,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<hr>
+<h2>24. Background Agent Runner</h2>
+<p><strong>Endpoint Base</strong>: <code>/functions/v1/background-agent-runner</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Executes registered background agents. Supports chain triggers, Python backend delegation, and chat callback posting.</p>
+<h3>GET /functions/v1/background-agent-runner?catalog=1</h3>
+<p>Get the agent type catalog.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{ &quot;catalog&quot;: [] }
+</code></pre>
+<hr>
+<h3>POST /functions/v1/background-agent-runner</h3>
+<p>Run a background agent.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;agent_id&quot;: &quot;uuid&quot;,
+  &quot;run_id&quot;: null,
+  &quot;input_data&quot;: { &quot;custom_param&quot;: &quot;value&quot; },
+  &quot;triggered_by&quot;: &quot;manual&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent_id</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td>UUID from <code>background_agents</code> table</td>
+</tr>
+<tr>
+<td><code>run_id</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td>Resume an existing pending run</td>
+</tr>
+<tr>
+<td><code>input_data</code></td>
+<td><code>object</code></td>
+<td>No</td>
+<td>Override or augment agent config input</td>
+</tr>
+<tr>
+<td><code>triggered_by</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td><code>&quot;cron&quot;</code>, <code>&quot;event&quot;</code>, <code>&quot;manual&quot;</code>, <code>&quot;chain&quot;</code>, or <code>&quot;api&quot;</code></td>
+</tr>
+</tbody></table>
+<p><strong>Response (completed)</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;run_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;duration_ms&quot;: 4200,
+  &quot;output&quot;: {}
+}
+</code></pre>
+<p><strong>Response (delegated to Python backend)</strong>:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;run_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;delegated_to_python&quot;: true,
+  &quot;duration_ms&quot;: 100
+}
+</code></pre>
+<hr>
+<h2>25. Flow Engine and Webhooks</h2>
+<h3>POST /functions/v1/flow-engine</h3>
+<p>Execute an automation flow.</p>
+<pre><code class="language-json">{
+  &quot;flow_id&quot;: &quot;uuid&quot;,
+  &quot;trigger_data&quot;: {}
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/flow-webhook</h3>
+<p>Receive external webhook events to trigger flows.</p>
+<pre><code class="language-json">{
+  &quot;event_type&quot;: &quot;product_created&quot;,
+  &quot;data&quot;: {}
+}
+</code></pre>
+<hr>
+<h2>26. Field Templates and Suggest Fields</h2>
+<h3>GET or POST /functions/v1/field-templates</h3>
+<p>Manage field mapping templates for web scraping schemas.</p>
+<hr>
+<h3>POST /functions/v1/suggest-fields</h3>
+<p>AI-powered field suggestion for scraping extraction schemas.</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://example.com/products&quot;,
+  &quot;context&quot;: &quot;tile manufacturer catalog&quot;
+}
+</code></pre>
+<hr>
+<h2>27. Batch Update Sessions</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/batch-update-sessions</code>
+<strong>Auth</strong>: User JWT or Service Role Key
+<strong>Description</strong>: Batch-update multiple scraping session records.</p>
+<hr>
+<h2>28. Health Check</h2>
+<p><strong>Endpoint</strong>: <code>GET /functions/v1/health-check</code>
+<strong>Auth</strong>: User JWT or Service Role Key (JWT verification enabled)
+<strong>Description</strong>: Platform health check endpoint.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;timestamp&quot;: &quot;2026-03-07T12:00:00Z&quot;
+}
+</code></pre>
+<hr>
+<h2>29. Supabase REST API Direct Table Access</h2>
+<p>All tables are accessible via the Supabase PostgREST API with Row Level Security enforced.</p>
+<p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/rest/v1</code></p>
+<p><strong>Required Headers</strong>:</p>
+<pre><code>apikey: &lt;anon-key-or-service-role-key&gt;
+Authorization: Bearer &lt;jwt-token&gt;
+Content-Type: application/json
+</code></pre>
+<h3>Key Tables</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>products</code></td>
+<td>Material/product catalog</td>
+</tr>
+<tr>
+<td><code>workspaces</code></td>
+<td>Workspace records</td>
+</tr>
+<tr>
+<td><code>workspace_members</code></td>
+<td>Workspace membership</td>
+</tr>
+<tr>
+<td><code>user_profiles</code></td>
+<td>User profile data (role, subscription, stripe_customer_id)</td>
+</tr>
+<tr>
+<td><code>user_credits</code></td>
+<td>Credit balance</td>
+</tr>
+<tr>
+<td><code>ai_usage_logs</code></td>
+<td>AI usage and billing history</td>
+</tr>
+<tr>
+<td><code>quotes</code></td>
+<td>Quote records</td>
+</tr>
+<tr>
+<td><code>quote_items</code></td>
+<td>Line items for quotes</td>
+</tr>
+<tr>
+<td><code>quote_requests</code></td>
+<td>Customer quote requests</td>
+</tr>
+<tr>
+<td><code>proposals</code></td>
+<td>Admin responses to quote requests</td>
+</tr>
+<tr>
+<td><code>crm_contacts</code></td>
+<td>CRM contact records</td>
+</tr>
+<tr>
+<td><code>crm_companies</code></td>
+<td>CRM company records</td>
+</tr>
+<tr>
+<td><code>crm_company_contacts</code></td>
+<td>Company-contact relationships</td>
+</tr>
+<tr>
+<td><code>scraping_sessions</code></td>
+<td>Web scraping session records</td>
+</tr>
+<tr>
+<td><code>scraping_pages</code></td>
+<td>Individual pages in a scraping session</td>
+</tr>
+<tr>
+<td><code>scraped_materials_temp</code></td>
+<td>Extracted materials awaiting approval</td>
+</tr>
+<tr>
+<td><code>background_agents</code></td>
+<td>Background agent configuration</td>
+</tr>
+<tr>
+<td><code>agent_runs</code></td>
+<td>Agent execution history</td>
+</tr>
+<tr>
+<td><code>agent_run_logs</code></td>
+<td>Agent run log entries (Realtime enabled)</td>
+</tr>
+<tr>
+<td><code>agent_chat_conversations</code></td>
+<td>Chat conversation records</td>
+</tr>
+<tr>
+<td><code>agent_chat_messages</code></td>
+<td>Chat message history</td>
+</tr>
+<tr>
+<td><code>seo_articles</code></td>
+<td>SEO article records (poll for pipeline status)</td>
+</tr>
+<tr>
+<td><code>email_templates</code></td>
+<td>Email template library</td>
+</tr>
+<tr>
+<td><code>email_logs</code></td>
+<td>Email send history</td>
+</tr>
+<tr>
+<td><code>email_analytics</code></td>
+<td>Daily email analytics aggregates</td>
+</tr>
+<tr>
+<td><code>email_domains</code></td>
+<td>Verified email domains</td>
+</tr>
+<tr>
+<td><code>messaging_channels</code></td>
+<td>Twilio messaging channels</td>
+</tr>
+<tr>
+<td><code>messaging_templates</code></td>
+<td>Message templates</td>
+</tr>
+<tr>
+<td><code>messaging_logs</code></td>
+<td>Message send history</td>
+</tr>
+<tr>
+<td><code>vr_worlds</code></td>
+<td>WorldLabs VR world records</td>
+</tr>
+<tr>
+<td><code>price_monitoring_products</code></td>
+<td>Price monitoring configuration</td>
+</tr>
+<tr>
+<td><code>price_history</code></td>
+<td>Historical competitor price records</td>
+</tr>
+<tr>
+<td><code>competitor_sources</code></td>
+<td>Competitor URLs for price monitoring</td>
+</tr>
+<tr>
+<td><code>product_prices</code></td>
+<td><strong>Admin-only (RLS).</strong> Confirmed KB-sourced prices cached per product. <code>(workspace_id, product_id)</code> unique. Includes <code>source_kb_doc_ids</code>, <code>price_lookup_call_id</code> audit link. <strong>(2026-04)</strong></td>
+</tr>
+<tr>
+<td><code>subscription_plans</code></td>
+<td>Available subscription plans</td>
+</tr>
+<tr>
+<td><code>roles</code></td>
+<td>User role definitions</td>
+</tr>
+<tr>
+<td><code>kb_categories</code></td>
+<td>KB category hierarchy (includes <code>slug</code>, <code>access_level</code>, <code>trigger_keyword</code>)</td>
+</tr>
+<tr>
+<td><code>kb_docs</code></td>
+<td>KB document records (includes <code>price_doc_type</code> for Pricing category docs)</td>
+</tr>
+<tr>
+<td><code>agent_tool_call_logs</code></td>
+<td>Per-tool-call logs with <code>tool_name</code>, <code>tool_args</code>, <code>result_summary</code>. Use <code>tool_name=&#39;price_lookup&#39;</code> for pricing analytics.</td>
+</tr>
+</tbody></table>
+<h3>Common Query Patterns</h3>
+<p><strong>List products</strong>:</p>
+<pre><code>GET /rest/v1/products?select=*&amp;order=created_at.desc&amp;limit=20
+</code></pre>
+<p><strong>Filter by workspace</strong>:</p>
+<pre><code>GET /rest/v1/products?workspace_id=eq.{uuid}&amp;select=id,name,category
+</code></pre>
+<p><strong>Full-text search</strong>:</p>
+<pre><code>GET /rest/v1/products?or=(name.ilike.*marble*,description.ilike.*marble*)
+</code></pre>
+<p><strong>Pagination</strong>:</p>
+<pre><code>GET /rest/v1/products?limit=20&amp;offset=40
+</code></pre>
+<p><strong>Insert</strong>:</p>
+<pre><code>POST /rest/v1/products
+Prefer: return=representation
+Body: { &quot;name&quot;: &quot;...&quot;, &quot;workspace_id&quot;: &quot;...&quot; }
+</code></pre>
+<p><strong>Update</strong>:</p>
+<pre><code>PATCH /rest/v1/products?id=eq.{uuid}
+Body: { &quot;name&quot;: &quot;Updated Name&quot; }
+</code></pre>
+<p><strong>Delete</strong>:</p>
+<pre><code>DELETE /rest/v1/products?id=eq.{uuid}
+</code></pre>
+<p><strong>Realtime subscription</strong> (via Supabase client):</p>
+<pre><code class="language-js">supabase
+  .channel(&#39;agent_runs&#39;)
+  .on(&#39;postgres_changes&#39;, { event: &#39;*&#39;, schema: &#39;public&#39;, table: &#39;agent_runs&#39; }, callback)
+  .subscribe()
+</code></pre>
+<hr>
+<h2>30. Supabase Auth API</h2>
+<p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/auth/v1</code></p>
+<h3>Sign Up</h3>
+<pre><code>POST /auth/v1/signup
+Body: { &quot;email&quot;: &quot;user@example.com&quot;, &quot;password&quot;: &quot;...&quot; }
+</code></pre>
+<h3>Sign In (Password)</h3>
+<pre><code>POST /auth/v1/token?grant_type=password
+Body: { &quot;email&quot;: &quot;user@example.com&quot;, &quot;password&quot;: &quot;...&quot; }
+Response: { &quot;access_token&quot;: &quot;...&quot;, &quot;refresh_token&quot;: &quot;...&quot;, &quot;expires_in&quot;: 3600 }
+</code></pre>
+<h3>Refresh Token</h3>
+<pre><code>POST /auth/v1/token?grant_type=refresh_token
+Body: { &quot;refresh_token&quot;: &quot;...&quot; }
+</code></pre>
+<h3>Get Current User</h3>
+<pre><code>GET /auth/v1/user
+Authorization: Bearer &lt;access_token&gt;
+</code></pre>
+<h3>Update User</h3>
+<pre><code>PUT /auth/v1/user
+Authorization: Bearer &lt;access_token&gt;
+Body: { &quot;email&quot;: &quot;new@example.com&quot;, &quot;password&quot;: &quot;newpassword&quot; }
+</code></pre>
+<h3>Sign Out</h3>
+<pre><code>POST /auth/v1/logout
+Authorization: Bearer &lt;access_token&gt;
+</code></pre>
+<h3>Password Reset (Send Email)</h3>
+<pre><code>POST /auth/v1/recover
+Body: { &quot;email&quot;: &quot;user@example.com&quot; }
+</code></pre>
+<h3>Magic Link</h3>
+<pre><code>POST /auth/v1/magiclink
+Body: { &quot;email&quot;: &quot;user@example.com&quot; }
+</code></pre>
+<h3>OAuth Redirect</h3>
+<pre><code>GET /auth/v1/authorize?provider=google&amp;redirect_to=https://yourapp.com/callback
+</code></pre>
+<p>Supported providers: <code>google</code>, <code>github</code>, <code>discord</code>, <code>facebook</code>, <code>twitter</code>, <code>apple</code>, <code>azure</code></p>
+<hr>
+<h2>31. Supabase Storage API</h2>
+<p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1</code></p>
+<h3>Storage Buckets</h3>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>product-images</code></td>
+<td>Product and material images</td>
+</tr>
+<tr>
+<td><code>workspace-assets</code></td>
+<td>Workspace logos and banners</td>
+</tr>
+<tr>
+<td><code>quote-documents</code></td>
+<td>Generated quote PDFs</td>
+</tr>
+<tr>
+<td><code>quote-templates</code></td>
+<td>PDF template images (cover, background, back cover)</td>
+</tr>
+<tr>
+<td><code>knowledge-base</code></td>
+<td>KB document files</td>
+</tr>
+</tbody></table>
+<h3>Upload File</h3>
+<pre><code>POST /storage/v1/object/{bucket}/{path}
+Authorization: Bearer &lt;token&gt;
+Content-Type: image/jpeg
+Body: &lt;binary content&gt;
+</code></pre>
+<h3>Get Public URL</h3>
+<pre><code>GET /storage/v1/object/public/{bucket}/{path}
+</code></pre>
+<h3>Get Signed URL (Private Buckets)</h3>
+<pre><code>POST /storage/v1/object/sign/{bucket}/{path}
+Body: { &quot;expiresIn&quot;: 3600 }
+Response: { &quot;signedURL&quot;: &quot;https://...&quot; }
+</code></pre>
+<h3>Download File (Authenticated)</h3>
+<pre><code>GET /storage/v1/object/authenticated/{bucket}/{path}
+Authorization: Bearer &lt;token&gt;
+</code></pre>
+<h3>Delete File</h3>
+<pre><code>DELETE /storage/v1/object/{bucket}
+Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
+</code></pre>
+<hr>
+<h2>32. Generate Interior (Gemini)</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-interior-gemini</code>
+<strong>Auth</strong>: User JWT or Service Role Key (with <code>user_id</code> in body)
+<strong>Description</strong>: Multi-mode interior design image generation. Supports text-to-image, image editing, redesign with style transfer, floor plan rendering, and materials boards.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;mode&quot;: &quot;text-to-image&quot;,
+  &quot;prompt&quot;: &quot;Modern minimalist kitchen with marble countertops&quot;,
+  &quot;room_type&quot;: &quot;kitchen&quot;,
+  &quot;style&quot;: &quot;modern&quot;,
+  &quot;sqm&quot;: 25,
+  &quot;aspect_ratio&quot;: &quot;16:9&quot;,
+  &quot;model_tier&quot;: &quot;fast&quot;,
+  &quot;material_images&quot;: [&quot;https://...product-image-1.jpg&quot;],
+  &quot;reference_image_url&quot;: &quot;https://...room-photo.jpg&quot;,
+  &quot;edit_instruction&quot;: &quot;Replace the floor with dark oak&quot;,
+  &quot;style_reference_url&quot;: &quot;https://...mood-image.jpg&quot;,
+  &quot;board_mode&quot;: &quot;presentation-board&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mode</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>text-to-image</code> | <code>image-edit</code> | <code>redesign</code> | <code>copy-style</code> | <code>floor-plan-render</code> | <code>floor-plan-text</code> | <code>materials-selection-board</code></td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>No</td>
+<td>Generation or instruction text</td>
+</tr>
+<tr>
+<td><code>room_type</code></td>
+<td>string</td>
+<td>No</td>
+<td>Room type hint</td>
+</tr>
+<tr>
+<td><code>style</code></td>
+<td>string</td>
+<td>No</td>
+<td>Style hint</td>
+</tr>
+<tr>
+<td><code>sqm</code></td>
+<td>number</td>
+<td>No</td>
+<td>Square meters</td>
+</tr>
+<tr>
+<td><code>aspect_ratio</code></td>
+<td>string</td>
+<td>No</td>
+<td>e.g. <code>16:9</code></td>
+</tr>
+<tr>
+<td><code>model_tier</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>fast</code> | <code>pro</code> | <code>grok</code></td>
+</tr>
+<tr>
+<td><code>material_images</code></td>
+<td>string[]</td>
+<td>No</td>
+<td>Up to 14 catalog product image URLs</td>
+</tr>
+<tr>
+<td><code>reference_image_url</code></td>
+<td>string</td>
+<td>Conditional</td>
+<td>Required for image-edit, redesign, floor-plan-render, materials-selection-board</td>
+</tr>
+<tr>
+<td><code>edit_instruction</code></td>
+<td>string</td>
+<td>No</td>
+<td>Edit-mode instruction</td>
+</tr>
+<tr>
+<td><code>style_reference_url</code></td>
+<td>string</td>
+<td>No</td>
+<td>Style/mood reference image for dual-image modes</td>
+</tr>
+<tr>
+<td><code>board_mode</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>presentation-board</code> | <code>selection-board</code> | <code>photorealistic-render</code></td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>string</td>
+<td>Conditional</td>
+<td>Required when called with service role key</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>Workspace context</td>
+</tr>
+</tbody></table>
+<h3>Credit Cost</h3>
+<table>
+<thead>
+<tr>
+<th>Model Tier</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fast</code> (gemini-3.1-flash-image-preview)</td>
+<td>6</td>
+</tr>
+<tr>
+<td><code>pro</code> (gemini-3-pro-image-preview)</td>
+<td>15</td>
+</tr>
+<tr>
+<td><code>grok</code> (grok-aurora)</td>
+<td>20</td>
+</tr>
+<tr>
+<td>flux-depth-pro (auto for certain modes)</td>
+<td>20</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;mode&quot;: &quot;text-to-image&quot;,
+  &quot;board_mode&quot;: null,
+  &quot;model&quot;: &quot;gemini-3.1-flash-image-preview&quot;,
+  &quot;image_url&quot;: &quot;https://storage.supabase.co/...&quot;,
+  &quot;credits_used&quot;: 6
+}
+</code></pre>
+<hr>
+<h2>33. Generate Interior Video v2</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-interior-video-v2</code>
+<strong>Auth</strong>: User JWT or Service Role Key (with <code>user_id</code> in body)
+<strong>Description</strong>: Multi-model interior video generation. Supports async polling for long generations.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;source_image_url&quot;: &quot;https://...room.jpg&quot;,
+  &quot;video_type&quot;: &quot;walkthrough&quot;,
+  &quot;model&quot;: &quot;veo-2&quot;,
+  &quot;prompt&quot;: &quot;Slow pan through living room&quot;,
+  &quot;aspect_ratio&quot;: &quot;16:9&quot;,
+  &quot;duration_seconds&quot;: 8,
+  &quot;before_image_url&quot;: &quot;https://...before.jpg&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source_image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Public URL of source image</td>
+</tr>
+<tr>
+<td><code>video_type</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>walkthrough</code> | <code>product_spotlight</code> | <code>before_after</code> | <code>floorplan_flythrough</code> | <code>social_reel</code>. Default: <code>walkthrough</code></td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>veo-2</code> | <code>kling-v3.0</code> | <code>wan2.1-i2v-720p</code> | <code>runway-gen4-turbo</code>. Auto-selected by type if omitted</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>No</td>
+<td>Video description</td>
+</tr>
+<tr>
+<td><code>aspect_ratio</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>16:9</code> | <code>9:16</code> | <code>1:1</code>. Default: <code>16:9</code></td>
+</tr>
+<tr>
+<td><code>duration_seconds</code></td>
+<td>number</td>
+<td>No</td>
+<td>Default 8, max 8 (veo) or 10 (kling)</td>
+</tr>
+<tr>
+<td><code>before_image_url</code></td>
+<td>string</td>
+<td>Conditional</td>
+<td>Required for <code>before_after</code> type</td>
+</tr>
+</tbody></table>
+<h3>Credit Cost</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>veo-2</code></td>
+<td>30</td>
+</tr>
+<tr>
+<td><code>kling-v3.0</code></td>
+<td>20</td>
+</tr>
+<tr>
+<td><code>wan2.1-i2v-720p</code></td>
+<td>12</td>
+</tr>
+<tr>
+<td><code>runway-gen4-turbo</code></td>
+<td>40</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;video_url&quot;: &quot;https://... or null (if async)&quot;,
+  &quot;model_used&quot;: &quot;veo-2&quot;,
+  &quot;credits_used&quot;: 30,
+  &quot;video_type&quot;: &quot;walkthrough&quot;,
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;async_job&quot;: true,
+  &quot;prediction_id&quot;: &quot;replicate-id-or-null&quot;
+}
+</code></pre>
+<p>When <code>async_job: true</code>, poll the <code>generation_videos</code> table by <code>job_id</code> for <code>status</code> and <code>video_url</code>.</p>
+<hr>
+<h2>34. Generate PBR Maps</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-pbr-maps</code>
+<strong>Auth</strong>: User JWT or Service Role Key (with <code>user_id</code> in body)
+<strong>Description</strong>: Generates PBR texture maps (albedo, normal, roughness, metalness, tileable) from product images. Tries MIVAA SVBRDF extraction first, falls back to Replicate.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;product_id&quot;: &quot;uuid&quot;,
+  &quot;source_image_url&quot;: &quot;https://...material.jpg&quot;,
+  &quot;generate_tileable&quot;: true,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>product_id</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Product UUID</td>
+</tr>
+<tr>
+<td><code>source_image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Material image URL</td>
+</tr>
+<tr>
+<td><code>generate_tileable</code></td>
+<td>boolean</td>
+<td>No</td>
+<td>Default: <code>true</code></td>
+</tr>
+</tbody></table>
+<h3>Credit Cost: 8 credits (fixed)</h3>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;product_id&quot;: &quot;uuid&quot;,
+  &quot;pbr_maps&quot;: {
+    &quot;albedo_url&quot;: &quot;https://...&quot;,
+    &quot;normal_url&quot;: &quot;https://...&quot;,
+    &quot;roughness_url&quot;: &quot;https://...&quot;,
+    &quot;metalness_url&quot;: &quot;https://...&quot;,
+    &quot;tileable_url&quot;: &quot;https://...&quot;,
+    &quot;status&quot;: &quot;completed&quot;,
+    &quot;generated_at&quot;: &quot;2026-04-17T12:00:00Z&quot;
+  },
+  &quot;credits_used&quot;: 8
+}
+</code></pre>
+<hr>
+<h2>35. Generate Region Edit</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-region-edit</code>
+<strong>Auth</strong>: User JWT or Service Role Key (with <code>user_id</code> in body)
+<strong>Description</strong>: Masked inpainting — regenerates only painted areas while preserving the rest. Uses Grok Aurora.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;image_url&quot;: &quot;https://...room.jpg&quot;,
+  &quot;mask_data_url&quot;: &quot;data:image/png;base64,...&quot;,
+  &quot;prompt&quot;: &quot;Replace with travertine stone flooring&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Public URL of room image</td>
+</tr>
+<tr>
+<td><code>mask_data_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>PNG data URL (white=regenerate, black=keep)</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>What to change in the masked area</td>
+</tr>
+</tbody></table>
+<h3>Credit Cost: 20 credits (fixed)</h3>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;image_url&quot;: &quot;https://storage.supabase.co/...&quot;,
+  &quot;model&quot;: &quot;grok-2-aurora&quot;,
+  &quot;credits_used&quot;: 20
+}
+</code></pre>
+<hr>
+<h2>36. Generate Virtual Staging</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-virtual-staging</code>
+<strong>Auth</strong>: User JWT or Service Role Key (with <code>user_id</code> in body)
+<strong>Description</strong>: AI-powered virtual staging — adds furniture to empty rooms. Uses Replicate proplabs/virtual-staging model (~56s).</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;source_image_url&quot;: &quot;https://...empty-room.jpg&quot;,
+  &quot;room&quot;: &quot;living_room&quot;,
+  &quot;furniture_style&quot;: &quot;Modern Minimalist&quot;,
+  &quot;furniture_items&quot;: &quot;sofa, coffee table, floor lamp&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;user_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source_image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Empty room image URL</td>
+</tr>
+<tr>
+<td><code>room</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Room type</td>
+</tr>
+<tr>
+<td><code>furniture_style</code></td>
+<td>string</td>
+<td>No</td>
+<td>Default: <code>&quot;Default (AI decides)&quot;</code></td>
+</tr>
+<tr>
+<td><code>furniture_items</code></td>
+<td>string</td>
+<td>No</td>
+<td>Comma-separated furniture list</td>
+</tr>
+</tbody></table>
+<h3>Credit Cost: 20 credits (fixed)</h3>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;image_url&quot;: &quot;https://storage.supabase.co/...&quot;,
+  &quot;credits_used&quot;: 20,
+  &quot;room&quot;: &quot;living_room&quot;,
+  &quot;furniture_style&quot;: &quot;Modern Minimalist&quot;
+}
+</code></pre>
+<hr>
+<h2>37. Social Content Generation</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-social-content</code>
+<strong>Auth</strong>: User JWT
+<strong>Description</strong>: Generates 3 caption variants + hashtags + posting tips using Claude Haiku. Platform-optimized (Instagram 2200 chars, LinkedIn 3000, TikTok 2200, etc.).</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;New marble collection launch&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;tone&quot;: &quot;professional&quot;,
+  &quot;product_info&quot;: &quot;Calacatta Gold marble tiles, 60x60cm&quot;,
+  &quot;include_hashtags&quot;: true,
+  &quot;hashtag_count&quot;: 10,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>topic</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Content topic</td>
+</tr>
+<tr>
+<td><code>platform</code></td>
+<td>string</td>
+<td>Yes</td>
+<td><code>instagram</code> | <code>facebook</code> | <code>linkedin</code> | <code>tiktok</code> | <code>pinterest</code> | <code>youtube</code> | <code>twitter</code> | <code>threads</code></td>
+</tr>
+<tr>
+<td><code>tone</code></td>
+<td>string</td>
+<td>No</td>
+<td>Default: <code>&quot;professional&quot;</code></td>
+</tr>
+<tr>
+<td><code>product_info</code></td>
+<td>string</td>
+<td>No</td>
+<td>Product context</td>
+</tr>
+<tr>
+<td><code>include_hashtags</code></td>
+<td>boolean</td>
+<td>No</td>
+<td>Default: <code>true</code></td>
+</tr>
+<tr>
+<td><code>hashtag_count</code></td>
+<td>number</td>
+<td>No</td>
+<td>Default: 10</td>
+</tr>
+<tr>
+<td><code>post_id</code></td>
+<td>string</td>
+<td>No</td>
+<td>Update existing social_posts record</td>
+</tr>
+</tbody></table>
+<h3>Credit Cost: 2 credits (flat)</h3>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;post_id&quot;: &quot;uuid&quot;,
+  &quot;captions&quot;: [
+    { &quot;variant&quot;: 1, &quot;caption&quot;: &quot;...&quot;, &quot;char_count&quot;: 180 },
+    { &quot;variant&quot;: 2, &quot;caption&quot;: &quot;...&quot;, &quot;char_count&quot;: 195 },
+    { &quot;variant&quot;: 3, &quot;caption&quot;: &quot;...&quot;, &quot;char_count&quot;: 210 }
+  ],
+  &quot;hashtags&quot;: [&quot;#marble&quot;, &quot;#interiordesign&quot;, &quot;...&quot;],
+  &quot;best_time_hint&quot;: &quot;Tuesday 10-11 AM or Thursday 7-8 PM&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;credits_used&quot;: 2,
+  &quot;credits_remaining&quot;: 148
+}
+</code></pre>
+<hr>
+<h2>38. Social Image Generation</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-social-image</code>
+<strong>Auth</strong>: User JWT
+<strong>Description</strong>: Routes to the best image model based on content type. Uploads result to Supabase Storage.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;prompt&quot;: &quot;Elegant bathroom with marble walls, morning light&quot;,
+  &quot;image_type&quot;: &quot;interior&quot;,
+  &quot;model&quot;: &quot;auto&quot;,
+  &quot;aspect_ratio&quot;: &quot;1:1&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Image description</td>
+</tr>
+<tr>
+<td><code>image_type</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>lifestyle</code> | <code>product</code> | <code>interior</code> | <code>artistic</code>. Default: <code>lifestyle</code></td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>aurora</code> | <code>gemini</code> | <code>flux</code> | <code>auto</code>. Default: <code>auto</code></td>
+</tr>
+<tr>
+<td><code>aspect_ratio</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>1:1</code> | <code>4:5</code> | <code>9:16</code> | <code>16:9</code>. Default: <code>1:1</code></td>
+</tr>
+</tbody></table>
+<h3>Credit Cost</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+<th>Auto-selected for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>aurora (grok-2-aurora)</td>
+<td>10</td>
+<td><code>lifestyle</code></td>
+</tr>
+<tr>
+<td>gemini (Gemini Imagen)</td>
+<td>5</td>
+<td><code>product</code>, <code>interior</code></td>
+</tr>
+<tr>
+<td>flux (FLUX 2 Pro)</td>
+<td>6</td>
+<td><code>artistic</code></td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;image_url&quot;: &quot;https://storage.supabase.co/...&quot;,
+  &quot;model_used&quot;: &quot;gemini&quot;,
+  &quot;credits_used&quot;: 5,
+  &quot;credits_remaining&quot;: 143,
+  &quot;aspect_ratio&quot;: &quot;1:1&quot;
+}
+</code></pre>
+<hr>
+<h2>39. Social Video Generation</h2>
+<p><strong>Endpoint</strong>: <code>POST /functions/v1/generate-social-video</code>
+<strong>Auth</strong>: User JWT
+<strong>Description</strong>: Generates social reels via Replicate (Kling) or delegates veo-2 to generate-interior-video-v2. Supports async polling.</p>
+<h3>Request Body</h3>
+<pre><code class="language-json">{
+  &quot;source_image_url&quot;: &quot;https://...room.jpg&quot;,
+  &quot;prompt&quot;: &quot;Slow zoom into bathroom vanity&quot;,
+  &quot;model&quot;: &quot;kling-3.0&quot;,
+  &quot;aspect_ratio&quot;: &quot;9:16&quot;,
+  &quot;duration_seconds&quot;: 10,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source_image_url</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Source image URL</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>kling-3.0</code> | <code>kling-1.6-pro</code> | <code>veo-2</code>. Default: <code>kling-3.0</code></td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>No</td>
+<td>Video description</td>
+</tr>
+<tr>
+<td><code>aspect_ratio</code></td>
+<td>string</td>
+<td>No</td>
+<td>Default: <code>9:16</code></td>
+</tr>
+<tr>
+<td><code>duration_seconds</code></td>
+<td>number</td>
+<td>No</td>
+<td>Default: 10</td>
+</tr>
+</tbody></table>
+<h3>Credit Cost</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kling-3.0</code></td>
+<td>20</td>
+</tr>
+<tr>
+<td><code>kling-1.6-pro</code></td>
+<td>15</td>
+</tr>
+<tr>
+<td><code>veo-2</code></td>
+<td>30</td>
+</tr>
+</tbody></table>
+<h3>Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;video_url&quot;: &quot;https://... or null (if async)&quot;,
+  &quot;job_id&quot;: &quot;uuid&quot;,
+  &quot;prediction_id&quot;: &quot;replicate-id-or-null&quot;,
+  &quot;model_used&quot;: &quot;kling-3.0&quot;,
+  &quot;credits_used&quot;: 20,
+  &quot;status&quot;: &quot;completed&quot;
+}
+</code></pre>
+<p>When <code>status: &quot;processing&quot;</code>, poll using <code>prediction_id</code>.</p>
+<hr>
+<h2>40. Social Publishing (Late.dev)</h2>
+<h3>POST /functions/v1/late-oauth</h3>
+<p><strong>Auth</strong>: User JWT
+<strong>Description</strong>: Manage social account connections via Late.dev OAuth.</p>
+<p><strong>GET</strong> — List connected accounts:</p>
+<pre><code>GET /functions/v1/late-oauth?workspace_id=uuid&amp;include_inactive=false
+</code></pre>
+<p><strong>POST</strong> — Connect/disconnect:</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;connect&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>connect</code></td>
+<td>Returns <code>oauth_url</code> to redirect user to</td>
+</tr>
+<tr>
+<td><code>callback</code></td>
+<td>Complete OAuth (pass <code>code</code>, <code>state</code>)</td>
+</tr>
+<tr>
+<td><code>disconnect</code></td>
+<td>Disconnect account (<code>late_account_id</code>)</td>
+</tr>
+</tbody></table>
+<p>Supported platforms: <code>instagram</code>, <code>facebook</code>, <code>linkedin</code>, <code>tiktok</code>, <code>pinterest</code>, <code>youtube</code>, <code>twitter</code>, <code>threads</code></p>
+<hr>
+<h3>POST /functions/v1/late-publish</h3>
+<p><strong>Auth</strong>: User JWT
+<strong>Description</strong>: Publish or schedule social posts via Late.dev.</p>
+<pre><code class="language-json">{
+  &quot;post_id&quot;: &quot;uuid&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;,
+  &quot;action&quot;: &quot;publish_now&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;scheduled_at&quot;: &quot;2026-04-20T10:00:00Z&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>post_id</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>social_posts record ID</td>
+</tr>
+<tr>
+<td><code>social_account_id</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Connected account ID</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td>string</td>
+<td>Yes</td>
+<td><code>publish_now</code> | <code>schedule</code></td>
+</tr>
+<tr>
+<td><code>scheduled_at</code></td>
+<td>string</td>
+<td>Conditional</td>
+<td>Required for <code>schedule</code> action</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;action&quot;: &quot;publish_now&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;,
+  &quot;late_post_id&quot;: &quot;late-uuid&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;handle&quot;: &quot;@materialkai&quot;
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/late-analytics</h3>
+<p><strong>Auth</strong>: User JWT
+<strong>Description</strong>: Fetch and sync analytics from Late.dev.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;get_post_analytics&quot;,
+  &quot;post_ids&quot;: [&quot;uuid&quot;],
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>get_post_analytics</code></td>
+<td>Fetch analytics for specific post IDs</td>
+</tr>
+<tr>
+<td><code>get_account_insights</code></td>
+<td>Sync account-level insights (<code>social_account_id</code>)</td>
+</tr>
+<tr>
+<td><code>get_best_time</code></td>
+<td>Get best posting times for a platform</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>POST /functions/v1/late-webhook-handler</h3>
+<p><strong>Auth</strong>: None (validates <code>X-Late-Signature</code> HMAC-SHA256)
+<strong>Description</strong>: Webhook receiver from Late.dev. Updates social_posts status on publish/fail/schedule events.</p>
+<p>Event types: <code>post.published</code>, <code>post.failed</code>, <code>account.disconnected</code>, <code>post.scheduled</code></p>
+<hr>
+<h2>41. Pinterest Integration</h2>
+<h3>POST /functions/v1/pinterest-import</h3>
+<p><strong>Auth</strong>: User JWT
+<strong>Description</strong>: Extract pin metadata and import pins into moodboards. Works without OAuth via oEmbed.</p>
+<pre><code class="language-json">{
+  &quot;action&quot;: &quot;extract_pin&quot;,
+  &quot;pin_url&quot;: &quot;https://pinterest.com/pin/123...&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Fields</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>extract_pin</code></td>
+<td><code>pin_url</code></td>
+<td>Extract pin metadata via oEmbed</td>
+</tr>
+<tr>
+<td><code>import_pin</code></td>
+<td><code>pin_url</code>, <code>moodboard_id</code>, <code>auto_match?</code></td>
+<td>Import single pin to moodboard, optionally auto-match against MIVAA materials</td>
+</tr>
+<tr>
+<td><code>import_pins_bulk</code></td>
+<td><code>pin_urls[]</code>, <code>moodboard_id</code>, <code>auto_match?</code></td>
+<td>Bulk import pins</td>
+</tr>
+</tbody></table>
+<p><strong>Response (import_pin):</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;pin&quot;: { &quot;title&quot;: &quot;...&quot;, &quot;image_url&quot;: &quot;...&quot;, &quot;author&quot;: &quot;...&quot; },
+  &quot;moodboard_item_id&quot;: &quot;uuid&quot;,
+  &quot;image_url&quot;: &quot;https://...&quot;,
+  &quot;matches&quot;: [{ &quot;product_id&quot;: &quot;...&quot;, &quot;name&quot;: &quot;...&quot;, &quot;score&quot;: 0.87 }]
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/pinterest-oauth</h3>
+<p><strong>Auth</strong>: User JWT
+<strong>Description</strong>: Pinterest OAuth 2.0 flow for board browsing and authenticated pin import.</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Fields</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>get_auth_url</code></td>
+<td>—</td>
+<td>Returns OAuth redirect URL + state</td>
+</tr>
+<tr>
+<td><code>callback</code></td>
+<td><code>code</code>, <code>state</code></td>
+<td>Complete OAuth exchange, store tokens</td>
+</tr>
+<tr>
+<td><code>get_boards</code></td>
+<td>—</td>
+<td>List user&#39;s boards (paginated)</td>
+</tr>
+<tr>
+<td><code>get_board_pins</code></td>
+<td><code>board_id</code>, <code>bookmark?</code></td>
+<td>List pins in a board (cursor-paginated)</td>
+</tr>
+<tr>
+<td><code>disconnect</code></td>
+<td>—</td>
+<td>Remove stored tokens</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>42. Webhook Receivers</h2>
+<p>These endpoints receive events from external services. They perform their own validation (HMAC signatures, query params) and do not require JWT auth.</p>
+<h3>POST /functions/v1/email-webhook</h3>
+<p><strong>Source</strong>: Resend
+<strong>Auth</strong>: None (Svix HMAC-SHA256 signature validation via <code>RESEND_WEBHOOK_SECRET</code>)
+<strong>Description</strong>: Processes email delivery events: <code>email.sent</code>, <code>email.delivered</code>, <code>email.bounced</code>, <code>email.complained</code>, <code>email.opened</code>, <code>email.clicked</code>. Updates <code>email_logs</code> and <code>campaign_recipients</code>.</p>
+<hr>
+<h3>POST /functions/v1/ses-webhook</h3>
+<p><strong>Source</strong>: AWS SES via SNS
+<strong>Auth</strong>: None (SNS subscription confirmation flow)
+<strong>Description</strong>: Legacy SES webhook. Handles <code>SubscriptionConfirmation</code> and <code>Notification</code> (Bounce/Complaint/Delivery). Updates <code>email_logs</code> and <code>campaign_recipients</code>.</p>
+<hr>
+<h3>POST /functions/v1/firecrawl-webhook</h3>
+<p><strong>Source</strong>: Firecrawl
+<strong>Auth</strong>: None (validates <code>session_id</code> + <code>crawl_id</code> query params)
+<strong>Description</strong>: Receives crawled pages during web scraping sessions. Events: <code>crawl.page</code> (stores pages), <code>crawl.completed</code> (triggers product creation via MIVAA), <code>crawl.failed</code>.</p>
+<hr>
+<h3>POST /functions/v1/messaging-webhook</h3>
+<p><strong>Source</strong>: Twilio
+<strong>Auth</strong>: None (Twilio callback validation)
+<strong>Description</strong>: Handles SMS/WhatsApp delivery status updates and incoming messages. Responds with TwiML. Auto-processes opt-out/opt-in keywords (STOP, START, HELP).</p>
+<p>Query param <code>type</code>: <code>status</code> | <code>delivery</code> | <code>incoming</code></p>
+<hr>
+<h2>43. Internal Utilities</h2>
+<p>These functions are callable but intended for internal/admin use. Not part of the standard 3rd-party API surface.</p>
+<h3>POST /functions/v1/ai-pricing-updater</h3>
+<p><strong>Auth</strong>: None (internal cron or manual trigger)
+<strong>Description</strong>: Updates AI model pricing table (<code>ai_model_pricing</code>) from hardcoded reference prices for Anthropic, OpenAI, Voyage, Qwen, Google, and Firecrawl.</p>
+<pre><code class="language-json">{ &quot;force_update&quot;: false, &quot;provider&quot;: &quot;anthropic&quot; }
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;stats&quot;: { &quot;models_checked&quot;: 35, &quot;models_updated&quot;: 3, &quot;models_skipped&quot;: 32 }
+}
+</code></pre>
+<hr>
+<h3>POST /functions/v1/check-material-alerts</h3>
+<p><strong>Auth</strong>: Service Role Key
+<strong>Description</strong>: Daily cron job (08:00 UTC). Finds products matching users&#39; saved searches, inserts <code>material_alerts</code> and <code>user_notifications</code>.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;processed&quot;: 15, &quot;new_alerts&quot;: 3 }
+</code></pre>
+<hr>
+<h3>POST /functions/v1/trigger-factory-enrichment</h3>
+<p><strong>Auth</strong>: Service Role Key
+<strong>Description</strong>: Propagates factory metadata within a scope (document/session). Queues background enrichment agent if completeness &lt; 90%.</p>
+<pre><code class="language-json">{
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;product_ids&quot;: [&quot;uuid&quot;],
+  &quot;scope_column&quot;: &quot;source_document_id&quot;,
+  &quot;scope_value&quot;: &quot;uuid&quot;,
+  &quot;force_enrichment&quot;: false
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;propagated&quot;: 12, &quot;queued_job_id&quot;: &quot;uuid&quot; }
+</code></pre>
+<hr>
+<h3>POST /functions/v1/messaging-processor</h3>
+<p><strong>Auth</strong>: None (cron-triggered)
+<strong>Description</strong>: Processes scheduled messaging campaigns. Sends SMS/WhatsApp batches via Twilio with opt-out handling and retries.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;stats&quot;: { &quot;campaignsProcessed&quot;: 2, &quot;messagesSent&quot;: 150, &quot;messagesFailed&quot;: 3 }
+}
+</code></pre>
+<hr>
+<h3>GET /functions/v1/agent-chat-debug</h3>
+<p><strong>Auth</strong>: None
+<strong>Description</strong>: Stub endpoint — returns <code>&quot;ok&quot;</code>. No implementation.</p>
+<hr>
+<h2>Appendix A: Error Response Format</h2>
+<p>All edge functions return errors in a consistent format:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: &quot;Human-readable error message&quot;
+}
+</code></pre>
+<p>Or with additional detail:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: &quot;Validation failed: reason&quot;,
+  &quot;message&quot;: &quot;Additional details&quot;
+}
+</code></pre>
+<h3>Common HTTP Status Codes</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>200</code></td>
+<td>Success</td>
+</tr>
+<tr>
+<td><code>201</code></td>
+<td>Created</td>
+</tr>
+<tr>
+<td><code>202</code></td>
+<td>Accepted (async job started)</td>
+</tr>
+<tr>
+<td><code>204</code></td>
+<td>No Content</td>
+</tr>
+<tr>
+<td><code>400</code></td>
+<td>Bad Request / Validation Error</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Unauthorized (missing or invalid token)</td>
+</tr>
+<tr>
+<td><code>402</code></td>
+<td>Insufficient Credits</td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>Forbidden (insufficient role)</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Not Found</td>
+</tr>
+<tr>
+<td><code>405</code></td>
+<td>Method Not Allowed</td>
+</tr>
+<tr>
+<td><code>422</code></td>
+<td>Unprocessable Entity (agent disabled, no runner)</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Internal Server Error</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Appendix B: Internal / Cron Functions</h2>
+<p>The following functions are internal automation functions not intended for direct external calls:</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent-scheduler-cron</code></td>
+<td>Runs background agents on schedule (pg_cron, every minute)</td>
+</tr>
+<tr>
+<td><code>auto-recovery-cron</code></td>
+<td>Recovers stuck agent runs older than 8 minutes (pg_cron)</td>
+</tr>
+<tr>
+<td><code>price-monitoring-cron</code></td>
+<td>Triggers scheduled price checks (pg_cron)</td>
+</tr>
+<tr>
+<td><code>job-cleanup-cron</code></td>
+<td>Cleans up old processing jobs (pg_cron)</td>
+</tr>
+<tr>
+<td><code>flow-scheduler-cron</code></td>
+<td>Triggers scheduled flows (pg_cron)</td>
+</tr>
+<tr>
+<td><code>scheduled-import-runner</code></td>
+<td>Runs scheduled XML product imports</td>
+</tr>
+<tr>
+<td><code>xml-import-orchestrator</code></td>
+<td>Orchestrates XML product import batches</td>
+</tr>
+<tr>
+<td><code>campaign-processor</code></td>
+<td>Processes and sends email campaigns</td>
+</tr>
+<tr>
+<td><code>notification-dispatcher</code></td>
+<td>Dispatches in-platform notifications</td>
+</tr>
+<tr>
+<td><code>email-webhooks</code></td>
+<td>Receives Resend delivery event webhooks (bounce, complaint, delivery, open, click)</td>
+</tr>
+<tr>
+<td><code>messaging-webhook</code></td>
+<td>Receives Twilio status callbacks</td>
+</tr>
+<tr>
+<td><code>messaging-processor</code></td>
+<td>Processes inbound messages</td>
+</tr>
+<tr>
+<td><code>ai-pricing-updater</code></td>
+<td>AI-assisted product pricing updates</td>
+</tr>
+<tr>
+<td><code>reset-platform</code></td>
+<td>Full platform data reset (admin only, destructive)</td>
+</tr>
+<tr>
+<td><code>kb-generate-embedding</code></td>
+<td>Generates embeddings for Knowledge Base documents</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Appendix C: Rate Limits and Credits</h2>
+<h3>Credit System</h3>
+<p>The platform uses a credit system for AI operations. Credits are debited per operation.</p>
+<table>
+<thead>
+<tr>
+<th>Operation Type</th>
+<th>Approximate Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>KAI agent message (Sonnet)</td>
+<td>0.5-5 credits depending on length</td>
+</tr>
+<tr>
+<td>KAI agent message (Haiku)</td>
+<td>0.1-1 credit</td>
+</tr>
+<tr>
+<td>VR World generation (mini)</td>
+<td>75 credits</td>
+</tr>
+<tr>
+<td>VR World generation (plus)</td>
+<td>300 credits</td>
+</tr>
+<tr>
+<td>RAG text search</td>
+<td>0.5 credits</td>
+</tr>
+<tr>
+<td>RAG visual search</td>
+<td>1 credit</td>
+</tr>
+<tr>
+<td>Image analysis</td>
+<td>1 credit</td>
+</tr>
+<tr>
+<td>CLIP embedding generation</td>
+<td>0.25 credits</td>
+</tr>
+<tr>
+<td>Document upload and processing</td>
+<td>2 credits</td>
+</tr>
+<tr>
+<td>SEO pipeline</td>
+<td>40-50 credits (full pipeline)</td>
+</tr>
+</tbody></table>
+<p>Check balance via <code>GET /functions/v1/crm-stripe-api/credits</code> or the <code>user_credits</code> table.</p>
+<h3>Rate Limiting</h3>
+<p>Edge functions do not impose explicit rate limits beyond Supabase&#39;s platform limits. Credit system provides natural throttling for AI operations.</p>
+
+</div></body></html>

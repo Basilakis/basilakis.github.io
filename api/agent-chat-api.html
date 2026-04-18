@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+<h1>Agent Chat API</h1>
+<h2>Overview</h2>
+<p>The Agent Chat API provides a multi-agent AI system powered by LangChain.js and Claude (Anthropic). It supports specialized agents for different tasks with role-based access control.</p>
+<p><strong>Edge Function:</strong> <code>agent-chat</code><br><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/agent-chat</code></p>
+<h2>Authentication</h2>
+<p>All requests require authentication via Supabase Auth:</p>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Request Format</h2>
+<p><strong>Method:</strong> <code>POST</code><br><strong>Path:</strong> <code>/</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-typescript">{
+  agentType: string,           // Required - Agent to use (see available agents below)
+  message: string,             // Required - User message
+  workspaceId?: string,        // Optional workspace context
+  conversationId?: string,     // Optional conversation ID for context
+  stream?: boolean,            // Optional - Enable streaming (default: false)
+  metadata?: {
+    sessionId?: string,
+    userId?: string,
+    [key: string]: any
+  }
+}
+</code></pre>
+<p><strong>Response (Non-streaming):</strong></p>
+<pre><code class="language-typescript">{
+  success: true,
+  response: string,            // Agent&#39;s response
+  agentType: string,
+  conversationId: string,
+  metadata: {
+    model: string,
+    tokensUsed: number,
+    processingTime: number
+  }
+}
+</code></pre>
+<p><strong>Response (Streaming):</strong>
+Newline-delimited JSON chunks (each chunk is one JSON object followed by <code>\n</code>):</p>
+<pre><code class="language-typescript">{&quot;type&quot;: &quot;status&quot;, &quot;message&quot;: &quot;Initializing agent...&quot;}
+{&quot;type&quot;: &quot;heartbeat&quot;, &quot;timestamp&quot;: 1712345678901}
+{&quot;type&quot;: &quot;iteration&quot;, &quot;iteration&quot;: 1, &quot;maxIterations&quot;: 10}
+{&quot;type&quot;: &quot;tool_progress&quot;, &quot;status&quot;: &quot;Searching price knowledge base...&quot;}
+{&quot;type&quot;: &quot;tool_call_ids&quot;, &quot;mapping&quot;: [
+   { &quot;tool_name&quot;: &quot;price_lookup&quot;, &quot;tool_call_id&quot;: &quot;call_abc&quot;, &quot;log_id&quot;: &quot;&lt;agent_tool_call_logs.id&gt;&quot; }
+]}
+{&quot;type&quot;: &quot;price_lookup_matches&quot;, &quot;matches&quot;: [...], &quot;hints&quot;: {...}}
+{&quot;type&quot;: &quot;price_proposal&quot;, &quot;product_name&quot;: &quot;...&quot;, &quot;list_price&quot;: 85, &quot;discount_percent&quot;: 27, &quot;final_unit_price&quot;: 62, &quot;reasoning_chain&quot;: [...], &quot;source_doc_ids&quot;: [...], &quot;confidence&quot;: &quot;high&quot;}
+{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;Here&#39;s the price I found...&quot;}
+{&quot;type&quot;: &quot;done&quot;}
+</code></pre>
+<p><strong>Chunk types of interest for the pricing flow:</strong></p>
+<ul>
+<li><code>tool_call_ids</code> — emitted once after tool-call logs are inserted. Contains the <code>agent_tool_call_logs.id</code> for each tool call. Use this to populate <code>quote_items.price_lookup_call_id</code> / <code>product_prices.price_lookup_call_id</code> when committing a price.</li>
+<li><code>price_lookup_matches</code> — emitted by the <code>price_lookup</code> tool before the agent composes. Raw KB chunks grouped by <code>price_doc_type</code>.</li>
+<li><code>price_proposal</code> — emitted by the agent&#39;s final message. Full structured proposal with reasoning chain and source doc IDs. This is what the UI commits.</li>
+</ul>
+<h2>Available Agents</h2>
+<h3>1. Search Agent</h3>
+<p>Helps users find materials using RAG search and semantic search.</p>
+<p><strong>Agent Type:</strong> <code>search</code><br><strong>Access:</strong> Member, Admin, Owner<br><strong>Tools:</strong></p>
+<ul>
+<li>Material search (RAG)</li>
+<li>Semantic search</li>
+<li>Image search</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;agent-chat&#39;, {
+  body: {
+    agentType: &#39;search&#39;,
+    message: &#39;Find me sustainable wood materials for flooring&#39;,
+    workspaceId: &#39;workspace-123&#39;
+  }
+});
+</code></pre>
+<h3>2. Interior Designer Agent</h3>
+<p>AI-powered interior design with spatial analysis and material matching.</p>
+<p><strong>Agent Type:</strong> <code>interior-designer</code><br><strong>Access:</strong> Viewer, Member, Admin, Owner<br><strong>Tools:</strong></p>
+<ul>
+<li>Material search</li>
+<li>Image analysis</li>
+<li>3D generation (async)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;agent-chat&#39;, {
+  body: {
+    agentType: &#39;interior-designer&#39;,
+    message: &#39;Design a modern minimalist living room with natural materials&#39;,
+    workspaceId: &#39;workspace-123&#39;
+  }
+});
+</code></pre>
+<p><strong>Note:</strong> The <code>generate_3d</code> tool triggers async generation and returns a job ID. The frontend should poll the database for real-time updates.</p>
+<h3>3. Product Agent</h3>
+<p>Provides product information and recommendations.</p>
+<p><strong>Agent Type:</strong> <code>product</code><br><strong>Access:</strong> Member, Admin, Owner<br><strong>Tools:</strong></p>
+<ul>
+<li>Product search</li>
+<li>Product details</li>
+<li>Product recommendations</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;agent-chat&#39;, {
+  body: {
+    agentType: &#39;product&#39;,
+    message: &#39;Tell me about eco-friendly insulation materials&#39;,
+    workspaceId: &#39;workspace-123&#39;
+  }
+});
+</code></pre>
+<h2>Agent Configuration</h2>
+<p>Agents can be configured with custom system prompts stored in the <code>prompts</code> table:</p>
+<ul>
+<li><strong>Table:</strong> <code>prompts</code></li>
+<li><strong>Filters:</strong><ul>
+<li><code>prompt_type = &#39;agent&#39;</code></li>
+<li><code>category = &lt;agentType&gt;</code></li>
+<li><code>is_active = true</code></li>
+<li><code>status = &#39;active&#39;</code></li>
+</ul>
+</li>
+</ul>
+<p>If no custom prompt is found, the agent uses a default prompt.</p>
+<h2>Streaming Responses</h2>
+<p>Enable streaming for real-time responses:</p>
+<pre><code class="language-typescript">const response = await fetch(
+  &#39;https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/agent-chat&#39;,
+  {
+    method: &#39;POST&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${session.access_token}`,
+      &#39;Content-Type&#39;: &#39;application/json&#39;
+    },
+    body: JSON.stringify({
+      agentType: &#39;search&#39;,
+      message: &#39;Find sustainable materials&#39;,
+      stream: true
+    })
+  }
+);
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  const lines = chunk.split(&#39;\n&#39;);
+  
+  for (const line of lines) {
+    if (line.startsWith(&#39;data: &#39;)) {
+      const data = JSON.parse(line.slice(6));
+      console.log(data);
+    }
+  }
+}
+</code></pre>
+<h2>Tool Integration</h2>
+<h3>Material Search Tool</h3>
+<p>Searches for materials using the MIVAA Python API.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>query</code> (string): Search query</li>
+<li><code>limit</code> (number): Max results (default: 10)</li>
+<li><code>filters</code> (object): Optional filters</li>
+</ul>
+<h3>Image Analysis Tool</h3>
+<p>Analyzes images using Claude Vision.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>imageUrl</code> (string): URL of image to analyze</li>
+<li><code>analysisType</code> (string): Type of analysis</li>
+</ul>
+<h3>3D Generation Tool</h3>
+<p>Creates interior design generations (async).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prompt</code> (string): Design description</li>
+<li><code>roomType</code> (string): Type of room</li>
+<li><code>style</code> (string): Design style</li>
+<li><code>referenceImageUrl</code> (string): Optional reference image</li>
+<li><code>models</code> (array): Optional list of models to use</li>
+</ul>
+<p><strong>Returns:</strong> Job ID for tracking generation progress</p>
+<h3>Price Lookup Tool (admin/owner only)</h3>
+<p>Looks up a product price from the Pricing category of the Knowledge Base.
+Only registered for users with <code>admin</code> or <code>owner</code> workspace role — regular
+users never see the tool. Added 2026-04.</p>
+<p><strong>Tool name:</strong> <code>price_lookup</code></p>
+<p><strong>Parameters:</strong></p>
+<pre><code class="language-typescript">{
+  product_name: string,          // required — full product name
+  sku?: string,                  // strongest match signal when present
+  manufacturer?: string,         // narrows discount rule scope
+  quantity?: number,             // used for MOQ / tier math
+  unit?: string,                 // expected unit (&quot;m²&quot;, &quot;piece&quot;, &quot;box&quot;)
+  product_id?: string,           // UUID — threaded into the price_proposal chunk
+  category_slug?: string,        // defaults to &quot;pricing&quot;
+  top_k?: number                 // max chunks to fetch (default 8)
+}
+</code></pre>
+<p><strong>Returns (JSON string passed back into the model):</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  query_used: string,
+  matches: [
+    {
+      doc_id: string,
+      doc_title: string,
+      doc_type: &#39;price_list&#39; | &#39;discount_rule&#39; | &#39;contract_terms&#39; | &#39;promotion&#39; | &#39;unknown&#39;,
+      snippet: string,            // ≤800 chars from the matching chunk
+      relevance_score: number,
+      category_slug?: string
+    }
+  ],
+  hints: {
+    total_matches: number,
+    by_type: Record&lt;string, number&gt;,
+    has_price_list: boolean,
+    has_discount_rule: boolean,
+    has_contract_terms: boolean,
+    has_promotion: boolean,
+    manufacturer_hint?: string
+  },
+  guidance: string,               // reasoning instructions for the model
+  product_context: { product_name, sku, manufacturer, quantity, unit, product_id }
+}
+</code></pre>
+<p><strong>Side effects (streamed chunks):</strong></p>
+<ul>
+<li><code>price_lookup_matches</code> — emitted before the model composes, mirrors <code>matches</code></li>
+<li><code>price_proposal</code> — emitted by the model after reasoning, shape below</li>
+</ul>
+<p><strong><code>price_proposal</code> chunk shape:</strong></p>
+<pre><code class="language-typescript">{
+  type: &#39;price_proposal&#39;,
+  product_id?: string,
+  product_name?: string,
+  list_price: number | null,
+  discount_percent: number | null,
+  final_unit_price: number | null,
+  currency: &#39;EUR&#39; | &#39;USD&#39; | ...,
+  unit: string | null,
+  quantity_applied: number | null,
+  total: number | null,
+  source_doc_ids: string[],       // kb_docs.id values
+  source_titles: string[],
+  reasoning_chain: string[],      // step-by-step explanation for admin review
+  warnings: string[],             // conflicts, expired rules, unit mismatch
+  confidence: &#39;high&#39; | &#39;medium&#39; | &#39;low&#39;,
+  effective_through: string | null  // ISO date from the source doc
+}
+</code></pre>
+<p><strong>Provenance contract.</strong> When the caller commits a proposal to <code>quote_items</code>
+or <code>product_prices</code>, it should:</p>
+<ol>
+<li>Read the <code>log_id</code> for <code>price_lookup</code> from the <code>tool_call_ids</code> chunk.</li>
+<li>Write that <code>log_id</code> into <code>quote_items.price_lookup_call_id</code> or
+<code>product_prices.price_lookup_call_id</code>.</li>
+<li>Set <code>price_source</code> on <code>quote_items</code> to <code>kb:ai:&lt;log_id&gt;</code> (AI mode) or
+<code>kb:quick:&lt;doc_id&gt;</code> (quick-pick direct search) or <code>manual</code>.</li>
+</ol>
+<p>This forms the audit chain: every price on a quote can be traced back to
+the exact AI call that produced it.</p>
+<h3>Direct Price Search (no AI, no LLM cost)</h3>
+<p>For &quot;quick pick&quot; UIs that only want raw matches without AI reasoning,
+skip this endpoint entirely and call <code>mivaa-gateway</code> with action
+<code>search_knowledge_base</code> + <code>category_slug: &#39;pricing&#39;</code> + <code>caller: &#39;admin&#39;</code>.
+See <a href="./mivaa-gateway-api.md#search-knowledge-base-agent-facing">mivaa-gateway-api.md</a>.</p>
+<h2>Error Handling</h2>
+<p>All errors return a standard format:</p>
+<pre><code class="language-typescript">{
+  success: false,
+  error: string,
+  code?: string
+}
+</code></pre>
+<p><strong>Common Error Codes:</strong></p>
+<ul>
+<li><code>401</code> - Unauthorized</li>
+<li><code>403</code> - Forbidden (insufficient role permissions)</li>
+<li><code>400</code> - Bad request (missing agentType or message)</li>
+<li><code>500</code> - Internal server error</li>
+</ul>
+<h2>Rate Limiting</h2>
+<ul>
+<li><strong>Default:</strong> 60 requests per minute per user</li>
+<li><strong>Streaming:</strong> 30 requests per minute per user</li>
+</ul>
+<h2>Related Documentation</h2>
+<ul>
+<li><a href="../agent-system.md">Agent System Documentation</a></li>
+<li><a href="../interior-designer-agent-user-guide.md">Interior Designer Agent Guide</a></li>
+<li><a href="../ai-models-architecture.md">AI Models Architecture</a></li>
+</ul>
+
+</div></body></html>
