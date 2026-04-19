@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>AI Models Architecture - Complete Overview</h1>
 <h2>Executive Summary</h2>
 <p>MIVAA Platform uses <strong>7 different AI models</strong> across <strong>4 providers</strong> for different purposes:</p>
@@ -41,7 +43,7 @@
 </tr>
 <tr>
 <td><strong>Voyage AI</strong></td>
-<td>voyage-3.5</td>
+<td>voyage-4</td>
 <td>Text embeddings (1024D) - Primary for semantic search</td>
 </tr>
 <tr>
@@ -119,7 +121,7 @@
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ STAGE 6: Text Embeddings (updated 2026-04)                             │
-│ Model: Voyage AI voyage-3.5 (sole provider)                           │
+│ Model: Voyage AI voyage-4 (sole provider)                           │
 │ Purpose: Generate 1024D embeddings for text chunks                    │
 │ Input: Product descriptions, specifications, chunk text               │
 │ Output: 1024D text embeddings (dict key: text_1024)                   │
@@ -147,7 +149,7 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ SEARCH: Direct Vector DB RAG (Claude 4.5 + Multi-Vector)              │
 │ Models:                                                                │
-│   - Text Embeddings: Voyage AI voyage-3.5 (1024D)                    │
+│   - Text Embeddings: Voyage AI voyage-4 (1024D)                    │
 │   - Visual Embeddings: 5x SLIG specialized (768D each)               │
 │     • Visual, Color, Texture, Material, Style                        │
 │   - LLM: Claude Sonnet 4.5 (200K context)                            │
@@ -195,9 +197,9 @@
 <strong>Speed</strong>: 150-400ms per image (SigLIP), 100-300ms (CLIP)
 <strong>Output</strong>: 512D numpy array → normalized → list</p>
 <hr>
-<h3>2. <strong>Voyage AI voyage-3.5</strong> 📝 (updated 2026-04)</h3>
+<h3>2. <strong>Voyage AI voyage-4</strong> 📝 (updated 2026-04)</h3>
 <p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/real_embeddings_service.py</code></p>
-<p>The service calls Voyage AI&#39;s embeddings endpoint with the model <code>voyage-3.5</code>. This produces a 1024D text embedding used for chunk indexing, product text, and semantic search. OpenAI <code>text-embedding-3-small</code> (1536D) was retired in 2026-04 — Voyage is now the sole text embedder, and the embedding dict key is <code>text_1024</code> (previously <code>text_1536</code>).</p>
+<p>The service calls Voyage AI&#39;s embeddings endpoint with the model <code>voyage-4</code>. This produces a 1024D text embedding used for chunk indexing, product text, and semantic search. OpenAI <code>text-embedding-3-small</code> (1536D) was retired in 2026-04 — Voyage is now the sole text embedder, and the embedding dict key is <code>text_1024</code> (previously <code>text_1536</code>).</p>
 <p><strong>Purpose</strong>:</p>
 <ul>
 <li>Generate 1024D text embeddings for chunks</li>
@@ -345,7 +347,7 @@
 <hr>
 <h2>🔄 Model Selection Logic</h2>
 <h3>PDF Processing Pipeline</h3>
-<p>Product Discovery (Stage 1): Default model is Claude Sonnet 4.5, with GPT-5 as an alternative. OCR Filtering (Stage 2) uses SLIG (SigLIP2 cloud) zero-shot classification. Image Analysis (Stage 6) uses Qwen3-VL 17B Vision for all images, with Claude 4.5 Sonnet used for validation when quality_score &lt; 0.7. Visual Embeddings (Stages 7-10) use SLIG (SigLIP2 via HuggingFace cloud endpoint, 768D). Text Embeddings (Stage 5) use Voyage AI voyage-3.5 (1024D) as the only model — OpenAI text-embedding-3-small was retired in 2026-04.</p>
+<p>Product Discovery (Stage 1): Default model is Claude Sonnet 4.5, with GPT-5 as an alternative. OCR Filtering (Stage 2) uses SLIG (SigLIP2 cloud) zero-shot classification. Image Analysis (Stage 6) uses Qwen3-VL 17B Vision for all images, with Claude 4.5 Sonnet used for validation when quality_score &lt; 0.7. Visual Embeddings (Stages 7-10) use SLIG (SigLIP2 via HuggingFace cloud endpoint, 768D). Text Embeddings (Stage 5) use Voyage AI voyage-4 (1024D) as the only model — OpenAI text-embedding-3-small was retired in 2026-04.</p>
 <h3>Search &amp; Agents</h3>
 <p>Direct Vector DB RAG (Claude 4.5) uses Voyage AI 3.5 (1024D) for text embeddings, 5x SLIG specialized 768D embeddings + 1x Voyage understanding 1024D embedding for multi-vector visual search, and Claude Sonnet 4.5 (200K context) for synthesis. The Agent Hub (Mastra) supports Claude Sonnet 4.5 as default, Claude Haiku 4.5 for fast responses, GPT-5 for advanced reasoning, and Qwen3-VL 17B as a cost-effective option.</p>
 <hr>
