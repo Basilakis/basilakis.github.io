@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Page-Aware Chunking Implementation</h1>
 <h2>Overview</h2>
 <p>This document describes the implementation of page-aware chunking system that preserves page information from PyMuPDF4LLM extraction through to chunk-product relationship scoring.</p>
@@ -59,7 +61,7 @@
 <li>Combines TITLE + TEXT intelligently</li>
 <li>Keeps tables intact</li>
 <li>Falls back to semantic chunking if no regions found</li>
-<li>See <a href="./pdf-processing-pipeline.md#yolo-layout-aware-chunking">PDF Processing Pipeline</a> for details</li>
+<li>See <a href="./pdf-processing-pipeline.html#yolo-layout-aware-chunking">PDF Processing Pipeline</a> for details</li>
 </ul>
 </li>
 </ul>

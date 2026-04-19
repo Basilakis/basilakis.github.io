@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>MIVAA API Endpoints Reference</h1>
 <p><strong>Last Updated:</strong> 2026-01-21
 <strong>API Version:</strong> v2.6.0
@@ -150,7 +152,7 @@
 <ul>
 <li>INSERT (new) or UPDATE (existing with same title + category) on <code>kb_docs</code></li>
 <li>INSERT into <code>kb_doc_versions</code> (version history)</li>
-<li>Generate 1024D embedding using Voyage AI voyage-3.5 (only on new content)</li>
+<li>Generate 1024D embedding using Voyage AI voyage-4 (only on new content)</li>
 </ul>
 <hr>
 <h3>2.2 GET /api/kb/documents/{doc_id}</h3>
@@ -202,7 +204,7 @@
 <p><strong>Architecture:</strong></p>
 <ol>
 <li>Frontend calls MIVAA API with search query</li>
-<li>MIVAA generates embedding for query using Voyage AI voyage-3.5 (updated 2026-04)</li>
+<li>MIVAA generates embedding for query using Voyage AI voyage-4 (updated 2026-04)</li>
 <li>MIVAA calls Supabase <code>kb_match_docs()</code> RPC function with query embedding</li>
 <li>Supabase performs vector similarity search using pgvector <code>&lt;=&gt;</code> operator</li>
 <li>Returns ranked results with similarity scores</li>
@@ -1031,7 +1033,7 @@
 <li>CLIP embedding generation (for image strategy)</li>
 </ul>
 <p><strong>Frontend Integration:</strong> SearchPage.tsx, KnowledgeBase.tsx, ProductDiscovery.tsx</p>
-<p><strong>Related Documentation:</strong> <a href="./search-strategies.md">Search Strategies Guide</a></p>
+<p><strong>Related Documentation:</strong> <a href="./search-strategies.html">Search Strategies Guide</a></p>
 <hr>
 <h3>3.2 POST /query</h3>
 <p><strong>Purpose:</strong> CONSOLIDATED query endpoint with auto-detecting modality
@@ -1400,7 +1402,7 @@
 <strong>Last Updated</strong>: November 10, 2025</p>
 <p><strong>See Also:</strong></p>
 <ul>
-<li><a href="data-import-system.md">Data Import System Documentation</a> - Complete guide to XML import and web scraping
+<li><a href="data-import-system.html">Data Import System Documentation</a> - Complete guide to XML import and web scraping
 <strong>API Version</strong>: v1</li>
 </ul>
 <hr>
