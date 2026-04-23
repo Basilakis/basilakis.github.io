@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Price Monitoring System</h1>
 <h2>Overview</h2>
 <p>The Price Monitoring System enables Factory and Store users to track competitor prices for their products across multiple sources. The system uses Firecrawl for web scraping and provides automated monitoring, price alerts, and comprehensive analytics.</p>
@@ -49,7 +51,9 @@
 <li><p><strong>competitor_sources</strong></p>
 <ul>
 <li>Competitor website URLs and configurations</li>
-<li>Firecrawl-specific scraping settings</li>
+<li><code>source_type</code> enum (<code>firecrawl_url</code> = URL scrape via Firecrawl, <code>dataforseo_shopping</code> = Google Shopping via DataForSEO Merchant API — reserved for Phase 2)</li>
+<li>Firecrawl-specific scraping settings (<code>scraping_config.use_javascript_render</code> opts into JS-rendered pages)</li>
+<li>Denormalized &quot;current price&quot; cache (<code>current_price</code>, <code>current_currency</code>, <code>current_availability</code>, <code>current_price_updated_at</code>) for O(1) alert evaluation and dashboard reads — authoritative history remains in <code>price_history</code></li>
 <li>Error tracking and success metrics</li>
 <li>Active/inactive status</li>
 </ul>
@@ -82,7 +86,14 @@
 <ul>
 <li>History of triggered alerts</li>
 <li>Price change details</li>
-<li>Notification status</li>
+<li><code>notification_sent</code>, <code>notification_sent_at</code>, <code>notification_channels</code> — flipped on successful dispatch via <code>NotificationService</code> → <code>notification-dispatcher</code> edge function (Resend for email, <code>user_notifications</code> insert for in-app)</li>
+</ul>
+</li>
+<li><p><strong>price_lookups</strong> (external API usage log)</p>
+<ul>
+<li>One row per <code>POST /api/v1/prices/lookup</code> call</li>
+<li>Tracks <code>api_key_id</code>, <code>user_id</code>, <code>workspace_id</code>, <code>url</code>, <code>success</code>, extracted fields, <code>credits_used</code>, <code>latency_ms</code></li>
+<li>RLS: users see their own rows only; inserts via service role from the Python backend</li>
 </ul>
 </li>
 </ol>
@@ -132,16 +143,37 @@
 </ol>
 <p><strong>Response:</strong> JSON with success, message, and stats (total, processed, succeeded, failed).</p>
 <h3>Firecrawl Integration</h3>
-<p>The system uses Firecrawl v2 API for web scraping:</p>
-<p><strong>Features Used:</strong></p>
+<p>All Firecrawl calls go through a single shared client: <code>app/services/integrations/firecrawl_client.py</code> (<code>FirecrawlClient</code>). Used by:</p>
 <ul>
-<li>Markdown extraction for content</li>
-<li>Structured data extraction with custom schemas</li>
-<li>Browser actions for dynamic content</li>
-<li>Timeout configuration</li>
+<li>Competitor price monitoring (<code>competitor_scraper_service.py</code>)</li>
+<li>Public price lookup API (<code>/api/v1/prices/lookup</code>)</li>
+<li>Future consumers that need structured extraction from a URL</li>
 </ul>
-<p><strong>Price Extraction Schema:</strong> The schema extracts four string fields from each page: price (product price), currency (currency code), availability (stock status), and shipping_cost.</p>
-<p><strong>Credits:</strong> Each scrape consumes approximately 1 Firecrawl credit</p>
+<p><strong>Design</strong>:</p>
+<ul>
+<li>Pydantic schemas → <code>model_json_schema()</code> drives extraction — the schema can&#39;t drift from the code that reads it. <code>PriceExtraction</code> lives in <code>app/models/extraction.py</code>.</li>
+<li>Exponential backoff on retryable errors (HTTP 429/5xx, timeouts). 4xx fails fast.</li>
+<li>Credit logging + debit centralized via <code>AICallLogger.log_firecrawl_call</code>.</li>
+<li>Opt-in <code>use_javascript_render=True</code> flag — adds a 3s wait action and extends timeout for JS-heavy / single-page-app sites. Costs slightly more Firecrawl credits. Configured per-source via <code>scraping_config.use_javascript_render</code>.</li>
+</ul>
+<p><strong>Price Parsing:</strong> Raw extracted strings (e.g. <code>&quot;$49.99&quot;</code>, <code>&quot;€1.299,00&quot;</code>, <code>&quot;From £29&quot;</code>) are parsed to <code>(Decimal, ISO-4217-code)</code> via <code>app/utils/price_parsing.py</code>, which wraps the <code>price-parser</code> library. Handles US/EU decimal conventions and maps currency symbols to ISO codes.</p>
+<p><strong>Credits:</strong> Each scrape consumes ~1 Firecrawl credit (standard), ~2 when <code>use_javascript_render=True</code>.</p>
+<p><strong>Concurrency:</strong> The hourly cron and on-demand price checks scrape sources in parallel via <code>asyncio.gather</code> + <code>Semaphore(5)</code> — keeps us under Firecrawl rate limits and out of Supabase client contention.</p>
+<h3>Public Price Lookup API (external / curl)</h3>
+<p><code>POST /api/v1/prices/lookup</code> — one-shot price extraction for external callers.</p>
+<ul>
+<li><strong>Auth</strong>: <code>Authorization: Bearer &lt;key&gt;</code> validated against the <code>api_keys</code> table. Checks <code>is_active</code>, <code>expires_at</code>, and <code>allowed_endpoints</code>. Billing is derived from the key owner&#39;s user → workspace via <code>workspace_members</code>.</li>
+<li><strong>Rate limit</strong>: per-key sliding 60s window; default 60 req/min, configurable via <code>api_keys.rate_limit_override</code> (hard cap 600/min).</li>
+<li><strong>One-shot</strong>: does NOT create a <code>competitor_sources</code> row. For ongoing tracking, users still go through the monitoring flow.</li>
+<li><strong>Usage logged</strong> to <code>price_lookups</code>.</li>
+</ul>
+<p>Request:</p>
+<pre><code class="language-bash">curl -X POST https://&lt;mivaa-host&gt;/api/v1/prices/lookup \
+  -H &quot;Authorization: Bearer &lt;api_key&gt;&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;url&quot;:&quot;https://example.com/products/oak&quot;,&quot;product_name&quot;:&quot;White oak 8mm&quot;,&quot;use_javascript_render&quot;:false}&#39;
+</code></pre>
+<p>Response: <code>{success, price, currency, availability, shipping_cost, product_name, scraped_at, credits_used, latency_ms, source}</code>.</p>
 <h2>Frontend Components</h2>
 <h3>PriceMonitoringDashboard</h3>
 <p>Main dashboard showing:</p>
