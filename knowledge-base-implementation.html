@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Knowledge Base &amp; Documentation System</h1>
 <h2>📋 Overview</h2>
 <p>The Knowledge Base &amp; Documentation System provides a comprehensive solution for managing product documentation, technical guides, and knowledge articles with AI-powered semantic search and intelligent organization.</p>
@@ -149,7 +151,7 @@
 <li><p><strong>POST <code>/api/kb/search</code></strong> - Search documents</p>
 <ul>
 <li><strong>Semantic Search:</strong> Vector similarity using pgvector cosine distance<ul>
-<li>Generates embedding for search query using Voyage AI voyage-3.5 (updated 2026-04)</li>
+<li>Generates embedding for search query using Voyage AI voyage-4 (updated 2026-04)</li>
 <li>Compares against stored document embeddings using <code>&lt;=&gt;</code> operator</li>
 <li>Returns results with similarity scores (0.0 - 1.0)</li>
 <li>Minimum threshold: 0.5 (configurable)</li>
@@ -179,7 +181,7 @@
 </ul>
 </li>
 </ol>
-<p><strong>See also:</strong> <a href="./api/pricing-api.md">Pricing API</a> for the admin-only flow that ingests docs under a &quot;Pricing&quot; category with <code>price_doc_type</code> sub-types and retrieves them via either the <code>price_lookup</code> agent tool (AI reasoning mode) or <code>search_knowledge_base</code> gateway action (quick-pick direct mode).</p>
+<p><strong>See also:</strong> <a href="./api/pricing-api.html">Pricing API</a> for the admin-only flow that ingests docs under a &quot;Pricing&quot; category with <code>price_doc_type</code> sub-types and retrieves them via either the <code>price_lookup</code> agent tool (AI reasoning mode) or <code>search_knowledge_base</code> gateway action (quick-pick direct mode).</p>
 <h4>Categories (2 endpoints)</h4>
 <ol start="7">
 <li><p><strong>POST <code>/api/kb/categories</code></strong> - Create category</p>
@@ -275,7 +277,7 @@
 <p>Stored in <code>kb_docs</code> table:</p>
 <ul>
 <li><code>text_embedding</code> - The 1024D vector</li>
-<li><code>embedding_model</code> - &#39;voyage-3.5&#39; (updated 2026-04)</li>
+<li><code>embedding_model</code> - &#39;voyage-4&#39; (updated 2026-04)</li>
 <li><code>embedding_generated_at</code> - Timestamp</li>
 <li><code>embedding_status</code> - &#39;pending&#39;, &#39;success&#39;, &#39;failed&#39;</li>
 <li><code>embedding_error_message</code> - Error details if failed</li>
@@ -339,7 +341,7 @@
 <ul>
 <li><strong>Backend:</strong> FastAPI (Python)</li>
 <li><strong>Database:</strong> Supabase (PostgreSQL)</li>
-<li><strong>Embeddings:</strong> Voyage AI voyage-3.5 (1024D, updated 2026-04)</li>
+<li><strong>Embeddings:</strong> Voyage AI voyage-4 (1024D, updated 2026-04)</li>
 <li><strong>PDF Extraction:</strong> PyMuPDF (fitz)</li>
 <li><strong>Vector Search:</strong> pgvector with ivfflat index</li>
 <li><strong>Security:</strong> Row Level Security (RLS)</li>

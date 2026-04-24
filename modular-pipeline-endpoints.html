@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Modular PDF Processing Pipeline - API Endpoints Documentation</h1>
 <h2>Overview</h2>
 <p>The PDF processing pipeline has been refactored into <strong>6 modular internal API endpoints</strong> that work together in sequence. Each endpoint receives the output from the previous stage and processes it further. All endpoints support <strong>dynamic AI model configuration</strong> via optional <code>ai_config</code> parameter.</p>
@@ -58,13 +60,13 @@
 <ul>
 <li><code>visual_embedding_model</code> — Default: &quot;SLIG&quot;</li>
 <li><code>visual_embedding_dimensions</code> — Default: 768</li>
-<li><code>text_embedding_model</code> — Default: &quot;voyage-3.5&quot;</li>
+<li><code>text_embedding_model</code> — Default: &quot;voyage-4&quot;</li>
 <li><code>text_embedding_dimensions</code> — Default: 1024</li>
 <li><code>text_embedding_input_type</code> — Default: &quot;document&quot;</li>
 <li><code>classification_primary_model</code> — Default: &quot;Qwen/Qwen3-VL-32B-Instruct&quot;</li>
-<li><code>classification_validation_model</code> — Default: &quot;claude-sonnet-4-6-20260217&quot;</li>
+<li><code>classification_validation_model</code> — Default: &quot;claude-opus-4-7&quot;</li>
 <li><code>classification_confidence_threshold</code> — Default: 0.7</li>
-<li><code>discovery_model</code> — Default: &quot;claude-sonnet-4-6-20260217&quot;</li>
+<li><code>discovery_model</code> — Default: &quot;claude-opus-4-7&quot;</li>
 <li><code>metadata_extraction_model</code> — Default: &quot;claude&quot;</li>
 <li><code>chunking_model</code> — Default: &quot;gpt-4o&quot;</li>
 <li><code>discovery_temperature</code> — Default: 0.1</li>
@@ -78,15 +80,15 @@
 <p><strong>DEFAULT_AI_CONFIG</strong> (Balanced):</p>
 <ul>
 <li>Best overall accuracy and reliability</li>
-<li>Uses Claude Sonnet 4.5 for discovery and metadata</li>
+<li>Uses Claude Opus 4.7 for discovery and metadata</li>
 <li>Uses SLIG (SigLIP2) for visual embeddings (768D, HuggingFace endpoint)</li>
-<li>Uses Voyage AI voyage-3.5 for text embeddings (1024D)</li>
+<li>Uses Voyage AI voyage-4 for text embeddings (1024D)</li>
 <li>Uses Qwen3-VL-32B-Instruct for vision classification (HuggingFace endpoint) with Claude validation</li>
 </ul>
 <p><strong>FAST_CONFIG</strong> (Speed Optimized):</p>
 <ul>
 <li>Uses GPT-4o instead of Claude for faster processing</li>
-<li>Uses Claude Haiku for validation (faster than Sonnet)</li>
+<li>Uses Claude Haiku for validation (faster than Opus)</li>
 <li>Reduced max tokens for faster responses</li>
 </ul>
 <p><strong>HIGH_ACCURACY_CONFIG</strong> (Quality Optimized):</p>
@@ -144,7 +146,7 @@
 </li>
 <li><p><strong>Stage 2 - Claude Validation (High Quality)</strong>:</p>
 <ul>
-<li>Model: <code>Claude Sonnet 4.5</code> (Anthropic)</li>
+<li>Model: <code>Claude Opus 4.7</code> (Anthropic)</li>
 <li>Only validates images with confidence &lt; threshold (default: 0.7)</li>
 <li>Provides detailed reasoning for classification</li>
 <li>Improves accuracy for edge cases</li>
@@ -268,7 +270,7 @@
 <p><strong>AI Processing</strong>:</p>
 <ul>
 <li><strong>Model</strong>: Configurable via <code>ai_config.metadata_extraction_model</code><ul>
-<li>Default: <code>claude</code> (Claude Sonnet 4.5)</li>
+<li>Default: <code>claude</code> (Claude Opus 4.7)</li>
 <li>Alternative: <code>gpt</code> (GPT-4o or GPT-5)</li>
 </ul>
 </li>
@@ -314,7 +316,7 @@
 </li>
 <li><p><strong>Text Embeddings</strong>:</p>
 <ul>
-<li>Model: Voyage AI <code>voyage-3.5</code></li>
+<li>Model: Voyage AI <code>voyage-4</code></li>
 <li>Dimension: 1024D</li>
 <li>Input Type: <code>document</code></li>
 <li>One embedding per chunk</li>
@@ -409,10 +411,10 @@
 </ul>
 <h3>AI Models Used</h3>
 <ol>
-<li><strong>Product Discovery</strong>: Claude Sonnet 4.5 or GPT-5 (configurable)</li>
-<li><strong>Image Classification</strong>: Qwen3-VL-32B-Instruct (HuggingFace Endpoint) → Claude Sonnet 4.5 (validation)</li>
+<li><strong>Product Discovery</strong>: Claude Opus 4.7 or GPT-5 (configurable)</li>
+<li><strong>Image Classification</strong>: Qwen3-VL-32B-Instruct (HuggingFace Endpoint) → Claude Opus 4.7 (validation)</li>
 <li><strong>Visual Embeddings</strong>: SLIG (SigLIP2) via HuggingFace Endpoint - 5 types per image, 768D each</li>
-<li><strong>Text Embeddings</strong>: Voyage AI voyage-3.5 (1024D) — sole provider (updated 2026-04)</li>
+<li><strong>Text Embeddings</strong>: Voyage AI voyage-4 (1024D) — sole provider (updated 2026-04)</li>
 </ol>
 <h3>Thresholds</h3>
 <ul>
@@ -452,7 +454,7 @@
 <li><strong>classify-images</strong>: AI classification (Qwen3-VL-32B → Claude) to filter material vs non-material images</li>
 <li><strong>upload-images</strong>: Upload material images to Supabase Storage (receives pre-filtered list)</li>
 <li><strong>save-images-db</strong>: Save to DB + generate 5 visual embeddings per image (SLIG 768D via HuggingFace endpoint)</li>
-<li><strong>create-chunks</strong>: Semantic chunking + text embeddings (Voyage AI voyage-3.5 1024D)</li>
+<li><strong>create-chunks</strong>: Semantic chunking + text embeddings (Voyage AI voyage-4 1024D)</li>
 <li><strong>create-relationships</strong>: Chunk-image and product-image relationships via similarity</li>
 </ol>
 <h3>Default Processing Flow</h3>
@@ -463,7 +465,7 @@
 <li>Save ONLY <strong>uploaded_images</strong> to database</li>
 <li>Generate 5 visual embeddings per saved image (SLIG 768D via HuggingFace endpoint)</li>
 <li>Create semantic chunks from text</li>
-<li>Generate text embeddings for chunks (Voyage AI voyage-3.5 1024D)</li>
+<li>Generate text embeddings for chunks (Voyage AI voyage-4 1024D)</li>
 <li>Create relationships between chunks, images, and products</li>
 </ol>
 <h3>Key Features</h3>
@@ -471,7 +473,7 @@
 <li>✅ <strong>Focused extraction by default</strong> (only material images)</li>
 <li>✅ <strong>Two-stage AI classification</strong> (Qwen3-VL-32B fast, Claude validation)</li>
 <li>✅ <strong>5 visual embeddings per image</strong> (SLIG 768D via HuggingFace endpoint: visual, color, texture, style, material)</li>
-<li>✅ <strong>High-quality text embeddings</strong> (Voyage AI voyage-3.5 1024D)</li>
+<li>✅ <strong>High-quality text embeddings</strong> (Voyage AI voyage-4 1024D)</li>
 <li>✅ <strong>Semantic chunking</strong> with product boundary respect</li>
 <li>✅ <strong>Comprehensive progress tracking</strong> (5% increments)</li>
 <li>✅ <strong>Checkpoint creation</strong> at each stage for recovery</li>
