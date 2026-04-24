@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Material KAI Vision Platform — Full Business &amp; Product Overview</h1>
 <p><strong>Confidential | For Investor &amp; Partner Use</strong>
 <em>Version 3.5 — March 2026</em></p>
@@ -132,9 +134,9 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 </thead>
 <tbody><tr>
 <td>Anthropic</td>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>Jarvis agent, deep product analysis, metadata extraction, B2B research</td>
-<td>$3 input / $15 output per 1M tokens</td>
+<td>$15 input / $75 output per 1M tokens</td>
 </tr>
 <tr>
 <td>Anthropic</td>
@@ -156,7 +158,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 </tr>
 <tr>
 <td>Voyage AI</td>
-<td>voyage-3.5 (1024D)</td>
+<td>voyage-4 (1024D)</td>
 <td>Primary text embeddings + understanding embeddings</td>
 <td>$0.06 per 1M tokens</td>
 </tr>
@@ -241,7 +243,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <tbody><tr>
 <td>Text</td>
 <td>1024D</td>
-<td>Voyage AI voyage-3.5</td>
+<td>Voyage AI voyage-4</td>
 <td>Natural language + keyword search</td>
 </tr>
 <tr>
@@ -288,7 +290,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <p><strong>A. PDF Processing Pipeline (14 Stages)</strong></p>
 <p>The primary ingest path. A supplier uploads a product catalog PDF. The platform automatically:</p>
 <ol>
-<li>Discovers all products using Claude Haiku (fast boundary detection) + Claude Sonnet (metadata enrichment) — <strong>95%+ detection accuracy</strong></li>
+<li>Discovers all products using Claude Haiku (fast boundary detection) + Claude Opus (metadata enrichment) — <strong>95%+ detection accuracy</strong></li>
 <li>Extracts text with PyMuPDF4LLM (structure-preserving)</li>
 <li>Semantic chunking via Anthropic API (800 token max, 100 overlap)</li>
 <li>Generates text + understanding embeddings via Voyage AI</li>
@@ -332,7 +334,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <p><strong>B. Web Scraping</strong>
 Automatic product discovery from manufacturer websites via Firecrawl. Discovers product pages, extracts structured data, and runs the same full AI enrichment pipeline.</p>
 <p><strong>C. XML Import</strong>
-Structured data import with AI-powered field mapping (Claude Sonnet). Supports recurring scheduled imports, batch processing (10 products at a time, 5 concurrent image downloads), and checkpoint recovery.</p>
+Structured data import with AI-powered field mapping (Claude Opus). Supports recurring scheduled imports, batch processing (10 products at a time, 5 concurrent image downloads), and checkpoint recovery.</p>
 <hr>
 <h3>Feature 2 — Multi-Modal AI Search</h3>
 <p>Six search strategies, all available simultaneously with results merged and deduplicated:</p>
@@ -402,7 +404,7 @@ Structured data import with AI-powered field mapping (Claude Sonnet). Supports r
 <h3>Feature 3 — KAI Agent Hub (Three AI Agents)</h3>
 <p>The Agent Hub (<code>/agent-hub</code>) is the conversational AI interface with memory, multi-turn context, image uploads, and tool-use.</p>
 <p><strong>Jarvis — Primary Material Intelligence Agent</strong>
-Model: Claude Sonnet 4.5 | LangGraph + Supabase checkpointer (conversations resume across sessions)</p>
+Model: Claude Opus 4.7 | LangGraph + Supabase checkpointer (conversations resume across sessions)</p>
 <p>Tools available to all authenticated users:</p>
 <ul>
 <li><code>material_search</code> — 7-vector fusion search across the catalog, with <strong>Explainable Search Spec</strong> (structured interpretation of query across color/material/style/texture/specification dimensions, displayed as a collapsible card above results)</li>
@@ -422,7 +424,7 @@ Model: Claude Sonnet 4.5 | LangGraph + Supabase checkpointer (conversations resu
 <li>Sub-agents: <code>research_analysis</code>, <code>analytics_analysis</code>, <code>business_analysis</code>, <code>product_analysis</code></li>
 </ul>
 <p><strong>Interior Designer Agent</strong>
-Model: Claude Sonnet 4.5 | Focused on spatial design and visualization</p>
+Model: Claude Opus 4.7 | Focused on spatial design and visualization</p>
 <ul>
 <li>Analyzes room photos: layout, dimensions, natural light, spatial relationships, accessibility compliance</li>
 <li>Generates interior design images (text prompt or image reference) — see Feature 4</li>
@@ -1096,9 +1098,9 @@ Custom contracts for large manufacturers or distributor networks:</p>
 </tr>
 </thead>
 <tbody><tr>
-<td>Claude Sonnet analysis (1K tokens)</td>
-<td>~$0.003–0.015</td>
-<td>1–20 credits</td>
+<td>Claude Opus analysis (1K tokens)</td>
+<td>~$0.015–0.075</td>
+<td>2–40 credits</td>
 <td>20–60%+</td>
 </tr>
 <tr>

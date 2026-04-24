@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Category Field Registry (Frontend Display Config)</h1>
 <p>Frontend display configuration for the 10 material categories. Mirrors the Python <code>category_field_registry.py</code> on the MIVAA backend — the Python registry decides which fields the AI extracts; this TypeScript registry decides which fields the UI shows and how they&#39;re grouped.</p>
 <p><strong>File</strong>: <a href="../src/lib/categoryFieldRegistry.ts"><code>src/lib/categoryFieldRegistry.ts</code></a> (~1000 lines)</p>
@@ -106,7 +108,7 @@ const CATEGORY_DISPLAY_REGISTRY: Record&lt;UploadCategory, CategoryDisplayConfig
 <ol>
 <li><strong>Don&#39;t rename a <code>field.key</code></strong> unless the same key also gets renamed in the Python registry and any DB metadata that&#39;s already populated. Otherwise existing products silently lose that field in the UI.</li>
 <li><strong>Don&#39;t reorder <code>controlledVocab</code> values</strong> — order doesn&#39;t matter (membership lookup), but consistency helps PR review.</li>
-<li><strong>Theme color</strong> drives the category badge tint. Pick something that works on the dark background (see <a href="design-system.md"><code>design-system.md</code></a>).</li>
+<li><strong>Theme color</strong> drives the category badge tint. Pick something that works on the dark background (see <a href="design-system.html"><code>design-system.md</code></a>).</li>
 <li><strong>New section?</strong> Pick a <code>key</code> not already used by other categories so cross-category logic (filters, aggregations) doesn&#39;t accidentally collide.</li>
 </ol>
 <hr>
