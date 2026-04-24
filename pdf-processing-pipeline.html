@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,19 +19,20 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>PDF Processing Pipeline - Complete Technical Guide</h1>
 <p>14-stage intelligent pipeline for transforming material catalogs into searchable knowledge.</p>
 <blockquote>
 <p><strong>📚 Related Documentation:</strong></p>
 <ul>
-<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
-<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - AI-powered product extraction</li>
-<li><a href="./system-architecture.md">System Architecture</a> - Overall platform architecture</li>
+<li><a href="./async-processing-and-limits.html">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./product-discovery-architecture.html">Product Discovery Architecture</a> - AI-powered product extraction</li>
+<li><a href="./system-architecture.html">System Architecture</a> - Overall platform architecture</li>
 </ul>
 </blockquote>
 <hr>
@@ -38,14 +40,14 @@
 <p><strong>Key Concept</strong>: After Stage 0 discovers products, Stages 1-5 process EACH product individually, extracting and linking all related data (chunks, images, tables) before moving to the next product.</p>
 <p>┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 0A: Product Discovery (0-10%)                             │
-│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ AI Model: Claude Opus 4.7 / GPT-4o                           │
 │ Purpose: Extract products with ALL metadata (inseparable)      │
 │ Output: Products with metadata JSONB (factory, specs, etc.)    │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 0B: Document Entity Discovery (10-15%) - OPTIONAL         │
-│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ AI Model: Claude Opus 4.7 / GPT-4o                           │
 │ Purpose: Extract certificates, logos, specifications           │
 │ Output: Document entities stored separately with relationships │
 └─────────────────────────────────────────────────────────────────┘
@@ -225,7 +227,7 @@
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 9: Product Creation (90-95%)                              │
-│ Models: Claude Haiku 4.5 → Claude Sonnet 4.5                   │
+│ Models: Claude Haiku 4.5 → Claude Opus 4.7                     │
 │ Output: Product records with relationships                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -305,7 +307,7 @@
 <h2>📋 Detailed Stage Breakdown</h2>
 <h3>Stage 0A: Product Discovery (0-10%)</h3>
 <p><strong>Purpose</strong>: Extract products with ALL metadata (Products + Metadata = Inseparable)</p>
-<p><strong>AI Model</strong>: Claude Sonnet 4.5 or GPT-4o</p>
+<p><strong>AI Model</strong>: Claude Opus 4.7 or GPT-4o</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li>Extract full PDF text</li>
@@ -330,7 +332,7 @@
 <hr>
 <h3>Stage 0B: Document Entity Discovery (10-15%) - OPTIONAL</h3>
 <p><strong>Purpose</strong>: Extract certificates, logos, specifications as separate knowledge base</p>
-<p><strong>AI Model</strong>: Claude Sonnet 4.5 or GPT-4o</p>
+<p><strong>AI Model</strong>: Claude Opus 4.7 or GPT-4o</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li>Analyze PDF for document entities</li>
@@ -802,7 +804,7 @@
 <p><strong>Note</strong>: This stage runs asynchronously and does not block pipeline completion</p>
 <hr>
 <h3>Stage 7 (alternate): Product Creation (85-92%)</h3>
-<p><strong>Models</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5</p>
+<p><strong>Models</strong>: Claude Haiku 4.5 → Claude Opus 4.7</p>
 <p><strong>Two-Stage Validation</strong>:</p>
 <p><strong>Stage 1 (Haiku - Fast)</strong>:</p>
 <ul>
@@ -811,7 +813,7 @@
 <li>Extract basic information</li>
 <li>Processing time: 3-5 seconds</li>
 </ul>
-<p><strong>Stage 2 (Sonnet - Deep)</strong>:</p>
+<p><strong>Stage 2 (Opus - Deep)</strong>:</p>
 <ul>
 <li>For each candidate, perform deep analysis</li>
 <li>Validate product completeness</li>
@@ -1110,10 +1112,10 @@
 </ul>
 <p>A CAPTION region chunk contains the caption text, <code>region_type: &quot;CAPTION&quot;</code>, a <code>reading_order</code> value, and a <code>linked_image_bbox</code> reference.</p>
 <h3>Configuration</h3>
-<p>Layout-aware chunking is enabled by setting <code>strategy=ChunkingStrategy.LAYOUT_AWARE</code> in the <code>ChunkingConfig</code> passed to <code>UnifiedChunkingService</code>, with <code>max_chunk_size=1000</code> and <code>min_chunk_size=100</code>.</p>
+<p>Layout-aware chunking is activated by passing <code>layout_regions_by_page</code> (a dict mapping 1-based page_number → list of YOLO layout regions) into <code>chunk_pages()</code>. The chunking config stays at the default <code>HYBRID</code> strategy (<code>max_chunk_size=1000</code>, <code>min_chunk_size=100</code>); per-page, if regions are provided, <code>_chunk_with_layout_regions</code> runs instead of the strategy dispatcher.</p>
 <p><strong>Fallback Behavior:</strong></p>
 <ul>
-<li>If no <code>product_id</code> in metadata → Falls back to semantic chunking</li>
+<li>If no regions are provided for a page → falls back to the configured strategy (HYBRID by default)</li>
 <li>If no layout regions found → Falls back to semantic chunking</li>
 <li>If YOLO fails → Pipeline continues with semantic chunking</li>
 </ul>
@@ -1358,8 +1360,8 @@
 <td>PyMuPDF Tier A</td>
 </tr>
 <tr>
-<td><code>claude_sonnet_vision</code> / <code>claude_spec_vision</code></td>
-<td>Claude Sonnet Tier B</td>
+<td><code>claude_opus_vision</code> / <code>claude_spec_vision</code></td>
+<td>Claude Opus Tier B</td>
 </tr>
 <tr>
 <td><code>catalog_legend</code></td>

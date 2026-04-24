@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>AI Usage Pricing &amp; Monitoring System</h1>
 <h2>Overview</h2>
 <p>This document explains how the platform tracks and converts AI service costs into platform credits.</p>
@@ -47,8 +49,8 @@
 <ul>
 <li><strong>Pricing Unit</strong>: Per million tokens</li>
 <li><strong>Models Tracked</strong>:<ul>
-<li>Claude 3.5 Sonnet (with prompt caching)</li>
-<li>Claude 3 Opus, Sonnet, Haiku</li>
+<li>Claude Opus 4.7 (with prompt caching)</li>
+<li>Claude Haiku 4.5</li>
 </ul>
 </li>
 <li><strong>Special Features</strong>:<ul>
@@ -70,7 +72,7 @@
 <ul>
 <li><strong>Pricing Unit</strong>: Per million tokens</li>
 <li><strong>Models Tracked</strong>:<ul>
-<li>Voyage AI <code>voyage-3.5</code> (1024D) — sole production text embedder</li>
+<li>Voyage AI <code>voyage-4</code> (1024D) — sole production text embedder</li>
 <li>OpenAI <code>text-embedding-3-small</code> — legacy CI changelog workflow only</li>
 </ul>
 </li>
@@ -81,7 +83,7 @@
 <li><strong>Pricing Unit</strong>: Per image</li>
 <li><strong>Models Tracked</strong>:<ul>
 <li>GPT-4o vision</li>
-<li>Claude 3.5 Sonnet vision</li>
+<li>Claude Opus 4.7 vision</li>
 </ul>
 </li>
 <li><strong>Cost Calculation</strong>: USD Cost = image_count × price_per_image. Platform Credits = USD Cost × 100.</li>
@@ -100,7 +102,7 @@
 <hr>
 <h2>Database Schema</h2>
 <h3><code>ai_usage_logs</code> Table</h3>
-<p>Tracks all AI API calls with detailed cost breakdown. The table stores the following fields: a UUID primary key, <code>user_id</code> referencing <code>auth.users</code>, <code>model_name</code> (e.g., <code>&quot;gpt-4o&quot;</code>, <code>&quot;claude-3-5-sonnet&quot;</code>), <code>provider</code> (e.g., <code>&quot;openai&quot;</code>, <code>&quot;anthropic&quot;</code>, <code>&quot;firecrawl&quot;</code>), <code>operation_type</code> (e.g., <code>&quot;chat&quot;</code>, <code>&quot;embedding&quot;</code>, <code>&quot;scrape&quot;</code>), <code>input_tokens</code>, <code>output_tokens</code>, <code>cached_tokens</code>, <code>total_tokens</code>, <code>firecrawl_credits</code> (Firecrawl-specific), <code>cost_usd</code> (DECIMAL 10,6 — cost in USD), <code>platform_credits</code> (integer — cost in platform credits, i.e., USD × 100), <code>request_metadata</code> (JSONB), <code>response_metadata</code> (JSONB), and <code>created_at</code> timestamp.</p>
+<p>Tracks all AI API calls with detailed cost breakdown. The table stores the following fields: a UUID primary key, <code>user_id</code> referencing <code>auth.users</code>, <code>model_name</code> (e.g., <code>&quot;gpt-4o&quot;</code>, <code>&quot;claude-opus-4-7&quot;</code>), <code>provider</code> (e.g., <code>&quot;openai&quot;</code>, <code>&quot;anthropic&quot;</code>, <code>&quot;firecrawl&quot;</code>), <code>operation_type</code> (e.g., <code>&quot;chat&quot;</code>, <code>&quot;embedding&quot;</code>, <code>&quot;scrape&quot;</code>), <code>input_tokens</code>, <code>output_tokens</code>, <code>cached_tokens</code>, <code>total_tokens</code>, <code>firecrawl_credits</code> (Firecrawl-specific), <code>cost_usd</code> (DECIMAL 10,6 — cost in USD), <code>platform_credits</code> (integer — cost in platform credits, i.e., USD × 100), <code>request_metadata</code> (JSONB), <code>response_metadata</code> (JSONB), and <code>created_at</code> timestamp.</p>
 <hr>
 <h2>Usage Examples</h2>
 <h3>Example 1: GPT-4o API Call</h3>
