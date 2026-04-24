@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,19 +19,20 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Data Import System</h1>
 <p>Complete documentation for the unified data import system supporting XML files and web scraping.</p>
 <blockquote>
 <p><strong>📚 Related Documentation:</strong></p>
 <ul>
-<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
-<li><a href="./web-scraping-integration.md">Web Scraping Integration</a> - Web scraping details</li>
-<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - AI-powered product extraction</li>
+<li><a href="./async-processing-and-limits.html">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./web-scraping-integration.html">Web Scraping Integration</a> - Web scraping details</li>
+<li><a href="./product-discovery-architecture.html">Product Discovery Architecture</a> - AI-powered product extraction</li>
 </ul>
 </blockquote>
 <hr>
@@ -50,7 +52,7 @@
 <p>The Data Import System enables ingesting products from multiple sources including XML files, web scraping, and PDF processing through a unified data import hub. It provides dynamic field mapping, AI-assisted configuration, batch processing, and real-time progress tracking.</p>
 <h3>Key Features</h3>
 <ul>
-<li>Dynamic XML field mapping with AI suggestions (Claude Sonnet 4.5)</li>
+<li>Dynamic XML field mapping with AI suggestions (Claude Opus 4.7)</li>
 <li>Reusable mapping templates</li>
 <li>Manual re-run functionality</li>
 <li>Cron-based scheduling for recurring imports</li>
@@ -115,7 +117,7 @@
 <td>Image size limit</td>
 </tr>
 </tbody></table>
-<p>See <a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> for complete details.</p>
+<p>See <a href="./async-processing-and-limits.html">Async Processing &amp; Limits</a> for complete details.</p>
 <h3>Use Cases</h3>
 <ol>
 <li><strong>Supplier Catalog Imports</strong> - Import products from supplier XML catalogs</li>
@@ -136,7 +138,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ EDGE FUNCTION (xml-import-orchestrator)                     │
 │ ├─ Parse XML and detect fields                              │
-│ ├─ AI-powered field mapping (Claude Sonnet 4.5)             │
+│ ├─ AI-powered field mapping (Claude Opus 4.7)             │
 │ ├─ Create data_import_jobs record                           │
 │ └─ Call Python API (non-blocking)                           │
 └─────────────────────────────────────────────────────────────┘
@@ -163,7 +165,7 @@
 ↓</li>
 <li>Edge Function parses XML and detects fields
 ↓</li>
-<li>AI suggests field mappings (Claude Sonnet 4.5)
+<li>AI suggests field mappings (Claude Opus 4.7)
 ↓</li>
 <li>User reviews and confirms mappings
 ↓</li>
@@ -223,7 +225,7 @@
 <p><strong>Features:</strong></p>
 <ul>
 <li>XML parsing with field detection</li>
-<li>AI-powered field mapping using Claude Sonnet 4.5</li>
+<li>AI-powered field mapping using Claude Opus 4.7</li>
 <li>Fallback rule-based mapping (multi-language support)</li>
 <li>Preview mode for field detection only</li>
 <li>Stores products in job metadata for Python API</li>
@@ -585,10 +587,10 @@
 </tbody></table>
 <p>For detailed implementation, see:</p>
 <ul>
-<li><a href="./unified-product-generation-flow.md">Unified Product Generation Flow</a></li>
-<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
-<li><a href="./xml-import-orchestrator.md">XML Import Orchestrator</a></li>
-<li><a href="./web-scraping-integration.md">Web Scraping Integration</a></li>
+<li><a href="./unified-product-generation-flow.html">Unified Product Generation Flow</a></li>
+<li><a href="./pdf-processing-pipeline.html">PDF Processing Pipeline</a></li>
+<li><a href="./xml-import-orchestrator.html">XML Import Orchestrator</a></li>
+<li><a href="./web-scraping-integration.html">Web Scraping Integration</a></li>
 </ul>
 <hr>
 <h2>Future Enhancements</h2>

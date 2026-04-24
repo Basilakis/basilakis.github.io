@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Page-Aware Chunking Implementation</h1>
 <h2>Overview</h2>
 <p>This document describes the implementation of page-aware chunking system that preserves page information from PyMuPDF4LLM extraction through to chunk-product relationship scoring.</p>
@@ -47,22 +49,17 @@
 <li><strong>Parameters</strong>: Added <code>page_number</code> parameter</li>
 <li><strong>Process</strong>: Calls appropriate chunking strategy with page number</li>
 </ul>
-<h4>Updated Methods: All Chunking Strategies</h4>
+<h4>Updated Methods: Chunking Strategies</h4>
 <ul>
 <li><code>_chunk_semantic()</code> - Added <code>page_number</code> parameter</li>
 <li><code>_chunk_fixed_size()</code> - Added <code>page_number</code> parameter</li>
 <li><code>_chunk_hybrid()</code> - Added <code>page_number</code> parameter</li>
-<li><code>_chunk_layout_aware()</code> - Added <code>page_number</code> parameter<ul>
-<li><strong>NEW (Jan 2026)</strong>: Now uses YOLO layout regions from database</li>
-<li>Reads regions from <code>product_layout_regions</code> table</li>
-<li>Respects region boundaries (TEXT, TITLE, TABLE, IMAGE, CAPTION, FORMULA)</li>
-<li>Combines TITLE + TEXT intelligently</li>
-<li>Keeps tables intact</li>
-<li>Falls back to semantic chunking if no regions found</li>
-<li>See <a href="./pdf-processing-pipeline.md#yolo-layout-aware-chunking">PDF Processing Pipeline</a> for details</li>
 </ul>
-</li>
-</ul>
+<p>Layout-aware chunking is no longer a strategy. It is activated by passing
+<code>layout_regions_by_page</code> to <code>chunk_pages()</code>, which routes per-page content
+through <code>_chunk_with_layout_regions()</code>. That method respects YOLO region
+boundaries (TEXT, TITLE, TABLE, IMAGE, CAPTION), combines TITLE + following
+TEXT, and keeps TABLE regions atomic. See <a href="./pdf-processing-pipeline.html#yolo-layout-aware-chunking">PDF Processing Pipeline</a>.</p>
 <h4>Updated Method: <code>_create_chunk()</code></h4>
 <ul>
 <li><strong>New Parameter</strong>: <code>page_number: Optional[int]</code></li>
