@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Deployment Guide</h1>
 <h2>🔐 <strong>Complete Secrets Reference</strong></h2>
 <p><strong>All secrets required for deployment across all platforms.</strong></p>
@@ -450,7 +452,7 @@
 <td>Public</td>
 <td>Server ENV</td>
 <td>Vision model for image analysis</td>
-<td><code>claude-sonnet-4-6-20260217</code>, <code>gpt-4o</code>, <code>Qwen/Qwen2-VL-72B-Instruct</code></td>
+<td><code>claude-opus-4-7</code>, <code>gpt-4o</code>, <code>Qwen/Qwen2-VL-72B-Instruct</code></td>
 </tr>
 <tr>
 <td><code>VISION_GUIDED_CONFIDENCE_THRESHOLD</code></td>
@@ -1262,7 +1264,7 @@
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Note:</strong> The SEO pipeline also uses <code>ANTHROPIC_API_KEY</code> (already listed under Core Secrets above) for article writing via Claude Sonnet. <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> are auto-provided to all edge functions.</p>
+<p><strong>Note:</strong> The SEO pipeline also uses <code>ANTHROPIC_API_KEY</code> (already listed under Core Secrets above) for article writing via Claude Opus. <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> are auto-provided to all edge functions.</p>
 </blockquote>
 <p><strong>How to get these keys:</strong></p>
 <table>
@@ -1288,7 +1290,7 @@
 <ul>
 <li>Research: 18 credits (DataForSEO: 5 API calls ~$0.117 raw)</li>
 <li>Planning: 2 credits (Gemini 3 Flash: ~3K in/3K out ~$0.01 raw)</li>
-<li>Writing: 20 credits (Claude Sonnet 4.5: ~4K in/8K out ~$0.13 raw)</li>
+<li>Writing: 20 credits (Claude Opus 4.7: ~4K in/8K out ~$0.66 raw)</li>
 <li>Analysis: 2 credits (Gemini 3 Flash: ~6K in/3K out ~$0.01 raw, GEO scoring is regex-free)</li>
 <li>Auto-fix: 5 credits per iteration (Gemini 3 Flash: ~10K in/8K out ~$0.03 raw)</li>
 <li><strong>Total per article: 42 credits (no fix) — 57 credits (max 3 fixes)</strong></li>
@@ -2313,22 +2315,16 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>Claude Sonnet 4.6</td>
-<td>$3/M tokens</td>
+<td>Claude Opus 4.7</td>
 <td>$15/M tokens</td>
-<td>KAI agent, SEO writing</td>
+<td>$75/M tokens</td>
+<td>KAI agent, SEO writing, complex reasoning</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
 <td>$0.80/M tokens</td>
 <td>$4/M tokens</td>
 <td>Demo agent, B2B web search</td>
-</tr>
-<tr>
-<td>Claude Opus 4.6</td>
-<td>$15/M tokens</td>
-<td>$75/M tokens</td>
-<td>Complex reasoning (on demand)</td>
 </tr>
 </tbody></table>
 <hr>
@@ -2735,11 +2731,11 @@
 <hr>
 <h2>🔗 Related Documentation</h2>
 <ul>
-<li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Environment setup</li>
-<li><a href="./security-authentication.md">Security &amp; Authentication</a> - Security configuration</li>
-<li><a href="./testing-strategy.md">Testing Strategy</a> - Pre-deployment testing</li>
-<li><a href="./troubleshooting.md">Troubleshooting</a> - Issue resolution</li>
-<li><a href="../mivaa-pdf-extractor/docs/JOB-RECOVERY-AND-SIGNAL-HANDLING.md">Job Recovery &amp; Signal Handling</a> - Job persistence</li>
+<li><a href="./setup-configuration.html">Setup &amp; Configuration</a> - Environment setup</li>
+<li><a href="./security-authentication.html">Security &amp; Authentication</a> - Security configuration</li>
+<li><a href="./testing-strategy.html">Testing Strategy</a> - Pre-deployment testing</li>
+<li><a href="./troubleshooting.html">Troubleshooting</a> - Issue resolution</li>
+<li><a href="../mivaa-pdf-extractor/docs/JOB-RECOVERY-AND-SIGNAL-HANDLING.html">Job Recovery &amp; Signal Handling</a> - Job persistence</li>
 </ul>
 
 </div></body></html>
