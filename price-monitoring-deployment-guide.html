@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Price Monitoring - Deployment &amp; Testing Guide</h1>
 <h2>Architecture Overview</h2>
 <p>┌─────────────────────────────────────────────────────────────────┐
@@ -66,10 +68,15 @@
 <ul>
 <li><code>price_monitoring_products</code></li>
 <li><code>price_history</code></li>
-<li><code>competitor_sources</code></li>
+<li><code>competitor_sources</code> (has <code>source_type</code> enum, <code>current_price</code>/<code>current_currency</code>/<code>current_availability</code>/<code>current_price_updated_at</code> cache columns)</li>
 <li><code>price_monitoring_jobs</code></li>
 <li><code>price_alerts</code></li>
 <li><code>price_alert_history</code></li>
+<li><code>price_lookups</code> (external <code>/api/v1/prices/lookup</code> usage log)</li>
+</ul>
+<p>And the enum type:</p>
+<ul>
+<li><code>competitor_source_type</code> (<code>firecrawl_url</code>, <code>dataforseo_shopping</code>)</li>
 </ul>
 <h3>Verify Database Functions</h3>
 <p>Check that these functions exist:</p>
@@ -79,10 +86,13 @@
 <li><code>should_trigger_alert(p_alert_id, p_old_price, p_new_price)</code></li>
 </ul>
 <h2>Step 2: Python Backend Configuration</h2>
+<h3>Dependencies</h3>
+<p>The backend requires <code>price-parser&gt;=0.3.4</code> for locale-aware price string parsing (already listed in <code>mivaa-pdf-extractor/requirements.txt</code>). Run <code>pip install -r requirements.txt</code> to pick it up.</p>
 <h3>Environment Variables</h3>
 <p>Add the following to <code>mivaa-pdf-extractor/.env</code>:</p>
 <ul>
 <li><code>FIRECRAWL_API_KEY</code> - Your Firecrawl API key</li>
+<li><code>RESEND_API_KEY</code> - Resend API key (used by the <code>notification-dispatcher</code> edge function for price alert emails)</li>
 <li><code>SUPABASE_URL</code> - Supabase project URL (should already exist)</li>
 <li><code>SUPABASE_SERVICE_ROLE_KEY</code> - Service role key (should already exist)</li>
 <li><code>SUPABASE_JWT_SECRET</code> - JWT secret (should already exist)</li>
@@ -236,9 +246,9 @@
 </ul>
 <h2>Related Documentation</h2>
 <ul>
-<li><a href="./price-monitoring-system.md">Price Monitoring System</a></li>
-<li><a href="./price-monitoring-backend-implementation.md">Price Monitoring Backend Implementation</a></li>
-<li><a href="../supabase/functions/price-monitoring-cron/README.md">Edge Function README</a></li>
+<li><a href="./price-monitoring-system.html">Price Monitoring System</a></li>
+<li><a href="./price-monitoring-backend-implementation.html">Price Monitoring Backend Implementation</a></li>
+<li><a href="../supabase/functions/price-monitoring-cron/README.html">Edge Function README</a></li>
 <li><a href="../supabase/functions/price-monitoring-cron/.env.example">Environment Variables</a></li>
 </ul>
 <h2>Support</h2>
