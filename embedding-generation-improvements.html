@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Image Embedding Generation</h1>
 <p>Image embedding generation system with batching, retry logic, and checkpoint recovery for reliable CLIP embedding coverage.</p>
 <hr>
@@ -166,7 +168,7 @@
 <ol>
 <li><strong>Qwen3-VL Analysis</strong> → Produces structured JSON (<code>vision_analysis</code>) with material type, colors, textures, properties, OCR text</li>
 <li><strong>JSON → Text Conversion</strong> → Converts structured fields into descriptive text (e.g., &quot;Material: porcelain tile. Colors: white, grey. Texture: matte. Dimensions: 60x120cm.&quot;)</li>
-<li><strong>Voyage AI Embedding</strong> → Embeds the text via <code>voyage-3.5</code> with <code>input_type=&quot;document&quot;</code> → 1024D vector</li>
+<li><strong>Voyage AI Embedding</strong> → Embeds the text via <code>voyage-4</code> with <code>input_type=&quot;document&quot;</code> → 1024D vector</li>
 <li><strong>VECS Storage</strong> → Stored in <code>image_understanding_embeddings</code> collection (1024D, HNSW index)</li>
 </ol>
 <h3>Search Flow</h3>
@@ -199,10 +201,10 @@
 </ol>
 <h2>Related Documentation</h2>
 <ul>
-<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
-<li><a href="./system-architecture.md#image-processing">Image Processing Service</a></li>
-<li><a href="./api-endpoints.md">API Endpoints</a></li>
-<li><a href="./troubleshooting-guide.md">Troubleshooting Guide</a></li>
+<li><a href="./pdf-processing-pipeline.html">PDF Processing Pipeline</a></li>
+<li><a href="./system-architecture.html#image-processing">Image Processing Service</a></li>
+<li><a href="./api-endpoints.html">API Endpoints</a></li>
+<li><a href="./troubleshooting-guide.html">Troubleshooting Guide</a></li>
 </ul>
 
 </div></body></html>
