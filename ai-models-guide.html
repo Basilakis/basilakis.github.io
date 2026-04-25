@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>AI Models Integration Guide</h1>
 <p><strong>Last Updated:</strong> 2025-12-26</p>
 <p>Complete reference of all AI models used across the Material KAI Vision Platform.</p>
@@ -46,11 +48,11 @@
 <td></td>
 </tr>
 <tr>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>Anthropic</td>
-<td>Product discovery, enrichment</td>
-<td>95%+ accuracy</td>
-<td>$3 input / $15 output</td>
+<td>Product discovery, enrichment, complex reasoning</td>
+<td>Highest accuracy</td>
+<td>$15 input / $75 output</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
@@ -58,13 +60,6 @@
 <td>Fast validation</td>
 <td>Real-time</td>
 <td>$0.80 input / $4 output</td>
-</tr>
-<tr>
-<td>Claude Opus 4.5</td>
-<td>Anthropic</td>
-<td>Complex reasoning</td>
-<td>Highest accuracy</td>
-<td>$15 input / $75 output</td>
 </tr>
 <tr>
 <td>GPT-4o</td>
@@ -88,7 +83,7 @@
 <td></td>
 </tr>
 <tr>
-<td>voyage-3.5</td>
+<td>voyage-4</td>
 <td>Voyage AI</td>
 <td><strong>PRIMARY</strong> Text embeddings</td>
 <td>1024D vectors</td>
@@ -174,7 +169,7 @@
 </tbody></table>
 <hr>
 <h2>Model Details</h2>
-<h3>1. Claude Sonnet 4.5 (Anthropic)</h3>
+<h3>1. Claude Opus 4.7 (Anthropic)</h3>
 <p><strong>Purpose</strong>: Product discovery, enrichment, validation</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
@@ -187,7 +182,7 @@
 <ul>
 <li>Accuracy: 95%+</li>
 <li>Latency: 2-5 seconds</li>
-<li>Cost: $3 per 1M input tokens</li>
+<li>Cost: $15 per 1M input tokens</li>
 </ul>
 <p><strong>When to Use</strong>:</p>
 <ul>
@@ -240,7 +235,7 @@
 <li>Fallback option</li>
 </ul>
 <hr>
-<h3>4. Voyage AI voyage-3.5 (updated 2026-04)</h3>
+<h3>4. Voyage AI voyage-4 (updated 2026-04)</h3>
 <p><strong>Purpose</strong>: Generate text embeddings for semantic search (sole production text embedder)</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
@@ -390,7 +385,7 @@
 </thead>
 <tbody><tr>
 <td>0</td>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>GPT-4o</td>
 <td>Product discovery</td>
 </tr>
@@ -402,7 +397,7 @@
 </tr>
 <tr>
 <td>4</td>
-<td>voyage-3.5 (Voyage AI)</td>
+<td>voyage-4 (Voyage AI)</td>
 <td>-</td>
 <td>Text embeddings (1024D, updated 2026-04)</td>
 </tr>
@@ -421,12 +416,12 @@
 <tr>
 <td>11</td>
 <td>Claude Haiku 4.5</td>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>Product validation</td>
 </tr>
 <tr>
 <td>13</td>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>-</td>
 <td>Quality enhancement</td>
 </tr>
@@ -458,7 +453,7 @@
 <li><code>SLIG_ENDPOINT_URL</code> — HuggingFace SLIG endpoint URL</li>
 <li><code>SLIG_ENDPOINT_TOKEN</code> — HuggingFace SLIG endpoint token</li>
 </ul>
-<p>The model configuration maps each task to its designated model: <code>discovery</code> uses <code>claude-sonnet-4-5</code>, <code>validation</code> uses <code>claude-haiku-4-5</code>, <code>text_embeddings</code> uses <code>voyage-3.5</code>, <code>vision</code> uses <code>Qwen/Qwen3-VL-32B-Instruct</code>, and <code>visual_embeddings</code> uses <code>SLIG</code>.</p>
+<p>The model configuration maps each task to its designated model: <code>discovery</code> uses <code>claude-opus-4-7</code>, <code>validation</code> uses <code>claude-haiku-4-5</code>, <code>text_embeddings</code> uses <code>voyage-4</code>, <code>vision</code> uses <code>Qwen/Qwen3-VL-32B-Instruct</code>, and <code>visual_embeddings</code> uses <code>SLIG</code>.</p>
 <hr>
 <h2>📈 Performance Benchmarks</h2>
 <p><strong>Accuracy</strong>:</p>
@@ -579,7 +574,7 @@
 <h3>Vision Analysis</h3>
 <ol>
 <li><strong>Qwen3-VL-32B-Instruct</strong> (PRIMARY) - All production vision tasks (HuggingFace endpoint)</li>
-<li><strong>Claude Sonnet 4.5</strong> - Validation for low-confidence results</li>
+<li><strong>Claude Opus 4.7</strong> - Validation for low-confidence results</li>
 </ol>
 <h3>Visual Embeddings</h3>
 <ol>
@@ -591,7 +586,7 @@
 </ol>
 <h3>Text Generation</h3>
 <ol>
-<li><strong>Claude Sonnet 4.5</strong> (PRIMARY) - Complex reasoning</li>
+<li><strong>Claude Opus 4.7</strong> (PRIMARY) - Complex reasoning</li>
 <li><strong>Claude Haiku 4.5</strong> - Fast validation</li>
 <li><strong>GPT-4o</strong> - Alternative/fallback</li>
 </ol>
