@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>AI Models Architecture - Complete Overview</h1>
 <h2>Executive Summary</h2>
 <p>MIVAA Platform uses <strong>7 different AI models</strong> across <strong>4 providers</strong> for different purposes:</p>
@@ -41,7 +43,7 @@
 </tr>
 <tr>
 <td><strong>Voyage AI</strong></td>
-<td>voyage-3.5</td>
+<td>voyage-4</td>
 <td>Text embeddings (1024D) - Primary for semantic search</td>
 </tr>
 <tr>
@@ -51,7 +53,7 @@
 </tr>
 <tr>
 <td><strong>Anthropic</strong></td>
-<td>Claude Sonnet 4.5, Claude Haiku 4.5</td>
+<td>Claude Opus 4.7, Claude Haiku 4.5</td>
 <td>Vision analysis, validation, agents</td>
 </tr>
 <tr>
@@ -68,7 +70,7 @@
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ STAGE 1: Product Discovery (BEFORE extraction)                          │
-│ Model: Claude Sonnet 4.5 OR GPT-5                                      │
+│ Model: Claude Opus 4.7 OR GPT-5                                        │
 │ Purpose: Identify products, count pages, map image-to-product          │
 │ Input: PDF pages (images)                                              │
 │ Output: Product list with page ranges                                  │
@@ -95,7 +97,7 @@
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ STAGE 4: Image Analysis (Validation - Optional)                        │
-│ Model: Claude 4.5 Sonnet Vision                                       │
+│ Model: Claude Opus 4.7 Vision                                         │
 │ Purpose: Validate low-quality Qwen results, enrich metadata           │
 │ Input: Images with quality_score &lt; 0.7                                │
 │ Output: Enhanced analysis, validation                                  │
@@ -119,7 +121,7 @@
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ STAGE 6: Text Embeddings (updated 2026-04)                             │
-│ Model: Voyage AI voyage-3.5 (sole provider)                           │
+│ Model: Voyage AI voyage-4 (sole provider)                           │
 │ Purpose: Generate 1024D embeddings for text chunks                    │
 │ Input: Product descriptions, specifications, chunk text               │
 │ Output: 1024D text embeddings (dict key: text_1024)                   │
@@ -147,10 +149,10 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ SEARCH: Direct Vector DB RAG (Claude 4.5 + Multi-Vector)              │
 │ Models:                                                                │
-│   - Text Embeddings: Voyage AI voyage-3.5 (1024D)                    │
+│   - Text Embeddings: Voyage AI voyage-4 (1024D)                    │
 │   - Visual Embeddings: 5x SLIG specialized (768D each)               │
 │     • Visual, Color, Texture, Material, Style                        │
-│   - LLM: Claude Sonnet 4.5 (200K context)                            │
+│   - LLM: Claude Opus 4.7 (200K context)                              │
 │ Purpose: Multi-vector search + intelligent synthesis                  │
 │ Why: Direct vector DB queries, no intermediate indexing layer         │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -158,7 +160,7 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ AGENTS: Mastra Framework (Agent Hub)                                   │
 │ Models Available:                                                      │
-│   - Claude Sonnet 4.5 (default for agents)                           │
+│   - Claude Opus 4.7 (default for agents)                             │
 │   - Claude Haiku 4.5 (fast responses)                                │
 │   - GPT-5 (advanced reasoning)                                        │
 │   - Qwen3-VL 17B (cost-effective)                               │
@@ -195,9 +197,9 @@
 <strong>Speed</strong>: 150-400ms per image (SigLIP), 100-300ms (CLIP)
 <strong>Output</strong>: 512D numpy array → normalized → list</p>
 <hr>
-<h3>2. <strong>Voyage AI voyage-3.5</strong> 📝 (updated 2026-04)</h3>
+<h3>2. <strong>Voyage AI voyage-4</strong> 📝 (updated 2026-04)</h3>
 <p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/real_embeddings_service.py</code></p>
-<p>The service calls Voyage AI&#39;s embeddings endpoint with the model <code>voyage-3.5</code>. This produces a 1024D text embedding used for chunk indexing, product text, and semantic search. OpenAI <code>text-embedding-3-small</code> (1536D) was retired in 2026-04 — Voyage is now the sole text embedder, and the embedding dict key is <code>text_1024</code> (previously <code>text_1536</code>).</p>
+<p>The service calls Voyage AI&#39;s embeddings endpoint with the model <code>voyage-4</code>. This produces a 1024D text embedding used for chunk indexing, product text, and semantic search. OpenAI <code>text-embedding-3-small</code> (1536D) was retired in 2026-04 — Voyage is now the sole text embedder, and the embedding dict key is <code>text_1024</code> (previously <code>text_1536</code>).</p>
 <p><strong>Purpose</strong>:</p>
 <ul>
 <li>Generate 1024D text embeddings for chunks</li>
@@ -243,9 +245,9 @@
 <strong>Speed</strong>: 2-5 seconds per image
 <strong>Output</strong>: JSON with material properties, colors, quality scores</p>
 <hr>
-<h3>4. <strong>Claude 4.5 Sonnet Vision</strong> 🎨</h3>
+<h3>4. <strong>Claude Opus 4.7 Vision</strong> 🎨</h3>
 <p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/real_image_analysis_service.py</code></p>
-<p>Uses the Anthropic Python client to call <code>claude-sonnet-4-5</code> with <code>max_tokens=4096</code>. The message includes an image block (base64 source, JPEG media type) followed by a text validation prompt.</p>
+<p>Uses the Anthropic Python client to call <code>claude-opus-4-7</code> with <code>max_tokens=4096</code>. The message includes an image block (base64 source, JPEG media type) followed by a text validation prompt.</p>
 <p><strong>Purpose</strong>:</p>
 <ul>
 <li><strong>Validation</strong> of low-quality Qwen results</li>
@@ -267,7 +269,7 @@
 <li>Excellent vision capabilities</li>
 <li>Used selectively to control costs</li>
 </ul>
-<p><strong>Cost</strong>: $3.00 per 1M input tokens, $15.00 per 1M output tokens
+<p><strong>Cost</strong>: $15.00 per 1M input tokens, $75.00 per 1M output tokens
 <strong>Speed</strong>: 3-8 seconds per image
 <strong>Output</strong>: JSON with enhanced analysis</p>
 <hr>
@@ -300,7 +302,7 @@
 <p><strong>Purpose</strong>:</p>
 <ul>
 <li><strong>Fast agent responses</strong> in Agent Hub</li>
-<li><strong>Quick queries</strong> that don&#39;t need Sonnet&#39;s power</li>
+<li><strong>Quick queries</strong> that don&#39;t need Opus&#39;s power</li>
 <li><strong>Cost optimization</strong> for simple tasks</li>
 </ul>
 <p><strong>Impact on Flow</strong>:</p>
@@ -345,9 +347,9 @@
 <hr>
 <h2>🔄 Model Selection Logic</h2>
 <h3>PDF Processing Pipeline</h3>
-<p>Product Discovery (Stage 1): Default model is Claude Sonnet 4.5, with GPT-5 as an alternative. OCR Filtering (Stage 2) uses SLIG (SigLIP2 cloud) zero-shot classification. Image Analysis (Stage 6) uses Qwen3-VL 17B Vision for all images, with Claude 4.5 Sonnet used for validation when quality_score &lt; 0.7. Visual Embeddings (Stages 7-10) use SLIG (SigLIP2 via HuggingFace cloud endpoint, 768D). Text Embeddings (Stage 5) use Voyage AI voyage-3.5 (1024D) as the only model — OpenAI text-embedding-3-small was retired in 2026-04.</p>
+<p>Product Discovery (Stage 1): Default model is Claude Opus 4.7, with GPT-5 as an alternative. OCR Filtering (Stage 2) uses SLIG (SigLIP2 cloud) zero-shot classification. Image Analysis (Stage 6) uses Qwen3-VL 17B Vision for all images, with Claude Opus 4.7 used for validation when quality_score &lt; 0.7. Visual Embeddings (Stages 7-10) use SLIG (SigLIP2 via HuggingFace cloud endpoint, 768D). Text Embeddings (Stage 5) use Voyage AI voyage-4 (1024D) as the only model — OpenAI text-embedding-3-small was retired in 2026-04.</p>
 <h3>Search &amp; Agents</h3>
-<p>Direct Vector DB RAG (Claude 4.5) uses Voyage AI 3.5 (1024D) for text embeddings, 5x SLIG specialized 768D embeddings + 1x Voyage understanding 1024D embedding for multi-vector visual search, and Claude Sonnet 4.5 (200K context) for synthesis. The Agent Hub (Mastra) supports Claude Sonnet 4.5 as default, Claude Haiku 4.5 for fast responses, GPT-5 for advanced reasoning, and Qwen3-VL 17B as a cost-effective option.</p>
+<p>Direct Vector DB RAG uses Voyage AI voyage-4 (1024D) for text embeddings, 5x SLIG specialized 768D embeddings + 1x Voyage understanding 1024D embedding for multi-vector visual search, and Claude Opus 4.7 (200K context) for synthesis. The Agent Hub (Mastra) supports Claude Opus 4.7 as default, Claude Haiku 4.5 for fast responses, GPT-5 for advanced reasoning, and Qwen3-VL 17B as a cost-effective option.</p>
 <hr>
 <h2>💰 Cost Impact Analysis</h2>
 <h3>Per PDF Processing (100 pages, 50 images)</h3>
@@ -360,9 +362,9 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Claude Sonnet 4.5</strong></td>
+<td><strong>Claude Opus 4.7</strong></td>
 <td>Product discovery (1 call)</td>
-<td>~$0.05</td>
+<td>~$0.25</td>
 </tr>
 <tr>
 <td><strong>SigLIP</strong></td>
@@ -375,9 +377,9 @@
 <td>~$0.02</td>
 </tr>
 <tr>
-<td><strong>Claude Sonnet 4.5</strong></td>
+<td><strong>Claude Opus 4.7</strong></td>
 <td>Validation (10 low-quality)</td>
-<td>~$0.15</td>
+<td>~$0.75</td>
 </tr>
 <tr>
 <td><strong>SigLIP</strong></td>
