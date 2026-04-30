@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Material Kai Vision Platform - Complete Overview</h1>
 <p><strong>AI-Powered Material Intelligence System for Enterprise Catalogs</strong></p>
 <blockquote>
@@ -89,9 +91,9 @@
 </ul>
 <p><strong>AI Services</strong>:</p>
 <ul>
-<li>Anthropic (Claude Sonnet 4.5, Claude Haiku 4.5 + built-in web search)</li>
+<li>Anthropic (Claude Opus 4.7, Claude Haiku 4.5 + built-in web search)</li>
 <li>OpenAI (GPT-4o, GPT-4o-mini for query parsing)</li>
-<li>Voyage AI (voyage-3.5, primary text/understanding embeddings, 1024D)</li>
+<li>Voyage AI (voyage-4, primary text/understanding embeddings, 1024D)</li>
 <li>HuggingFace Endpoint (Qwen3-VL 32B Vision)</li>
 <li>SigLIP2 via HuggingFace Endpoint (5 visual embedding types, 768D each)</li>
 <li>Replicate (virtual staging, Wan video, Runway Gen4, FLUX Dev, SAM 2, AnyDoor)</li>
@@ -115,7 +117,7 @@ MIVAA API (FastAPI) → Creates background job
 <li>Focused Extraction (product pages only)</li>
 <li>Text Extraction (PyMuPDF4LLM)</li>
 <li>Semantic Chunking (Anthropic)</li>
-<li>Text Embeddings (Voyage AI voyage-3.5, 1024D)</li>
+<li>Text Embeddings (Voyage AI voyage-4, 1024D)</li>
 <li>Image Extraction</li>
 <li>Image Analysis (Qwen3-VL 32B → understanding embeddings via Voyage AI)
   7-10. Multi-Vector SigLIP2 Embeddings (768D halfvec: visual, color, texture, style, material)</li>
@@ -134,7 +136,7 @@ Real-time updates → Frontend displays results</li>
 <h2>AI Models &amp; Intelligence</h2>
 <h3>8 AI Models Across 4 Providers</h3>
 <h4>1. Anthropic Claude Models</h4>
-<p><strong>Claude Sonnet 4.5</strong> (Premium Tier):</p>
+<p><strong>Claude Opus 4.7</strong> (Premium Tier):</p>
 <ul>
 <li><strong>Use Cases</strong>: Deep product analysis, complex metadata extraction, quality validation</li>
 <li><strong>Context</strong>: 200,000 tokens</li>
@@ -145,7 +147,7 @@ Real-time updates → Frontend displays results</li>
 <ul>
 <li><strong>Use Cases</strong>: Fast content classification, product boundary detection</li>
 <li><strong>Context</strong>: 200,000 tokens</li>
-<li><strong>Performance</strong>: 3x faster than Sonnet, 90% accuracy</li>
+<li><strong>Performance</strong>: 3x faster than Opus, 90% accuracy</li>
 <li><strong>Pipeline Stages</strong>: Product Discovery (Stage 1), Content Classification</li>
 </ul>
 <h4>2. OpenAI Models</h4>
@@ -160,7 +162,7 @@ Real-time updates → Frontend displays results</li>
 <ul>
 <li><strong>Use Cases</strong>: Text chunk embeddings (historical)</li>
 <li><strong>Dimensions</strong>: 1536</li>
-<li><strong>Status</strong>: Retired in 2026-04. Primary and only text embedder is now Voyage AI voyage-3.5 (1024D, stored as halfvec in VECS). OpenAI text-embedding-3-small is only retained for the legacy CI changelog workflow.</li>
+<li><strong>Status</strong>: Retired in 2026-04. Primary and only text embedder is now Voyage AI voyage-4 (1024D, stored as halfvec in VECS). OpenAI text-embedding-3-small is only retained for the legacy CI changelog workflow.</li>
 </ul>
 <h4>3. HuggingFace Endpoint - Qwen3-VL 32B Vision</h4>
 <ul>
@@ -191,7 +193,7 @@ Real-time updates → Frontend displays results</li>
 <h3>Multi-Vector Embeddings (7 Types)</h3>
 <p>The platform generates <strong>7 types of embeddings</strong> stored as <code>halfvec</code> (float16, 50% storage savings):</p>
 <ol>
-<li><strong>Text Embeddings</strong> (1024D) - Voyage AI voyage-3.5 (primary)</li>
+<li><strong>Text Embeddings</strong> (1024D) - Voyage AI voyage-4 (primary)</li>
 <li><strong>Visual Embeddings</strong> (768D) - SigLIP2 via HuggingFace Endpoint</li>
 <li><strong>Understanding Embeddings</strong> (1024D) - Voyage AI from Qwen3-VL structured analysis (enables spec-based search)</li>
 <li><strong>Color Embeddings</strong> (768D) - SigLIP2 color-guided</li>
@@ -226,7 +228,7 @@ Real-time updates → Frontend displays results</li>
 <ul>
 <li><strong>Claude Haiku 4.5</strong>: Fast product identification (5-15 seconds)</li>
 <li>Identify product count and page ranges</li>
-<li><strong>Claude Sonnet 4.5</strong>: Validate and enrich metadata (10-30 seconds)</li>
+<li><strong>Claude Opus 4.7</strong>: Validate and enrich metadata (10-30 seconds)</li>
 <li>Extract product names, dimensions, variants, designers</li>
 <li><strong>Output</strong>: Product list with page ranges (95%+ accuracy)</li>
 </ul>
@@ -246,7 +248,7 @@ Real-time updates → Frontend displays results</li>
 </ul>
 <p><strong>Stage 7: Text Embedding Generation (AI)</strong></p>
 <ul>
-<li>Voyage AI voyage-3.5: Generate 1024D embeddings (stored as halfvec)</li>
+<li>Voyage AI voyage-4: Generate 1024D embeddings (stored as halfvec)</li>
 <li>Store in pgvector for similarity search</li>
 <li>Link embeddings to chunks</li>
 <li><strong>Checkpoint</strong>: TEXT_EMBEDDINGS_GENERATED</li>
@@ -289,7 +291,7 @@ Real-time updates → Frontend displays results</li>
 </ul>
 <p><strong>Stage 13: Deferred AI Analysis (Async Background Job)</strong></p>
 <ul>
-<li>Claude Sonnet 4.5: Validate low-scoring images</li>
+<li>Claude Opus 4.7: Validate low-scoring images</li>
 <li>Generate specialized embeddings:<ul>
 <li>Color embeddings (256D)</li>
 <li>Texture embeddings (256D)</li>
@@ -368,7 +370,7 @@ Real-time updates → Frontend displays results</li>
 <p><strong>Semantic Search</strong> (Text):</p>
 <ul>
 <li>Query: &quot;sustainable wood materials&quot;</li>
-<li>Embedding: Voyage AI voyage-3.5 (1024D, updated 2026-04)</li>
+<li>Embedding: Voyage AI voyage-4 (1024D, updated 2026-04)</li>
 <li>Similarity: Cosine similarity via pgvector (halfvec)</li>
 <li>Accuracy: 85%+</li>
 </ul>
