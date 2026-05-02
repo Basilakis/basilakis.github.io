@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>API Configuration Examples - Dynamic AI Models</h1>
 <p>This document provides practical examples of how to use the dynamic AI model configuration system in the MIVAA PDF processing pipeline.</p>
 <hr>
@@ -45,10 +47,10 @@
 <p><strong>Defaults Used</strong>:</p>
 <ul>
 <li>Visual Embeddings: SLIG (SigLIP2) - HuggingFace endpoint (768D)</li>
-<li>Classification: Qwen3-VL-32B-Instruct - HuggingFace endpoint</li>
-<li>Discovery: Claude Sonnet 4.5</li>
+<li>Classification: Claude Opus 4.7 via Anthropic tool use (schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>). Pre-2026-05-01 attempted Qwen3-VL on HuggingFace with Claude fallback; the Qwen endpoint had been 404-ing for months and was retired 2026-05-01 — vision is now Anthropic-only.</li>
+<li>Discovery: Claude Opus 4.7</li>
 <li>Metadata: Claude</li>
-<li>Text Embeddings: Voyage AI voyage-3.5 (1024D) → OpenAI fallback (1024D)</li>
+<li>Text Embeddings: Voyage AI voyage-4 (1024D) → OpenAI fallback (1024D)</li>
 </ul>
 <h3>Custom Configuration</h3>
 <p>You can override specific models while keeping others as default by providing an <code>ai_config</code> object with only the fields you want to change.</p>
@@ -62,8 +64,8 @@
 <p><strong>Use When</strong>: You need faster processing times and can accept slightly lower accuracy.</p>
 <p><strong>Speed Improvements</strong>:</p>
 <ul>
-<li>GPT-4o is ~2x faster than Claude Sonnet for discovery</li>
-<li>Claude Haiku is ~3x faster than Claude Sonnet for validation</li>
+<li>GPT-4o is ~2x faster than Claude Opus for discovery</li>
+<li>Claude Haiku is ~3x faster than Claude Opus for validation</li>
 <li>Reduced tokens = faster responses</li>
 </ul>
 <h3>3. HIGH_ACCURACY_CONFIG (Quality Optimized)</h3>
@@ -80,8 +82,8 @@
 <p><strong>Use When</strong>: You need to minimize API costs.</p>
 <p><strong>Cost Savings</strong>:</p>
 <ul>
-<li>GPT-4o is cheaper than Claude Sonnet</li>
-<li>Claude Haiku is ~10x cheaper than Claude Sonnet</li>
+<li>GPT-4o is cheaper than Claude Opus</li>
+<li>Claude Haiku is ~20x cheaper than Claude Opus</li>
 <li>Lower threshold (0.6) = fewer validation calls</li>
 <li>Reduced tokens = lower costs</li>
 </ul>
@@ -134,8 +136,8 @@
 <h3>Estimated Costs Per PDF (100 pages, 50 images)</h3>
 <p><strong>DEFAULT_AI_CONFIG</strong>:</p>
 <ul>
-<li>Discovery (Claude Sonnet): ~$0.50</li>
-<li>Classification (Qwen + Claude): ~$0.30</li>
+<li>Discovery (Claude Opus): ~$2.50</li>
+<li>Classification (Claude Opus 4.7 via Anthropic tool use, post-2026-05-01 — sole vision pass): ~$0.30</li>
 <li>Metadata (Claude): ~$0.40</li>
 <li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
 <li>Text Embeddings (OpenAI): ~$0.20</li>
@@ -144,7 +146,7 @@
 <p><strong>COST_OPTIMIZED_CONFIG</strong>:</p>
 <ul>
 <li>Discovery (GPT-4o): ~$0.25</li>
-<li>Classification (Qwen + Haiku): ~$0.10</li>
+<li>Classification (Claude Haiku via Anthropic tool use, post-2026-05-01 — sole vision pass): ~$0.10</li>
 <li>Metadata (GPT): ~$0.20</li>
 <li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
 <li>Text Embeddings (OpenAI): ~$0.20</li>
@@ -153,7 +155,7 @@
 <p><strong>HIGH_ACCURACY_CONFIG</strong>:</p>
 <ul>
 <li>Discovery (GPT-5): ~$1.00</li>
-<li>Classification (Qwen + Sonnet): ~$0.40</li>
+<li>Classification (Claude Opus 4.7 via Anthropic tool use, post-2026-05-01 — sole vision pass): ~$0.40</li>
 <li>Metadata (Claude): ~$0.60</li>
 <li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
 <li>Text Embeddings (OpenAI): ~$0.20</li>
@@ -166,7 +168,7 @@
 <ul>
 <li>Lower threshold = fewer validation calls = faster</li>
 <li>GPT-4o = 2x faster than Claude</li>
-<li>Haiku = 3x faster than Sonnet</li>
+<li>Haiku = 3x faster than Opus</li>
 <li>Reduced tokens = faster responses</li>
 <li><strong>Estimated</strong>: 40-50% faster processing</li>
 </ul>
@@ -174,7 +176,7 @@
 <p><strong>Benefits</strong>:</p>
 <ul>
 <li>Standard threshold (0.7) = good balance</li>
-<li>Claude Sonnet = best quality</li>
+<li>Claude Opus = best quality</li>
 <li>Medium tokens = good context</li>
 <li><strong>Estimated</strong>: Standard processing time with best quality</li>
 </ul>
@@ -209,7 +211,7 @@
 <h2>Troubleshooting</h2>
 <h3>Low Classification Accuracy</h3>
 <p><strong>Problem</strong>: Too many false positives/negatives in image classification.</p>
-<p><strong>Solution</strong>: Increase confidence threshold and use Claude Sonnet for validation by setting <code>classification_confidence_threshold</code> to 0.8 and <code>classification_validation_model</code> to <code>claude-sonnet-4-6-20260217</code> in your <code>ai_config</code>.</p>
+<p><strong>Solution</strong>: Increase confidence threshold and use Claude Opus for validation by setting <code>classification_confidence_threshold</code> to 0.8 and <code>classification_validation_model</code> to <code>claude-opus-4-7</code> in your <code>ai_config</code>.</p>
 <h3>Slow Processing</h3>
 <p><strong>Problem</strong>: Pipeline takes too long to complete.</p>
 <p><strong>Solution</strong>: Use FAST_CONFIG or reduce max tokens by switching to <code>gpt-4o</code> for discovery, <code>claude-haiku-4-20250514</code> for validation, and reducing <code>discovery_max_tokens</code> and <code>metadata_max_tokens</code> to 2048.</p>
