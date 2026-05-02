@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,14 +19,18 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>AI Models Integration Guide</h1>
-<p><strong>Last Updated:</strong> 2025-12-26</p>
+<p><strong>Last Updated:</strong> 2026-05-02</p>
 <p>Complete reference of all AI models used across the Material KAI Vision Platform.</p>
+<blockquote>
+<p><strong>Big change (2026-05-01)</strong>: Vision is now <strong>Anthropic-only</strong>. Qwen has been retired from every vision call site (it had been 404-ing in 0.7s for months and silently falling through to Claude — the migration just made it honest). All segmentation, image classification, vision_analysis, and material analysis runs on <code>claude-opus-4-7</code> via Anthropic tool use, with hard schema guarantees via the <code>VisionAnalysis</code> Pydantic model.</p>
+</blockquote>
 <hr>
 <h2>AI Models Overview</h2>
 <table>
@@ -46,39 +51,39 @@
 <td></td>
 </tr>
 <tr>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>Anthropic</td>
-<td>Product discovery, enrichment</td>
-<td>95%+ accuracy</td>
+<td><strong>Vision (PRIMARY, tool use)</strong>, product discovery, enrichment, complex reasoning</td>
+<td>Highest accuracy + schema-locked vision</td>
+<td>$15 input / $75 output</td>
+</tr>
+<tr>
+<td>Claude Sonnet 4.6</td>
+<td>Anthropic</td>
+<td><strong>Chunking (PRIMARY)</strong>, mid-tier reasoning</td>
+<td>Quality ceiling for chunking</td>
 <td>$3 input / $15 output</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
 <td>Anthropic</td>
-<td>Fast validation</td>
+<td>Fast classification, demo agent, price-monitoring identity</td>
 <td>Real-time</td>
 <td>$0.80 input / $4 output</td>
 </tr>
 <tr>
-<td>Claude Opus 4.5</td>
-<td>Anthropic</td>
-<td>Complex reasoning</td>
-<td>Highest accuracy</td>
-<td>$15 input / $75 output</td>
-</tr>
-<tr>
 <td>GPT-4o</td>
 <td>OpenAI</td>
-<td>Alternative discovery</td>
+<td>Alternative discovery (not vision)</td>
 <td>94%+ accuracy</td>
 <td>$2.50 input / $10 output</td>
 </tr>
 <tr>
-<td>GPT-4o Mini</td>
+<td>GPT-5</td>
 <td>OpenAI</td>
-<td>Lightweight tasks</td>
-<td>Fast &amp; cheap</td>
-<td>$0.15 input / $0.60 output</td>
+<td>Alternative discovery / agents (not vision)</td>
+<td>Future</td>
+<td>TBD</td>
 </tr>
 <tr>
 <td><strong>Text Embeddings</strong></td>
@@ -88,9 +93,9 @@
 <td></td>
 </tr>
 <tr>
-<td>voyage-3.5</td>
+<td>voyage-4</td>
 <td>Voyage AI</td>
-<td><strong>PRIMARY</strong> Text embeddings</td>
+<td><strong>PRIMARY</strong> text + understanding embeddings</td>
 <td>1024D vectors</td>
 <td>$0.06 input</td>
 </tr>
@@ -111,23 +116,9 @@
 <tr>
 <td>text-embedding-3-small</td>
 <td>OpenAI</td>
-<td><strong>LEGACY</strong> (CI changelog only, retired from production 2026-04)</td>
+<td><strong>LEGACY</strong> (CI changelog only, retired 2026-04)</td>
 <td>1536D vectors</td>
 <td>$0.02 input</td>
-</tr>
-<tr>
-<td><strong>Vision Models</strong></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>Qwen3-VL-32B-Instruct</td>
-<td>HuggingFace Endpoint</td>
-<td><strong>PRIMARY</strong> Vision analysis</td>
-<td>State-of-the-art OCR</td>
-<td>Cloud endpoint</td>
 </tr>
 <tr>
 <td><strong>Visual Embeddings</strong></td>
@@ -140,242 +131,224 @@
 <td>SLIG (SigLIP2) Visual</td>
 <td>HuggingFace Endpoint</td>
 <td>General visual embeddings</td>
-<td>768D vectors</td>
-<td>Cloud endpoint</td>
+<td>768D</td>
+<td>endpoint</td>
 </tr>
 <tr>
 <td>SLIG (SigLIP2) Color</td>
 <td>HuggingFace Endpoint</td>
 <td>Color-guided embeddings</td>
-<td>768D vectors</td>
-<td>Cloud endpoint</td>
+<td>768D</td>
+<td>endpoint</td>
 </tr>
 <tr>
 <td>SLIG (SigLIP2) Texture</td>
 <td>HuggingFace Endpoint</td>
 <td>Texture-guided embeddings</td>
-<td>768D vectors</td>
-<td>Cloud endpoint</td>
+<td>768D</td>
+<td>endpoint</td>
 </tr>
 <tr>
 <td>SLIG (SigLIP2) Style</td>
 <td>HuggingFace Endpoint</td>
 <td>Style-guided embeddings</td>
-<td>768D vectors</td>
-<td>Cloud endpoint</td>
+<td>768D</td>
+<td>endpoint</td>
 </tr>
 <tr>
 <td>SLIG (SigLIP2) Material</td>
 <td>HuggingFace Endpoint</td>
 <td>Material-guided embeddings</td>
-<td>768D vectors</td>
-<td>Cloud endpoint</td>
+<td>768D</td>
+<td>endpoint</td>
+</tr>
+<tr>
+<td><strong>OCR</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Chandra v2</td>
+<td>Datalab (HuggingFace)</td>
+<td><strong>SOLE OCR ENGINE</strong> (with retry-jitter)</td>
+<td>&gt;95% success</td>
+<td>endpoint</td>
 </tr>
 </tbody></table>
 <hr>
 <h2>Model Details</h2>
-<h3>1. Claude Sonnet 4.5 (Anthropic)</h3>
-<p><strong>Purpose</strong>: Product discovery, enrichment, validation</p>
-<p><strong>Capabilities</strong>:</p>
+<h3>1. Claude Opus 4.7 (Anthropic) — PRIMARY VISION MODEL</h3>
+<p><strong>Purpose</strong>: Schema-locked vision analysis + complex reasoning</p>
+<p><strong>Vision capabilities</strong> (post-2026-05-01):</p>
 <ul>
-<li>Analyze complex product catalogs</li>
-<li>Extract structured metadata</li>
-<li>Validate product completeness</li>
-<li>Generate product descriptions</li>
+<li>Image classification (material vs non-material)</li>
+<li>Material analysis (vision_analysis JSON for understanding embeddings)</li>
+<li>Segmentation</li>
+<li>OCR-aware quality scoring</li>
+<li>Material property extraction</li>
+<li>Color and texture analysis</li>
+</ul>
+<p><strong>Schema enforcement</strong>: Uses Anthropic tool use with the <code>VisionAnalysis</code> Pydantic schema (<code>app/models/vision_analysis.py</code>) and <code>VISION_ANALYSIS_TOOL</code>. The tool-use mechanism guarantees schema adherence — eliminates fragile JSON regex recovery, protects Voyage&#39;s understanding-embedding space from drift.</p>
+<p><strong>Other capabilities</strong>:</p>
+<ul>
+<li>Product discovery from PDFs / web scraping</li>
+<li>XML field mapping</li>
+<li>Quality validation</li>
+<li>KAI agent (default model)</li>
 </ul>
 <p><strong>Performance</strong>:</p>
 <ul>
-<li>Accuracy: 95%+</li>
-<li>Latency: 2-5 seconds</li>
-<li>Cost: $3 per 1M input tokens</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Product discovery</li>
-<li>Complex analysis</li>
-<li>Detailed enrichment</li>
-<li>Quality validation</li>
+<li>Vision accuracy: schema-locked (no malformed payloads)</li>
+<li>Latency: 3-8 seconds per image</li>
+<li>Context: 200K tokens (1M with extended-context beta)</li>
+<li>Cost: $15/$75 per 1M tokens</li>
 </ul>
 <hr>
-<h3>2. Claude Haiku 4.5 (Anthropic)</h3>
-<p><strong>Purpose</strong>: Fast validation, real-time processing</p>
+<h3>2. Claude Sonnet 4.6 (Anthropic) — PRIMARY CHUNKING MODEL</h3>
+<p><strong>Purpose</strong>: Document chunking (sole primary chunker post-2026-05-01)</p>
+<p><strong>Setting</strong>: <code>Settings.chunking_primary_model = &#39;claude-sonnet-4-6&#39;</code> (was <code>Qwen/Qwen3.6-35B-A3B-FP8</code> pre-2026-05-01)</p>
+<p><strong>Why Sonnet for chunking</strong>: chunking is a text task at the quality ceiling — Opus would be 5× the cost for marginal gain. Qwen had been silently failing for months.</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
-<li>Quick product candidate identification</li>
-<li>Basic metadata extraction</li>
-<li>Real-time validation</li>
+<li>Semantic chunking</li>
+<li>Layout-aware chunking</li>
+<li>Hybrid (fixed + semantic)</li>
+</ul>
+<p><strong>Performance</strong>:</p>
+<ul>
+<li>Chunk quality: 0.85-0.95</li>
+<li>Latency: 1-2 seconds per 10K chars</li>
+<li>Cost: $3/$15 per 1M tokens</li>
+</ul>
+<hr>
+<h3>3. Claude Haiku 4.5 (Anthropic)</h3>
+<p><strong>Purpose</strong>: Fast classification, demo agent, price-monitoring identity classifier</p>
+<p><strong>Capabilities</strong>:</p>
+<ul>
+<li>Demo agent (fast responses)</li>
+<li>Price-monitoring identity classifier (with few-shot from <code>match_corrections</code>)</li>
+<li>Saved-search semantic dedupe</li>
+<li>Quick validation</li>
+<li>Real-time processing</li>
 </ul>
 <p><strong>Performance</strong>:</p>
 <ul>
 <li>Accuracy: 92%+</li>
 <li>Latency: 500ms-1s</li>
-<li>Cost: $0.80 per 1M input tokens</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Fast validation</li>
-<li>Real-time processing</li>
-<li>Cost-sensitive operations</li>
-<li>Batch processing</li>
+<li>Cost: $0.80/$4 per 1M tokens</li>
 </ul>
 <hr>
-<h3>3. GPT-4o (OpenAI)</h3>
-<p><strong>Purpose</strong>: Alternative product discovery</p>
+<h3>4. GPT-4o / GPT-5 (OpenAI)</h3>
+<p><strong>Purpose</strong>: Alternative product discovery / agents (not vision)</p>
+<p><strong>NOT used for vision</strong> post-2026-05-01 — vision is Anthropic-only.</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
-<li>Product identification</li>
-<li>Metadata extraction</li>
-<li>Alternative to Claude</li>
+<li>Product discovery (alternative to Claude Opus 4.7)</li>
+<li>KAI Agent Hub (optional)</li>
 </ul>
 <p><strong>Performance</strong>:</p>
 <ul>
 <li>Accuracy: 94%+</li>
 <li>Latency: 3-6 seconds</li>
-<li>Cost: $5 per 1M input tokens</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Alternative discovery model</li>
-<li>Comparison validation</li>
-<li>Fallback option</li>
+<li>Cost: GPT-4o $2.50/$10 per 1M tokens; GPT-5 TBD</li>
 </ul>
 <hr>
-<h3>4. Voyage AI voyage-3.5 (updated 2026-04)</h3>
-<p><strong>Purpose</strong>: Generate text embeddings for semantic search (sole production text embedder)</p>
+<h3>5. Voyage AI voyage-4 — SOLE TEXT + UNDERSTANDING EMBEDDER</h3>
+<p><strong>Purpose</strong>: All text and understanding embeddings (1024D)</p>
 <p><strong>Capabilities</strong>:</p>
 <ul>
 <li>Convert text to 1024D vectors (stored as halfvec in VECS)</li>
 <li>Enable semantic similarity search</li>
-<li>Fast embedding generation, supports <code>document</code> and <code>query</code> input types</li>
-<li>Dict key: <code>text_1024</code> (was previously <code>text_1536</code> under OpenAI text-embedding-3-small)</li>
+<li>Supports <code>document</code> and <code>query</code> input types</li>
+<li>Embeds <code>serialize_vision_analysis_to_text(VisionAnalysis)</code> for the understanding-embedding pipeline</li>
+<li>Dict key: <code>text_1024</code> (was <code>text_1536</code> under OpenAI text-embedding-3-small, retired 2026-04)</li>
 </ul>
+<p><strong>Provenance</strong>: Every row persists <code>embedding_model</code> + <code>schema_version</code> (in VECS metadata + mirrored on <code>document_images.understanding_embedding_model</code> / <code>understanding_schema_version</code> and <code>products.text_embedding_1024_model</code> / <code>text_embedding_schema_version</code>). Enables drift detection and targeted backfill.</p>
+<p><strong>OpenAI fallback</strong>: DISABLED for the understanding path so Voyage and OpenAI vectors never co-exist in the same VECS collection. The OpenAI legacy fallback (if ever invoked) is now pinned to 1024D.</p>
 <p><strong>Performance</strong>:</p>
 <ul>
 <li>Dimension: 1024D</li>
 <li>Latency: 100-300ms</li>
 <li>Cost: $0.06 per 1M tokens</li>
 </ul>
-<p><strong>Note</strong>: OpenAI <code>text-embedding-3-small</code> (1536D) was retired from the production path in 2026-04. It is only retained for the legacy CI changelog workflow.</p>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Text embedding generation</li>
-<li>Semantic search</li>
-<li>Similarity comparison</li>
-</ul>
+<p><strong>Hardening (2026-05-01)</strong>: 429 explicit handling with <code>Retry-After</code> honoring; <code>ai_usage_logs</code> mirror retries twice + ERRORs on persistent failure.</p>
 <hr>
-<h3>5. Qwen3-VL-32B-Instruct (HuggingFace Endpoint) - PRIMARY VISION MODEL</h3>
-<p><strong>Purpose</strong>: State-of-the-art vision-language model for image analysis, OCR, material recognition</p>
-<p><strong>Endpoint Configuration</strong>:</p>
-<ul>
-<li><strong>URL</strong>: <code>https://gbz6krk3i2is85b0.us-east-1.aws.endpoints.huggingface.cloud</code></li>
-<li><strong>Service Name</strong>: <code>mh-qwen332binstruct</code></li>
-<li><strong>Namespace</strong>: <code>basiliskan</code></li>
-<li><strong>Model</strong>: Locked to 32B only (8B removed)</li>
-</ul>
-<p><strong>Capabilities</strong>:</p>
-<ul>
-<li>Advanced image understanding</li>
-<li>Optical Character Recognition (OCR)</li>
-<li>Material property extraction</li>
-<li>Color and texture analysis</li>
-<li>Image quality scoring</li>
-<li>Multi-image reasoning</li>
-</ul>
-<p><strong>Performance</strong>:</p>
-<ul>
-<li>Accuracy: State-of-the-art vision understanding</li>
-<li>Latency: 2-5 seconds per image</li>
-<li>Cost: Cloud endpoint (auto-pause enabled)</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Image analysis</li>
-<li>OCR on material specs</li>
-<li>Material property extraction</li>
-<li>Quality scoring</li>
-</ul>
-<hr>
-<h3>6-10. SLIG (SigLIP2) Specialized Embeddings (updated 2026-04)</h3>
-<p><strong>Purpose</strong>: Multi-modal visual embeddings via HuggingFace Cloud Endpoint. Replaced legacy OpenAI CLIP (256/512/1536D) and SigLIP-SO400M (1152D) in 2026-04 — those columns were dropped from the database.</p>
+<h3>6-10. SLIG (SigLIP2) Specialized Embeddings</h3>
+<p><strong>Purpose</strong>: 5 specialized 768D visual embeddings per image via HuggingFace cloud endpoint (<code>mh-siglip2</code>, namespace basiliskan)</p>
 <p><strong>5 Embedding Types</strong> (all 768D halfvec, written directly to VECS):</p>
-<h4>Visual Embeddings (768D) → <code>image_slig_embeddings</code></h4>
+<h4>Visual (768D) → <code>image_slig_embeddings</code></h4>
 <ul>
-<li>Overall visual appearance</li>
-<li>Enables visual similarity search</li>
+<li>Overall visual appearance, enables visual similarity search</li>
 <li>Producer key: <code>visual_768</code></li>
 </ul>
-<h4>Color Embeddings (768D) → <code>image_color_embeddings</code></h4>
+<h4>Color (768D) → <code>image_color_embeddings</code></h4>
 <ul>
 <li>Text-guided color palette analysis</li>
 <li>Producer key: <code>color_slig_768</code></li>
 </ul>
-<h4>Texture Embeddings (768D) → <code>image_texture_embeddings</code></h4>
+<h4>Texture (768D) → <code>image_texture_embeddings</code></h4>
 <ul>
 <li>Text-guided surface texture analysis</li>
 <li>Producer key: <code>texture_slig_768</code></li>
 </ul>
-<h4>Style Embeddings (768D) → <code>image_style_embeddings</code></h4>
+<h4>Style (768D) → <code>image_style_embeddings</code></h4>
 <ul>
 <li>Text-guided design aesthetic</li>
 <li>Producer key: <code>style_slig_768</code></li>
 </ul>
-<h4>Material Embeddings (768D) → <code>image_material_embeddings</code></h4>
+<h4>Material (768D) → <code>image_material_embeddings</code></h4>
 <ul>
 <li>Text-guided material classification</li>
 <li>Producer key: <code>material_slig_768</code></li>
 </ul>
-<p>Additionally, an <strong>Understanding Embedding</strong> (1024D, Voyage AI from Qwen3-VL vision_analysis JSON) → <code>image_understanding_embeddings</code> is generated inline for spec-based semantic search.</p>
+<p>Plus an <strong>Understanding Embedding</strong> (1024D Voyage AI from Claude Opus 4.7 <code>vision_analysis</code> JSON) → <code>image_understanding_embeddings</code>.</p>
+<p><strong>Hardening (2026-05-01)</strong>:</p>
+<ul>
+<li>3-attempt retry on dim-mismatch (was silent abort — single wrong-dim response caused mass data loss)</li>
+<li>Atomic specialized VECS upsert: writes all 4 vectors first, then sets flags only for those that landed</li>
+</ul>
 <p><strong>Performance</strong>:</p>
 <ul>
 <li>Dimension: 768D (specialized) / 1024D (understanding)</li>
 <li>Latency: 150-400ms per image</li>
-<li>Cost: Cloud endpoint, auto-pause enabled</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Visual similarity search</li>
-<li>Color-based discovery</li>
-<li>Texture, style, and material analysis</li>
-<li>Spec-based search via understanding embedding</li>
+<li>Cost: HuggingFace endpoint, auto-pause enabled</li>
 </ul>
 <hr>
-<h3>11. Anthropic Semantic Chunking</h3>
-<p><strong>Purpose</strong>: Intelligent text segmentation</p>
-<p><strong>Capabilities</strong>:</p>
+<h3>11. Chandra v2 — SOLE OCR ENGINE</h3>
+<p><strong>File</strong>: <code>mivaa-pdf-extractor/app/services/ocr/chandra_endpoint_manager.py</code></p>
+<p><strong>Purpose</strong>: All OCR — page-level (Stage 1.5) and per-image (Phase 3)</p>
+<p><strong>Replaced</strong>: pytesseract + EasyOCR (both removed entirely 2026-05). Pytesseract had been broken on production for months (TESSDATA_PREFIX unset, no traineddata installed). Even when &quot;working&quot; it produced bbox-less text that silently degraded layout-merge to UNCLASSIFIED orphans.</p>
+<p><strong>Retry-with-jitter</strong>: 3 attempts at temperatures 0.0 / 0.1 / 0.2. Chandra freelances (&quot;The image is...&quot;) ~50% at temp=0; jittering breaks the sticky-prose state and lifts success rate to &gt;95%.</p>
+<p><strong>Failure marker</strong>: <code>OCRResult.method=&#39;chandra_failed&#39;</code> (not empty list). Consumers must check <code>method</code>, not emptiness, to distinguish failure from &quot;no text on page&quot;.</p>
+<p><strong>Per-attempt metrics</strong>: <code>chandra_ocr_metrics</code> table — <code>outcome</code> (<code>success</code>/<code>success_after_retry</code>/<code>failed_prose</code>/<code>failed_malformed_json</code>/<code>failed_http_error</code>), <code>attempt_number</code>, <code>temperature</code>, <code>latency_ms</code>, <code>failure_mode_head</code>, <code>caller</code>.</p>
+<p><strong>Phase 3 expansion (2026-05)</strong>: Was icons-only OCR, regular product images had zero per-image OCR. Now <code>_run_phase_3_ocr_for_product</code> runs Chandra v2 on every text-bearing image:</p>
 <ul>
-<li>Split text at semantic boundaries</li>
-<li>Preserve context</li>
-<li>Quality scoring</li>
-<li>Multiple strategies</li>
+<li><code>yolo_crop</code> of region_type ∈ {TABLE, TEXT, TITLE, CAPTION}: OCR&#39;d</li>
+<li><code>embedded</code> with <code>metadata.text_detected=True</code>: OCR&#39;d</li>
+<li><code>full_render</code>: SKIPPED (Stage 1.5 already covered the page)</li>
+<li>photo / IMAGE-region yolo_crop: SKIPPED (<code>ocr_skipped_reason=&#39;photo_not_text_bearing&#39;</code>)</li>
 </ul>
-<p><strong>Strategies</strong>:</p>
-<ul>
-<li><strong>Semantic</strong>: Paragraph/sentence boundaries</li>
-<li><strong>Fixed Size</strong>: Fixed character count</li>
-<li><strong>Hybrid</strong>: Combination of both</li>
-<li><strong>Layout-Aware</strong>: Respect document layout</li>
-</ul>
-<p><strong>Performance</strong>:</p>
-<ul>
-<li>Chunk quality: 0.85-0.95</li>
-<li>Latency: 1-2 seconds per 10K chars</li>
-<li>Cost: Included in Anthropic API</li>
-</ul>
+<p><strong>Storage</strong>: <code>document_images</code> columns — <code>ocr_text</code>, <code>ocr_blocks</code> (per-fragment bbox in image-local coords), <code>ocr_failed</code>, <code>ocr_attempts</code>, <code>ocr_skipped_reason</code>. <strong>NEVER consumed by chunker</strong> (Stage 1.5 is canonical text source). Consumed by: vision_analysis prompt enrichment, icon-metadata extraction, image-search labels.</p>
 <hr>
-<h3>12. Direct Vector DB RAG System (Claude 4.5)</h3>
-<p><strong>Purpose</strong>: Retrieval-Augmented Generation with Multi-Vector Search</p>
-<p><strong>Capabilities</strong>:</p>
-<ul>
-<li>Direct vector database queries (no intermediate indexing)</li>
-<li>6-way parallel multi-vector search</li>
-<li>Claude 4.5 synthesis (200K context)</li>
-<li>Intelligent embedding fusion</li>
-</ul>
+<h3>12. 7-Vector Search RAG (Claude Opus 4.7)</h3>
+<p><strong>Purpose</strong>: Retrieval-Augmented Generation with multi-vector search</p>
+<p><strong>Vectors</strong>:</p>
+<ol>
+<li>Text (Voyage 1024D) — <code>text_embedding_1024</code> on chunks + products</li>
+<li>Visual (SLIG 768D) — <code>image_slig_embeddings</code></li>
+<li>Color (SLIG 768D) — <code>image_color_embeddings</code></li>
+<li>Texture (SLIG 768D) — <code>image_texture_embeddings</code></li>
+<li>Style (SLIG 768D) — <code>image_style_embeddings</code></li>
+<li>Material (SLIG 768D) — <code>image_material_embeddings</code></li>
+<li>Understanding (Voyage 1024D) — <code>image_understanding_embeddings</code></li>
+</ol>
+<p><strong>Synthesis</strong>: Claude Opus 4.7 (200K context)</p>
 <p><strong>Performance</strong>:</p>
 <ul>
 <li>Retrieval latency: 300-500ms (parallel execution)</li>
 <li>Accuracy: 90%+ (multi-vector fusion)</li>
-<li>Scalability: 1M+ documents</li>
 </ul>
 <hr>
 <h2>📊 Model Usage by Pipeline Stage</h2>
@@ -384,220 +357,167 @@
 <tr>
 <th>Stage</th>
 <th>Primary Model</th>
-<th>Secondary Model</th>
-<th>Purpose</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>0</td>
-<td>Claude Sonnet 4.5</td>
-<td>GPT-4o</td>
-<td>Product discovery</td>
+<td>0 — Product Discovery</td>
+<td>Claude Opus 4.7 (or GPT-5)</td>
+<td></td>
 </tr>
 <tr>
-<td>2</td>
-<td>Anthropic Chunking</td>
-<td>-</td>
-<td>Text segmentation</td>
+<td>1.5 — Layout + Page OCR</td>
+<td>YOLO + <strong>Chandra v2</strong></td>
+<td>retry-with-jitter</td>
 </tr>
 <tr>
-<td>4</td>
-<td>voyage-3.5 (Voyage AI)</td>
-<td>-</td>
-<td>Text embeddings (1024D, updated 2026-04)</td>
+<td>2 — Chunking</td>
+<td><strong>Claude Sonnet 4.6</strong></td>
+<td>was Qwen pre-2026-05-01</td>
 </tr>
 <tr>
-<td>6</td>
-<td>Qwen3-VL 17B</td>
-<td>-</td>
-<td>Image analysis</td>
+<td>3 — Vision Analysis</td>
+<td><strong>Claude Opus 4.7 (tool use)</strong></td>
+<td>was Qwen pre-2026-05-01</td>
 </tr>
 <tr>
-<td>7-10</td>
-<td>SLIG (SigLIP2, 5 types)</td>
-<td>-</td>
-<td>Visual embeddings (768D)</td>
+<td>3 — Phase 3 per-image OCR</td>
+<td><strong>Chandra v2</strong></td>
+<td>text-bearing images only</td>
 </tr>
 <tr>
-<td>11</td>
-<td>Claude Haiku 4.5</td>
-<td>Claude Sonnet 4.5</td>
-<td>Product validation</td>
+<td>4 — Text Embeddings</td>
+<td>Voyage AI voyage-4 (1024D)</td>
+<td>sole text embedder</td>
 </tr>
 <tr>
-<td>13</td>
-<td>Claude Sonnet 4.5</td>
-<td>-</td>
-<td>Quality enhancement</td>
+<td>5 — Visual Embeddings</td>
+<td>SLIG (SigLIP2, 5 types, 768D)</td>
+<td></td>
+</tr>
+<tr>
+<td>5 — Understanding Embedding</td>
+<td>Voyage AI voyage-4 (1024D)</td>
+<td>from Claude vision_analysis JSON</td>
+</tr>
+<tr>
+<td>9 — Product Validation</td>
+<td>Claude Haiku 4.5 / Opus 4.7</td>
+<td></td>
 </tr>
 </tbody></table>
 <hr>
 <h2>💰 Cost Optimization</h2>
 <p><strong>Strategies</strong>:</p>
 <ol>
-<li>Use Haiku for fast validation (10x cheaper)</li>
-<li>Batch embeddings to reduce API calls</li>
-<li>Cache results for repeated queries</li>
-<li>Use focused extraction to reduce image analysis</li>
+<li><strong>Claude Sonnet for chunking</strong> — 5× cheaper than Opus, equal quality at the chunking ceiling</li>
+<li><strong>Claude Haiku for high-volume classification</strong> — 20× cheaper than Opus</li>
+<li><strong>Voyage AI for text + understanding</strong> — superior to OpenAI at $0.06/1M</li>
+<li><strong>SLIG cloud endpoint with auto-pause</strong> — pay-as-you-process</li>
+<li><strong>Chandra v2 retry caps at 3</strong> — most pages succeed on attempt 1</li>
 </ol>
 <p><strong>Example Cost per PDF</strong>:</p>
 <ul>
-<li>Small PDF (10 pages): $0.50-$1.00</li>
-<li>Medium PDF (50 pages): $2.00-$4.00</li>
-<li>Large PDF (200 pages): $8.00-$15.00</li>
+<li>Small PDF (10 pages): $0.40-$0.80</li>
+<li>Medium PDF (50 pages): $1.50-$3.00</li>
+<li>Large PDF (200 pages): $6.00-$12.00</li>
 </ul>
 <hr>
 <h2>🔐 API Keys &amp; Configuration</h2>
 <p><strong>Required Environment Variables</strong>:</p>
 <ul>
-<li><code>ANTHROPIC_API_KEY</code> — Anthropic Claude API key</li>
-<li><code>OPENAI_API_KEY</code> — OpenAI API key</li>
-<li><code>VOYAGE_API_KEY</code> — Voyage AI API key</li>
-<li><code>QWEN_ENDPOINT_URL</code> — HuggingFace Qwen endpoint URL</li>
-<li><code>QWEN_ENDPOINT_TOKEN</code> — HuggingFace endpoint token</li>
+<li><code>ANTHROPIC_API_KEY</code> — Anthropic Claude API key (vision + chunking + agents)</li>
+<li><code>OPENAI_API_KEY</code> — OpenAI API key (optional alternatives)</li>
+<li><code>VOYAGE_API_KEY</code> — Voyage AI API key (sole text + understanding embedder)</li>
 <li><code>SLIG_ENDPOINT_URL</code> — HuggingFace SLIG endpoint URL</li>
 <li><code>SLIG_ENDPOINT_TOKEN</code> — HuggingFace SLIG endpoint token</li>
+<li><code>CHANDRA_ENDPOINT_URL</code> — HuggingFace Chandra endpoint URL</li>
+<li><code>CHANDRA_ENDPOINT_TOKEN</code> — HuggingFace Chandra endpoint token</li>
 </ul>
-<p>The model configuration maps each task to its designated model: <code>discovery</code> uses <code>claude-sonnet-4-5</code>, <code>validation</code> uses <code>claude-haiku-4-5</code>, <code>text_embeddings</code> uses <code>voyage-3.5</code>, <code>vision</code> uses <code>Qwen/Qwen3-VL-32B-Instruct</code>, and <code>visual_embeddings</code> uses <code>SLIG</code>.</p>
+<blockquote>
+<p><strong>Removed (2026-05-01)</strong>: <code>QWEN_ENDPOINT_URL</code>, <code>QWEN_ENDPOINT_TOKEN</code>, and all <code>Settings.qwen_*</code> fields are gone. The HF Qwen endpoint env vars on the systemd unit can be deleted at the next deploy.</p>
+</blockquote>
+<p>The model configuration maps each task to its designated model:</p>
+<ul>
+<li><code>discovery</code> → <code>claude-opus-4-7</code></li>
+<li><code>chunking</code> → <code>claude-sonnet-4-6</code></li>
+<li><code>vision</code> → <code>claude-opus-4-7</code> (with <code>VISION_ANALYSIS_TOOL</code>)</li>
+<li><code>validation</code> → <code>claude-haiku-4-5</code></li>
+<li><code>text_embeddings</code> → <code>voyage-4</code></li>
+<li><code>understanding_embeddings</code> → <code>voyage-4</code></li>
+<li><code>visual_embeddings</code> → <code>SLIG</code></li>
+<li><code>ocr</code> → <code>Chandra v2</code></li>
+</ul>
 <hr>
 <h2>📈 Performance Benchmarks</h2>
 <p><strong>Accuracy</strong>:</p>
 <ul>
 <li>Product detection: 95%+</li>
-<li>Material recognition: 90%+</li>
+<li>Material recognition: schema-locked via tool use (no malformed payloads)</li>
 <li>Metafield extraction: 88%+</li>
 <li>Search relevance: 85%+</li>
+<li>OCR success rate: &gt;95% (Chandra v2 with retry-jitter)</li>
 </ul>
 <p><strong>Speed</strong>:</p>
 <ul>
 <li>Product discovery: 3-5 seconds</li>
-<li>Image analysis: 2-4 seconds per image</li>
-<li>Embedding generation: 100-200ms</li>
+<li>Vision analysis (Opus tool use): 3-8 seconds per image</li>
+<li>Chunking (Sonnet): 1-2 seconds per 10K chars</li>
+<li>OCR (Chandra v2 avg): 1-3 seconds per page</li>
+<li>Embedding generation: 100-300ms</li>
 <li>Search query: 200-800ms</li>
 </ul>
 <p><strong>Cost</strong>:</p>
 <ul>
-<li>Per PDF: $0.50-$15.00</li>
-<li>Per search: $0.001-$0.01</li>
-<li>Per image: $0.05-$0.20</li>
-</ul>
-<hr>
-<h2>New Models (2025-12-26)</h2>
-<h3>Voyage-3 (Voyage AI) - PRIMARY TEXT EMBEDDINGS</h3>
-<p><strong>Purpose</strong>: High-quality text embeddings for semantic search and retrieval</p>
-<p><strong>Capabilities</strong>:</p>
-<ul>
-<li>Generate 1024-dimensional text embeddings</li>
-<li>Superior semantic understanding vs OpenAI</li>
-<li>Optimized for retrieval tasks</li>
-<li>Better performance on domain-specific content</li>
-</ul>
-<p><strong>Performance</strong>:</p>
-<ul>
-<li>Dimensions: 1024D</li>
-<li>Latency: 100-300ms</li>
-<li>Cost: $0.06 per 1M tokens</li>
-<li>Quality: Superior to text-embedding-3-small</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li><strong>PRIMARY</strong> choice for all text embeddings</li>
-<li>Product descriptions</li>
-<li>Material specifications</li>
-<li>Document chunks</li>
-<li>Semantic search</li>
-</ul>
-<p><strong>Migration</strong>: Replaced text-embedding-3-small in production 2026-04 (1536D → 1024D, dict key <code>text_1536</code> → <code>text_1024</code>)</p>
-<hr>
-<h3>SLIG (SigLIP2) - VISUAL EMBEDDINGS (HuggingFace Endpoint)</h3>
-<p><strong>Purpose</strong>: Cloud-based visual embeddings for image similarity search</p>
-<p><strong>Endpoint Configuration</strong>:</p>
-<ul>
-<li><strong>URL</strong>: <code>https://xxxxxxxx.us-east-1.aws.endpoints.huggingface.cloud</code></li>
-<li><strong>Service Name</strong>: <code>mh-siglip2</code></li>
-<li><strong>Namespace</strong>: <code>basiliskan</code></li>
-<li><strong>Dimensions</strong>: 768D (all embeddings)</li>
-</ul>
-<p><strong>Capabilities</strong>:</p>
-<ul>
-<li>General visual embeddings (image_embedding mode)</li>
-<li>Text-guided visual embeddings (text_embedding mode)<ul>
-<li>Color-guided embeddings</li>
-<li>Texture-guided embeddings</li>
-<li>Material-guided embeddings</li>
-<li>Style-guided embeddings</li>
-</ul>
-</li>
-<li>Zero-shot classification (zero_shot mode)</li>
-<li>Image-text similarity (similarity mode)</li>
-</ul>
-<p><strong>Performance</strong>:</p>
-<ul>
-<li>Dimensions: 768D (all embeddings)</li>
-<li>Latency: 500ms-2s</li>
-<li>Cost: Cloud endpoint (auto-pause enabled)</li>
-<li>Quality: Superior to CLIP, optimized for materials</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li><strong>PRIMARY</strong> choice for visual embeddings</li>
-<li>Image similarity search</li>
-<li>Text-guided visual search (color, texture, material, style)</li>
-<li>Multimodal fusion (text + visual)</li>
-</ul>
-<hr>
-<h3>Voyage-3-Lite (Voyage AI) - LIGHTWEIGHT EMBEDDINGS</h3>
-<p><strong>Purpose</strong>: Fast, cost-effective embeddings for simple tasks</p>
-<p><strong>Capabilities</strong>:</p>
-<ul>
-<li>Generate 512-dimensional embeddings</li>
-<li>Faster than Voyage-3</li>
-<li>Lower cost</li>
-</ul>
-<p><strong>Performance</strong>:</p>
-<ul>
-<li>Dimensions: 512D</li>
-<li>Latency: 50-150ms</li>
-<li>Cost: $0.02 per 1M tokens</li>
-<li>Quality: Good for simple tasks</li>
-</ul>
-<p><strong>When to Use</strong>:</p>
-<ul>
-<li>Simple semantic search</li>
-<li>Fast lookups</li>
-<li>Cost-sensitive operations</li>
-<li>Non-critical embeddings</li>
+<li>Per PDF: $0.40-$12.00 (size-dependent)</li>
+<li>Per search: $0.001-$0.02</li>
+<li>Per image (vision): $0.05-$0.20</li>
 </ul>
 <hr>
 <h2>Model Selection Guide</h2>
-<h3>Text Embeddings</h3>
-<ol>
-<li><strong>Voyage-3</strong> (PRIMARY) - All production text embeddings</li>
-<li><strong>Voyage-3-Lite</strong> - Simple/fast tasks only</li>
-<li><strong>text-embedding-3-small</strong> - Retired 2026-04 (CI changelog workflow only)</li>
-</ol>
 <h3>Vision Analysis</h3>
 <ol>
-<li><strong>Qwen3-VL-32B-Instruct</strong> (PRIMARY) - All production vision tasks (HuggingFace endpoint)</li>
-<li><strong>Claude Sonnet 4.5</strong> - Validation for low-confidence results</li>
-</ol>
-<h3>Visual Embeddings</h3>
-<ol>
-<li><strong>SLIG (SigLIP2)</strong> (PRIMARY) - All visual embeddings (768D, HuggingFace endpoint)<ul>
-<li>General visual (image_embedding mode)</li>
-<li>Text-guided (color, texture, material, style) (text_embedding mode)</li>
+<li><strong>Claude Opus 4.7 with tool use</strong> (PRIMARY, sole) — schema-locked via <code>VisionAnalysis</code><ul>
+<li>No fallback. Anthropic-only post-2026-05-01.</li>
 </ul>
 </li>
 </ol>
+<h3>Chunking</h3>
+<ol>
+<li><strong>Claude Sonnet 4.6</strong> (PRIMARY)<ul>
+<li><code>Settings.chunking_primary_model = &#39;claude-sonnet-4-6&#39;</code></li>
+</ul>
+</li>
+</ol>
+<h3>OCR</h3>
+<ol>
+<li><strong>Chandra v2 with retry-jitter</strong> (PRIMARY, sole)<ul>
+<li>Failure → <code>OCRResult.method=&#39;chandra_failed&#39;</code></li>
+</ul>
+</li>
+</ol>
+<h3>Text Embeddings</h3>
+<ol>
+<li><strong>Voyage voyage-4</strong> (PRIMARY, sole) — All production text + understanding embeddings</li>
+<li>Voyage voyage-3-lite — Simple/fast tasks</li>
+<li>text-embedding-3-small — Retired 2026-04 (CI changelog only)</li>
+</ol>
+<h3>Visual Embeddings</h3>
+<ol>
+<li><strong>SLIG (SigLIP2)</strong> (PRIMARY) — 5 specialized 768D types</li>
+<li>3-attempt retry on dim-mismatch</li>
+<li>Skip + flag if all fail</li>
+</ol>
 <h3>Text Generation</h3>
 <ol>
-<li><strong>Claude Sonnet 4.5</strong> (PRIMARY) - Complex reasoning</li>
-<li><strong>Claude Haiku 4.5</strong> - Fast validation</li>
-<li><strong>GPT-4o</strong> - Alternative/fallback</li>
+<li><strong>Claude Opus 4.7</strong> — Vision, complex reasoning, KAI agent</li>
+<li><strong>Claude Sonnet 4.6</strong> — Chunking, mid-tier</li>
+<li><strong>Claude Haiku 4.5</strong> — Fast classification, demo agent</li>
+<li><strong>GPT-4o / GPT-5</strong> — Alternative discovery (not vision)</li>
 </ol>
 <hr>
-<p><strong>Last Updated</strong>: December 26, 2025
-<strong>Version</strong>: 2.0.0
+<p><strong>Last Updated</strong>: 2026-05-02
+<strong>Version</strong>: 4.0.0
 <strong>Status</strong>: Production</p>
 
 </div></body></html>
