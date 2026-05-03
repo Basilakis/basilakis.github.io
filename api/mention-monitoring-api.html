@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Mention Monitoring API</h1>
+<p>Track product, brand, and keyword mentions across <strong>news, blogs, RSS, YouTube, and LLM responses</strong>. Cost-optimized multi-source pipeline with sentiment classification and weekly LLM visibility tracking.</p>
+<p><strong>Base URL</strong>: <code>https://v1api.materialshub.gr/api/v1/mention-monitoring</code></p>
+<p><strong>Auth</strong>: Session JWT (<code>Authorization: Bearer &lt;supabase-access-token&gt;</code>) for the web flow. Cron endpoints validate <code>x-cron-secret</code>.</p>
+<p><strong>Module gate</strong>: All endpoints require the <code>mention-monitoring</code> module to be enabled. Alert dispatch additionally requires <code>mention-monitoring-notifications</code>.</p>
+<hr>
+<h2>Pipeline overview</h2>
+<pre><code>discover (parallel)
+  ├─ DataForSEO News API     ($0.0006/req, 100 results, ~6h freshness)
+  ├─ Perplexity Sonar        ($0.005/sweep, recency-filtered)
+  ├─ RSS feeds               (free, user-curated per subject)
+  └─ YouTube Data API        (free, opt-in per subject)
+  ↓
+URL canonicalize + content-hash dedupe
+  ↓
+Apply exclusions + promoted-URL overrides
+  ↓
+Rule pre-filter (alias must appear) — drops obvious mismatches before Haiku
+  ↓
+Verdict cache lookup (7d TTL) — repeat URLs hit cache
+  ↓
+Haiku 4.5 batched classifier (≤50 candidates per call)
+  → relevance ∈ {exact, tangential, mismatch, unverifiable}
+  → sentiment ∈ {positive, neutral, negative}
+  ↓
+Drop relevance=&#39;mismatch&#39;
+Sanity check: sentiment outlier vs trailing 7d → flag is_anomaly
+  ↓
+Persist mention_history rows with refresh_run_id
+Update tracked_mentions denormalized cache
+Update volatility cadence (update_tracked_mention_cadence RPC)
+  ↓
+Detect alerts → dispatch via mention-monitoring-notifications module
+</code></pre>
+<h2>Cost discipline</h2>
+<p>The same playbook as price-monitoring v3:</p>
+<ul>
+<li><strong>Verdict cache (7d TTL)</strong>: repeat URLs across daily refreshes hit ~95% cache rate on stable subjects.</li>
+<li><strong>Rule pre-filter</strong>: deterministic alias-presence check eliminates ~60% of candidates before Haiku.</li>
+<li><strong>Tier-skip on Perplexity</strong>: cheap <code>sonar</code> model on stable refreshes; <code>sonar-pro</code> only on first refresh / forced refresh.</li>
+<li><strong>Volatility cadence</strong>: stable subjects stretch from 24h → 48h → 72h → 168h. Active subjects accelerate to 6h.</li>
+<li><strong>LLM probes</strong>: weekly cadence, 4 templates × 4 cheap models (haiku, gpt-4o-mini, gemini-flash, sonar) = ~$0.008/subject/week.</li>
+</ul>
+<p>Typical refresh cost on a stable subject: ~$0.005–0.010 per refresh (DataForSEO News + cached Sonar + free RSS).</p>
+<hr>
+<h2>Endpoints — internal flow (product-scoped)</h2>
+<p>All require session JWT. The internal flow auto-resolves the catalog product into a <code>tracked_mentions</code> row with <code>api_key_id IS NULL</code> and <code>product_id NOT NULL</code>.</p>
+<h3><code>POST /products/{product_id}/track</code></h3>
+<p>Enroll a catalog product in mention monitoring. Idempotent — re-calling returns the existing row + a fresh refresh.</p>
+<p><strong>Body</strong> (all fields optional):</p>
+<pre><code class="language-json">{
+  &quot;aliases&quot;: [&quot;Flobali&quot;, &quot;Flobali Tiles&quot;, &quot;FB-7012MT&quot;],
+  &quot;sources_enabled&quot;: { &quot;news&quot;: true, &quot;blogs&quot;: true, &quot;youtube&quot;: false, &quot;rss&quot;: true, &quot;llm&quot;: true },
+  &quot;language_codes&quot;: [&quot;en&quot;, &quot;el&quot;],
+  &quot;country_codes&quot;: [&quot;GR&quot;, &quot;DE&quot;],
+  &quot;alert_on_spike&quot;: true,
+  &quot;alert_on_negative_sentiment&quot;: true,
+  &quot;alert_on_new_outlet&quot;: false,
+  &quot;alert_on_llm_visibility_change&quot;: true,
+  &quot;alert_channels&quot;: [&quot;bell&quot;, &quot;email&quot;],
+  &quot;alert_webhook_url&quot;: null,
+  &quot;run_first_refresh&quot;: true
+}
+</code></pre>
+<p><strong>Response</strong>: <code>TrackedMention</code> row.</p>
+<h3><code>DELETE /products/{product_id}/track</code></h3>
+<p>Soft-delete: deactivates the row but preserves history.</p>
+<h3><code>GET /products/{product_id}</code></h3>
+<p>Read the <code>TrackedMention</code> row including denormalized snapshot (<code>current_mention_count_7d</code>, <code>current_sentiment_avg</code>, <code>current_top_outlets</code>).</p>
+<h3><code>POST /products/{product_id}/refresh</code></h3>
+<p>Body: <code>{ &quot;force&quot;: false }</code>. Admin-only when <code>force=true</code> (bypasses volatility cadence).</p>
+<p><strong>Response</strong>: <code>RefreshOutcome</code>:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;refreshed&quot;,
+  &quot;credits_used&quot;: 3,
+  &quot;hits_count&quot;: 24,
+  &quot;refresh_run_id&quot;: &quot;uuid&quot;,
+  &quot;by_source&quot;: { &quot;dataforseo_news&quot;: 12, &quot;perplexity_sonar&quot;: 6, &quot;rss&quot;: 2 },
+  &quot;errors&quot;: {},
+  &quot;results&quot;: [/* MentionRow[] */],
+  &quot;sentiment_avg&quot;: 0.18,
+  &quot;top_outlets&quot;: [[&quot;wirecutter.com&quot;, 4], [&quot;dezeen.com&quot;, 3]]
+}
+</code></pre>
+<h3><code>GET /products/{product_id}/feed?limit=100</code></h3>
+<p>Latest refresh run as a row list. For continuous browsing across runs, use <code>/history</code>.</p>
+<h3><code>GET /products/{product_id}/history?days=30&amp;sentiment=negative&amp;outlet_type=news&amp;limit=200</code></h3>
+<p>Filterable history. <code>sentiment</code> and <code>outlet_type</code> are optional.</p>
+<h3><code>GET /products/{product_id}/summary?days=30</code></h3>
+<p>Aggregated snapshot: total count, sentiment breakdown, top outlets.</p>
+<h3><code>GET /products/{product_id}/llm-visibility</code></h3>
+<p>Most recent LLM probe snapshot:</p>
+<pre><code class="language-json">{
+  &quot;present&quot;: true,
+  &quot;probe_run_id&quot;: &quot;uuid&quot;,
+  &quot;total_probes&quot;: 16,
+  &quot;share_of_voice&quot;: 0.5,
+  &quot;avg_position&quot;: 3.2,
+  &quot;per_model&quot;: {
+    &quot;claude-haiku-4-5&quot;: { &quot;probes&quot;: 4, &quot;mentioned&quot;: 3, &quot;positions&quot;: [2, 5, 1] },
+    &quot;gpt-4o-mini&quot;: { &quot;probes&quot;: 4, &quot;mentioned&quot;: 2, &quot;positions&quot;: [4, 6] }
+  },
+  &quot;top_competitors&quot;: [[&quot;Brand A&quot;, 12], [&quot;Brand B&quot;, 8]]
+}
+</code></pre>
+<h3><code>POST /products/{product_id}/probe-llm</code></h3>
+<p>Admin only. Body: <code>{ &quot;models&quot;: [&quot;claude-haiku-4-5&quot;, &quot;gpt-4o-mini&quot;] }</code> (optional — defaults to all enabled).</p>
+<p>Fires a fresh probe matrix. Cost: ~$0.008 per full run.</p>
+<p><strong>Response</strong>:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;completed&quot;,
+  &quot;probe_run_id&quot;: &quot;uuid&quot;,
+  &quot;probe_count&quot;: 16,
+  &quot;models&quot;: [&quot;claude-haiku-4-5&quot;, &quot;gpt-4o-mini&quot;, &quot;gemini-2.0-flash&quot;, &quot;sonar&quot;],
+  &quot;total_cost_usd&quot;: 0.008
+}
+</code></pre>
+<hr>
+<h2>Endpoints — subject-scoped (brand / keyword + admin lookups)</h2>
+<h3><code>POST /track</code></h3>
+<p>Create a tracked subject without binding to a catalog product. Used for brand/keyword tracking.</p>
+<p><strong>Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;subject_type&quot;: &quot;brand&quot;,
+  &quot;subject_label&quot;: &quot;Flobali&quot;,
+  &quot;brand_name&quot;: &quot;Flobali&quot;,
+  &quot;aliases&quot;: [&quot;Flobali Tiles&quot;, &quot;Flobali Hellas&quot;],
+  &quot;sources_enabled&quot;: { &quot;news&quot;: true, &quot;blogs&quot;: true, &quot;rss&quot;: true, &quot;llm&quot;: true },
+  &quot;language_codes&quot;: [&quot;en&quot;, &quot;el&quot;],
+  &quot;country_codes&quot;: [&quot;GR&quot;],
+  &quot;refresh_interval_hours&quot;: 24,
+  &quot;alert_on_spike&quot;: true,
+  &quot;alert_on_negative_sentiment&quot;: true,
+  &quot;run_first_refresh&quot;: true
+}
+</code></pre>
+<h3><code>GET / PUT / DELETE /track/{tracked_mention_id}</code></h3>
+<p>Read / update / deactivate the row.</p>
+<h3><code>POST /track/{tracked_mention_id}/refresh</code></h3>
+<p>Same as <code>/products/{id}/refresh</code> but for arbitrary subjects.</p>
+<h3><code>GET /track/{tracked_mention_id}/feed | history | summary | llm-visibility</code></h3>
+<p>Same shapes as the product-scoped endpoints.</p>
+<h3><code>POST /track/{tracked_mention_id}/probe-llm</code></h3>
+<p>Admin only. Fires a probe matrix.</p>
+<h3><code>POST /track/{tracked_mention_id}/exclude</code> / <code>/include</code></h3>
+<p>Body: <code>{ &quot;url&quot;: &quot;https://...&quot;, &quot;domain&quot;: &quot;spammer.com&quot;, &quot;reason&quot;: &quot;...&quot; }</code>. Either <code>url</code> or <code>domain</code> is required.</p>
+<h3><code>GET /track/{tracked_mention_id}/exclusions</code></h3>
+<p>List exclusions for the subject.</p>
+<h3><code>POST /track/{tracked_mention_id}/promote</code></h3>
+<p>Admin only. Body: <code>{ &quot;url&quot;: &quot;...&quot;, &quot;override_relevance&quot;: &quot;exact&quot;, &quot;reason&quot;: &quot;...&quot; }</code>. Sticky override that survives future refreshes.</p>
+<h3><code>GET /track/{tracked_mention_id}/share-of-voice?days=30</code></h3>
+<p>Aggregate competitor mention counts across all LLM probes for the subject.</p>
+<pre><code class="language-json">{
+  &quot;tracked_mention_id&quot;: &quot;uuid&quot;,
+  &quot;competitor_mentions&quot;: [
+    { &quot;name&quot;: &quot;Brand A&quot;, &quot;count&quot;: 24 },
+    { &quot;name&quot;: &quot;Brand B&quot;, &quot;count&quot;: 12 }
+  ]
+}
+</code></pre>
+<hr>
+<h2>Cross-flow endpoints</h2>
+<h3><code>POST /classifier-correction</code></h3>
+<p>Body:</p>
+<pre><code class="language-json">{
+  &quot;mention_history_id&quot;: &quot;uuid&quot;,
+  &quot;corrected_relevance&quot;: &quot;mismatch&quot;,
+  &quot;corrected_sentiment&quot;: null,
+  &quot;correction_note&quot;: &quot;wrong product family&quot;
+}
+</code></pre>
+<p>The most-recent corrections are prepended as few-shot examples to subsequent Haiku classifier calls.</p>
+<h3><code>POST /cron-refresh</code> — <code>x-cron-secret</code> only</h3>
+<p>Cron-target batch refresh. Calls <code>get_internal_tracked_mentions_due()</code> and runs <code>refresh()</code> on each due subject. Used by <code>mention-monitoring-cron</code> edge function.</p>
+<h3><code>POST /cron-probe-llm</code> — <code>x-cron-secret</code> only</h3>
+<p>Daily cron target. Calls <code>get_tracked_mentions_due_for_llm_probe()</code> and runs the LLM probe matrix on each subject whose last probe is older than 7 days.</p>
+<hr>
+<h2>Data shapes</h2>
+<h3><code>TrackedMention</code></h3>
+<pre><code class="language-ts">{
+  id: string;
+  api_key_id: string | null;        // XOR with product_id/brand_name
+  product_id: string | null;
+  brand_name: string | null;
+  user_id: string | null;
+  subject_type: &#39;product&#39; | &#39;brand&#39; | &#39;keyword&#39;;
+  subject_label: string;
+  aliases: string[];
+  sources_enabled: Record&lt;string, boolean&gt;;
+  source_config: Record&lt;string, unknown&gt;;  // { rss_feeds: [], probe_template_overrides: {} }
+  language_codes: string[];
+  country_codes: string[];
+  subject_facets: Record&lt;string, unknown&gt; | null;  // cached Haiku facet decomposition
+  refresh_interval_hours: number;
+  velocity_score: number | null;
+  consecutive_stable_refreshes: number;
+  next_check_at: string | null;
+  last_refreshed_at: string | null;
+  total_credits_used: number;
+  // Denormalized snapshot
+  current_mention_count_7d: number;
+  current_mention_count_30d: number;
+  current_sentiment_avg: number | null;       // -1..1
+  current_share_of_voice: number | null;
+  current_top_outlets: Array&lt;{ domain: string; count: number }&gt; | null;
+  current_metadata: Record&lt;string, unknown&gt; | null;
+  current_snapshot_at: string | null;
+  // Alerts
+  alert_on_spike: boolean;
+  alert_on_negative_sentiment: boolean;
+  alert_on_new_outlet: boolean;
+  alert_on_llm_visibility_change: boolean;
+  alert_channels: string[];
+  alert_webhook_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+</code></pre>
+<h3><code>MentionRow</code> (<code>mention_history</code>)</h3>
+<pre><code class="language-ts">{
+  id: string;
+  tracked_mention_id: string;
+  refresh_run_id: string;
+  url: string;
+  canonical_url: string | null;
+  outlet_domain: string | null;
+  outlet_name: string | null;
+  outlet_type: &#39;news&#39; | &#39;blog&#39; | &#39;youtube&#39; | &#39;forum&#39; | &#39;llm&#39; | &#39;rss&#39; | &#39;aggregator&#39; | &#39;other&#39;;
+  title: string | null;
+  excerpt: string | null;
+  body_md: string | null;             // truncated 2KB
+  language_code: string | null;
+  country_code: string | null;
+  author: string | null;
+  published_at: string | null;
+  discovered_at: string;
+  // Classification
+  sentiment: &#39;positive&#39; | &#39;neutral&#39; | &#39;negative&#39; | null;
+  sentiment_score: number | null;     // -1..1
+  relevance: &#39;exact&#39; | &#39;tangential&#39; | &#39;mismatch&#39; | &#39;unverifiable&#39; | null;
+  relevance_score: number | null;
+  match_note: string | null;
+  // Engagement (when source provides)
+  engagement: { upvotes?: number; comments?: number; views?: number } | null;
+  // Sanity flags
+  is_anomaly: boolean;
+  anomaly_reason: string | null;
+  manual_override: boolean;
+  // Provenance
+  source: &#39;dataforseo_news&#39; | &#39;perplexity_sonar&#39; | &#39;rss&#39; | &#39;youtube&#39;;
+  classifier_cached: boolean;
+}
+</code></pre>
+<hr>
+<h2>Alerts</h2>
+<p>Four types, opt-in per tracked subject:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Detector</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mention_spike</code></td>
+<td>today&#39;s count ≥ 2× trailing 7d daily-average baseline (min baseline 1.0)</td>
+</tr>
+<tr>
+<td><code>negative_sentiment</code></td>
+<td>new mention with <code>sentiment=&#39;negative&#39;</code> from outlet with <code>domain_authority ≥ 30</code></td>
+</tr>
+<tr>
+<td><code>new_outlet</code></td>
+<td>first-ever mention from a domain</td>
+</tr>
+<tr>
+<td><code>llm_visibility_change</code></td>
+<td>average position across LLM probes shifts by ≥2 ranks W/W</td>
+</tr>
+</tbody></table>
+<p><strong>Channels</strong> (CHANNEL_CREDIT_COST):</p>
+<ul>
+<li><code>bell</code>    → 0 cr (writes to <code>user_notifications</code>)</li>
+<li><code>email</code>   → 1 cr (Resend via <code>email-api</code> edge function; templates seeded)</li>
+<li><code>webhook</code> → 0 cr (per-subject <code>alert_webhook_url</code>)</li>
+</ul>
+<p><strong>Dedupe</strong>: 24h per <code>(alert_type, tracked_mention_id, outlet_domain)</code>.</p>
+<p><strong>Webhook payload</strong>:</p>
+<pre><code class="language-json">{
+  &quot;alert_type&quot;: &quot;negative_sentiment&quot;,
+  &quot;title&quot;: &quot;Negative mention from wirecutter.com&quot;,
+  &quot;body&quot;: &quot;...&quot;,
+  &quot;product_id&quot;: &quot;uuid|null&quot;,
+  &quot;tracked_mention_id&quot;: &quot;uuid&quot;,
+  &quot;outlet_name&quot;: &quot;Wirecutter&quot;,
+  &quot;outlet_domain&quot;: &quot;wirecutter.com&quot;,
+  &quot;payload&quot;: { &quot;url&quot;: &quot;...&quot;, &quot;title&quot;: &quot;...&quot;, &quot;sentiment_score&quot;: -0.6 },
+  &quot;fired_at&quot;: &quot;2026-05-03T10:15:00Z&quot;
+}
+</code></pre>
+<hr>
+<h2>Required environment</h2>
+<p>On the MIVAA backend (systemd unit / Docker env):</p>
+<table>
+<thead>
+<tr>
+<th>Var</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Haiku classifier + facet decomposition + LLM probe</td>
+</tr>
+<tr>
+<td><code>PERPLEXITY_API_KEY</code></td>
+<td>Sonar / sonar-pro discovery</td>
+</tr>
+<tr>
+<td><code>DATAFORSEO_BASE64</code> (or <code>DATAFORSEO_LOGIN</code> + <code>DATAFORSEO_PASSWORD</code>)</td>
+<td>News API</td>
+</tr>
+<tr>
+<td><code>YOUTUBE_DATA_API_KEY</code></td>
+<td>YouTube discovery (opt-in per subject)</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>gpt-4o-mini probe</td>
+</tr>
+<tr>
+<td><code>GEMINI_API_KEY</code></td>
+<td>gemini-2.0-flash probe</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td>shared with price-monitoring-cron; validates <code>x-cron-secret</code> header</td>
+</tr>
+<tr>
+<td><code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>bell + email + RPCs</td>
+</tr>
+</tbody></table>
+<p>On Supabase Edge Function env:</p>
+<ul>
+<li><code>PYTHON_BACKEND_URL</code> (e.g. <code>https://v1api.materialshub.gr</code>)</li>
+<li><code>CRON_SECRET</code> (matches MIVAA&#39;s value)</li>
+</ul>
+<hr>
+<h2>Cron schedule</h2>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Schedule (UTC)</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mention-monitoring-refresh-hourly</code></td>
+<td><code>30 * * * *</code></td>
+<td>Iterate due internal subjects, run discovery + classify + persist + alerts</td>
+</tr>
+<tr>
+<td><code>llm-mention-probe-daily</code></td>
+<td><code>0 3 * * *</code></td>
+<td>Pick subjects whose last probe is &gt;7d old, fire probe matrix</td>
+</tr>
+<tr>
+<td><code>mention-classifier-cache-prune</code></td>
+<td><code>0 4 * * *</code></td>
+<td>Delete expired verdict-cache rows</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Tables (post 2026-05-03)</h2>
+<ul>
+<li><code>tracked_mentions</code> — subject (XOR <code>api_key_id</code> / <code>product_id</code> / <code>brand_name</code>)</li>
+<li><code>mention_history</code> — append-only rows per refresh</li>
+<li><code>llm_mention_probes</code> — per-(template × model) probe attempts</li>
+<li><code>mention_outlets</code> — outlet reputation cache (domain authority, type, country)</li>
+<li><code>mention_classifier_verdict_cache</code> — 7d TTL cache keyed on content_hash + facets_hash</li>
+<li><code>mention_promoted_urls</code> — sticky admin overrides</li>
+<li><code>mention_excluded_urls</code> — per-subject URL/domain exclusions</li>
+<li><code>mention_match_corrections</code> — classifier feedback loop (few-shot)</li>
+<li><code>mention_alert_log</code> — alert audit + dedupe</li>
+</ul>
+<h2>RPCs</h2>
+<ul>
+<li><code>get_internal_tracked_mentions_due(p_limit)</code></li>
+<li><code>get_tracked_mentions_due_for_llm_probe(p_limit, p_min_age_days)</code></li>
+<li><code>update_tracked_mention_cadence(p_tracked_mention_id, p_velocity_pct_change)</code></li>
+<li><code>append_mention_alert_log(...)</code></li>
+</ul>
+<hr>
+<h2>Out of scope for v1</h2>
+<ul>
+<li><strong>Twitter/X</strong>: too expensive ($200/mo for 10k tweets, basic tier).</li>
+<li><strong>TikTok</strong>: ToS-hostile, no stable API.</li>
+<li><strong>Instagram / Facebook (mentions of you on others&#39; pages)</strong>: no public search.</li>
+<li><strong>YouTube transcripts</strong>: opt-in per subject in v2 (multiplies cost significantly).</li>
+<li><strong>Auto-extracted color palettes from mention images</strong>: deferred to v2.</li>
+</ul>
+<h2>v2 follow-ups</h2>
+<ul>
+<li>Curated outlet seed list with hand-rated domain authority.</li>
+<li>Self-healing extraction recipes for forum scrapes (mirrors <code>retailer_extraction_recipes</code>).</li>
+<li>Per-subject competitor co-mention graph view.</li>
+</ul>
+
+</div></body></html>
