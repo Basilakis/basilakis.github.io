@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Moodboard Presentation Sheets</h1>
+<p>Eight client-ready sheet types attached to a moodboard, generated through the KAI agent chat and exported as A3-landscape PDFs. Sheets are persistent and editable: every sheet is a row in <code>moodboard_presentation_sheets</code> with a JSONB <code>data</code> payload, so users can re-open and re-render without redoing their inputs.</p>
+<p>Shipped 2026-05-02.</p>
+<hr>
+<h2>Table of contents</h2>
+<ol>
+<li><a href="#sheet-types-and-credit-cost">Sheet types and credit cost</a></li>
+<li><a href="#architecture-overview">Architecture overview</a></li>
+<li><a href="#how-a-sheet-is-generated-end-to-end">How a sheet is generated, end to end</a></li>
+<li><a href="#file-by-file-reference">File-by-file reference</a></li>
+<li><a href="#how-to-use-it-operatordev">How to use it (operator/dev)</a></li>
+<li><a href="#deployment">Deployment</a></li>
+<li><a href="#extending-the-feature">Extending the feature</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ol>
+<hr>
+<h2>Sheet types and credit cost</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Cost</th>
+<th>Interactive?</th>
+<th>Inputs the agent / user must provide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>material_board</code></td>
+<td>0 cr</td>
+<td>No</td>
+<td><code>product_ids[]</code> (cap 8). Optional <code>chip_descriptions{product_id: text}</code> to override product description text.</td>
+</tr>
+<tr>
+<td><code>color_palette</code></td>
+<td>0 cr</td>
+<td>No</td>
+<td><code>swatches[{hex, name, source_image_id?}]</code> (cap 8).</td>
+</tr>
+<tr>
+<td><code>concept_board</code></td>
+<td>0 cr</td>
+<td>No</td>
+<td><code>layout[{image_url, caption?}]</code> (cap 6).</td>
+</tr>
+<tr>
+<td><code>lighting_plan</code></td>
+<td>3 cr</td>
+<td>Yes</td>
+<td><code>backdrop</code> (<code>{kind: &#39;upload&#39;|&#39;rect&#39;, image_url? OR width_mm/height_mm}</code>), <code>symbols[{type, x, y, label?}]</code> (normalized 0..1), <code>legend[{symbol_type, label}]</code>.</td>
+</tr>
+<tr>
+<td><code>annotated_render</code></td>
+<td>3 cr</td>
+<td>Yes</td>
+<td><code>backdrop_image_url</code>, <code>annotations[{x, y, line_endpoint_x, line_endpoint_y, label, product_id?, source: &#39;ai&#39;|&#39;manual&#39;|&#39;auto&#39;}]</code>.</td>
+</tr>
+<tr>
+<td><code>elevation_render_pair</code></td>
+<td>2 cr</td>
+<td>Yes</td>
+<td><code>elevation_image_url</code>, <code>render_image_url?</code>, <code>dimensions[{x1,y1,x2,y2,value,unit}]</code>, <code>tile_callouts[{x,y,label}]</code>.</td>
+</tr>
+<tr>
+<td><code>ffe_schedule</code></td>
+<td>0 cr</td>
+<td>No</td>
+<td><code>quote_id</code> (preferred — pulls items from <code>quote_items</code>) OR explicit <code>items[{room, name, dimensions, install, delivery, qty, price?}]</code>.</td>
+</tr>
+<tr>
+<td><code>full_deck</code></td>
+<td>3 cr</td>
+<td>No</td>
+<td><code>included_sheet_ids[]</code> in display order, <code>cover{title, description?, client_name?, cover_image_url?, date}</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Passive vs interactive</strong>:</p>
+<ul>
+<li><strong>Passive types</strong> (<code>material_board</code>, <code>color_palette</code>, <code>concept_board</code>, <code>ffe_schedule</code>, <code>full_deck</code>) — the tool gathers the inputs from the agent&#39;s tool call, debits credits, inserts the row, and immediately invokes <code>generate-moodboard-sheet-pdf</code>. The chat surface receives <code>sheet_pdf_ready</code> and renders a <code>SheetPreviewCard</code>.</li>
+<li><strong>Interactive types</strong> (<code>lighting_plan</code>, <code>annotated_render</code>, <code>elevation_render_pair</code>) — the tool debits credits, inserts the row with the agent&#39;s pre-filled <code>initial_data</code>, and emits <code>sheet_canvas_open</code>. The chat surface mounts a <code>SheetCanvasCard</code> widget. The user finishes the inputs in-canvas (drag callouts, drop dimensions, place fixture symbols), then clicks <strong>Render PDF</strong> which calls <code>moodboardSheetsService.generatePdf()</code>.</li>
+</ul>
+<p><strong>Credits are debited at tool-call time, not at render time.</strong> If the user abandons an interactive sheet without rendering, credits stay debited (delete the sheet to clean up; no automatic refund). The exception is the insert-failure path inside the tool — if the DB insert fails after the debit, the tool refunds.</p>
+<hr>
+<h2>Architecture overview</h2>
+<pre><code>                   ┌────────────────────────────────────────────────────┐
+                   │                  USER (browser)                     │
+                   │  /moodboard/:id  →  Sheets tab  →  + New Sheet     │
+                   │  ↓ navigates to /agent-hub?agent=kai&amp;q=...          │
+                   │  /agent-hub  ←  chat with KAI agent                 │
+                   └────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+        ┌──────────────────────────────────────────────────────────────┐
+        │          supabase/functions/agent-chat/index.ts              │
+        │  - Loads `kai` (or `interior-designer`) agent config         │
+        │  - Lazy-imports presentation-sheet-tool.ts                    │
+        │  - Streams chunks back via onChunk                            │
+        └──────────────────────────────────────────────────────────────┘
+                                         │
+                          (LangChain tool call)
+                                         ▼
+        ┌──────────────────────────────────────────────────────────────┐
+        │  supabase/functions/_shared/tools/presentation-sheet-tool.ts │
+        │  generate_presentation_sheet:                                  │
+        │    1. Validate moodboard ownership                            │
+        │    2. Debit credits (debit_user_credits RPC)                  │
+        │    3. Insert moodboard_presentation_sheets row               │
+        │    4. Emit chunk: sheet_canvas_open OR sheet_pdf_ready        │
+        │    5. (passive) Invoke generate-moodboard-sheet-pdf            │
+        └──────────────────────────────────────────────────────────────┘
+                       │                                  │
+       (interactive)   │                  (passive: immediate)
+                       ▼                                  ▼
+   ┌───────────────────────────────┐    ┌─────────────────────────────────┐
+   │  Frontend: SheetCanvasCard    │    │ generate-moodboard-sheet-pdf    │
+   │  - CalloutCanvas              │    │  - fetches sheet + moodboard    │
+   │  - DimensionCanvas            │    │  - dispatches by sheet_type     │
+   │  - FixtureSymbolCanvas        │    │  - builds A3 PDF (pdf-lib)      │
+   │  User clicks Render PDF       │    │  - uploads to storage           │
+   │  ↓ moodboardSheetsService     │    │  - returns signed URL           │
+   │     .update() → generatePdf() │    └─────────────────────────────────┘
+   └───────────────────────────────┘                       │
+                       │                                   │
+                       └────────────────┬──────────────────┘
+                                        ▼
+              ┌──────────────────────────────────────────────┐
+              │  Storage: moodboard-sheets (private bucket)  │
+              │  Path: moodboards/{mb_id}/sheet-{sheet_id}.pdf│
+              │  Access: 7-day signed URL                     │
+              └──────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Coordinate convention (critical):</strong> every annotation, dimension, and fixture symbol stores <code>x/y</code> as <strong>normalized [0..1]</strong> relative to the rendered backdrop image area (not pixel coords). Both the frontend canvas widgets and the PDF builder use this convention. This means a sheet built on a desktop renders identically when re-opened on mobile, and the PDF positions match the canvas exactly.</p>
+<hr>
+<h2>How a sheet is generated, end to end</h2>
+<h3>Passive sheet — example: <code>material_board</code></h3>
+<ol>
+<li>User opens moodboard → Sheets tab → clicks &quot;New Sheet&quot; → picks &quot;Material Board&quot;.</li>
+<li>Frontend calls <code>navigate(&#39;/agent-hub?agent=kai&amp;q=Create a Material Board for moodboard &lt;uuid&gt;...&#39;)</code>.</li>
+<li>KAI agent loads with the seeded prompt. The system prompt addendum (applied by the second migration) tells it to call <code>generate_presentation_sheet</code> with the appropriate <code>sheet_type</code> and inputs. The agent asks the user to confirm which products to include.</li>
+<li>Agent calls <code>generate_presentation_sheet({moodboard_id, sheet_type: &#39;material_board&#39;, title, initial_data: {product_ids: [...]}})</code>.</li>
+<li>Tool validates the user owns the moodboard, debits 0 credits (no-op), inserts a row, calls <code>supabase.functions.invoke(&#39;generate-moodboard-sheet-pdf&#39;, {body: {sheet_id}})</code>.</li>
+<li>Edge function fetches the sheet + moodboard + product chips (with thumbnails from <code>image_product_associations</code>), builds the PDF, uploads to storage, returns signed URL.</li>
+<li>Tool emits <code>sheet_pdf_ready</code> chunk with the URL.</li>
+<li>AgentHub creates a message with <code>sheetPdfData</code> set; renders <code>SheetPreviewCard</code> (iframe preview + download).</li>
+</ol>
+<h3>Interactive sheet — example: <code>annotated_render</code></h3>
+<ol>
+<li>Same first 3 steps as above, but the user picks &quot;Annotated Render Sheet&quot; and the seeded prompt tells the agent to ask which render to annotate.</li>
+<li>Agent calls the tool with <code>initial_data.backdrop_image_url</code> and (optionally) pre-filled <code>annotations[]</code>.</li>
+<li>Tool debits 3 credits, inserts the row, emits <code>sheet_canvas_open</code>.</li>
+<li>AgentHub renders <code>SheetCanvasCard</code> → <code>CalloutCanvas</code> mounted with the backdrop image and any pre-filled annotations.</li>
+<li>User drags anchor dots and label boxes, edits labels in the side list, adds new callouts by clicking on the image.</li>
+<li>User clicks <strong>Render PDF</strong> in the canvas.</li>
+<li>Canvas calls <code>moodboardSheetsService.update(sheetId, {data: {backdrop_image_url, annotations}})</code> to persist, then <code>generatePdf(sheetId)</code> which invokes the edge function.</li>
+<li>Edge function builds the PDF (red anchor dots → leader lines → white label boxes + side legend with up to 8 product chips), uploads, returns URL.</li>
+<li>Canvas swaps to <code>SheetPreviewCard</code> with the result.</li>
+</ol>
+<hr>
+<h2>File-by-file reference</h2>
+<h3>Database</h3>
+<h4><a href="../supabase/migrations/20260502_moodboard_presentation_sheets.sql"><code>supabase/migrations/20260502_moodboard_presentation_sheets.sql</code></a></h4>
+<p>Creates two enums (<code>moodboard_sheet_type</code>, <code>moodboard_sheet_status</code>), the <code>moodboard_presentation_sheets</code> table, indexes (by moodboard, by user, by type+status), an <code>updated_at</code> BEFORE-UPDATE trigger, RLS policies (owner-of-moodboard read/write + public-moodboard-readable), and the <code>moodboard-sheets</code> storage bucket with read/write policies.</p>
+<p><strong>Key columns</strong>:</p>
+<ul>
+<li><code>data jsonb</code> — per-sheet-type payload. Schema documented inline in the migration&#39;s column comment.</li>
+<li><code>status</code> — <code>draft / generating / ready / failed</code>.</li>
+<li><code>pdf_storage_path</code>, <code>pdf_url</code>, <code>pdf_generated_at</code>, <code>page_count</code> — populated by the edge function.</li>
+<li><code>credits_used</code>, <code>ai_log_ids[]</code> — cost mirror.</li>
+<li><code>error_message</code> — populated on <code>failed</code>.</li>
+</ul>
+<h4><a href="../supabase/migrations/20260502_kai_prompt_presentation_sheets_addendum.sql"><code>supabase/migrations/20260502_kai_prompt_presentation_sheets_addendum.sql</code></a></h4>
+<p>Idempotently appends a guidance block to the <code>kai</code> and <code>interior-designer</code> agent prompts. Uses a marker (<code>--END_PRESENTATION_SHEETS_ADDENDUM--</code>) to skip if already applied. The block tells the agent how to choose a sheet type, what inputs each one needs, when to ask the user vs proceed, and that interactive types should not be re-prompted after the canvas opens.</p>
+<h3>Edge function — <a href="../supabase/functions/generate-moodboard-sheet-pdf/"><code>supabase/functions/generate-moodboard-sheet-pdf/</code></a></h3>
+<h4><code>index.ts</code> — request handler / dispatcher</h4>
+<p>Receives <code>{sheet_id}</code>, authenticates, fetches the sheet row, resolves the title block (<code>project_title</code> from moodboard, <code>client_name</code> from <code>data.cover.client_name</code> or the user profile, <code>sheet_label</code> from the type), then <code>switch</code>es on <code>sheet_type</code> and invokes the right builder. Saves the PDF to <code>moodboard-sheets/moodboards/{moodboard_id}/sheet-{sheet_id}.pdf</code>, generates a 7-day signed URL, updates the sheet row to <code>status=&#39;ready&#39;</code>. On error, marks <code>status=&#39;failed&#39;</code> and writes <code>error_message</code>.</p>
+<p><strong>Why 7 days, not 1 hour?</strong> Quote PDFs use 1h because users typically download once. Sheet PDFs are presentation deliverables clients re-open repeatedly; 1h would force re-signing every time the moodboard tab is opened.</p>
+<h4><code>builders.ts</code> — eight per-sheet builders</h4>
+<p>One function per <code>sheet_type</code>:</p>
+<ul>
+<li><code>buildMaterialBoard</code> — 4×2 chip grid (image + name + category + first 4 lines of description), overflow indicator if <code>&gt;8</code> chips.</li>
+<li><code>buildColorPalette</code> — up to 4-cols swatch grid using <code>hexToRgb</code>. <code>hex</code> rendered as fill, <code>name</code> as caption.</li>
+<li><code>buildConceptBoard</code> — 3×2 image collage with optional captions overlay.</li>
+<li><code>buildLightingPlan</code> — left 70%: backdrop (uploaded image OR plain rectangle for typed dims) + fixture symbols at normalized coords. Right 30%: legend.</li>
+<li><code>buildAnnotatedRender</code> — left 65%: backdrop + red anchor dots + leader lines + white label boxes. Right 35%: up to 8 legend chips with thumbnail + name + 4-line description.</li>
+<li><code>buildElevationRenderPair</code> — top half: elevation image + dimension lines (red leader + tick marks + value+unit text) + tile callouts. Bottom half: render image (no annotations).</li>
+<li><code>buildFfeSchedule</code> — table with 8 columns (#, Room, Item, Dimensions, Install, Delivery, Qty, Price). Alt-row shading. Caps at one page; appends &quot;+ N more&quot; if overflow.</li>
+<li><code>buildFullDeckCover</code> — full-bleed cover image at 45% opacity + centered title + description + client + date. Then <code>buildSheetForDeck</code> is called for each <code>included_sheet_id</code>, which dispatches to the appropriate per-type builder above.</li>
+</ul>
+<p>All builders take <code>(pdfDoc, fonts, titleBlockData, ...payload)</code> and return void after appending exactly one page. <code>buildSheetForDeck</code> calls them in order.</p>
+<h4><code>data-fetcher.ts</code> — shared DB queries</h4>
+<ul>
+<li><code>fetchSheet</code>, <code>fetchMoodboard</code> — primary lookups.</li>
+<li><code>fetchClientName</code> — pulls user profile name/email for the title block default.</li>
+<li><code>fetchProductChips(productIds[])</code> — joins <code>products</code> + <code>image_product_associations</code> + <code>document_images</code> for thumbnails. Returns <code>ProductChip[]</code> with <code>name, description, image_url, hex, category</code> extracted from <code>metadata</code>.</li>
+<li><code>fetchQuoteFfeItems(quoteId)</code> — pulls <code>room, name, dimensions, installation_requirements, delivery_date, qty, unit_price</code> from <code>quote_items</code>.</li>
+<li><code>fetchSheets(sheetIds[])</code> — for <code>full_deck</code> to load sub-sheets.</li>
+</ul>
+<h4><code>layout.ts</code> — A3 helpers</h4>
+<p>A3 landscape constants (<code>PAGE_W = 1190.55</code>, <code>PAGE_H = 841.89</code>), color palette, font loader, image embedder (auto-detects PNG vs JPG via magic bytes), <code>fetchImageBytes</code> (HTTP GET + Uint8Array conversion), <code>drawTitleBlock</code> (4-cell bottom strip: PROJECT / SHEET / TYPE / DATE+sheet#), <code>drawSheetHeader</code> (top title + subtitle + horizontal rule), <code>wrapText</code> (word wrap to a max width using <code>font.widthOfTextAtSize</code>), <code>truncate</code>, <code>hexToRgb</code>.</p>
+<h4><code>types.ts</code> — shared interfaces</h4>
+<p><code>SheetType</code>, <code>SheetRow</code>, <code>MoodboardRow</code>, request/response envelopes, payload shapes (<code>ProductChip</code>, <code>SwatchData</code>, <code>AnnotationData</code>, <code>DimensionData</code>, <code>FixtureSymbolData</code>, <code>FfeItem</code>).</p>
+<h4><code>deno.json</code> — import map</h4>
+<p><code>pdf-lib</code> (1.17.1 from esm.sh) and <code>@supabase/supabase-js</code> (npm).</p>
+<h3>Agent tool — <a href="../supabase/functions/_shared/tools/presentation-sheet-tool.ts"><code>supabase/functions/_shared/tools/presentation-sheet-tool.ts</code></a></h3>
+<p><code>createPresentationSheetTool(userId, onChunk)</code> returns a LangChain tool with name <code>generate_presentation_sheet</code>.</p>
+<p>Flow:</p>
+<ol>
+<li><strong>Validate moodboard ownership.</strong> Looks up <code>moodboards.user_id === userId</code>. Returns <code>{error: &quot;Not authorized for this moodboard&quot;}</code> if not.</li>
+<li><strong>Debit credits.</strong> Calls <code>debit_user_credits</code> RPC with <code>p_amount = SHEET_CREDITS[sheet_type]</code> (<code>0/2/3</code> per the table above) and <code>p_operation_type = &#39;presentation_sheet_&lt;type&gt;&#39;</code>. Returns <code>{error: &quot;Credit debit failed: &lt;reason&gt;&quot;}</code> on insufficient balance.</li>
+<li><strong>Mirror to <code>ai_usage_logs</code>.</strong> Writes a row with <code>model_name=&#39;presentation-sheet&#39;</code>, <code>api_provider=&#39;platform&#39;</code>, the credit count, and metadata <code>{feature, sheet_type, moodboard_id, title}</code> so cost reporting picks it up.</li>
+<li><strong>Insert sheet row.</strong> With <code>status=&#39;draft&#39;</code> and the agent-supplied <code>initial_data</code> payload. On insert failure, refunds the debit (calls <code>debit_user_credits</code> with negative amount).</li>
+<li><strong>Emit <code>sheet_created</code> chunk.</strong> Lightweight ack so the chat can log it.</li>
+<li><strong>Branch.</strong> For interactive types (and <code>auto_render=false</code> which is the default), emit <code>sheet_canvas_open</code> and return <code>{status: &#39;awaiting_canvas_input&#39;}</code> — the chat surface will mount the canvas. For passive types (or <code>auto_render=true</code>), invoke <code>generate-moodboard-sheet-pdf</code>, then emit <code>sheet_pdf_ready</code> and return <code>{status: &#39;ready&#39;, pdf_url}</code>.</li>
+</ol>
+<p>The schema (zod) on the tool is the single source of truth for what <code>initial_data</code> can carry — every sheet type has its own optional fields under a single <code>initial_data</code> object so the agent fills in only what&#39;s relevant.</p>
+<h3>Frontend service — <a href="../src/services/moodboardSheetsService.ts"><code>src/services/moodboardSheetsService.ts</code></a></h3>
+<p>CRUD wrapper for the Supabase JS client + edge-function invoker. Exports types (<code>PresentationSheet</code>, <code>SheetType</code>, <code>SheetStatus</code>), constants (<code>SHEET_TYPE_LABELS</code>, <code>SHEET_TYPE_CREDITS</code>), and methods:</p>
+<ul>
+<li><code>list(moodboardId)</code> — by-moodboard, newest first.</li>
+<li><code>get(sheetId)</code> — single row.</li>
+<li><code>create({moodboard_id, sheet_type, title, data?})</code> — direct insert (NOT used by the agent flow; reserved for future programmatic creation).</li>
+<li><code>update(sheetId, {title?, data?, status?})</code> — used by canvas widgets to persist annotations before rendering.</li>
+<li><code>remove(sheetId)</code> — hard delete.</li>
+<li><code>refreshPdfUrl(sheetId)</code> — issues a fresh 1h signed URL for the existing storage path.</li>
+<li><code>generatePdf(sheetId)</code> — calls the edge function. Used by canvas widgets and <code>MoodboardSheetsTab</code> re-render.</li>
+</ul>
+<h3>Frontend canvas widgets — <a href="../src/components/features/sheets/"><code>src/components/features/sheets/</code></a></h3>
+<h4><code>AnnotationLayer.tsx</code></h4>
+<p>Shared backdrop component. Mounts an <code>&lt;img&gt;</code> filling its container with <code>object-contain</code>, captures pointer events, converts client coordinates to normalized [0..1], and exposes those via render-prop callbacks (<code>onPointerDownPoint</code>, <code>onPointerMovePoint</code>, <code>onPointerUpPoint</code>). Forward-refs an imperative handle (<code>toNormalized</code>, <code>fromNormalized</code>) for callers that need to project saved coordinates back to pixel space (e.g., to draw existing markers).</p>
+<p><strong>Why normalized coords:</strong> the same data must round-trip to the PDF builder, which computes its own pixel positions inside an A3 page. Storing pixel coords would couple the data to the canvas size at the moment of capture.</p>
+<h4><code>CalloutCanvas.tsx</code> — for <code>annotated_render</code></h4>
+<p>Each annotation has TWO points: an anchor (red dot on the image) and a label endpoint (white label box where the leader line terminates). Both draggable. User clicks empty space on the image to add a new annotation (anchor at click, endpoint offset slightly up-right, blank label). Side list shows all annotations with editable labels and delete buttons. &quot;Render PDF&quot; persists <code>{backdrop_image_url, annotations}</code> and triggers the edge function.</p>
+<h4><code>DimensionCanvas.tsx</code> — for <code>elevation_render_pair</code></h4>
+<p>Two modes:</p>
+<ul>
+<li><strong>Dimension</strong> — two-click placement (first click = start, second = end), then a <code>prompt()</code> for the value. Default unit selectable (mm/cm/m/in).</li>
+<li><strong>Tile callout</strong> — single click + label <code>prompt()</code> for things like &quot;Porcelain 600×1200 mm&quot;.</li>
+</ul>
+<p>Both render as SVG overlays on top of <code>AnnotationLayer</code>. Dimensions show the value+unit at the midpoint with a white stroke for legibility on busy elevations. The render image (bottom half of the PDF) is uploaded separately and not annotated.</p>
+<h4><code>FixtureSymbolCanvas.tsx</code> — for <code>lighting_plan</code></h4>
+<p>Fixture palette at the top (Recessed ⊕ / Pendant ● / Wall ◐ / Spot ◇ / LED Strip ▬ / Floor / Table). User picks a type, then clicks anywhere on the backdrop to drop a symbol. Symbols draggable. When the first symbol of a new type is placed, a legend entry auto-populates (label is editable in the side panel).</p>
+<p>Backdrop has two modes:</p>
+<ul>
+<li><code>kind: &#39;upload&#39;</code> — uploaded floor plan image via <code>AnnotationLayer</code>.</li>
+<li><code>kind: &#39;rect&#39;</code> — plain rectangle drawn from typed <code>width_mm/height_mm</code>. Same pointer math, no image.</li>
+</ul>
+<h4><code>SheetCanvasCard.tsx</code> — chat dispatcher</h4>
+<p>Receives <code>{sheet_id, sheet_type, moodboard_id, initial_data, title}</code> from the <code>sheet_canvas_open</code> chunk. Mounts the appropriate canvas widget. When the canvas calls <code>onPdfReady(url)</code>, the card swaps to <code>SheetPreviewCard</code> in place.</p>
+<h4><code>SheetPreviewCard.tsx</code> — chat preview</h4>
+<p>Iframe-embedded PDF preview at 4:3, plus Download / Open in new tab / Edit buttons. Used both inline in chat (after <code>sheet_pdf_ready</code>) and after the canvas finishes rendering.</p>
+<h3>Frontend chat surface — <a href="../src/components/features/ai/AgentHub.tsx"><code>src/components/features/ai/AgentHub.tsx</code></a></h3>
+<p>Three new chunk handlers in the streaming pipeline:</p>
+<ul>
+<li><code>sheet_created</code> — logger only (debit ack).</li>
+<li><code>sheet_canvas_open</code> — creates an assistant message with <code>sheetCanvasData</code>. Persisted to chat history.</li>
+<li><code>sheet_pdf_ready</code> — creates an assistant message with <code>sheetPdfData</code>. Persisted to chat history. Marks <code>finalResult</code>.</li>
+</ul>
+<p>The render branches in the message switch (around line 2526) check <code>message.sheetCanvasData</code> and <code>message.sheetPdfData</code> and mount <code>SheetCanvasCard</code> / <code>SheetPreviewCard</code> accordingly. The <code>max-width</code> flag in the bubble container is OR&#39;d with these data fields so the card gets full width.</p>
+<h3>Moodboard tab — <a href="../src/components/business/moodboard/MoodboardSheetsTab.tsx"><code>src/components/business/moodboard/MoodboardSheetsTab.tsx</code></a></h3>
+<ul>
+<li>Lists sheets for the moodboard with status badges (<code>draft / generating / ready / failed</code>), page count, credit count, last-updated date, and (if <code>failed</code>) the error message.</li>
+<li>&quot;+ New Sheet&quot; dropdown grouped: <strong>Boards</strong> (material_board, color_palette, concept_board), <strong>Plans</strong> (lighting_plan, annotated_render, elevation_render_pair), <strong>Schedules</strong> (ffe_schedule), <strong>Decks</strong> (full_deck). Each item shows label, credit cost, and a one-line description.</li>
+<li>Picking a type calls <code>navigate(&#39;/agent-hub?agent=kai&amp;q=&lt;seeded prompt&gt;&#39;)</code> so the KAI agent picks up the request.</li>
+<li>Per-sheet actions: <strong>Open</strong> (signed-URL refresh + opens PDF), <strong>Edit</strong> (re-routes to KAI to continue), <strong>Delete</strong> (hard delete with confirm).</li>
+</ul>
+<h3>Moodboard page — <a href="../src/components/business/moodboard/MoodBoardDetailPage.tsx"><code>src/components/business/moodboard/MoodBoardDetailPage.tsx</code></a></h3>
+<p>Existing page wrapped in <code>Tabs</code> with two tabs:</p>
+<ul>
+<li><strong>Items</strong> — the existing products/media grid.</li>
+<li><strong>Sheets</strong> — mounts <code>MoodboardSheetsTab</code>.</li>
+</ul>
+<hr>
+<h2>How to use it (operator/dev)</h2>
+<h3>As a designer (end user)</h3>
+<ol>
+<li>Open any moodboard at <code>/moodboard/:id</code>.</li>
+<li>Click the <strong>Sheets</strong> tab.</li>
+<li>Click <strong>+ New Sheet</strong> and pick a type from the dropdown.</li>
+<li>The KAI agent opens with a context-rich prompt; answer its questions.</li>
+<li>For passive sheets, the PDF appears in the chat within seconds.</li>
+<li>For interactive sheets (lighting / annotated / elevation), the canvas widget opens — finish the inputs there, click <strong>Render PDF</strong>.</li>
+<li>The sheet is saved to the moodboard&#39;s Sheets tab; come back any time to open or edit.</li>
+</ol>
+<h3>As a developer (programmatic)</h3>
+<p>You can create sheets without the agent by calling <code>moodboardSheetsService.create()</code> directly, then <code>generatePdf()</code> to render. Useful for batch flows or automated tests.</p>
+<pre><code class="language-ts">import { moodboardSheetsService } from &#39;@/services/moodboardSheetsService&#39;;
+
+// Passive sheet — straight to PDF
+const sheet = await moodboardSheetsService.create({
+  moodboard_id,
+  sheet_type: &#39;material_board&#39;,
+  title: &#39;Bathroom Materials&#39;,
+  data: { product_ids: [&#39;uuid-1&#39;, &#39;uuid-2&#39;, &#39;uuid-3&#39;] },
+});
+const result = await moodboardSheetsService.generatePdf(sheet.id);
+console.log(result.pdf_url);
+
+// Interactive sheet — initial_data is a starting point; user finishes in canvas
+const sheet2 = await moodboardSheetsService.create({
+  moodboard_id,
+  sheet_type: &#39;annotated_render&#39;,
+  title: &#39;Living Room — Annotated&#39;,
+  data: { backdrop_image_url: &#39;https://...&#39;, annotations: [] },
+});
+// Mount &lt;SheetCanvasCard /&gt; with sheet2.id and let the user edit, then call generatePdf()
+</code></pre>
+<p><strong>Note</strong>: programmatic <code>create</code> does NOT debit credits — only the agent tool does. If you need cost attribution for programmatic flows, call <code>debit_user_credits</code> yourself before insert.</p>
+<h3>As an admin (debugging)</h3>
+<p>Inspect rows in the table:</p>
+<pre><code class="language-sql">SELECT id, moodboard_id, sheet_type, status, credits_used, page_count, error_message,
+       updated_at - created_at AS time_to_complete
+FROM moodboard_presentation_sheets
+ORDER BY created_at DESC
+LIMIT 20;
+</code></pre>
+<p>Per-feature credit usage:</p>
+<pre><code class="language-sql">SELECT operation_type, COUNT(*), SUM(credits_debited)
+FROM ai_usage_logs
+WHERE operation_type LIKE &#39;presentation_sheet_%&#39;
+  AND created_at &gt; NOW() - INTERVAL &#39;7 days&#39;
+GROUP BY operation_type;
+</code></pre>
+<p>Stuck <code>generating</code> rows (&gt;10 minutes old):</p>
+<pre><code class="language-sql">SELECT id, sheet_type, error_message, updated_at
+FROM moodboard_presentation_sheets
+WHERE status = &#39;generating&#39;
+  AND updated_at &lt; NOW() - INTERVAL &#39;10 minutes&#39;;
+</code></pre>
+<p>Manually fail them and let the user retry:</p>
+<pre><code class="language-sql">UPDATE moodboard_presentation_sheets
+SET status = &#39;failed&#39;, error_message = &#39;Stuck in generating; manually marked failed&#39;
+WHERE status = &#39;generating&#39; AND updated_at &lt; NOW() - INTERVAL &#39;10 minutes&#39;;
+</code></pre>
+<hr>
+<h2>Deployment</h2>
+<p>After pulling the branch on a fresh environment:</p>
+<ol>
+<li><p><strong>Apply DB migrations.</strong> Either:</p>
+<ul>
+<li>Via Supabase MCP: <code>mcp__supabase__apply_migration</code> for each of the two <code>20260502_*.sql</code> files.</li>
+<li>Via Supabase dashboard SQL editor: paste the contents of each file in order (table first, prompt addendum second). The addendum is idempotent (marker check).</li>
+<li>Via <code>supabase db push</code> if you use the CLI for migrations.</li>
+</ul>
+</li>
+<li><p><strong>Deploy the new edge function:</strong></p>
+<pre><code class="language-bash">supabase functions deploy generate-moodboard-sheet-pdf
+</code></pre>
+</li>
+<li><p><strong>Redeploy <code>agent-chat</code></strong> so it picks up the new tool import:</p>
+<pre><code class="language-bash">supabase functions deploy agent-chat
+</code></pre>
+</li>
+<li><p><strong>Frontend</strong> ships with the next regular build (<code>npm run build</code> + your usual deploy pipeline). No env-var changes required — the function uses <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> which are already set on Supabase.</p>
+</li>
+</ol>
+<hr>
+<h2>Extending the feature</h2>
+<h3>Add a new sheet type</h3>
+<ol>
+<li>Add to the enum in <code>moodboard_sheet_type</code> (write a new migration; never edit an existing one in place).</li>
+<li>Add a builder function in <code>supabase/functions/generate-moodboard-sheet-pdf/builders.ts</code>.</li>
+<li>Add a <code>case</code> in <code>index.ts</code>&#39;s <code>switch</code> and in <code>buildSheetForDeck</code> (so it works inside Full Decks).</li>
+<li>Extend the zod schema in <code>presentation-sheet-tool.ts</code> with the new type and any new <code>initial_data</code> fields.</li>
+<li>Add to <code>SHEET_TYPE_CREDITS</code>, <code>SHEET_TYPE_LABELS</code> (frontend) and <code>SHEET_GROUPS</code> in <code>MoodboardSheetsTab.tsx</code>.</li>
+<li>If interactive, add a new canvas widget under <code>src/components/features/sheets/</code> and dispatch in <code>SheetCanvasCard.tsx</code>.</li>
+<li>Update the prompt addendum (write a new addendum migration with a new marker) so KAI knows when to use it.</li>
+</ol>
+<h3>Plug in AI region detection for <code>annotated_render</code></h3>
+<p>The schema already supports <code>annotations[].source: &#39;ai&#39; | &#39;auto&#39; | &#39;manual&#39;</code>. Add a Vision pre-pass:</p>
+<ul>
+<li>In the agent&#39;s tool call for <code>annotated_render</code>, before invoking <code>generate_presentation_sheet</code>, the agent calls a Claude Vision endpoint with the backdrop image and the moodboard product list.</li>
+<li>Vision returns regions matching catalog products; each becomes an <code>annotation</code> with <code>source: &#39;ai&#39;</code> (matched product) or <code>source: &#39;auto&#39;</code> if confidence is low (generic label).</li>
+<li>Pass them as <code>initial_data.annotations</code> so the canvas opens pre-populated. User refines.</li>
+</ul>
+<p>This is a tool-side change only — no schema or PDF changes needed.</p>
+<h3>Plug in auto color extraction for <code>color_palette</code></h3>
+<p><code>document_images</code> already has the <code>image_color_embeddings</code> (768D SLIG) collection with <code>has_color_slig</code> boolean flag. Add a service that:</p>
+<ul>
+<li>Takes a list of <code>document_image_id</code>s from the moodboard.</li>
+<li>Queries the SLIG color collection for centroid-cluster colors.</li>
+<li>Returns top-K hex codes with auto-named labels (Claude Haiku, given the cluster RGB).</li>
+</ul>
+<p>Wire it into the agent flow so for <code>color_palette</code> the agent runs this service first and fills <code>initial_data.swatches</code>.</p>
+<h3>Add custom branding (logos, contact info)</h3>
+<p><code>drawTitleBlock</code> in <code>layout.ts</code> is the only place to touch. Add an optional <code>branding: {logo_bytes, company_name, company_email, company_phone}</code> field to <code>TitleBlockData</code> and embed in a 5th cell or as a header strip. Pull from <code>user_profiles</code> or a new <code>studios</code> table during <code>index.ts</code> setup.</p>
+<hr>
+<h2>Troubleshooting</h2>
+<p><strong>Sheet stuck in <code>generating</code> indefinitely.</strong>
+The edge function timed out or crashed before the status update. Check logs in Supabase functions dashboard. The auto-recovery cron does NOT touch this table (only <code>background_jobs</code>); manual cleanup is required for now.</p>
+<p><strong>&quot;Insufficient credits&quot; on a 0-credit sheet.</strong>
+Should not happen — the tool short-circuits the debit when <code>creditCost &lt;= 0</code>. If you see this, check that <code>SHEET_CREDITS</code> in <code>presentation-sheet-tool.ts</code> matches the table at the top of this doc.</p>
+<p><strong>PDF renders but the canvas annotations don&#39;t appear.</strong>
+Coordinates probably aren&#39;t normalized [0..1]. Check that the canvas widget converts client coords via <code>AnnotationLayer.toNormalized</code> (or its own equivalent for <code>kind: &#39;rect&#39;</code> lighting plans), not raw pixel offsets.</p>
+<p><strong>Agent calls the tool with the wrong sheet type.</strong>
+The KAI prompt addendum needs to be applied. Run the second migration. Check the prompts table:</p>
+<pre><code class="language-sql">SELECT system_prompt FROM prompts
+WHERE prompt_type = &#39;agent&#39; AND category = &#39;kai&#39; AND is_active = true;
+</code></pre>
+<p>Look for the <code>--END_PRESENTATION_SHEETS_ADDENDUM--</code> marker. If missing, the migration didn&#39;t run.</p>
+<p><strong>Canvas widget shows &quot;No PDF available&quot; after Render.</strong>
+The edge function returned an error. The canvas catches it and shows it inline. Check the sheet row:</p>
+<pre><code class="language-sql">SELECT status, error_message FROM moodboard_presentation_sheets WHERE id = &#39;&lt;sheet_id&gt;&#39;;
+</code></pre>
+<p><strong>Storage signed URL is expired (after 7 days).</strong>
+Call <code>moodboardSheetsService.refreshPdfUrl(sheetId)</code> to re-sign. The Sheets tab does this automatically on click; in custom code you need to do it yourself.</p>
+<p><strong>Full Deck cover image doesn&#39;t show.</strong>
+Cover image is rendered at 45% opacity in <code>buildFullDeckCover</code>. If the URL 404s, no error — the PDF just renders without the image. Check <code>data.cover.cover_image_url</code> is reachable from the edge function (Supabase storage with a 7-day signed URL works; expired URLs do not).</p>
+
+</div></body></html>
