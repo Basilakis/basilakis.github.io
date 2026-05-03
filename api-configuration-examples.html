@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,13 +19,15 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>API Configuration Examples - Dynamic AI Models</h1>
-<p>This document provides practical examples of how to use the dynamic AI model configuration system in the MIVAA PDF processing pipeline.</p>
+<p><strong>Last Updated</strong>: 2026-05-03</p>
+<p>This document provides practical examples of how to use the dynamic AI model configuration system in the MIVAA PDF processing pipeline. All cost figures use current Anthropic pricing (Opus 4.7 at $5/$25 per 1M, Haiku 4.5 at $1/$5 per 1M, Sonnet 4.6 at $3/$15 per 1M). Per-PDF totals are reconciled against the canonical 100-page / 50-image workload in <a href="./ai-models-architecture.html">AI Models Architecture</a>.</p>
 <hr>
 <h2>Overview</h2>
 <p>All internal pipeline endpoints (<code>/api/internal/*</code>) accept an optional <code>ai_config</code> parameter that allows you to customize which AI models are used at each stage. If not provided, the system uses <code>DEFAULT_AI_CONFIG</code>.</p>
@@ -44,11 +47,12 @@
 <p>If you don&#39;t provide <code>ai_config</code>, the system uses these defaults:</p>
 <p><strong>Defaults Used</strong>:</p>
 <ul>
-<li>Visual Embeddings: SLIG (SigLIP2) - HuggingFace endpoint (768D)</li>
-<li>Classification: Qwen3-VL-32B-Instruct - HuggingFace endpoint</li>
-<li>Discovery: Claude Sonnet 4.5</li>
-<li>Metadata: Claude</li>
-<li>Text Embeddings: Voyage AI voyage-3.5 (1024D) → OpenAI fallback (1024D)</li>
+<li>Visual Embeddings: SLIG (SigLIP2 ViT-L) — HuggingFace endpoint (768D)</li>
+<li>Classification (primary): Claude Opus 4.7 via Anthropic tool use (schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>). Pre-2026-05-01 attempted Qwen3-VL on HuggingFace with Claude fallback; the Qwen endpoint had been 404-ing for months and was retired 2026-05-01 — vision is now Anthropic-only.</li>
+<li>Classification (validation pass): same as primary in DEFAULT_AI_CONFIG (<code>claude-opus-4-7</code>); fires when primary confidence &lt; <code>classification_confidence_threshold</code> (default 0.7) OR primary fails. FAST_CONFIG and COST_OPTIMIZED_CONFIG override this to <code>claude-haiku-4-5</code>.</li>
+<li>Discovery: Claude Opus 4.7</li>
+<li>Metadata: Claude (claude-opus-4-7)</li>
+<li>Text Embeddings: Voyage AI voyage-4 (1024D, sole production embedder) → in-code 1024D-pinned legacy fallback (not invoked on the understanding path)</li>
 </ul>
 <h3>Custom Configuration</h3>
 <p>You can override specific models while keeping others as default by providing an <code>ai_config</code> object with only the fields you want to change.</p>
@@ -62,8 +66,8 @@
 <p><strong>Use When</strong>: You need faster processing times and can accept slightly lower accuracy.</p>
 <p><strong>Speed Improvements</strong>:</p>
 <ul>
-<li>GPT-4o is ~2x faster than Claude Sonnet for discovery</li>
-<li>Claude Haiku is ~3x faster than Claude Sonnet for validation</li>
+<li>GPT-4o is ~2x faster than Claude Opus for discovery</li>
+<li>Claude Haiku is ~3x faster than Claude Opus for validation</li>
 <li>Reduced tokens = faster responses</li>
 </ul>
 <h3>3. HIGH_ACCURACY_CONFIG (Quality Optimized)</h3>
@@ -80,19 +84,20 @@
 <p><strong>Use When</strong>: You need to minimize API costs.</p>
 <p><strong>Cost Savings</strong>:</p>
 <ul>
-<li>GPT-4o is cheaper than Claude Sonnet</li>
-<li>Claude Haiku is ~10x cheaper than Claude Sonnet</li>
+<li>GPT-4o is cheaper than Claude Opus</li>
+<li>Claude Haiku is ~20x cheaper than Claude Opus</li>
 <li>Lower threshold (0.6) = fewer validation calls</li>
 <li>Reduced tokens = lower costs</li>
 </ul>
 <hr>
 <h2>Endpoint-Specific Examples</h2>
-<h3>Endpoint 10: classify-images</h3>
-<p>Customize image classification models and thresholds via the <code>ai_config</code> parameter.</p>
-<h3>Endpoint 30: save-images-db</h3>
-<p>Customize visual embedding models (SigLIP/CLIP) via the <code>ai_config</code> parameter.</p>
+<p>The numbers below (10/30/40/50) are internal endpoint identifiers under <code>/api/internal/*</code> — they are NOT pipeline-stage numbers. The named pipeline stages (Discovery → Layout+OCR → Chunking → Vision → Phase 3 OCR → Visual Embeddings → Understanding → Text Embeddings) are documented in <a href="./ai-models-architecture.html">AI Models Architecture</a>.</p>
+<h3><code>/api/internal/classify-images</code> (endpoint 10)</h3>
+<p>Customize image classification (primary + validation models, threshold) via the <code>ai_config</code> parameter.</p>
+<h3><code>/api/internal/save-images-db</code> (endpoint 30)</h3>
+<p>Customize visual embedding models (SLIG specialized types) via the <code>ai_config</code> parameter.</p>
 <p><strong>Note</strong>: 5 embeddings per image (visual, color, texture, style, material) = 65 × 5 = 325 total embeddings.</p>
-<h3>Endpoint 40: extract-metadata</h3>
+<h3><code>/api/internal/extract-metadata</code> (endpoint 40)</h3>
 <p>Customize metadata extraction model and parameters.</p>
 <p><strong>Metadata Fields Extracted</strong>:</p>
 <ul>
@@ -104,7 +109,7 @@
 <li>Certifications and standards</li>
 <li>Designer/manufacturer info</li>
 </ul>
-<h3>Endpoint 50: create-chunks</h3>
+<h3><code>/api/internal/create-chunks</code> (endpoint 50)</h3>
 <p>Customize chunking and text embedding models.</p>
 <hr>
 <h2>Advanced Configurations</h2>
@@ -131,34 +136,50 @@
 </ul>
 <hr>
 <h2>Cost Optimization</h2>
-<h3>Estimated Costs Per PDF (100 pages, 50 images)</h3>
+<h3>Estimated Costs Per PDF (canonical workload: 100 pages, 50 images)</h3>
+<p>These align with the <a href="./ai-models-architecture.html">AI Models Architecture</a> cost table — same workload, same assumptions, single source of truth.</p>
 <p><strong>DEFAULT_AI_CONFIG</strong>:</p>
 <ul>
-<li>Discovery (Claude Sonnet): ~$0.50</li>
-<li>Classification (Qwen + Claude): ~$0.30</li>
-<li>Metadata (Claude): ~$0.40</li>
-<li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
-<li>Text Embeddings (OpenAI): ~$0.20</li>
-<li><strong>Total</strong>: ~$1.50 per PDF</li>
+<li>Discovery (Claude Opus 4.7, 1 call): ~$0.08</li>
+<li>Classification primary (Claude Opus 4.7 tool use, 50 images): ~$0.13</li>
+<li>Classification validation pass (Claude Opus 4.7, fires only on low-conf primary): ~$0.03</li>
+<li>Metadata (Claude Opus 4.7, inline with vision): rolled into classification line</li>
+<li>Chunking (Claude Sonnet 4.6, ~500 chunks): ~$0.10</li>
+<li>Visual Embeddings (SLIG endpoint): endpoint-metered (auto-pause)</li>
+<li>Phase 3 OCR (Chandra v2): endpoint-metered</li>
+<li>Text + Understanding Embeddings (Voyage voyage-4): ~$0.05</li>
+<li><strong>Total</strong>: ~$0.39 per PDF</li>
 </ul>
-<p><strong>COST_OPTIMIZED_CONFIG</strong>:</p>
+<p><strong>FAST_CONFIG</strong> (Haiku for discovery + validation; smaller token caps):</p>
 <ul>
-<li>Discovery (GPT-4o): ~$0.25</li>
-<li>Classification (Qwen + Haiku): ~$0.10</li>
-<li>Metadata (GPT): ~$0.20</li>
-<li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
-<li>Text Embeddings (OpenAI): ~$0.20</li>
-<li><strong>Total</strong>: ~$0.85 per PDF (43% savings)</li>
+<li>Discovery (Claude Haiku 4.5): ~$0.02</li>
+<li>Classification primary (Claude Opus 4.7): ~$0.13</li>
+<li>Classification validation pass (Claude Haiku 4.5): ~$0.01</li>
+<li>Chunking (Claude Sonnet 4.6): ~$0.10</li>
+<li>Visual + OCR + Voyage: same as above</li>
+<li><strong>Total</strong>: ~$0.31 per PDF (≈20% saving over DEFAULT)</li>
 </ul>
-<p><strong>HIGH_ACCURACY_CONFIG</strong>:</p>
+<p><strong>HIGH_ACCURACY_CONFIG</strong> (Opus everywhere, threshold raised to 0.8 → more validation calls fire):</p>
 <ul>
-<li>Discovery (GPT-5): ~$1.00</li>
-<li>Classification (Qwen + Sonnet): ~$0.40</li>
-<li>Metadata (Claude): ~$0.60</li>
-<li>Visual Embeddings (SigLIP/CLIP): ~$0.10</li>
-<li>Text Embeddings (OpenAI): ~$0.20</li>
-<li><strong>Total</strong>: ~$2.30 per PDF (53% more expensive)</li>
+<li>Discovery (Claude Opus 4.7, more tokens): ~$0.13</li>
+<li>Classification primary (Claude Opus 4.7): ~$0.13</li>
+<li>Classification validation pass (Claude Opus 4.7, fires more often at threshold 0.8): ~$0.10</li>
+<li>Chunking (Claude Sonnet 4.6): ~$0.10</li>
+<li>Visual + OCR + Voyage: same as above</li>
+<li><strong>Total</strong>: ~$0.51 per PDF (≈30% more than DEFAULT)</li>
 </ul>
+<p><strong>COST_OPTIMIZED_CONFIG</strong> (Haiku for discovery + validation; threshold lowered to 0.6 → fewer validation calls fire):</p>
+<ul>
+<li>Discovery (Claude Haiku 4.5): ~$0.02</li>
+<li>Classification primary (Claude Opus 4.7 — primary stays Opus by default): ~$0.13</li>
+<li>Classification validation pass (Claude Haiku 4.5, threshold 0.6 → rare): ~$0.01</li>
+<li>Chunking (Claude Sonnet 4.6): ~$0.10</li>
+<li>Visual + OCR + Voyage: same as above</li>
+<li><strong>Total</strong>: ~$0.31 per PDF (≈20% saving over DEFAULT)</li>
+</ul>
+<blockquote>
+<p><strong>Note on the cost-optimized profile</strong>: at current Anthropic pricing (Opus 4.7 = $5/$25, Haiku 4.5 = $1/$5), COST_OPTIMIZED only saves ≈20% over DEFAULT versus the ≈45% it saved at pre-correction pricing. If you want a meaningful cost reduction beyond this, the lever is swapping the <strong>primary</strong> classification model — not just validation. That tradeoff is not currently exposed as a profile because the primary-model swap has direct implications for the understanding-embedding space&#39;s schema-version provenance.</p>
+</blockquote>
 <hr>
 <h2>Performance Tuning</h2>
 <h3>Reduce Processing Time</h3>
@@ -166,7 +187,7 @@
 <ul>
 <li>Lower threshold = fewer validation calls = faster</li>
 <li>GPT-4o = 2x faster than Claude</li>
-<li>Haiku = 3x faster than Sonnet</li>
+<li>Haiku = 3x faster than Opus</li>
 <li>Reduced tokens = faster responses</li>
 <li><strong>Estimated</strong>: 40-50% faster processing</li>
 </ul>
@@ -174,7 +195,7 @@
 <p><strong>Benefits</strong>:</p>
 <ul>
 <li>Standard threshold (0.7) = good balance</li>
-<li>Claude Sonnet = best quality</li>
+<li>Claude Opus = best quality</li>
 <li>Medium tokens = good context</li>
 <li><strong>Estimated</strong>: Standard processing time with best quality</li>
 </ul>
@@ -187,7 +208,7 @@
 <ol>
 <li><p><strong>Start with DEFAULT_AI_CONFIG</strong>: It provides the best balance for most use cases.</p>
 </li>
-<li><p><strong>Test Before Production</strong>: Use NOVA test script to validate configurations.</p>
+<li><p><strong>Test Before Production</strong>: stage configuration changes against a non-production batch and compare per-PDF cost + classification confidence distributions before promoting.</p>
 </li>
 <li><p><strong>Monitor Costs</strong>: Track API usage and costs for different configurations.</p>
 </li>
@@ -209,13 +230,13 @@
 <h2>Troubleshooting</h2>
 <h3>Low Classification Accuracy</h3>
 <p><strong>Problem</strong>: Too many false positives/negatives in image classification.</p>
-<p><strong>Solution</strong>: Increase confidence threshold and use Claude Sonnet for validation by setting <code>classification_confidence_threshold</code> to 0.8 and <code>classification_validation_model</code> to <code>claude-sonnet-4-6-20260217</code> in your <code>ai_config</code>.</p>
+<p><strong>Solution</strong>: Increase confidence threshold and use Claude Opus for validation by setting <code>classification_confidence_threshold</code> to 0.8 and <code>classification_validation_model</code> to <code>claude-opus-4-7</code> in your <code>ai_config</code>.</p>
 <h3>Slow Processing</h3>
 <p><strong>Problem</strong>: Pipeline takes too long to complete.</p>
-<p><strong>Solution</strong>: Use FAST_CONFIG or reduce max tokens by switching to <code>gpt-4o</code> for discovery, <code>claude-haiku-4-20250514</code> for validation, and reducing <code>discovery_max_tokens</code> and <code>metadata_max_tokens</code> to 2048.</p>
+<p><strong>Solution</strong>: Use FAST_CONFIG or reduce max tokens by switching to <code>gpt-4o</code> for discovery, <code>claude-haiku-4-5</code> for validation, and reducing <code>discovery_max_tokens</code> and <code>metadata_max_tokens</code> to 2048.</p>
 <h3>High API Costs</h3>
 <p><strong>Problem</strong>: API costs are too high.</p>
-<p><strong>Solution</strong>: Use COST_OPTIMIZED_CONFIG or lower threshold by reducing <code>classification_confidence_threshold</code> to 0.6, switching to <code>gpt-4o</code> for discovery, <code>gpt</code> for metadata extraction, and <code>claude-haiku-4-20250514</code> for validation.</p>
+<p><strong>Solution</strong>: Use COST_OPTIMIZED_CONFIG or lower threshold by reducing <code>classification_confidence_threshold</code> to 0.6, switching to <code>gpt-4o</code> for discovery, <code>gpt-4o</code> for metadata extraction, and <code>claude-haiku-4-5</code> for validation.</p>
 <h3>Poor Metadata Quality</h3>
 <p><strong>Problem</strong>: Extracted metadata is incomplete or inaccurate.</p>
 <p><strong>Solution</strong>: Use Claude with higher max tokens by setting <code>metadata_extraction_model</code> to <code>claude</code>, <code>metadata_temperature</code> to 0.05, and <code>metadata_max_tokens</code> to 8192.</p>
@@ -228,6 +249,6 @@
 <li><strong>Cost First</strong>: COST_OPTIMIZED_CONFIG</li>
 <li><strong>Balanced</strong>: DEFAULT_AI_CONFIG</li>
 </ul>
-<p>All configurations are production-ready and tested with the NOVA end-to-end test script.</p>
+<p>All configurations are production-ready.</p>
 
 </div></body></html>
