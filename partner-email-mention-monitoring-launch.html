@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Partner email — Mention Monitoring API launch</h1>
+<p>Copy/paste-ready email announcing the new API to existing API-key holders. Tone matches the price-monitoring partner update.</p>
+<hr>
+<p><strong>Subject</strong>: New API endpoint: track product &amp; brand mentions across news, blogs, YouTube + LLM responses</p>
+<hr>
+<p>Hi {first_name},</p>
+<p>Following the Price Monitoring API you&#39;ve been using, we&#39;ve shipped a new companion endpoint on the same host: <strong>Mention Monitoring</strong>. Same authentication (your existing <code>kai_*</code> key works as-is), same response shape, same partner-controls-cadence model.</p>
+<h2>What it does</h2>
+<p>Tracks every public mention of a product, brand, or keyword you care about across:</p>
+<ul>
+<li><strong>News</strong> — global news index (DataForSEO, ~6h freshness)</li>
+<li><strong>Blogs &amp; general web</strong> — Perplexity Sonar with recency filtering</li>
+<li><strong>RSS feeds</strong> — any RSS URL you supply (industry pubs, competitor newsrooms)</li>
+<li><strong>YouTube</strong> — titles + descriptions (opt-in per subject)</li>
+<li><strong>LLM responses</strong> — your share-of-voice across Claude Haiku, GPT-4o-mini, Gemini Flash, and Sonar; we run a 4-prompt × 4-model probe matrix on a weekly cadence and report whether you got mentioned, at what rank, and which competitors appeared alongside you</li>
+</ul>
+<p>Every mention is automatically classified for <strong>sentiment</strong> (positive / neutral / negative) and <strong>relevance</strong> to your subject (exact / tangential / mismatch / unverifiable) — using the same Haiku batched classifier we run on price discovery, with a 7-day verdict cache so repeat URLs cost zero.</p>
+<p>Reddit was evaluated and intentionally left out — Reddit&#39;s API onboarding has too much friction for the marginal coverage gain. News + Sonar pick up Reddit threads when news/blogs cite them.</p>
+<h2>Endpoint surface</h2>
+<p><strong>Host</strong>: <code>https://v1api.materialshub.gr</code>
+<strong>Path prefix</strong>: <code>/api/v1/mentions/track</code>
+<strong>Auth</strong>: <code>Authorization: Bearer kai_&lt;your-existing-key&gt;</code></p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/mentions/track</code></td>
+<td>Create a tracked subject (returns first refresh inline)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/mentions/track</code></td>
+<td>List your tracked subjects</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/mentions/track/{id}</code></td>
+<td>Read one (config + cached snapshot)</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/mentions/track/{id}</code></td>
+<td>Update aliases / sources / alert prefs / cadence</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/mentions/track/{id}</code></td>
+<td>Soft delete</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/mentions/track/{id}/refresh</code></td>
+<td>Re-run discovery now</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/mentions/track/{id}/feed</code></td>
+<td>Latest run rows</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/mentions/track/{id}/history?days=30&amp;sentiment=negative</code></td>
+<td>Filterable history</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/mentions/track/{id}/summary?days=30</code></td>
+<td>Aggregate snapshot</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/mentions/track/{id}/llm-visibility</code></td>
+<td>LLM share-of-voice + competitor co-mentions</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/mentions/track/{id}/probe-llm</code></td>
+<td>Fire a fresh LLM probe matrix</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/mentions/track/{id}/exclude</code></td>
+<td>Suppress a URL or domain</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/mentions/track/{id}/include</code></td>
+<td>Undo an exclude</td>
+</tr>
+</tbody></table>
+<h2>60-second quickstart</h2>
+<pre><code class="language-bash"># Create a brand-tracking subject
+curl -X POST https://v1api.materialshub.gr/api/v1/mentions/track \
+  -H &quot;Authorization: Bearer kai_YOUR_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;subject_type&quot;: &quot;brand&quot;,
+    &quot;subject_label&quot;: &quot;YourBrand&quot;,
+    &quot;brand_name&quot;: &quot;YourBrand&quot;,
+    &quot;aliases&quot;: [&quot;YourBrand Tiles&quot;, &quot;Y.B.&quot;],
+    &quot;language_codes&quot;: [&quot;en&quot;],
+    &quot;country_codes&quot;: [&quot;US&quot;],
+    &quot;alert_on_negative_sentiment&quot;: true,
+    &quot;alert_on_new_outlet&quot;: true,
+    &quot;alert_channels&quot;: [&quot;webhook&quot;],
+    &quot;alert_webhook_url&quot;: &quot;https://your.api/webhooks/material-kai-mentions&quot;
+  }&#39;
+</code></pre>
+<p>The response includes the first refresh inline (no async polling needed for the create call).</p>
+<h2>Webhook alerts (4 types, each opt-in)</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Fires when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mention_spike</code></td>
+<td>today&#39;s count ≥ 2× the trailing 7-day daily-average baseline</td>
+</tr>
+<tr>
+<td><code>negative_sentiment</code></td>
+<td>new negative-sentiment mention from a domain with DA ≥ 30</td>
+</tr>
+<tr>
+<td><code>new_outlet</code></td>
+<td>first-ever mention from a domain we haven&#39;t seen for this subject</td>
+</tr>
+<tr>
+<td><code>llm_visibility_change</code></td>
+<td>average LLM rank shifts by ≥2 positions week-over-week</td>
+</tr>
+</tbody></table>
+<p>All deduped 24h per <code>(alert_type, subject, outlet_domain)</code>. Webhook payload shape and full alert reference are in the docs.</p>
+<h2>Cadence + cost model (same as the price API)</h2>
+<p>You control the refresh cadence per subject (<code>refresh_interval_hours</code>, 1–720). Our internal cron does <strong>not</strong> touch your subjects — refreshes happen only when you call <code>POST /{id}/refresh</code>, so there are no surprise charges. Each subject row carries a <code>next_check_at</code> field as a hint about when polling is worth the cost (volatility-aware: stable subjects auto-stretch to weekly, active subjects auto-tighten).</p>
+<p>Typical refresh on a stable subject costs roughly <strong>$0.005–0.010</strong> (DataForSEO News + cached Sonar + free RSS). LLM probe runs are about <strong>$0.008/subject/week</strong> when run weekly.</p>
+<h2>Full reference</h2>
+<p>Complete API docs (request/response shapes, all field semantics, error codes, alert payloads): <strong>{LINK_TO_DOCS}</strong></p>
+<p>Your existing <code>kai_*</code> key works on the new endpoints with no changes — same <code>allowed_endpoints</code> rules apply (if your key is restricted to specific paths, please add <code>/api/v1/mentions/track/*</code> to the allowlist).</p>
+<p>Happy to jump on a call if you want to walk through integration patterns or talk about coverage tuning for your specific markets.</p>
+<p>Best,
+{your_name}
+{your_signature}</p>
+<hr>
+<h2>Notes for the sender</h2>
+<ul>
+<li>Replace <code>{first_name}</code>, <code>{your_name}</code>, <code>{your_signature}</code>, <code>{LINK_TO_DOCS}</code> before sending.</li>
+<li>For the docs link: either link to the public version of <code>docs/api/mention-monitoring-api.md</code> once you publish it, or attach the markdown file.</li>
+<li>Skip this email for keys with <code>allowed_endpoints</code> restricted to non-mention paths — they&#39;ll need a key reissue, which is a separate conversation.</li>
+<li>This template uses the same admin email broadcast endpoint pattern as <code>/api/v1/price-monitoring/broadcast-api-announcement</code> — if you want to send it through the platform (idempotent + tracked in <code>email_send_log</code>), seed it as <code>email_templates</code> slug <code>api_broadcast.mention_tracking_v1</code> first.</li>
+</ul>
+
+</div></body></html>
