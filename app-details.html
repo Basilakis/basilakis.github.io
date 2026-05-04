@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Material KAI Vision Platform — Full Business &amp; Product Overview</h1>
 <p><strong>Confidential | For Investor &amp; Partner Use</strong>
 <em>Version 3.5 — March 2026</em></p>
@@ -132,9 +134,9 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 </thead>
 <tbody><tr>
 <td>Anthropic</td>
-<td>Claude Sonnet 4.5</td>
+<td>Claude Opus 4.7</td>
 <td>Jarvis agent, deep product analysis, metadata extraction, B2B research</td>
-<td>$3 input / $15 output per 1M tokens</td>
+<td>$15 input / $75 output per 1M tokens</td>
 </tr>
 <tr>
 <td>Anthropic</td>
@@ -156,14 +158,20 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 </tr>
 <tr>
 <td>Voyage AI</td>
-<td>voyage-3.5 (1024D)</td>
+<td>voyage-4 (1024D)</td>
 <td>Primary text embeddings + understanding embeddings</td>
 <td>$0.06 per 1M tokens</td>
 </tr>
 <tr>
+<td>Anthropic</td>
+<td>Claude Opus 4.7 (vision_analysis)</td>
+<td>Image analysis, material recognition — sole vision pass post-2026-05-01, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>. (Pre-2026-05-01: routed through Qwen3-VL on HuggingFace with Claude fallback; the Qwen endpoint had been 404-ing for months → retired.)</td>
+<td>Anthropic API</td>
+</tr>
+<tr>
 <td>HuggingFace</td>
-<td>Qwen3-VL 32B Vision</td>
-<td>Image analysis, OCR, material recognition (69.4% MMMU, #1 OCR benchmark)</td>
+<td>Chandra v2</td>
+<td>OCR (sole engine post-2026-05-01) — retry-with-jitter (3 attempts at temps 0.0/0.1/0.2). Per-attempt metrics in <code>chandra_ocr_metrics</code>. Failure marker: <code>OCRResult.method=&#39;chandra_failed&#39;</code>. (Pytesseract + EasyOCR removed entirely.)</td>
 <td>Cloud endpoint</td>
 </tr>
 <tr>
@@ -241,7 +249,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <tbody><tr>
 <td>Text</td>
 <td>1024D</td>
-<td>Voyage AI voyage-3.5</td>
+<td>Voyage AI voyage-4</td>
 <td>Natural language + keyword search</td>
 </tr>
 <tr>
@@ -253,7 +261,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <tr>
 <td>Understanding</td>
 <td>1024D</td>
-<td>Voyage AI (from Qwen3-VL JSON analysis)</td>
+<td>Voyage AI (from Claude Opus 4.7 vision_analysis JSON via Anthropic tool use → <code>serialize_vision_analysis_to_text</code> → Voyage). Pre-2026-05-01 used Qwen3-VL JSON; migration retired Qwen vision entirely.</td>
 <td>Spec-based search (dimensions, finishes, surface properties)</td>
 </tr>
 <tr>
@@ -288,12 +296,12 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <p><strong>A. PDF Processing Pipeline (14 Stages)</strong></p>
 <p>The primary ingest path. A supplier uploads a product catalog PDF. The platform automatically:</p>
 <ol>
-<li>Discovers all products using Claude Haiku (fast boundary detection) + Claude Sonnet (metadata enrichment) — <strong>95%+ detection accuracy</strong></li>
+<li>Discovers all products using Claude Haiku (fast boundary detection) + Claude Opus (metadata enrichment) — <strong>95%+ detection accuracy</strong></li>
 <li>Extracts text with PyMuPDF4LLM (structure-preserving)</li>
 <li>Semantic chunking via Anthropic API (800 token max, 100 overlap)</li>
 <li>Generates text + understanding embeddings via Voyage AI</li>
 <li>Extracts all images from product pages</li>
-<li>Runs Qwen3-VL 32B Vision on every image — identifies material type, surface properties, finishes, dimensions visible, color palette</li>
+<li>Runs Claude Opus 4.7 vision_analysis (Anthropic tool use, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>) on every image — identifies material type, surface properties, finishes, dimensions visible, color palette. Pre-2026-05-01 ran Qwen3-VL with Claude fallback; the Qwen HF endpoint had been 404-ing for months (Stage 3 was effectively 100% Claude already), so the migration retired Qwen and went Anthropic-only.</li>
 <li>Generates all 5 SigLIP2 visual embedding types per image</li>
 <li>Extracts 200+ metadata fields per product (dimensions, material composition, certifications, weight, finish, slip resistance, etc.)</li>
 <li>YOLO layout detection + Camelot table extraction on complex page layouts</li>
@@ -332,7 +340,7 @@ Manufacturer sees who is interested, manages enquiries, tracks market trends
 <p><strong>B. Web Scraping</strong>
 Automatic product discovery from manufacturer websites via Firecrawl. Discovers product pages, extracts structured data, and runs the same full AI enrichment pipeline.</p>
 <p><strong>C. XML Import</strong>
-Structured data import with AI-powered field mapping (Claude Sonnet). Supports recurring scheduled imports, batch processing (10 products at a time, 5 concurrent image downloads), and checkpoint recovery.</p>
+Structured data import with AI-powered field mapping (Claude Opus). Supports recurring scheduled imports, batch processing (10 products at a time, 5 concurrent image downloads), and checkpoint recovery.</p>
 <hr>
 <h3>Feature 2 — Multi-Modal AI Search</h3>
 <p>Six search strategies, all available simultaneously with results merged and deduplicated:</p>
@@ -402,7 +410,7 @@ Structured data import with AI-powered field mapping (Claude Sonnet). Supports r
 <h3>Feature 3 — KAI Agent Hub (Three AI Agents)</h3>
 <p>The Agent Hub (<code>/agent-hub</code>) is the conversational AI interface with memory, multi-turn context, image uploads, and tool-use.</p>
 <p><strong>Jarvis — Primary Material Intelligence Agent</strong>
-Model: Claude Sonnet 4.5 | LangGraph + Supabase checkpointer (conversations resume across sessions)</p>
+Model: Claude Opus 4.7 | LangGraph + Supabase checkpointer (conversations resume across sessions)</p>
 <p>Tools available to all authenticated users:</p>
 <ul>
 <li><code>material_search</code> — 7-vector fusion search across the catalog, with <strong>Explainable Search Spec</strong> (structured interpretation of query across color/material/style/texture/specification dimensions, displayed as a collapsible card above results)</li>
@@ -422,7 +430,7 @@ Model: Claude Sonnet 4.5 | LangGraph + Supabase checkpointer (conversations resu
 <li>Sub-agents: <code>research_analysis</code>, <code>analytics_analysis</code>, <code>business_analysis</code>, <code>product_analysis</code></li>
 </ul>
 <p><strong>Interior Designer Agent</strong>
-Model: Claude Sonnet 4.5 | Focused on spatial design and visualization</p>
+Model: Claude Opus 4.7 | Focused on spatial design and visualization</p>
 <ul>
 <li>Analyzes room photos: layout, dimensions, natural light, spatial relationships, accessibility compliance</li>
 <li>Generates interior design images (text prompt or image reference) — see Feature 4</li>
@@ -1096,9 +1104,9 @@ Custom contracts for large manufacturers or distributor networks:</p>
 </tr>
 </thead>
 <tbody><tr>
-<td>Claude Sonnet analysis (1K tokens)</td>
-<td>~$0.003–0.015</td>
-<td>1–20 credits</td>
+<td>Claude Opus analysis (1K tokens)</td>
+<td>~$0.015–0.075</td>
+<td>2–40 credits</td>
 <td>20–60%+</td>
 </tr>
 <tr>
@@ -1120,7 +1128,7 @@ Custom contracts for large manufacturers or distributor networks:</p>
 <td>High</td>
 </tr>
 <tr>
-<td>Qwen3-VL image analysis (per image)</td>
+<td>Claude Opus 4.7 vision_analysis per image (post-2026-05-01 — sole vision pass; Qwen retired)</td>
 <td>~$0.02–0.05</td>
 <td>2–5 credits</td>
 <td>Variable</td>
@@ -1204,7 +1212,7 @@ Custom contracts for large manufacturers or distributor networks:</p>
 <li>Vercel: Included in Vercel plan at current scale (global CDN, zero egress cost)</li>
 <li>Supabase: Managed PostgreSQL, storage, edge function invocations — scales with usage</li>
 <li>DigitalOcean: Dedicated server for MIVAA FastAPI backend — predictable fixed monthly cost</li>
-<li>HuggingFace Endpoints: Pay-per-use for Qwen3-VL and SigLIP2 inference</li>
+<li>HuggingFace Endpoints: Pay-per-use for SigLIP2 + Chandra v2 OCR inference. (Qwen3-VL HF endpoint retired 2026-05-01; vision is now Anthropic-only via Claude Opus 4.7 tool use.)</li>
 <li>Variable: Anthropic, OpenAI, Voyage AI, WorldLabs, Replicate — fully usage-based</li>
 </ul>
 <hr>
@@ -1306,7 +1314,7 @@ Custom contracts for large manufacturers or distributor networks:</p>
 <p><strong>1. 7-Vector Fusion Search</strong>
 Most platforms use one or two embedding types. Fusing 7 specialized vectors with dynamic per-query weight profiles requires custom ML infrastructure, tuned weight profiles per query intent, and deep integration between the vision analysis pipeline and the search layer. This compound in value as more products are added.</p>
 <p><strong>2. Understanding Embeddings (Novel Architecture)</strong>
-Qwen3-VL 32B generates structured JSON analysis of every product image — material properties, surface characteristics, visible dimensions, finish type. This JSON is then embedded via Voyage AI into a 1024D &quot;understanding&quot; vector. This enables queries like <em>&quot;find matte surfaces with slight veining, suitable for wet external areas&quot;</em> — which no traditional image or keyword search can handle. This is a proprietary architecture not seen replicated elsewhere.</p>
+Claude Opus 4.7 (Anthropic tool use, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>) generates structured JSON analysis of every product image — material properties, surface characteristics, visible dimensions, finish type. The JSON is run through <code>serialize_vision_analysis_to_text</code> and embedded via Voyage AI into a 1024D &quot;understanding&quot; vector. This enables queries like <em>&quot;find matte surfaces with slight veining, suitable for wet external areas&quot;</em> — which no traditional image or keyword search can handle. (Pre-2026-05-01 used Qwen3-VL JSON for the analysis step; the Qwen HF endpoint had been 404-ing for months, falling through to Claude — the 2026-05-01 migration just retired the dead Qwen path and made the architecture honest.) This is a proprietary architecture not seen replicated elsewhere.</p>
 <p><strong>3. Full Vertical Integration</strong>
 Ingestion + enrichment + search + design generation + VR visualization + quote management + marketplace in one product. Each layer creates switching costs. A user with their catalog ingested, moodboards saved, and project quotes tracked is not going to migrate to a competitor easily.</p>
 <p><strong>4. 14-Stage Pipeline with Checkpoint Recovery</strong>
@@ -1371,7 +1379,7 @@ No competitor currently offers: ingestion → AI search → agent interaction �
 <h3>Live in Production (March 2026)</h3>
 <ul>
 <li>7-vector fusion search with query-adaptive weight profiles</li>
-<li>Understanding embeddings (spec-based search via Qwen3-VL + Voyage AI)</li>
+<li>Understanding embeddings (spec-based search via Claude Opus 4.7 vision_analysis tool use → Voyage AI; pre-2026-05-01 used Qwen3-VL, retired in the migration)</li>
 <li>AI search re-ranking (Claude post-retrieval re-ordering with explanations)</li>
 <li>PDF ingestion pipeline (14 stages, 9 checkpoints, YOLO layout detection)</li>
 <li>Web scraping ingestion (Firecrawl)</li>
