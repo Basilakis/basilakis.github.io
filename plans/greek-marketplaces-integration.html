@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Price monitoring: integrate Skroutz + Bestdeals + Shopflix as always-on discovery sources</h1>
+<blockquote>
+<p><strong>Status</strong>: Draft plan — ready to paste into a GitHub issue or pick up directly.
+<strong>Source</strong>: Session of 2026-04-25, follow-up to Phase 7 verification release.
+<strong>Repo</strong>: <code>creativeghq/material-kai-vision-platform</code></p>
+</blockquote>
+<hr>
+<h2>Why</h2>
+<p>The Perplexity + DataForSEO + Firecrawl pipeline now produces <strong>accurate prices</strong> (verified against the retailer&#39;s live page), but retail URL quality is still uneven for Greek-market products. Validation on <code>Απορροφητήρας Συρόμενος inox Maidtec 7012ΜΤ</code> (2026-04-25) showed:</p>
+<ul>
+<li><strong>Elektrostore24</strong> — URL pointed to a Google Shopping SERP (<code>google.gr/search?ibp=oshop&amp;...</code>), not a retailer product page.</li>
+<li><strong>Toolsat</strong> — retailer name said &quot;Toolsat&quot; but URL pointed to <code>bestprice.gr/item/...</code>. Firecrawl verified the aggregator&#39;s price (€79), which is correct for that page but wrong for &quot;Toolsat.&quot;</li>
+<li>Previous run had two retailers returning <strong>homepage URLs</strong> because Perplexity knew they stocked the product but didn&#39;t have the deep link.</li>
+</ul>
+<p>Root cause: Perplexity reads snippets (which often cite aggregators) and DataForSEO returns Google Shopping comparison links by design. Neither is a first-party retailer index.</p>
+<p><strong>Skroutz, Bestdeals, and Shopflix fix this at the source</strong> — they either <em>are</em> the first-party merchant index (Skroutz) or they&#39;re individual marketplace retailers we can query directly.</p>
+<hr>
+<h2>Proposed architecture</h2>
+<p>New file <code>mivaa-pdf-extractor/app/services/integrations/greek_marketplaces_service.py</code> exposing:</p>
+<pre><code class="language-python">class GreekMarketplacesService:
+    async def search(self, query: str, country_code: str) -&gt; List[PriceHit]:
+        if country_code != &quot;GR&quot;:
+            return []  # self-gated — Greek market only
+        results = await asyncio.gather(
+            self._skroutz(query),
+            self._bestdeals(query),
+            self._shopflix(query),
+            return_exceptions=True,
+        )
+        return [hit for sub in results if isinstance(sub, list) for hit in sub]
+</code></pre>
+<p>Wired into <code>perplexity_price_search_service.search_prices()</code> as a <strong>third parallel discovery source</strong> alongside Perplexity + DataForSEO. Merge + dedup-by-domain logic stays unchanged.</p>
+<hr>
+<h2>Per-source adapter strategy</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Integration</th>
+<th>Why</th>
+<th>Incremental cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Skroutz</strong></td>
+<td>Official API (<code>developer.skroutz.gr/api/v3</code>)</td>
+<td>Free public API, OAuth2. <code>/search.json → /products/:id/skus → /skus/:id/shops.json</code> returns authoritative merchant list per SKU with direct URLs</td>
+<td>0 credits (rate-limited 100/min)</td>
+</tr>
+<tr>
+<td><strong>Bestdeals.gr</strong></td>
+<td>Firecrawl scrape of <code>bestdeals.gr/search?q=...</code></td>
+<td>No public API</td>
+<td>1 Firecrawl credit per query</td>
+</tr>
+<tr>
+<td><strong>Shopflix.gr</strong></td>
+<td>Firecrawl scrape of <code>shopflix.gr/search?search=...</code></td>
+<td>No public API — marketplace of 3rd-party sellers</td>
+<td>1 Firecrawl credit per query</td>
+</tr>
+</tbody></table>
+<p>Each adapter returns <code>List[PriceHit]</code> with <code>source = &quot;skroutz&quot; | &quot;bestdeals&quot; | &quot;shopflix&quot;</code>. For Skroutz specifically, one query can produce N hits (one per merchant selling that SKU).</p>
+<h3>Skroutz flow (the big unlock)</h3>
+<ol>
+<li><code>GET https://api.skroutz.gr/search.json?q=&lt;product&gt;</code> (OAuth Bearer) → pick top product match</li>
+<li><code>GET /products/:id/skus.json</code> → pick top SKU</li>
+<li><code>GET /skus/:sku_id/shops.json</code> → <strong>authoritative retailer list</strong> — returns every Greek retailer selling that SKU with direct URL, price, shipping, availability</li>
+<li>Each shop row → one <code>PriceHit(source=&quot;skroutz&quot;, retailer_name=shop.name, product_url=shop.url, price=shop.price, …)</code></li>
+<li>URLs are merchant-reviewed by Skroutz → deep-linkable, no aggregator muddle. Firecrawl verification becomes a sanity check.</li>
+</ol>
+<p>Expected yield for Maidtec: 8-15 clean retailer rows with verified direct URLs — replaces most of what Perplexity is currently guessing at.</p>
+<h3>Bestdeals + Shopflix</h3>
+<p>Single-retailer scrapes. One scrape per query → one <code>PriceHit</code> each (or zero if no match). Shared extraction schema:</p>
+<pre><code class="language-python">class MarketplaceProduct(BaseModel):
+    found: bool
+    product_url: Optional[str]
+    price: Optional[str]
+    original_price: Optional[str]
+    availability: Optional[str]
+</code></pre>
+<hr>
+<h2>Schema changes</h2>
+<ol>
+<li>Extend <code>competitor_source_type</code> enum:<pre><code class="language-sql">ALTER TYPE competitor_source_type
+  ADD VALUE &#39;marketplace_skroutz&#39;,
+  ADD VALUE &#39;marketplace_bestdeals&#39;,
+  ADD VALUE &#39;marketplace_shopflix&#39;;
+</code></pre>
+</li>
+<li>Widen <code>PriceHit.source</code> literal to include the three new values (<code>perplexity_price_search_service.py</code>).</li>
+<li>Skroutz merchant rating + review count fit into existing <code>competitor_sources.current_metadata jsonb</code> (same shape as DataForSEO ratings).</li>
+</ol>
+<hr>
+<h2>UI changes</h2>
+<p><code>src/components/business/price-monitoring/ProductMonitorTab.tsx</code> — lean toward a new <strong>&quot;Marketplaces&quot;</strong> section next to &quot;Merchants,&quot; since Skroutz/Bestdeals/Shopflix form their own visual bucket (Greek price-comparison heavyweights). Alternative: fold into &quot;Discovered retailers&quot; with a small marketplace badge per row.</p>
+<hr>
+<h2>Secrets required</h2>
+<p>Add to GitHub → Settings → Secrets (before Phase 1 ships):</p>
+<ul>
+<li><code>SKROUTZ_CLIENT_ID</code></li>
+<li><code>SKROUTZ_CLIENT_SECRET</code></li>
+<li>(optional) <code>SKROUTZ_BASE_URL</code> — defaults to <code>https://api.skroutz.gr</code></li>
+</ul>
+<p>Register the Skroutz app at <a href="https://developer.skroutz.gr/oauth/applications">https://developer.skroutz.gr/oauth/applications</a> — server-to-server OAuth2 client-credentials flow, no user redirect.</p>
+<p>No new secrets for Bestdeals / Shopflix — reuses existing <code>FIRECRAWL_API_KEY</code>.</p>
+<hr>
+<h2>Rate limits / throttle</h2>
+<ul>
+<li><strong>Skroutz</strong>: 100 req/min per OAuth app. Three calls per discovery (search → skus → shops) → ~33 discoveries/min ceiling. Cron batch should cap at 20/min to leave headroom. Exponential backoff on 429.</li>
+<li><strong>Bestdeals / Shopflix via Firecrawl</strong>: same cost/semantics as any other scrape; no special handling needed.</li>
+</ul>
+<hr>
+<h2>Phased rollout</h2>
+<h3>Phase 1 — Skroutz only (~½ day)</h3>
+<p>Fixes ~70% of the &quot;wrong URL&quot; problem because Skroutz has first-party retailer data. Ship behind the GR country gate. Instrument credits saved vs Perplexity-only baseline.</p>
+<p><strong>Blocking prerequisite</strong>: register the OAuth app and drop both secrets into the repo.</p>
+<h3>Phase 2 — Bestdeals + Shopflix (~½ day)</h3>
+<p>Thin Firecrawl adapters, ~30 lines each. No new secrets.</p>
+<h3>Phase 3 — URL hygiene post-filter (optional)</h3>
+<p>Drop Perplexity hits whose host is <code>bestprice.gr</code>, <code>google.gr/search</code>, or a bare domain root <strong>when</strong> a Skroutz/merchant row for the same product already exists. Keeps the list clean without losing coverage.</p>
+<hr>
+<h2>Expected net effect per Greek product discovery</h2>
+<ul>
+<li><strong>+2 Firecrawl credits</strong> (Bestdeals + Shopflix scrapes)</li>
+<li><strong>+3 Skroutz API calls</strong> (free)</li>
+<li><strong>+8 to +15 extra clean retailer rows</strong> with first-party direct URLs</li>
+<li><strong>Fewer &quot;wrong product&quot; UI complaints</strong> — Skroutz&#39;s merchant feed is authoritative</li>
+</ul>
+<hr>
+<h2>References</h2>
+<ul>
+<li>Session that surfaced this: Phase 7 verification release (2026-04-25)</li>
+<li><code>CLAUDE.md</code> → &quot;Price Monitoring&quot; section</li>
+<li><code>CHANGELOG.md</code> → <code>[unreleased]</code> 2026-04-25</li>
+<li>Engine entry point: <code>mivaa-pdf-extractor/app/services/integrations/perplexity_price_search_service.py::search_prices()</code></li>
+<li>Source-type enum: earlier migration <code>add_competitor_source_type_values_perplexity_dataforseo</code></li>
+</ul>
+
+</div></body></html>
