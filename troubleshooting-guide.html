@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Troubleshooting Guide</h1>
 <p>Common issues and solutions for Material Kai Vision Platform.</p>
 <hr>
@@ -114,7 +116,7 @@
 <ul>
 <li>Check image count</li>
 <li>Verify image quality</li>
-<li>Check HuggingFace Endpoint quota (Qwen3-VL)</li>
+<li>Check Anthropic API quota / rate limits (Claude Opus 4.7 vision_analysis is the sole vision pass post-2026-05-01; the HuggingFace Qwen3-VL endpoint was retired in the migration — it had been 404-ing for months)</li>
 </ul>
 </li>
 <li><p><strong>Resume from checkpoint</strong></p>
@@ -190,7 +192,7 @@
 <p><strong>Symptoms</strong>:</p>
 <ul>
 <li>&quot;Image analysis failed&quot;</li>
-<li>HuggingFace Endpoint (Qwen3-VL) API errors</li>
+<li>Anthropic API errors on Claude Opus 4.7 vision_analysis (sole vision pass post-2026-05-01)</li>
 <li>Quality score 0</li>
 </ul>
 <p><strong>Solutions</strong>:</p>
@@ -202,11 +204,12 @@
 <li>Resolution: &gt; 100x100px</li>
 </ul>
 </li>
-<li><p>Check HuggingFace Endpoint quota</p>
+<li><p>Check Anthropic API quota / rate limits</p>
 <ul>
-<li>Verify <code>QWEN_ENDPOINT_TOKEN</code> is set</li>
-<li>Check endpoint is not paused (auto-pause enabled)</li>
-<li>Check account credits on HuggingFace</li>
+<li>Verify <code>ANTHROPIC_API_KEY</code> is set</li>
+<li>Check rate-limit headers on the failing call</li>
+<li>Confirm the response was tool_use (not text) — <code>VisionAnalysis</code> schema is hard-enforced by <code>VISION_ANALYSIS_TOOL</code>; if the model returned plain text instead of <code>tool_use</code>, the call should be retried (this is rare with the schema-locked path)</li>
+<li>Pre-2026-05-01 troubleshooting referenced <code>QWEN_ENDPOINT_TOKEN</code> and the HuggingFace Qwen3-VL endpoint — both are retired. The Qwen HF endpoint had been 404-ing for months and silently falling through to Claude; the migration removed the dead path entirely.</li>
 </ul>
 </li>
 <li><p>Retry with different image</p>
