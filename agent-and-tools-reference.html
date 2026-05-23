@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Agents &amp; Tools Reference</h1>
+<p>Single source of truth: <a href="../src/components/features/ai/agentToolsCatalog.ts"><code>src/components/features/ai/agentToolsCatalog.ts</code></a>.</p>
+<h2>Architecture: agents → toolkits → tools</h2>
+<p>The catalog has three layers:</p>
+<ol>
+<li><strong>Tools</strong> (<code>KAI_TOOLS</code>, <code>INTERIOR_DESIGNER_TOOLS</code>) — individual capabilities (~60 total). Each tool has <code>id</code>, <code>name</code>, <code>desc</code>, <code>category</code>, <code>adminOnly</code>, <code>moduleSlug</code>, <code>credits</code>, <code>examples[]</code>, optional <code>workflowOf</code> + <code>workflowStep</code> for multi-step bundles.</li>
+<li><strong>Agents</strong> (<code>AGENTS</code>) — KAI / Interior Designer / Demo. Each owns a subset of tools.</li>
+<li><strong>Toolkits</strong> (<code>TOOLKITS</code>) — the cluster layer. Bundles related tool_ids with a name, icon, description, optional <code>adminOnly</code> / <code>moduleSlug</code> / <code>alwaysOn</code>, and <strong><code>quick_starts</code></strong> (1-4 starter prompts that fire workflows). This is what the user actually sees in the discovery UI.</li>
+</ol>
+<p>Helpers exposed from the catalog:</p>
+<ul>
+<li><code>getAccessibleAgents(role)</code> / <code>getAccessibleToolkits(role, enabledModules)</code> — RBAC + module filters</li>
+<li><code>resolveToolkitsToTools(toolkitIds[])</code> — flatten N toolkit IDs to deduped tool IDs</li>
+<li><code>findTool(id)</code> / <code>findToolkitsForTool(id)</code> — lookups</li>
+<li><code>getToolkitOwnerAgents(toolkit)</code> — derives which agents host a toolkit&#39;s tools (auto-switch source)</li>
+<li><code>toolkitTokenEstimate(toolkit)</code> — ~250 tokens per tool, rough total</li>
+<li><code>ALWAYS_ON_TOOLKIT_IDS</code> — toolkit IDs the user can&#39;t disable</li>
+</ul>
+<h2>How users discover &amp; use tools — TWO modals on <code>/agent-hub</code></h2>
+<table>
+<thead>
+<tr>
+<th>Modal</th>
+<th>Button</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>PromptBuilderModal</strong></td>
+<td>✨ Sparkles in toolbar</td>
+<td>Discovery + click-to-fire. Toolkit-cluster cards with quick-starts. Click a starter → modal closes, agent auto-switches if needed, prompt is set + auto-sent. Search across toolkit names, descriptions, tool ids, quick-start labels.</td>
+</tr>
+<tr>
+<td><strong>ToolkitPickerModal</strong></td>
+<td>🔧 Wrench in toolbar</td>
+<td>Selection / restriction. Toggle which toolkits the agent has loaded for the next message. Always-on <code>core</code> is locked. Footer shows live ~tokens/turn estimate.</td>
+</tr>
+</tbody></table>
+<p>Both share the same <code>agentToolsCatalog.ts</code>.</p>
+<h2>Agents</h2>
+<p>The platform has <strong>3 agents</strong>. There is <strong>no separate &quot;B2B Agent&quot; or &quot;SEO Agent&quot;</strong> — those are categories of tools available on KAI, gated by role.</p>
+<table>
+<thead>
+<tr>
+<th>Agent ID</th>
+<th>Name</th>
+<th>Roles allowed</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kai</code></td>
+<td>KAI Agent</td>
+<td>viewer, member, admin, owner</td>
+<td>Material intelligence — search, sub-agents, B2B, SEO, mentions, presentation sheets, pricing. The default agent for most queries.</td>
+</tr>
+<tr>
+<td><code>interior-designer</code></td>
+<td>Interior Designer</td>
+<td>viewer, member, admin, owner</td>
+<td>AI-powered interior design with spatial analysis and material matching. 3D + lighting + VR generation.</td>
+</tr>
+<tr>
+<td><code>demo</code></td>
+<td>Demo Agent</td>
+<td>admin, owner only</td>
+<td>Platform showcase.</td>
+</tr>
+</tbody></table>
+<p><strong>Legacy aliases</strong> (resolved server-side to <code>kai</code>): <code>search</code>, <code>insights</code>, <code>seo</code>. Old frontends sending these agent IDs continue to work.</p>
+<h2>KAI tool inventory (by category)</h2>
+<p>Each tool has: <code>name</code> · <code>id</code> · <code>desc</code> · <code>adminOnly</code> flag · optional <code>moduleSlug</code> (gates on <code>public.modules.enabled</code>) · optional <code>credits</code> cost · 1-3 starter prompts.</p>
+<h3>Search (all users, 0 credits)</h3>
+<ul>
+<li><code>knowledge_base_search</code> — Search platform KB documents</li>
+<li><code>material_search</code> — 7-vector fusion catalog search</li>
+<li><code>visual_search</code> — Image-based catalog search (image required)</li>
+<li><code>analyze_inspiration_url</code> — Scrape webpage → design tokens → match catalog (1 credit, Firecrawl)</li>
+</ul>
+<h3>Mentions (all users, module-gated <code>mention-monitoring</code>)</h3>
+<ul>
+<li><code>track_product_mentions</code> — Start/stop monitoring on a product</li>
+<li><code>get_mention_summary</code> — 7d/30d snapshot</li>
+<li><code>check_llm_visibility</code> — Share-of-voice across Haiku/GPT-4o-mini/Gemini Flash/Sonar (2 cr cached, 15 cr force_run)</li>
+<li><code>find_negative_mentions</code> — Reputation triage feed</li>
+</ul>
+<h3>SEO Research (all users, 0 user credits)</h3>
+<p><code>seo_research_keyword</code>, <code>seo_keyword_difficulty</code>, <code>seo_keyword_suggestions</code>, <code>seo_search_intent</code>, <code>seo_keyword_overview</code>, <code>seo_serp_audit</code>, <code>seo_audit_url</code></p>
+<h3>SEO Domain (all users, 0 user credits)</h3>
+<p><code>seo_domain_snapshot</code>, <code>seo_ranked_keywords</code>, <code>seo_domain_competitors</code>, <code>seo_keyword_gap</code>, <code>seo_traffic_estimation</code>, <code>seo_subdomains</code>, <code>seo_relevant_pages</code>, <code>seo_categories_for_domain</code></p>
+<h3>SEO Backlinks (all users, 0 user credits)</h3>
+<p><code>seo_backlinks_summary</code>, <code>seo_backlinks_anchors</code>, <code>seo_referring_domains</code></p>
+<h3>SEO OnPage (all users, 0 user credits)</h3>
+<p><code>seo_site_crawl_start</code>, <code>seo_site_crawl_status</code></p>
+<h3>SEO Content / Domain analytics (all users, 0 user credits)</h3>
+<p><code>seo_content_sentiment</code>, <code>seo_domain_technologies</code>, <code>seo_domain_whois</code>, <code>seo_historical_serps</code>, <code>seo_ai_keyword_volume</code></p>
+<h3>SEO Multi-Engine (all users, 0 user credits)</h3>
+<p><code>seo_llm_mentions_search</code>, <code>seo_youtube_search</code>, <code>seo_local_pack</code>, <code>seo_google_trends</code></p>
+<h3>SEO Niche (all users, 0 user credits)</h3>
+<p><code>seo_amazon_asin</code>, <code>seo_app_keywords</code>, <code>seo_trustpilot_search</code>, <code>seo_pinterest_search</code>, <code>seo_reddit_search</code></p>
+<h3>SEO Composite (all users, 0 user credits)</h3>
+<ul>
+<li><code>seo_site_review</code> — domain rank + ranked keywords + competitors + backlinks summary + anchors in ONE call</li>
+<li><code>seo_brand_search_audit</code> — Knowledge Panel + AI Overview + organic listings + paid bids on the brand name</li>
+</ul>
+<h3>Sub-Agents (admin/owner only)</h3>
+<ul>
+<li><code>research_analysis</code> — deep-research sub-agent</li>
+<li><code>analytics_analysis</code> — analytics sub-agent</li>
+<li><code>business_analysis</code> — business sub-agent</li>
+<li><code>product_analysis</code> — product sub-agent</li>
+</ul>
+<h3>B2B Research (admin/owner only)</h3>
+<ul>
+<li><code>b2b_manufacturer_search</code> — find manufacturers via web search (Anthropic web_search)</li>
+<li><code>company_website_scrape</code> — Firecrawl a company website</li>
+<li><code>company_enrichment</code> — Apollo.io company data</li>
+<li><code>contact_discovery</code> — find + verify decision-maker emails</li>
+<li><code>email_validate</code> — ZeroBounce</li>
+<li><code>save_to_crm</code> — persist to CRM</li>
+</ul>
+<h3>SEO Article Pipeline (admin/owner only)</h3>
+<ul>
+<li><code>create_seo_article</code> — full pipeline (research → plan → write → analyze), 30 cr, async</li>
+<li><code>seo_keyword_research</code> — stage 1, 18 cr</li>
+<li><code>seo_article_planner</code> — stage 2, 2 cr</li>
+<li><code>seo_article_writer</code> — stage 3, 20 cr</li>
+<li><code>seo_content_analyzer</code> — stage 4</li>
+</ul>
+<h3>Generation / Sheets (all users)</h3>
+<ul>
+<li><code>generate_presentation_sheet</code> — A3 moodboard sheet PDFs (per-sheet credit cost gated inside)</li>
+</ul>
+<h3>Admin</h3>
+<ul>
+<li><code>dispatch_background_task</code> — async long task dispatch (admin)</li>
+<li><code>price_lookup</code> — pricing KB lookup (admin)</li>
+<li><code>seo_dataforseo_call</code> — escape-hatch DataForSEO endpoint (admin)</li>
+</ul>
+<h2>Interior Designer tools</h2>
+<ul>
+<li><code>material_search</code>, <code>analyze_inspiration_url</code></li>
+<li><code>generate_3d</code> — Replicate/Gemini 3D render (async)</li>
+<li><code>apply_lighting_preset</code> — re-render under different lighting (image required)</li>
+<li><code>generate_vr_world</code> — WorldLabs Marble 3D Gaussian Splat (image required, 18 cr draft / 190 cr v1.1)</li>
+<li><code>generate_presentation_sheet</code></li>
+<li><code>seo_research_keyword</code></li>
+</ul>
+<h2>Saved searches — what&#39;s actually available</h2>
+<p><strong>Important</strong>: The platform&#39;s <code>saved_searches</code> table is for <strong>material/product searches</strong> (used by the search filter UI). It is <strong>not</strong> mounted on any user-visible route today — <code>SavedSearchesPanel</code> is referenced only by <code>EnhancedRAGInterface</code>, which itself isn&#39;t wired into a route.</p>
+<p><strong>Where users save a search today</strong>:</p>
+<ul>
+<li>The <code>SaveSearchModal</code> exists at <a href="../src/components/features/search/SaveSearchModal.tsx"><code>src/components/features/search/SaveSearchModal.tsx</code></a> but is <strong>also only used by the unmounted <code>EnhancedRAGInterface</code></strong>.</li>
+<li><strong>In practice, users currently cannot save a search via the UI.</strong> This is a latent feature.</li>
+</ul>
+<p><strong>SEO research history</strong> is a separate concern, lives in the <code>seo_research_runs</code> table, and is exposed via:</p>
+<ul>
+<li><strong><code>/admin/seo</code> → Keyword Research tab</strong> — full history with star/unstar, search-by-subject filter, delete. This IS the user-facing &quot;saved SEO searches&quot; surface.</li>
+<li>Every chat-driven SEO research call persists into this table automatically (when wired through <code>seo-toolkit-research</code> edge function).</li>
+</ul>
+<h2>What&#39;s mounted where (the truth)</h2>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Route</th>
+<th>Visible to</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>KAI chat</td>
+<td><code>/agent-hub</code></td>
+<td>all roles</td>
+<td>✓ live</td>
+</tr>
+<tr>
+<td>KAI Browse Tools modal</td>
+<td><code>/agent-hub</code> → ✨ button</td>
+<td>all roles, filtered by role</td>
+<td>✓ shipped this turn</td>
+</tr>
+<tr>
+<td>Tool Picker (restrict tools per message)</td>
+<td><code>/agent-hub</code> → 🔧 button</td>
+<td>all roles</td>
+<td>✓ catalog refreshed this turn</td>
+</tr>
+<tr>
+<td><code>/admin/seo</code> dashboard</td>
+<td><code>/admin/seo</code></td>
+<td>admin/owner</td>
+<td>✓ shipped earlier</td>
+</tr>
+<tr>
+<td>ProductDetailModal SEO tab</td>
+<td>per-product modal</td>
+<td>admin/owner</td>
+<td>✓ shipped earlier</td>
+</tr>
+<tr>
+<td>CompanyDetailPage SEO tab</td>
+<td><code>/admin/crm/companies/{id}</code></td>
+<td>CRM access</td>
+<td>✓ shipped earlier</td>
+</tr>
+<tr>
+<td>PinterestImportModal SEO bridge</td>
+<td>moodboard import</td>
+<td>moodboard users</td>
+<td>✓ shipped earlier</td>
+</tr>
+<tr>
+<td><code>SavedSearchesPanel</code></td>
+<td>NONE</td>
+<td>—</td>
+<td>not mounted</td>
+</tr>
+<tr>
+<td><code>SaveSearchModal</code></td>
+<td>NONE</td>
+<td>—</td>
+<td>not mounted</td>
+</tr>
+</tbody></table>
+<h2>To add a new tool</h2>
+<ol>
+<li>Add a new method on <code>DataForSEOUnifiedClient</code> (if it&#39;s a DataForSEO endpoint) or a new MIVAA service.</li>
+<li>Add a route to <code>seo_agent_routes.py</code> (or whitelist the kind for the generic dispatcher).</li>
+<li>Add an agent tool factory in <code>seo-agent-tools.ts</code> (or appropriate tool file).</li>
+<li>Register in <code>agent-chat/index.ts</code>: add to <code>SEO_AGENT_TOOL_NAMES</code>, lazy-import factory, push when included.</li>
+<li>Add to KAI&#39;s <code>tools</code> array in <code>AGENT_CONFIGS</code>.</li>
+<li><strong>Add an entry to <code>agentToolsCatalog.ts</code></strong> — this is what makes it discoverable in the Browse Tools modal.</li>
+<li>Add a card renderer case in <code>SEOGenericCard.tsx</code> (or use the fallback raw-payload card).</li>
+</ol>
+<p>If you skip step 6, the tool works but users can&#39;t discover it through the modal.</p>
+
+</div></body></html>
