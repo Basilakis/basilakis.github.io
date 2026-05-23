@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Job Research API</h1>
+<p>Background job-discovery agent. Each tracked search runs hourly on a volatility-adaptive cadence (6h / 24h / 48h / 72h / 168h) across <strong>DataForSEO Google Jobs</strong>, <strong>Perplexity Sonar</strong> (pinned to LinkedIn / Indeed / Glassdoor / WeWorkRemotely / RemoteOK / Wellfound / Dice / Monster / StackOverflow / YC), and <strong>Firecrawl scraping of user-pinned career pages</strong>. Discovered listings are classified by Haiku (relevance: <code>match</code> / <code>tangential</code> / <code>mismatch</code> / <code>unverifiable</code>), the matches are persisted, and ONE consolidated email per user is sent daily at the user&#39;s chosen <code>digest_hour_utc</code> covering all of their tracked searches.</p>
+<p><strong>Host</strong>: <code>https://v1api.materialshub.gr</code>
+<strong>OpenAPI tag</strong>: <code>Job Research</code>
+<strong>Interactive docs (Swagger UI)</strong>: <code>GET https://v1api.materialshub.gr/docs</code> — filter by tag
+<strong>Machine-readable spec</strong>: <code>GET https://v1api.materialshub.gr/openapi.json</code> — auto-generated from the FastAPI route signatures, always in sync with what&#39;s deployed.</p>
+<hr>
+<h2>Changelog</h2>
+<h3>v0.3.3 — 2026-05-15 — Admin-stop bridge + KB consolidation + scoped pause</h3>
+<p>Three related fixes addressing &quot;how do I stop a search?&quot; and &quot;where do platform configs live in the KB?&quot;:</p>
+<ul>
+<li>🆕 <strong>Admin-panel stop now actually stops.</strong> New AFTER UPDATE trigger on <code>background_agents</code>: when an admin toggles <code>enabled</code> for a <code>job-research</code> row at <code>/admin/background-agents</code>, the trigger mirrors the change onto <code>tracked_jobs.is_active</code> so the refresh cron skips it. Previously the admin toggle was cosmetic — the engine ignored it.</li>
+<li>🆕 <strong>Scoped pause.</strong> <code>track_job_search</code> action <code>pause</code> (and <code>resume</code>) now accept <code>pause_scope: &#39;all&#39; | &#39;digests_only&#39;</code>.<ul>
+<li><code>all</code> (default): flips <code>tracked_jobs.is_active=false</code> → stops both refresh and digest.</li>
+<li><code>digests_only</code>: flips <code>tracked_jobs.digest_enabled=false</code> → refresh keeps running; just no emails/chat-posts at digest tick. User can still call <code>find_jobs</code> to see what&#39;s accumulated.</li>
+</ul>
+</li>
+<li>🆕 <strong>Broader stop vocabulary.</strong> KAI prompt addendum extended — &quot;stop&quot;, &quot;cancel&quot;, &quot;turn off&quot;, &quot;kill&quot;, &quot;snooze&quot;, &quot;disable&quot; all map to pause. &quot;got a job, stop looking&quot; confirms then maps to delete. &quot;stop emailing me but keep tracking&quot; → pause with <code>pause_scope=digests_only</code>.</li>
+<li>✏️ <strong>KB category renamed</strong> <code>Job Sources</code> → <code>Internal Configuration</code> (slug <code>internal-configuration</code>, icon ⚙️). Generic name so future internal config pages (mention outlets, price retailers, etc.) can live as sibling docs in the same category.</li>
+<li>✏️ <strong>KB docs consolidated</strong>: three per-site_type docs → one <code>Job Research Sites</code> doc with three sections. <code>job_sites_kb_sync.sync_one_site_type()</code> is now a backwards-compatible alias for <code>sync_all()</code> which always re-renders the single consolidated doc.</li>
+</ul>
+<h3>v0.3.2 — 2026-05-15 — Sites list lives in a KB category (access_level=&#39;agent&#39;) + agent-driven flow with modal (superseded by v0.3.3)</h3>
+<p>Architectural correction to v0.3.1. Standalone admin page deleted; the sites list is now a proper KB category (<code>access_level=&#39;agent&#39;</code> → agent reads it, public KB filters it out, admin sees it via the regular KB admin UI). All add/edit/remove goes through the KAI agent.</p>
+<ul>
+<li>❌ <strong>Deleted</strong> the standalone admin page <code>/admin/knowledge-base/job-sources</code> (the route from v0.3.1). Operators don&#39;t open a custom page anymore.</li>
+<li>🆕 <strong>KB category &quot;Job Sources&quot;</strong> with three child kb_docs (one per <code>site_type</code>: Perplexity domain filter / Default RSS feeds / Default career pages). Bodies are auto-rendered Markdown tables, regenerated on every CRUD via the sync helper.</li>
+<li>🆕 <strong>KAI agent tool <code>manage_job_sites</code></strong> — replaces the deep-link. Actions: <code>list</code> / <code>add</code> / <code>remove</code> / <code>toggle</code> / <code>open_form</code>. When the user is vague (&quot;add a job site&quot;), <code>open_form</code> emits a <code>job_sites_form_open</code> chunk; AgentHub mounts a modal with type/URL/country/category/notes fields. On submit, the modal populates the input box with a structured prose message that re-invokes the tool with concrete fields.</li>
+<li>✏️ <strong>Sites CRUD endpoints</strong> (<code>/api/v1/job-research/sites</code>) unchanged in signature, but each write now calls <code>_sync_kb(site_type)</code> to refresh the corresponding kb_doc.</li>
+<li>✏️ <strong>KAI prompt addendum</strong> rewritten — drops the dead deep-link, teaches the agent the new tool + the NL→action mappings + when to call <code>open_form</code> vs <code>add</code> with specifics.</li>
+</ul>
+<h3>v0.3.1 — 2026-05-15 — Operator-curated job-sites list at /admin/knowledge-base/job-sources (superseded by v0.3.2)</h3>
+<p>The Perplexity domain filter and the default RSS / career-page lists are now editable through a hidden admin page instead of being hardcoded. Adds 4 new endpoints under <code>/api/v1/job-research/sites</code> and a new <code>job_research_sites</code> DB table (RLS: reads open, writes admin-only). The previously hardcoded <code>_DEFAULT_JOB_DOMAINS</code> constant becomes a fallback used only when the DB read fails.</p>
+<ul>
+<li>🆕 <code>GET /api/v1/job-research/sites[?site_type=perplexity_domain|rss_feed_default|careers_page_default]</code> — list configured sites (any authenticated user).</li>
+<li>🆕 <code>POST /api/v1/job-research/sites</code> — add a new site (admin/super_admin only via RLS). Body: <code>{ site_type, url_or_domain, display_name?, country_code?, category?, is_enabled=true, notes? }</code>. 409 on duplicate.</li>
+<li>🆕 <code>PUT /api/v1/job-research/sites/{id}</code> — update fields (admin-only).</li>
+<li>🆕 <code>DELETE /api/v1/job-research/sites/{id}</code> — remove (admin-only).</li>
+<li>✏️ <code>search_via_perplexity()</code> now loads the domain filter from the DB; falls back to the hardcoded constant only on DB-read failure.</li>
+</ul>
+<p><strong>Where the page lives:</strong> <code>/admin/knowledge-base/job-sources</code> (hidden — no nav entry; deep-linked from the KAI agent or hand-typed). Three tabs:</p>
+<ol>
+<li><strong>Perplexity domain filter</strong> — the global list Sonar searches across. Capped at 10 by Perplexity; extras displayed with a warning.</li>
+<li><strong>Default RSS feeds</strong> — feeds offered as defaults when a new tracked_job enables <code>sources_enabled.rss_feeds</code>.</li>
+<li><strong>Default career pages</strong> — same for <code>sources_enabled.careers_pages</code>.</li>
+</ol>
+<p>Per-tracked_job overrides (<code>tracked_jobs.careers_page_urls</code> / <code>rss_feed_urls</code>) still take precedence.</p>
+<h3>v0.3.0 — 2026-05-15 — RSS adapter + burst alerts + classifier feedback + external <code>kai_*</code> API + cross-conversation triage</h3>
+<p>Closes the v0.2 follow-up backlog. <strong>Two breaking-ish changes for new fields, no breaking changes to existing endpoints.</strong></p>
+<ul>
+<li>🆕 <strong>External public API</strong> at <code>/api/v1/jobs/track/*</code> (12 endpoints), <code>Authorization: Bearer kai_*</code>. Mirrors the internal flow but with per-call partner billing: <code>refresh=5cr</code>, <code>regenerate-keywords=2cr</code>, all reads + corrections free. Returns <code>402 Insufficient credits</code> when balance is exhausted. Cron does NOT touch external rows — partners control their own refresh cadence. See full reference in the new &quot;Public API endpoint inventory&quot; section below.</li>
+<li>🆕 <strong>RSS source adapter.</strong> New column <code>tracked_jobs.rss_feed_urls text[]</code>. Enable per tracked_job via <code>sources_enabled.rss_feeds: true</code>. Parses RSS 2.0 + Atom 1.0 feeds from any URL (career-page feeds, WeWorkRemotely, RemoteOK, HN &quot;Who&#39;s Hiring&quot; archives, etc.). Free — no per-call billing. Source-priority dedupe rank: <code>firecrawl_careers &gt; rss_feed &gt; perplexity_sonar &gt; google_jobs</code>.</li>
+<li>🆕 <strong>Salary normalization.</strong> Every persisted listing now also carries <code>salary_annual_min_usd</code>, <code>salary_annual_max_usd</code>, <code>salary_normalization_note</code>. The normalizer converts source-reported <code>{min, max, currency, period}</code> to annualized USD using a static FX table (refreshable quarterly), period multipliers (hour/day/week/month/year), magnitude-based period inference when source omits it, and sanity floor/ceiling ($5k–$2M/yr). Original raw values preserved. Lets cross-source comparison and salary-band filtering work uniformly.</li>
+<li>🆕 <strong>Real-time <code>high_match_burst</code> alerts.</strong> Opt-in via <code>tracked_jobs.alert_on_burst: true</code> + <code>burst_threshold: int (default 10)</code>. After every refresh, if new matches ≥ threshold AND last_burst_alert_at &gt; 2h ago, the dispatcher fires a chat-post + bell notification BETWEEN daily digests. 24h cooldown prevents spam. Email is NOT auto-sent on burst (only daily digest emails). Webhook NOT auto-fired on burst either (keep webhooks deterministic — once per digest cycle).</li>
+<li>🆕 <strong>Classifier feedback loop (full).</strong> New endpoint <code>POST /api/v1/job-research/listings/{id}/correct-match</code> (and <code>POST /api/v1/jobs/track/listings/{id}/correct-match</code> on the public API). Inserts a <code>job_match_corrections</code> row + flips the listing&#39;s <code>relevance</code> immediately. The classifier prepends the most recent 5 corrections per tracked_job as Haiku few-shot examples on the next batched classify call — no retraining, just in-context learning of the user&#39;s idiosyncratic preferences. Free.</li>
+<li>🆕 <strong>Cross-conversation triage UI.</strong> Replaces the dropped <code>/knowledge-base/job-sources</code> page from v0.1. New <code>JobResearchSavedJobsPanel</code> auto-mounts inside the <code>AgentRunHistoryDrawer</code> whenever the agent&#39;s <code>agent_type === &#39;job-research&#39;</code>. Tabs: Saved / Applied / Interested / All matches. Per-listing actions inline (save, apply, dismiss, ⚠ wrong match). Lives in the existing background-agents framework at <code>/admin/background-agents</code> — no new admin page.</li>
+<li>✏️ <strong><code>sources_enabled</code> default</strong> updated to include <code>rss_feeds: false</code>. Existing rows unchanged.</li>
+<li>✏️ <strong>Frontend <code>jobResearchService</code></strong>: new <code>correctMatch(listingId, correctedRelevance, reason?)</code> method.</li>
+<li>✏️ <strong>AgentHub <code>job_findings</code> card</strong> gains a &quot;⚠ wrong&quot; button per listing.</li>
+</ul>
+<h3>v0.2.0 — 2026-05-15 — Background-agents integration, chat-posting, default-on keyword expansion</h3>
+<p>Three architecture corrections on top of v0.1.0. <strong>No breaking changes for the documented endpoints</strong> (additive only) but the runtime behavior changes meaningfully.</p>
+<ul>
+<li>🆕 <strong>Background-agents framework integration.</strong> Every <code>tracked_jobs</code> row now also gets a <code>background_agents</code> row (<code>agent_type=&#39;job-research&#39;</code>) so the search appears in <code>/admin/background-agents</code> alongside other background agents. New FK column <code>tracked_jobs.background_agent_id</code>. Each refresh inserts one <code>agent_runs</code> row (with input/output stats + duration_ms + token counts) and per-source <code>agent_run_logs</code> entries. <code>deactivate()</code> mirrors <code>enabled=false</code> onto the linked agent.</li>
+<li>🆕 <strong>Chat-posting (primary user surface).</strong> New column <code>tracked_jobs.source_conversation_id</code> (FK → <code>agent_chat_conversations</code>). When the KAI agent creates a tracked_job, it captures the current conversation id automatically. After every daily digest tick, the dispatcher inserts an assistant message into THAT conversation thread with <code>metadata.chunk_type = &#39;job_findings&#39;</code>. Frontend (AgentHub) renders it as a rich card with per-listing details. The user reopens the conversation and sees the running history of findings. Email digest still goes out in parallel.</li>
+<li>🆕 <strong>Default-on keyword expansion via Haiku.</strong> <code>JobResearchService.create()</code> now synchronously calls Haiku tool-use to expand the user&#39;s keywords into <code>{title_variants, seniority_variants, abbreviations}</code>. Persisted on new column <code>tracked_jobs.expanded_keywords text[]</code>. Discovery uses <code>keywords ∪ expanded_keywords</code>. So &quot;Product Manager&quot; automatically catches &quot;Senior PM&quot;, &quot;Product Lead&quot;, &quot;Principal PM&quot; without the user listing them. Re-runnable via the new endpoint <code>POST /track/{id}/regenerate-keywords</code>.</li>
+<li>🆕 <strong>Synchronous first refresh.</strong> <code>POST /track</code> now runs the full discovery + classifier pipeline inline before returning. Response includes <code>first_refresh: { discovered, persisted, matches, by_source }</code> so the caller (typically the KAI agent) can confirm real findings to the user instead of &quot;wait an hour for the cron&quot;. Pass <code>run_first_refresh: false</code> to opt out.</li>
+<li>🆕 <strong>Weekly cadence.</strong> New column <code>tracked_jobs.digest_day_of_week int|null</code> (0=Sunday..6=Saturday, NULL=daily). The <code>get_tracked_jobs_due_for_digest</code> RPC was rewritten to honor it. Lets the user say &quot;every Monday morning&quot; and have the digest fire only on Mondays.</li>
+<li>🆕 <strong><code>POST /api/v1/job-research/track/{id}/regenerate-keywords</code></strong> — re-runs Haiku expansion. Response: <code>{ expanded: string[], rejected: string[], raw: {...} }</code>. Useful when the user updates their <code>keywords</code> and wants the variants refreshed too.</li>
+<li>✏️ <strong><code>POST /track</code> request body additions</strong>: <code>source_conversation_id</code> (string, optional), <code>digest_day_of_week</code> (int 0-6 or null, optional), <code>run_first_refresh</code> (bool, default <code>true</code>).</li>
+<li>✏️ <strong><code>PUT /track/{id}</code></strong> accepts <code>digest_day_of_week</code>.</li>
+<li>✏️ <strong>Action URLs change</strong>: bell-notification + email &quot;Open&quot; links now deep-link to <code>/agent-hub?conversation=&lt;id&gt;</code> (the original conversation) instead of the deleted KB page. Falls back to <code>/agent-hub?q=...</code> when <code>source_conversation_id</code> is unset.</li>
+<li>❌ <strong><code>/knowledge-base/job-sources</code> page DROPPED.</strong> Was a hidden KB page in v0.1.0; redundant once chat-posting was wired. The chat is now the user surface; <code>/admin/background-agents</code> is the ops surface.</li>
+<li>❌ <strong><code>auto_expand_keywords</code> flag removed</strong> from the public schema (column retained on the table for back-compat but ignored). Expansion is unconditional.</li>
+</ul>
+<h3>v0.1.0 — 2026-05-14 — Initial release</h3>
+<ul>
+<li>🚀 <strong>Job Research module</strong> (<code>module slug: job-research</code> + notifications submodule <code>job-research-notifications</code>).</li>
+<li>🚀 <strong>3 discovery sources</strong> wired into a single refresh pipeline:<ul>
+<li><strong>DataForSEO Google Jobs</strong> (<code>/serp/google_jobs/live/advanced</code>) — flat ~$0.0006/req, broad coverage via Google for Jobs aggregation.</li>
+<li><strong>Perplexity Sonar</strong> with <code>search_domain_filter</code> pinned to the major job boards + JSON-schema response — ~$0.005/sweep, deep page reads where DataForSEO misses.</li>
+<li><strong>Firecrawl scrape</strong> of user-pinned career pages with a <code>JobListing[]</code> extraction schema — direct from companies&#39; own pages.</li>
+</ul>
+</li>
+<li>🚀 <strong>Haiku batched classifier</strong> (<code>claude-haiku-4-5-20251001</code>) with rule shortcut + 7-day verdict cache. ~95% cache hit on stable searches across daily refreshes.</li>
+<li>🚀 <strong>Volatility-adaptive cadence</strong>: ≥5 new matches → next check in 6h; 1–4 → 24h; stable → 48h → 72h → 168h.</li>
+<li>🚀 <strong>Consolidated daily digest</strong>: one email per user at their <code>digest_hour_utc</code>, covering all tracked searches in one body. Channels: bell (free), email (1 cr), webhook (free, per-tracked_job).</li>
+<li>🚀 <strong>Internal flow</strong> (session JWT) — 12 endpoints under <code>/api/v1/job-research/*</code> for the platform&#39;s own UI + KAI agent tools.</li>
+<li>📋 <strong>External <code>api_keys</code> flow</strong> (<code>/api/v1/jobs/track/*</code>) — <strong>NOT YET WIRED</strong>. Schema and <code>JOB_OP_CREDIT_COST</code> table support partner billing; just needs a sister router file. Will land in v0.2.0.</li>
+</ul>
+<hr>
+<h2>Concepts</h2>
+<h3>Tracked job vs job listing</h3>
+<p>A <strong>tracked job</strong> (<code>tracked_jobs</code>) is a saved search — keywords, location, filters, source preferences, digest schedule. It&#39;s the row the cron picks up.</p>
+<p>A <strong>job listing</strong> (<code>job_listings</code>) is a discovered posting. Many listings per tracked job. Deduped by <code>UNIQUE (tracked_job_id, content_hash)</code> so a posting that appears across multiple sources or refreshes only writes once. Each listing carries a <code>relevance</code> verdict from the Haiku classifier; only <code>match</code> / <code>tangential</code> / <code>unverifiable</code> are persisted (<code>mismatch</code> is dropped).</p>
+<h3>Cadence (you don&#39;t control it for internal flow)</h3>
+<p>Internal flow refreshes are <strong>cron-driven</strong>. The platform&#39;s <code>job-research-refresh-hourly</code> cron (every hour at :45) picks rows where <code>next_check_at &lt;= now()</code> and runs the discovery pipeline. After each refresh, <code>update_tracked_job_cadence</code> adjusts <code>next_check_at</code> based on activity:</p>
+<ul>
+<li><code>≥5 new matches</code> → next check in 6h</li>
+<li><code>1–4 new matches</code> → next check in 24h (the base <code>refresh_interval_hours</code>)</li>
+<li><code>0 new matches</code>, stable for N consecutive refreshes:<ul>
+<li>N = 1 → 48h</li>
+<li>N ≥ 3 → 72h</li>
+<li>N ≥ 7 → 168h (1 week)</li>
+</ul>
+</li>
+</ul>
+<p>You can pass <code>force=true</code> on <code>POST /track/{id}/refresh</code> to bypass the cadence and refresh immediately.</p>
+<p>External-API flow (forthcoming v0.2.0) will NOT auto-cron — partners control their own cadence and pay per call.</p>
+<h3>Digest cadence</h3>
+<p>A separate cron <code>job-research-digest-hourly</code> runs at :05 every hour. It computes the current UTC hour <code>H</code> and dispatches one consolidated email to each user whose <code>digest_hour_utc == H</code> and <code>last_digest_sent_at &lt; today</code>.</p>
+<p>Even when no new matches were found in the last 24h, the dispatcher stamps <code>last_digest_sent_at</code> so the same row isn&#39;t re-evaluated until tomorrow (silent stamp, no email sent). Set <code>digest_enabled: false</code> on the row to stop digests entirely.</p>
+<h3>Source priority on dedupe</h3>
+<p>When the same posting is found by multiple sources, the dedupe keeps the highest-priority source:</p>
+<ol>
+<li><code>firecrawl_careers</code> (direct from company)</li>
+<li><code>perplexity_sonar</code> (read the page)</li>
+<li><code>google_jobs</code> (via Google for Jobs feed)</li>
+</ol>
+<h3>Classifier verdicts</h3>
+<ul>
+<li><strong><code>match</code></strong> — title + description clearly hit the user&#39;s intent. Persisted. Counted in <code>current_listing_count_*</code>. Eligible for the daily digest.</li>
+<li><strong><code>tangential</code></strong> — same field but wrong specialization (e.g. a Vue posting for a React search). Persisted with <code>match_note</code> explaining why. NOT in the digest. Visible in the UI under the &quot;All&quot; tab.</li>
+<li><strong><code>mismatch</code></strong> — entirely different role or excluded keyword/company hit. <strong>Dropped, not persisted.</strong></li>
+<li><strong><code>unverifiable</code></strong> — page didn&#39;t load enough signal. Persisted; user can review.</li>
+</ul>
+<p>The classifier runs in 3 phases per refresh: (1) <strong>rule shortcut</strong> drops obvious mismatches (excluded keyword in title, excluded company match) and obvious matches (all keywords + title contains the first keyword) deterministically — no LLM call. (2) <strong>7d verdict cache</strong> lookup keyed on <code>sha1(content_hash + facets_hash)</code>. (3) <strong>Batched Haiku tool-use</strong> with the <code>submit_classifications</code> tool (≤25 candidates per call, hard JSON guarantee via tool-use).</p>
+<hr>
+<h2>Authentication (internal flow)</h2>
+<p>Every endpoint requires a valid Supabase session JWT:</p>
+<pre><code class="language-http">Authorization: Bearer &lt;supabase_session_access_token&gt;
+Content-Type: application/json
+</code></pre>
+<p>Get the access token from <code>supabase.auth.getSession()</code> on the frontend. RLS on <code>tracked_jobs</code> and <code>job_listings</code> enforces row-level ownership — users only see their own rows.</p>
+<hr>
+<h2>Endpoint inventory</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/track</code></td>
+<td>Create a tracked job search</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/job-research/track</code></td>
+<td>List the user&#39;s tracked jobs</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/job-research/track/{id}</code></td>
+<td>Read one tracked job</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>PUT</code></td>
+<td><code>/api/v1/job-research/track/{id}</code></td>
+<td>Update keywords / filters / digest config</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/job-research/track/{id}</code></td>
+<td>Soft delete (deactivate, preserves history)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/track/{id}/refresh</code></td>
+<td>Force a refresh (bypasses cadence)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/job-research/track/{id}/listings</code></td>
+<td>List discovered listings for this tracked job</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/job-research/track/{id}/summary</code></td>
+<td>Aggregate snapshot (counts, top companies, by-source)</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/track/{id}/exclude</code></td>
+<td>Add a URL / domain / company exclusion</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/job-research/track/{id}/exclusions</code></td>
+<td>List exclusions for this tracked job</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/job-research/exclusions/{exclusion_id}</code></td>
+<td>Remove an exclusion</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/listings/{listing_id}/action</code></td>
+<td>Mark <code>saved</code> / <code>applied</code> / <code>dismissed</code> / <code>interested</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/track/{id}/regenerate-keywords</code></td>
+<td>Re-run Haiku keyword expansion (v0.2)</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/listings/{listing_id}/correct-match</code></td>
+<td>Classifier feedback (v0.3); flips relevance + becomes few-shot</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Public API endpoint inventory (v0.3, <code>kai_*</code> Bearer auth)</h2>
+<p>For partner integrations. Same orchestration engine as the internal flow, with per-call partner billing. Returns <code>402 Insufficient credits</code> when balance is exhausted; refunds on hard failure / no-op outcomes.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Method</th>
+<th>Path</th>
+<th>Credits</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/jobs/track</code></td>
+<td>5 (if <code>run_first_refresh</code>)</td>
+<td>Create a tracked job search</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/jobs/track</code></td>
+<td>0</td>
+<td>List your tracked job searches</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/jobs/track/{id}</code></td>
+<td>0</td>
+<td>Read one</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>PUT</code></td>
+<td><code>/api/v1/jobs/track/{id}</code></td>
+<td>0</td>
+<td>Update config</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/jobs/track/{id}</code></td>
+<td>0</td>
+<td>Soft delete (cascades on api_key revocation)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/jobs/track/{id}/refresh</code></td>
+<td>5</td>
+<td>Force a refresh</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/jobs/track/{id}/listings</code></td>
+<td>0</td>
+<td>List discovered listings</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/jobs/track/{id}/summary</code></td>
+<td>0</td>
+<td>Aggregate snapshot</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/jobs/track/{id}/exclude</code></td>
+<td>0</td>
+<td>Add an exclusion</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/jobs/track/{id}/exclusions</code></td>
+<td>0</td>
+<td>List exclusions</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/jobs/track/{id}/regenerate-keywords</code></td>
+<td>2</td>
+<td>Re-run Haiku keyword expansion</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/jobs/track/listings/{listing_id}/correct-match</code></td>
+<td>0</td>
+<td>Classifier feedback</td>
+</tr>
+</tbody></table>
+<p><strong>Quickstart</strong> (external):</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/v1/jobs/track \
+  -H &quot;Authorization: Bearer kai_YOUR_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;label&quot;: &quot;Senior backend roles, EU remote&quot;,
+    &quot;keywords&quot;: [&quot;backend engineer&quot;, &quot;senior backend&quot;],
+    &quot;remote_only&quot;: true,
+    &quot;country_code&quot;: &quot;DE&quot;,
+    &quot;sources_enabled&quot;: { &quot;google_jobs&quot;: true, &quot;perplexity&quot;: true, &quot;rss_feeds&quot;: true },
+    &quot;rss_feed_urls&quot;: [&quot;https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss&quot;],
+    &quot;alert_webhook_url&quot;: &quot;https://your.domain/webhooks/material-kai-jobs&quot;,
+    &quot;run_first_refresh&quot;: true
+  }&#39;
+
+# Response includes the tracked_job + first_refresh outcome + partner_credits_debited: 5
+</code></pre>
+<p>Cron-only endpoints (<code>x-cron-secret</code> auth, NOT for partner use):</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/cron-refresh</code></td>
+<td>Picks due tracked jobs and runs each one&#39;s refresh</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/job-research/cron-digest?current_hour_utc=&lt;H&gt;</code></td>
+<td>Dispatches the daily digest for users whose <code>digest_hour_utc == H</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Quickstart</h2>
+<pre><code class="language-bash"># 1. Create a tracked job search
+curl -X POST https://v1api.materialshub.gr/api/v1/job-research/track \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;label&quot;: &quot;Senior React jobs in Athens (remote OK)&quot;,
+    &quot;keywords&quot;: [&quot;senior react&quot;, &quot;react developer&quot;, &quot;frontend engineer&quot;],
+    &quot;excluded_keywords&quot;: [&quot;junior&quot;, &quot;intern&quot;],
+    &quot;location&quot;: &quot;Athens, Greece&quot;,
+    &quot;country_code&quot;: &quot;GR&quot;,
+    &quot;remote_only&quot;: false,
+    &quot;seniority&quot;: &quot;senior&quot;,
+    &quot;employment_type&quot;: [&quot;full_time&quot;],
+    &quot;salary_min&quot;: 60000,
+    &quot;salary_currency&quot;: &quot;EUR&quot;,
+    &quot;excluded_companies&quot;: [&quot;acme corp&quot;],
+    &quot;sources_enabled&quot;: { &quot;google_jobs&quot;: true, &quot;perplexity&quot;: true, &quot;careers_pages&quot;: false },
+    &quot;digest_hour_utc&quot;: 7,
+    &quot;alert_channels&quot;: [&quot;bell&quot;, &quot;email&quot;],
+    &quot;refresh_interval_hours&quot;: 24
+  }&#39;
+
+# Response: { &quot;tracked_job&quot;: { &quot;id&quot;: &quot;uuid&quot;, ...row } }
+</code></pre>
+<pre><code class="language-bash"># 2. List your tracked jobs
+curl https://v1api.materialshub.gr/api/v1/job-research/track \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot;
+</code></pre>
+<pre><code class="language-bash"># 3. Force a refresh now (don&#39;t wait for the next cron tick)
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/job-research/track/$ID/refresh?force=true&quot; \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot;
+
+# Response: {
+#   &quot;refresh_run_id&quot;: &quot;uuid&quot;,
+#   &quot;discovered&quot;: 42,           # raw hits from all sources before dedupe
+#   &quot;deduped&quot;: 31,              # after cross-source dedupe
+#   &quot;candidates_after_exclusions&quot;: 27,
+#   &quot;persisted&quot;: 18,            # written to job_listings (drops mismatch + already-seen)
+#   &quot;matches&quot;: 12               # subset of persisted with relevance=&#39;match&#39;
+# }
+</code></pre>
+<pre><code class="language-bash"># 4. List today&#39;s matched listings
+curl &quot;https://v1api.materialshub.gr/api/v1/job-research/track/$ID/listings?relevance=match&amp;days=1&amp;limit=50&quot; \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot;
+</code></pre>
+<pre><code class="language-bash"># 5. 30-day summary
+curl &quot;https://v1api.materialshub.gr/api/v1/job-research/track/$ID/summary?days=30&quot; \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot;
+
+# Response: {
+#   &quot;days&quot;: 30, &quot;total&quot;: 84, &quot;matches&quot;: 51, &quot;applied&quot;: 3, &quot;saved&quot;: 7,
+#   &quot;by_source&quot;: { &quot;google_jobs&quot;: 32, &quot;perplexity_sonar&quot;: 15, &quot;firecrawl_careers&quot;: 4 },
+#   &quot;top_companies&quot;: [{&quot;company&quot;:&quot;Stripe&quot;,&quot;count&quot;:4}, {&quot;company&quot;:&quot;Vercel&quot;,&quot;count&quot;:3}, ...]
+# }
+</code></pre>
+<pre><code class="language-bash"># 6. Mark a listing applied (also: saved | dismissed | interested)
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/job-research/listings/$LISTING_ID/action&quot; \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{ &quot;action&quot;: &quot;applied&quot;, &quot;notes&quot;: &quot;Applied via the careers page; recruiter Slack thread #1234&quot; }&#39;
+</code></pre>
+<pre><code class="language-bash"># 7. Exclude a domain you don&#39;t want to see again
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/job-research/track/$ID/exclude&quot; \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{ &quot;domain&quot;: &quot;ziprecruiter.com&quot;, &quot;reason&quot;: &quot;Always reposts old listings&quot; }&#39;
+</code></pre>
+<pre><code class="language-bash"># 8. Pause a tracked search (won&#39;t refresh, won&#39;t appear in digest)
+curl -X PUT &quot;https://v1api.materialshub.gr/api/v1/job-research/track/$ID&quot; \
+  -H &quot;Authorization: Bearer $SUPABASE_JWT&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{ &quot;is_active&quot;: false }&#39;
+</code></pre>
+<hr>
+<h2>Endpoint reference</h2>
+<h3><code>POST /api/v1/job-research/track</code></h3>
+<p>Create a new tracked job search. Eligible for the next cron tick immediately (<code>next_check_at = now()</code>).</p>
+<p><strong>Request body:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>label</code></td>
+<td>string</td>
+<td>✅</td>
+<td>—</td>
+<td>Display name, max 200 chars</td>
+</tr>
+<tr>
+<td><code>keywords</code></td>
+<td>string[]</td>
+<td>✅</td>
+<td>—</td>
+<td>At least 1, max 20</td>
+</tr>
+<tr>
+<td><code>excluded_keywords</code></td>
+<td>string[]</td>
+<td></td>
+<td><code>[]</code></td>
+<td>Disqualifying terms; matched against title</td>
+</tr>
+<tr>
+<td><code>location</code></td>
+<td>string</td>
+<td></td>
+<td><code>null</code></td>
+<td>Free-form, e.g. <code>&quot;Athens, Greece&quot;</code></td>
+</tr>
+<tr>
+<td><code>country_code</code></td>
+<td>string</td>
+<td></td>
+<td><code>null</code></td>
+<td>ISO-2; biases DataForSEO results</td>
+</tr>
+<tr>
+<td><code>remote_only</code></td>
+<td>boolean</td>
+<td></td>
+<td><code>false</code></td>
+<td>Filters out non-remote</td>
+</tr>
+<tr>
+<td><code>seniority</code></td>
+<td>enum</td>
+<td></td>
+<td><code>null</code></td>
+<td><code>junior</code> | <code>mid</code> | <code>senior</code> | <code>lead</code> | <code>principal</code> | <code>any</code></td>
+</tr>
+<tr>
+<td><code>employment_type</code></td>
+<td>string[]</td>
+<td></td>
+<td><code>[]</code></td>
+<td><code>full_time</code> / <code>contract</code> / <code>part_time</code> / <code>internship</code></td>
+</tr>
+<tr>
+<td><code>salary_min</code></td>
+<td>integer</td>
+<td></td>
+<td><code>null</code></td>
+<td>Used by classifier as a soft filter</td>
+</tr>
+<tr>
+<td><code>salary_currency</code></td>
+<td>string</td>
+<td></td>
+<td><code>&quot;USD&quot;</code></td>
+<td>ISO-4217</td>
+</tr>
+<tr>
+<td><code>excluded_companies</code></td>
+<td>string[]</td>
+<td></td>
+<td><code>[]</code></td>
+<td>Case-insensitive substring match against <code>company</code></td>
+</tr>
+<tr>
+<td><code>preferred_companies</code></td>
+<td>string[]</td>
+<td></td>
+<td><code>[]</code></td>
+<td>Reserved for ranking; no behavioral effect in v0.1.0</td>
+</tr>
+<tr>
+<td><code>sources_enabled</code></td>
+<td>object</td>
+<td></td>
+<td><code>{ google_jobs: true, perplexity: true, careers_pages: false }</code></td>
+<td>Per-source toggles</td>
+</tr>
+<tr>
+<td><code>careers_page_urls</code></td>
+<td>string[]</td>
+<td></td>
+<td><code>[]</code></td>
+<td>Required if <code>sources_enabled.careers_pages: true</code></td>
+</tr>
+<tr>
+<td><code>digest_hour_utc</code></td>
+<td>integer</td>
+<td></td>
+<td><code>7</code></td>
+<td>0–23, when the daily digest is sent</td>
+</tr>
+<tr>
+<td><code>alert_channels</code></td>
+<td>string[]</td>
+<td></td>
+<td><code>[&quot;bell&quot;, &quot;email&quot;]</code></td>
+<td>Subset of <code>[&quot;bell&quot;, &quot;email&quot;, &quot;webhook&quot;]</code></td>
+</tr>
+<tr>
+<td><code>alert_webhook_url</code></td>
+<td>string</td>
+<td></td>
+<td><code>null</code></td>
+<td>Per-tracked_job webhook URL (POST)</td>
+</tr>
+<tr>
+<td><code>refresh_interval_hours</code></td>
+<td>integer</td>
+<td></td>
+<td><code>24</code></td>
+<td>1–168; cron stretches this on stable searches</td>
+</tr>
+<tr>
+<td><code>digest_day_of_week</code></td>
+<td>integer</td>
+<td></td>
+<td><code>null</code></td>
+<td>0=Sunday..6=Saturday. NULL = daily. Set when the user wants weekly digest on a specific day.</td>
+</tr>
+<tr>
+<td><code>source_conversation_id</code></td>
+<td>string</td>
+<td></td>
+<td><code>null</code></td>
+<td>UUID of the <code>agent_chat_conversations</code> row where the user set up the search via KAI; daily digest will chat-post into it.</td>
+</tr>
+<tr>
+<td><code>run_first_refresh</code></td>
+<td>boolean</td>
+<td></td>
+<td><code>true</code></td>
+<td>If true, the create endpoint runs discovery + classifier inline before returning (synchronous first refresh).</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>{ &quot;tracked_job&quot;: &lt;row&gt; }</code> — see <a href="#trackedjob">TrackedJob schema</a>.</p>
+<p><strong>Errors:</strong></p>
+<ul>
+<li><code>400</code> — missing/empty <code>keywords</code>, invalid <code>digest_hour_utc</code>, etc.</li>
+<li><code>401</code> — missing/invalid JWT.</li>
+</ul>
+<hr>
+<h3><code>GET /api/v1/job-research/track</code></h3>
+<p>List the current user&#39;s tracked jobs.</p>
+<p><strong>Query</strong>: <code>only_active=true|false</code> (default <code>true</code>).</p>
+<p><strong>Response:</strong> <code>{ &quot;tracked_jobs&quot;: [&lt;row&gt;, ...] }</code></p>
+<hr>
+<h3><code>GET /api/v1/job-research/track/{id}</code></h3>
+<p>Read one tracked job.</p>
+<p><strong>Response:</strong> <code>{ &quot;tracked_job&quot;: &lt;row&gt; }</code></p>
+<p><strong>Errors:</strong> <code>404</code> if not owned by the user.</p>
+<hr>
+<h3><code>PUT /api/v1/job-research/track/{id}</code></h3>
+<p>Patch one tracked job. All fields are optional. Same shape as create + these extras:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>digest_enabled</code></td>
+<td>boolean</td>
+<td>Set <code>false</code> to keep refreshing but stop sending digests</td>
+</tr>
+<tr>
+<td><code>is_active</code></td>
+<td>boolean</td>
+<td>Set <code>false</code> to pause refresh entirely</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>{ &quot;tracked_job&quot;: &lt;updated row&gt; }</code></p>
+<hr>
+<h3><code>DELETE /api/v1/job-research/track/{id}</code></h3>
+<p>Soft delete — sets <code>is_active = false</code>. History is preserved.</p>
+<p><strong>Response:</strong> <code>{ &quot;ok&quot;: true }</code></p>
+<hr>
+<h3><code>POST /api/v1/job-research/track/{id}/refresh</code></h3>
+<p>Run discovery + classification + persistence right now.</p>
+<p><strong>Query:</strong></p>
+<ul>
+<li><code>force=true</code> — bypass <code>is_active</code> check (admin/debug; ownership is still enforced)</li>
+<li><code>force_full_discovery=true</code> — use <code>sonar-pro</code> (more expensive, more accurate) instead of <code>sonar</code>. Defaults to <code>sonar-pro</code> automatically on the very first refresh.</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;refresh_run_id&quot;: &quot;uuid&quot;,
+  &quot;discovered&quot;: 42,                       // raw hits across all sources
+  &quot;deduped&quot;: 31,                          // after cross-source dedupe
+  &quot;candidates_after_exclusions&quot;: 27,      // after blocklist filter
+  &quot;persisted&quot;: 18,                        // after classifier (mismatch dropped)
+  &quot;matches&quot;: 12                           // subset of persisted with relevance=&#39;match&#39;
+}
+</code></pre>
+<p>If the search is inactive: <code>{ &quot;skipped&quot;: true, &quot;reason&quot;: &quot;inactive&quot; }</code>.</p>
+<p>If no sources are enabled: <code>{ &quot;skipped&quot;: true, &quot;reason&quot;: &quot;no sources enabled&quot;, &quot;refresh_run_id&quot;: &quot;uuid&quot; }</code>.</p>
+<hr>
+<h3><code>GET /api/v1/job-research/track/{id}/listings</code></h3>
+<p>List discovered listings for this tracked job.</p>
+<p><strong>Query:</strong></p>
+<ul>
+<li><code>relevance</code> — <code>match</code> (default) / <code>tangential</code> / <code>unverifiable</code> / <code>all</code></li>
+<li><code>days</code> — look-back window 1–365 (default 30)</li>
+<li><code>only_actionable=true</code> — only listings the user hasn&#39;t yet saved/applied/dismissed</li>
+<li><code>limit</code> — 1–500 (default 100)</li>
+</ul>
+<p><strong>Response:</strong> <code>{ &quot;listings&quot;: [&lt;JobListing&gt;, ...], &quot;count&quot;: N }</code> — see <a href="#joblisting">JobListing schema</a>.</p>
+<hr>
+<h3><code>GET /api/v1/job-research/track/{id}/summary</code></h3>
+<p>Aggregate snapshot.</p>
+<p><strong>Query:</strong> <code>days=30</code> (1–365).</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;days&quot;: 30,
+  &quot;total&quot;: 84,
+  &quot;matches&quot;: 51,
+  &quot;applied&quot;: 3,
+  &quot;saved&quot;: 7,
+  &quot;by_source&quot;: { &quot;google_jobs&quot;: 32, &quot;perplexity_sonar&quot;: 15, &quot;firecrawl_careers&quot;: 4 },
+  &quot;top_companies&quot;: [{ &quot;company&quot;: &quot;Stripe&quot;, &quot;count&quot;: 4 }, { &quot;company&quot;: &quot;Vercel&quot;, &quot;count&quot;: 3 }]
+}
+</code></pre>
+<hr>
+<h3><code>POST /api/v1/job-research/track/{id}/exclude</code></h3>
+<p>Block a URL / domain / company from future refreshes. At least one of <code>url</code>, <code>domain</code>, <code>company</code> is required.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://...optional...&quot;,
+  &quot;domain&quot;: &quot;ziprecruiter.com&quot;,
+  &quot;company&quot;: &quot;Acme Corp&quot;,
+  &quot;reason&quot;: &quot;Optional free-text&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> <code>{ &quot;exclusion&quot;: &lt;row&gt; }</code></p>
+<hr>
+<h3><code>GET /api/v1/job-research/track/{id}/exclusions</code></h3>
+<p><strong>Response:</strong> <code>{ &quot;exclusions&quot;: [&lt;row&gt;, ...] }</code></p>
+<hr>
+<h3><code>DELETE /api/v1/job-research/exclusions/{exclusion_id}</code></h3>
+<p>Remove an exclusion. RLS enforces ownership.</p>
+<p><strong>Response:</strong> <code>{ &quot;ok&quot;: true }</code></p>
+<hr>
+<h3><code>POST /api/v1/job-research/listings/{listing_id}/action</code></h3>
+<p>Mark a listing as <code>saved</code>, <code>applied</code>, <code>dismissed</code>, or <code>interested</code>. Optional <code>notes</code> (free text). Updates <code>user_action</code>, <code>user_action_at</code>, <code>user_notes</code> on the row.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{ &quot;action&quot;: &quot;applied&quot;, &quot;notes&quot;: &quot;Optional&quot; }
+</code></pre>
+<p><strong>Response:</strong> <code>{ &quot;listing&quot;: &lt;updated JobListing&gt; }</code></p>
+<hr>
+<h2>Daily digest email</h2>
+<p>Sent by the <code>job-research-digest-hourly</code> cron at <code>:05</code> past each hour. The cron computes the current UTC hour <code>H</code> and POSTs to <code>/cron-digest?current_hour_utc=H</code>. The dispatcher then:</p>
+<ol>
+<li>Calls RPC <code>get_tracked_jobs_due_for_digest(H)</code> — returns rows where <code>digest_enabled AND is_active AND digest_hour_utc = H AND last_digest_sent_at &lt; today</code>.</li>
+<li>Groups them by <code>user_id</code>.</li>
+<li>For each user, fetches new <code>relevance=&#39;match&#39;</code> listings since their last digest from each of their tracked jobs (capped at 10 per section).</li>
+<li>If any tracked job has new listings: builds ONE consolidated email body (one section per tracked job, dark-themed HTML), sends via the <code>email-api</code> edge function with template slug <code>job_alerts.daily_digest</code>. Also writes one bell notification + optionally POSTs each tracked-job&#39;s <code>alert_webhook_url</code>.</li>
+<li>If NO tracked jobs have new listings: silently stamps <code>last_digest_sent_at</code> so the row isn&#39;t re-evaluated until tomorrow.</li>
+<li>Marks all included listings with <code>digest_included_at = now()</code> so they don&#39;t re-appear in tomorrow&#39;s digest.</li>
+<li>Calls <code>append_job_alert_log</code> per tracked job for audit + 24h dedupe.</li>
+</ol>
+<p><strong>Webhook payload</strong> (when <code>alert_webhook_url</code> is set):</p>
+<pre><code class="language-json">{
+  &quot;tracked_job_id&quot;: &quot;uuid&quot;,
+  &quot;label&quot;: &quot;Senior React jobs in Athens&quot;,
+  &quot;listings&quot;: [[&lt;JobListing&gt;, &lt;JobListing&gt;, ...]]
+}
+</code></pre>
+<hr>
+<h2>Schemas</h2>
+<h3>TrackedJob</h3>
+<pre><code class="language-typescript">{
+  id: string;                              // uuid
+  user_id: string | null;                  // set for internal flow, null for external
+  api_key_id: string | null;               // set for external flow, null for internal
+  workspace_id: string | null;
+  label: string;
+  keywords: string[];
+  excluded_keywords: string[];
+  location: string | null;
+  country_code: string | null;
+  remote_only: boolean;
+  seniority: &#39;junior&#39; | &#39;mid&#39; | &#39;senior&#39; | &#39;lead&#39; | &#39;principal&#39; | &#39;any&#39; | null;
+  employment_type: string[];
+  salary_min: number | null;
+  salary_currency: string | null;
+  excluded_companies: string[];
+  preferred_companies: string[];
+  sources_enabled: { google_jobs?: boolean; perplexity?: boolean; careers_pages?: boolean };
+  careers_page_urls: string[];
+
+  digest_enabled: boolean;
+  digest_hour_utc: number;                 // 0..23
+  alert_channels: string[];                // subset of [&#39;bell&#39;,&#39;email&#39;,&#39;webhook&#39;]
+  alert_webhook_url: string | null;
+  refresh_interval_hours: number;          // 1..168, base cadence
+
+  next_check_at: string | null;            // ISO timestamp
+  last_refreshed_at: string | null;
+  last_digest_sent_at: string | null;
+  consecutive_stable_refreshes: number;
+
+  current_listing_count_24h: number;
+  current_listing_count_7d: number;
+  current_top_companies: unknown;
+  current_metadata: unknown;
+  current_snapshot_at: string | null;
+
+  total_billed_usd: number;
+  total_partner_credits_debited: number;
+  last_refresh_billed_usd: number | null;
+  last_refresh_credits_debited: number | null;
+
+  is_active: boolean;
+  auto_expand_keywords: boolean;
+  created_at: string;
+  updated_at: string;
+}
+</code></pre>
+<h3>JobListing</h3>
+<pre><code class="language-typescript">{
+  id: string;                              // uuid
+  tracked_job_id: string;
+  refresh_run_id: string;                  // groups rows by which refresh produced them
+  url: string;                             // raw URL as found
+  canonical_url: string;                   // tracking params stripped
+  content_hash: string;                    // dedupe key (sha1 of canonical_url + title + company)
+
+  title: string | null;
+  company: string | null;
+  company_domain: string | null;
+  location: string | null;
+  is_remote: boolean | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  salary_period: &#39;hour&#39; | &#39;day&#39; | &#39;week&#39; | &#39;month&#39; | &#39;year&#39; | null;
+  employment_type: string | null;
+  seniority: string | null;
+  description_excerpt: string | null;
+  description_md: string | null;
+
+  posted_at: string | null;                // ISO timestamp from source
+  expires_at: string | null;
+  discovered_at: string;                   // when WE found it
+
+  source: &#39;google_jobs&#39; | &#39;perplexity_sonar&#39; | &#39;firecrawl_careers&#39; | &#39;rss_feed&#39;;
+  relevance: &#39;match&#39; | &#39;tangential&#39; | &#39;mismatch&#39; | &#39;unverifiable&#39; | null;
+  relevance_score: number | null;          // 0..1
+  match_note: string | null;               // e.g. &quot;all keywords + title hit&quot;
+  classifier_cached: boolean;              // true if served from 7d verdict cache
+
+  digest_included_at: string | null;       // when this row first appeared in a digest
+  user_action: &#39;saved&#39; | &#39;applied&#39; | &#39;dismissed&#39; | &#39;interested&#39; | null;
+  user_action_at: string | null;
+  user_notes: string | null;
+
+  // v0.3 — annualized USD for cross-source comparison; raw salary_min/max/currency/period above preserved
+  salary_annual_min_usd: number | null;
+  salary_annual_max_usd: number | null;
+  salary_normalization_note: string | null;
+}
+</code></pre>
+<h3>JobExclusion</h3>
+<pre><code class="language-typescript">{
+  id: string;
+  tracked_job_id: string;
+  url: string | null;
+  domain: string | null;
+  company: string | null;
+  reason: string | null;
+  created_at: string;
+}
+</code></pre>
+<hr>
+<h2>Error format</h2>
+<p>All errors return:</p>
+<pre><code class="language-json">{ &quot;detail&quot;: &quot;human-readable message&quot; }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code></td>
+<td>Bad request — missing required field, invalid value</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Missing or invalid JWT</td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>Forbidden (e.g. <code>force_full_discovery=true</code> without admin role)</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Tracked job not found OR not owned by you</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Internal error — check MIVAA logs</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Costs</h2>
+<p>External-API partner billing is documented in <a href="../../mivaa-pdf-extractor/app/services/integrations/job_cost_logger.py">JOB_OP_CREDIT_COST</a>. For internal flow, <strong>no credits are debited per call</strong> — everything is metered into <code>ai_usage_logs</code> with <code>module_slug=&#39;job-research&#39;</code> for cost-attribution dashboards but not charged through the credit system. Typical per-refresh cost: <strong>$0.005–0.010</strong> on a stable search (most candidates hit the verdict cache; only a handful trigger Haiku).</p>
+<hr>
+<h2>KAI agent surface</h2>
+<p>The KAI agent (<code>agentType: &#39;kai&#39;</code>) exposes 4 tools backed by this API:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>track_job_search</code></td>
+<td>Create / update / pause / resume / delete a tracked job. Resolves target by <code>tracked_job_id</code> or by <code>label</code>.</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>list_my_job_searches</code></td>
+<td>Read the user&#39;s tracked jobs.</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>find_jobs</code></td>
+<td>Fetch recent matched listings for a tracked job.</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>get_job_digest_preview</code></td>
+<td>Preview today&#39;s consolidated digest.</td>
+<td>0</td>
+</tr>
+</tbody></table>
+<p>All 4 are 0-credit because the expensive part (discovery) runs on cron, not on demand. They&#39;re module-gated on <code>job-research</code>; if disabled, each tool returns <code>{ success: false, error: &#39;job-research module is disabled — ask an admin to enable it&#39; }</code>.</p>
+<p><strong>Chunk types</strong> streamed back to AgentHub during tool use:</p>
+<ul>
+<li><code>job_search_created</code> — emitted by <code>track_job_search</code> after a successful create. Payload: <code>{ tracked_job }</code>.</li>
+<li><code>job_search_updated</code> — emitted on update / pause / resume / delete. Payload: <code>{ tracked_job_id, action, tracked_job }</code>.</li>
+<li><code>job_searches_list</code> — emitted by <code>list_my_job_searches</code>. Payload: <code>{ tracked_jobs: [] }</code>.</li>
+<li><code>job_listings_feed</code> — emitted by <code>find_jobs</code>. Payload: <code>{ tracked_job_id, days, listings: [] }</code>.</li>
+<li><code>job_digest_preview</code> — emitted by <code>get_job_digest_preview</code>. Payload: <code>{ days, total, section_count, sections: [{ tracked_job_id, label, listings }] }</code>.</li>
+</ul>
+<blockquote>
+<p><strong>Note (v0.1.0)</strong>: AgentHub rich-card renderers for these chunk types are not yet wired. The agent&#39;s text reply still carries the information; the chunks are inert for now and consumed only as logs. Rich card rendering will land in a follow-up patch.</p>
+</blockquote>
+<p>The agent can also deep-link the user to the hidden Knowledge Base &quot;Job Sources&quot; page at <code>/knowledge-base/job-sources?tracked_job=&lt;uuid&gt;</code> — same path the daily digest email links to.</p>
+<hr>
+<h2>User-facing surfaces (v0.2)</h2>
+<p>The job-research module exposes <strong>two</strong> user-facing surfaces, both auto-wired:</p>
+<ol>
+<li><strong>The KAI agent conversation.</strong> When the user creates a search via the agent, the conversation_id is captured on <code>tracked_jobs.source_conversation_id</code>. After every daily digest tick, the dispatcher inserts a new assistant message into that conversation thread with <code>metadata.chunk_type = &#39;job_findings&#39;</code> carrying the new listings. AgentHub renders it as a rich card (per-listing url / company / location / salary / source). The user reopens the conversation and sees the running history of findings.</li>
+<li><strong>The email digest</strong> at <code>digest_hour_utc</code> (or only on <code>digest_day_of_week</code> if set). One consolidated email per user covering all of their tracked searches. The &quot;Open&quot; link deep-links to the conversation.</li>
+</ol>
+<p>Operations visibility lives at <code>/admin/background-agents</code>: every tracked_job has a corresponding <code>background_agents</code> row, and every refresh writes an <code>agent_runs</code> row + per-source <code>agent_run_logs</code>. Admins see job-research runs alongside other background agents — no module-specific UI required.</p>
+<hr>
+<h2>Required secrets (MIVAA backend)</h2>
+<table>
+<thead>
+<tr>
+<th>Var</th>
+<th>Purpose</th>
+<th>Required when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DATAFORSEO_BASE64</code> (or <code>DATAFORSEO_LOGIN</code> + <code>DATAFORSEO_PASSWORD</code>)</td>
+<td>Google Jobs SERP</td>
+<td><code>sources_enabled.google_jobs: true</code></td>
+</tr>
+<tr>
+<td><code>PERPLEXITY_API_KEY</code></td>
+<td>Sonar discovery</td>
+<td><code>sources_enabled.perplexity: true</code></td>
+</tr>
+<tr>
+<td><code>FIRECRAWL_API_KEY</code></td>
+<td>Career-page scraping</td>
+<td><code>sources_enabled.careers_pages: true</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Haiku classifier</td>
+<td>Always (else everything is <code>unverifiable</code>)</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td>Validates <code>x-cron-secret</code> on <code>/cron-refresh</code> and <code>/cron-digest</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>PUBLIC_APP_URL</code></td>
+<td>Used by the digest dispatcher to build the deep-link to the source conversation in <code>/agent-hub</code>. Same env var the catalog module uses for public catalog URLs — do NOT introduce a duplicate.</td>
+<td>Optional; defaults to <code>https://app.materialshub.gr</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_URL</code> + <code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>Used by the digest dispatcher to call <code>email-api</code></td>
+<td>Always</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Future / deferred (not in v0.1.0)</h2>
+<ul>
+<li><strong>External <code>api_keys</code> flow</strong> (<code>/api/v1/jobs/track/*</code> with <code>Authorization: Bearer kai_*</code>) — partner billing already wired in <code>JOB_OP_CREDIT_COST</code>, just needs a sister router file.</li>
+<li><strong>AgentHub rich cards</strong> for the 5 chunk types above.</li>
+<li><strong>RSS source adapter</strong> as a 4th discovery option.</li>
+<li><strong>Real-time <code>high_match_burst</code> alert</strong> (separate from the daily digest) — schema supports it (<code>alert_type=&#39;high_match_burst&#39;</code>), dispatcher logic not yet implemented.</li>
+<li><strong><code>auto_expand_keywords</code></strong> Haiku-driven keyword expansion on first refresh.</li>
+<li><strong>Classifier feedback UI</strong> writing to <code>job_match_corrections</code> (table + few-shot loop already in place; UI button not wired).</li>
+</ul>
+
+</div></body></html>

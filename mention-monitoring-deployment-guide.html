@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Mention Monitoring — Deployment Guide</h1>
+<p>Step-by-step setup for activating the <strong>Mention Monitoring</strong> module on production.</p>
+<p>The module ships disabled. After completing this guide, admins can flip it on at <code>/admin/modules</code> and start tracking subjects.</p>
+<hr>
+<h2>1. Pre-flight check — what&#39;s already in place</h2>
+<p>These were applied in the 2026-05-03 build and need no further work:</p>
+<ul>
+<li>✅ DB schema (9 tables, 4 RPCs, 5 enums, RLS policies) — applied to production Supabase</li>
+<li>✅ Module rows in <code>public.modules</code> (both disabled by default)</li>
+<li>✅ Email templates seeded in <code>public.email_templates</code></li>
+<li>✅ pg_cron jobs scheduled (<code>mention-monitoring-refresh-hourly</code>, <code>llm-mention-probe-daily</code>, <code>mention-classifier-cache-prune</code>)</li>
+</ul>
+<p>What&#39;s still required: <strong>secrets</strong> + <strong>deploys</strong>.</p>
+<hr>
+<h2>2. Sources covered</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Cost</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>News</strong> (DataForSEO News API)</td>
+<td>$0.0006/req</td>
+<td>already configured</td>
+</tr>
+<tr>
+<td><strong>Blogs / general web</strong> (Perplexity Sonar)</td>
+<td>$0.005/sweep</td>
+<td>already configured</td>
+</tr>
+<tr>
+<td><strong>RSS feeds</strong> (user-curated per subject)</td>
+<td>Free</td>
+<td>none — subscribe via subject <code>source_config.rss_feeds</code></td>
+</tr>
+<tr>
+<td><strong>YouTube</strong> (titles + descriptions)</td>
+<td>Free quota</td>
+<td><code>YOUTUBE_DATA_API_KEY</code> (optional)</td>
+</tr>
+<tr>
+<td><strong>LLM probes</strong> (Haiku + GPT-4o-mini + Gemini Flash + Sonar)</td>
+<td>~$0.008/subject/week</td>
+<td><code>GEMINI_API_KEY</code> (optional, others already configured)</td>
+</tr>
+</tbody></table>
+<p><strong>Reddit was dropped 2026-05-03</strong> — Reddit&#39;s Responsible Builder Policy onboarding wasn&#39;t worth the friction for marginal coverage gain. News + Sonar pick up Reddit threads that get cited by news/blogs anyway.</p>
+<p><strong>Twitter/X / TikTok / Instagram</strong> — out of scope (expensive APIs, ToS-hostile, no public search).</p>
+<hr>
+<h2>3. Secrets you need to add</h2>
+<h3>Already present — verify only</h3>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>GitHub repo + MIVAA systemd unit</td>
+</tr>
+<tr>
+<td><code>PERPLEXITY_API_KEY</code></td>
+<td>GitHub repo + MIVAA systemd unit</td>
+</tr>
+<tr>
+<td><code>DATAFORSEO_BASE64</code> (or <code>DATAFORSEO_LOGIN</code> + <code>DATAFORSEO_PASSWORD</code>)</td>
+<td>GitHub repo + MIVAA</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>GitHub repo + MIVAA</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td>GitHub repo + MIVAA + Supabase Edge env</td>
+</tr>
+<tr>
+<td><code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>GitHub repo + MIVAA + Edge</td>
+</tr>
+</tbody></table>
+<p>If any of these aren&#39;t set, the corresponding source silently no-ops (no crash). The pipeline will run but with reduced coverage.</p>
+<h3>NEW — both optional, both free</h3>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Required for</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>YOUTUBE_DATA_API_KEY</code></td>
+<td>YouTube discovery (opt-in per subject)</td>
+<td>Free quota: 10k units/day</td>
+</tr>
+<tr>
+<td><code>GEMINI_API_KEY</code></td>
+<td>LLM probe model: <code>gemini-2.0-flash</code></td>
+<td>Free tier: 15 RPM / 1500 RPD</td>
+</tr>
+</tbody></table>
+<p>Both are <strong>optional</strong>. Without them, the pipeline still runs on News (DataForSEO) + Sonar (Perplexity) + RSS + Haiku/GPT/Sonar LLM probes. Adding them broadens coverage.</p>
+<hr>
+<h2>4. Step-by-step: get each secret</h2>
+<h3>A. YouTube Data API (free, ~10 min)</h3>
+<ol>
+<li>Go to <strong><a href="https://console.cloud.google.com/">https://console.cloud.google.com/</a></strong>.</li>
+<li>Create a new project (or pick an existing one): top-left dropdown → &quot;New Project&quot; → name it <code>Material KAI</code>.</li>
+<li>Sidebar → <strong>APIs &amp; Services</strong> → <strong>Library</strong>.</li>
+<li>Search <strong>&quot;YouTube Data API v3&quot;</strong> → click → <strong>Enable</strong>.</li>
+<li>Sidebar → <strong>APIs &amp; Services</strong> → <strong>Credentials</strong>.</li>
+<li><strong>+ Create credentials</strong> → <strong>API key</strong>.</li>
+<li>Copy the key. That&#39;s <code>YOUTUBE_DATA_API_KEY</code>.</li>
+<li>Click <strong>Restrict key</strong> (recommended):<ul>
+<li><strong>API restrictions</strong> → &quot;Restrict key&quot; → select only <strong>YouTube Data API v3</strong>.</li>
+<li><strong>Application restrictions</strong> → leave &quot;None&quot; or set IP allowlist to your MIVAA server IP (157.245.166.19).</li>
+</ul>
+</li>
+</ol>
+<p><strong>Quota</strong>: 10,000 units/day, free. A search costs ~100 units. So ~100 subjects/day fit comfortably.</p>
+<h3>B. Gemini API (free tier, ~3 min)</h3>
+<ol>
+<li>Go to <strong><a href="https://aistudio.google.com/app/apikey">https://aistudio.google.com/app/apikey</a></strong>.</li>
+<li>Sign in with the same Google account you used for YouTube (or a different one — keys are independent).</li>
+<li>Click <strong>&quot;Create API key&quot;</strong> → <strong>&quot;Create API key in new project&quot;</strong> (or pick an existing project).</li>
+<li>Copy the key. That&#39;s <code>GEMINI_API_KEY</code>.</li>
+</ol>
+<p><strong>Cost</strong>: <code>gemini-2.0-flash</code> is free up to 15 RPM / 1M TPM / 1500 RPD on the free tier — the LLM probe cron uses ~25 calls per daily run, well under the limit.</p>
+<hr>
+<h2>5. Where to put each secret</h2>
+<h3>GitHub repo secrets (drives the deploy workflow)</h3>
+<ol>
+<li>Go to <strong><a href="https://github.com/creativeghq/material-kai-vision-platform/settings/secrets/actions">https://github.com/creativeghq/material-kai-vision-platform/settings/secrets/actions</a></strong></li>
+<li>Click <strong>&quot;New repository secret&quot;</strong> for each of:<ul>
+<li><code>YOUTUBE_DATA_API_KEY</code></li>
+<li><code>GEMINI_API_KEY</code></li>
+</ul>
+</li>
+</ol>
+<h3>Supabase Edge Function env</h3>
+<p>The mention crons don&#39;t need any new secrets in Supabase Edge env — they reuse <code>CRON_SECRET</code> and <code>PYTHON_BACKEND_URL</code> from the price-monitoring crons.</p>
+<p>Verify they&#39;re set at <strong><a href="https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/functions/secrets">https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/functions/secrets</a></strong>:</p>
+<ul>
+<li><code>CRON_SECRET</code></li>
+<li><code>PYTHON_BACKEND_URL</code> (= <code>https://v1api.materialshub.gr</code>)</li>
+<li><code>SUPABASE_URL</code></li>
+<li><code>SUPABASE_SERVICE_ROLE_KEY</code></li>
+</ul>
+<hr>
+<h2>6. Deploy</h2>
+<p>Once the GitHub secrets are saved:</p>
+<h3>A. Deploy MIVAA backend</h3>
+<pre><code class="language-bash">git push origin main
+</code></pre>
+<p>The <code>mivaa-pdf-extractor/.github/workflows/deploy.yml</code> workflow will rsync the code to the server, recreate the systemd unit (with the new <code>Environment=</code> lines), and restart <code>mivaa-pdf-extractor.service</code>.</p>
+<p>After it finishes, SSH to the server and verify:</p>
+<pre><code class="language-bash">ssh root@157.245.166.19
+systemctl show mivaa-pdf-extractor --property=Environment | tr &#39; &#39; &#39;\n&#39; | grep -E &#39;YOUTUBE|GEMINI&#39;
+</code></pre>
+<h3>B. Deploy the two new edge functions + agent-chat</h3>
+<pre><code class="language-bash">supabase functions deploy mention-monitoring-cron
+supabase functions deploy llm-mention-probe-cron
+supabase functions deploy agent-chat
+</code></pre>
+<p>(<code>agent-chat</code> redeploy is needed so the new mention tools load.)</p>
+<hr>
+<h2>7. Activate the modules</h2>
+<p>In production:</p>
+<ol>
+<li>Sign in as admin → go to <strong><code>/admin/modules</code></strong>.</li>
+<li>Find <strong>&quot;Mention Monitoring&quot;</strong> → toggle <strong>Enabled</strong>.</li>
+<li>Find <strong>&quot;Mention Monitoring Notifications&quot;</strong> → toggle <strong>Enabled</strong> (only needed if you want alerts firing).</li>
+</ol>
+<p>Until both are flipped on:</p>
+<ul>
+<li>The agent tools will return <code>mention-monitoring disabled</code> errors.</li>
+<li>The product detail &quot;Mentions&quot; tab will show empty state.</li>
+<li>The cron jobs will run but find no subjects to refresh.</li>
+</ul>
+<hr>
+<h2>8. Smoke test</h2>
+<h3>Quick check — UI flow</h3>
+<ol>
+<li>Open any product in admin.</li>
+<li>Click the <strong>&quot;Mentions&quot;</strong> tab.</li>
+<li>Toggle the enable switch.</li>
+<li>Wait ~30s for the first refresh to complete.</li>
+<li>You should see mention rows in the <strong>Feed</strong> tab + KPI numbers populated.</li>
+</ol>
+<h3>Quick check — Agent flow</h3>
+<p>In KAI agent chat:</p>
+<pre><code>Track mentions for product &lt;product_id&gt;
+</code></pre>
+<p>Returns a <code>mention_tracking_started</code> chunk with subject details.</p>
+<pre><code>Show me LLM visibility for &lt;product_id&gt;
+</code></pre>
+<p>Returns the latest snapshot or &quot;No probes recorded yet&quot; depending on whether the daily cron has run.</p>
+<pre><code>Run a fresh LLM probe for &lt;product_id&gt;
+</code></pre>
+<p>(Admin only.) Triggers the 16-call probe matrix, debits 2 credits, returns the visibility card inline.</p>
+<h3>Quick check — cron is firing</h3>
+<pre><code class="language-sql">SELECT jobname, last_started_at, last_finished_at, last_run_status
+FROM cron.job_run_details
+WHERE jobname LIKE &#39;%mention%&#39;
+ORDER BY last_started_at DESC
+LIMIT 10;
+</code></pre>
+<p>All three jobs should show <code>succeeded</code> once they&#39;ve ticked.</p>
+<hr>
+<h2>9. Where each secret is read in code</h2>
+<p>For audit / debugging:</p>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Read in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>YOUTUBE_DATA_API_KEY</code></td>
+<td><code>mivaa-pdf-extractor/app/services/integrations/mention_search_service.py</code> (<code>_search_youtube</code>)</td>
+</tr>
+<tr>
+<td><code>GEMINI_API_KEY</code></td>
+<td><code>mivaa-pdf-extractor/app/services/integrations/llm_mention_probe_service.py</code> (<code>_call_gemini</code>)</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><code>mention_identity_service.py</code> + <code>llm_mention_probe_service.py</code> (<code>_call_anthropic</code>)</td>
+</tr>
+<tr>
+<td><code>PERPLEXITY_API_KEY</code></td>
+<td><code>mention_search_service.py</code> (<code>_search_perplexity</code>) + <code>llm_mention_probe_service.py</code> (<code>_call_perplexity</code>)</td>
+</tr>
+<tr>
+<td><code>DATAFORSEO_BASE64</code></td>
+<td><code>mention_search_service.py</code> (<code>_search_dataforseo_news</code>)</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td><code>llm_mention_probe_service.py</code> (<code>_call_openai</code>)</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td><code>app/api/mention_monitoring_routes.py</code> (<code>/cron-refresh</code>, <code>/cron-probe-llm</code>)</td>
+</tr>
+</tbody></table>
+<p>Each adapter checks for an empty key on init and silently disables itself — partial setups are safe.</p>
+<hr>
+<h2>10. Troubleshooting</h2>
+<p><strong>&quot;youtube: search failed: 403&quot;</strong> → API not enabled in the GCP project, OR the key has IP/HTTP-referer restrictions excluding your server. Re-check Cloud Console → Credentials → key restrictions.</p>
+<p><strong>&quot;youtube: search failed: 400 quotaExceeded&quot;</strong> → daily quota burned. Either wait 24h or request a quota raise. The pipeline auto-recovers on the next cron tick.</p>
+<p><strong>Cron jobs show <code>failed</code> in <code>cron.job_run_details</code></strong> → check the edge function logs at <a href="https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/functions/mention-monitoring-cron/logs">https://supabase.com/dashboard/project/bgbavxtjlbvgplozizxu/functions/mention-monitoring-cron/logs</a>. Most common cause: <code>CRON_SECRET</code> mismatched between the value pg_cron sends and MIVAA&#39;s env.</p>
+<p><strong>Module flipped on but agent tools return &quot;disabled&quot;</strong> → the in-memory <code>is_module_enabled()</code> cache lasts 300s. Wait 5 minutes or restart the MIVAA service.</p>
+<hr>
+<h2>11. Cost ceiling</h2>
+<p>With both new sources enabled and conservative cadence (24h refresh + weekly LLM probes):</p>
+<ul>
+<li><strong>Per subject per month</strong>:<ul>
+<li>Discovery: ~30 refreshes × $0.005 = <strong>$0.15</strong></li>
+<li>LLM probes: ~4 weekly × $0.008 = <strong>$0.03</strong></li>
+<li>Total: ~<strong>$0.18/subject/month</strong></li>
+</ul>
+</li>
+<li><strong>100 subjects</strong> ≈ $18/month</li>
+<li><strong>1,000 subjects</strong> ≈ $180/month</li>
+</ul>
+<p>If volume scales beyond this, the volatility cadence will auto-stretch stable subjects to weekly polling, dropping the per-subject cost to ~$0.05/month.</p>
+
+</div></body></html>
