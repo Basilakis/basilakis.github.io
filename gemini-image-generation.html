@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Gemini image generation — patterns and reusable building blocks</h1>
+<p>How we generate images programmatically inside Supabase edge functions — for static admin assets (reference images, hero illustrations, system-generated thumbnails) and for user-facing flows. This doc is the canonical reference; copy the pattern when you need to add another image-generation endpoint.</p>
+<p>Last reviewed 2026-05-02.</p>
+<hr>
+<h2>Models, costs, response format</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Speed</th>
+<th>Quality</th>
+<th>Credits per image (per ai_model_pricing)</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>gemini-3.1-flash-image-preview</code></td>
+<td>~5–10 s</td>
+<td>Good</td>
+<td>6</td>
+<td>Default. Static admin assets, throwaway previews, user-facing where speed matters more than 4K detail.</td>
+</tr>
+<tr>
+<td><code>gemini-3-pro-image-preview</code></td>
+<td>~15–30 s</td>
+<td>Excellent (~4K)</td>
+<td>15</td>
+<td>Hero / cover images, anything the client will actually print.</td>
+</tr>
+</tbody></table>
+<p>Endpoint format (REST, no SDK needed):</p>
+<pre><code>POST https://generativelanguage.googleapis.com/v1beta/models/&lt;model&gt;:generateContent?key=&lt;GOOGLE_API_KEY&gt;
+</code></pre>
+<p>Request body:</p>
+<pre><code class="language-json">{
+  &quot;contents&quot;: [{ &quot;role&quot;: &quot;user&quot;, &quot;parts&quot;: [{ &quot;text&quot;: &quot;&lt;your prompt&gt;&quot; }] }],
+  &quot;generationConfig&quot;: { &quot;responseModalities&quot;: [&quot;IMAGE&quot;] }
+}
+</code></pre>
+<p>Response shape (the relevant part):</p>
+<pre><code>data.candidates[0].content.parts[].inlineData = { mimeType, data: &quot;&lt;base64&gt;&quot; }
+</code></pre>
+<p>Gemini returns either <code>image/png</code> or <code>image/jpeg</code> based on its own choice — <strong>always read <code>inlineData.mimeType</code> from the response and pass it through to your storage upload</strong>, never hardcode a content type.</p>
+<h2>Required environment</h2>
+<p><code>GOOGLE_API_KEY</code> must be set on the Supabase edge functions environment. Some older functions also accept <code>GOOGLE_GENERATIVE_AI_API_KEY</code> as a fallback name; new code should accept either:</p>
+<pre><code class="language-ts">const GOOGLE_API_KEY = Deno.env.get(&#39;GOOGLE_API_KEY&#39;) || Deno.env.get(&#39;GOOGLE_GENERATIVE_AI_API_KEY&#39;);
+</code></pre>
+<hr>
+<h2>The minimal call (copy-paste skeleton)</h2>
+<pre><code class="language-ts">async function generateImage(
+  prompt: string,
+  model: &#39;gemini-3.1-flash-image-preview&#39; | &#39;gemini-3-pro-image-preview&#39; = &#39;gemini-3.1-flash-image-preview&#39;,
+): Promise&lt;{ bytes: Uint8Array; mimeType: string }&gt; {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
+  const res = await fetch(url, {
+    method: &#39;POST&#39;,
+    headers: { &#39;Content-Type&#39;: &#39;application/json&#39; },
+    body: JSON.stringify({
+      contents: [{ role: &#39;user&#39;, parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: [&#39;IMAGE&#39;] },
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 500)}`);
+
+  const data = await res.json();
+  const part = data?.candidates?.[0]?.content?.parts?.find((p: any) =&gt; p?.inlineData?.data);
+  if (!part) throw new Error(&#39;No image data in response&#39;);
+
+  const base64: string = part.inlineData.data;
+  const mimeType: string = part.inlineData.mimeType || &#39;image/jpeg&#39;;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i &lt; binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { bytes, mimeType };
+}
+</code></pre>
+<p>That&#39;s the whole pattern — no SDK, no auth dance, just a fetch and a base64 decode.</p>
+<h2>Multi-image / image-edit flows</h2>
+<p>If you need to feed reference images alongside the prompt (style transfer, room editing, dual-reference), the shared helper at <a href="../supabase/functions/_shared/ai-client.ts"><code>supabase/functions/_shared/ai-client.ts:398</code></a> (<code>generateImageWithGemini</code>) handles that. Look at <a href="../supabase/functions/generate-interior-gemini/"><code>generate-interior-gemini</code></a> for a comprehensive working example covering text-to-image, single-reference edit, and dual-reference style-transfer.</p>
+<hr>
+<h2>Reference implementation: <code>seed-sheet-references</code></h2>
+<p><a href="../supabase/functions/seed-sheet-references/"><code>supabase/functions/seed-sheet-references/</code></a> is the simplest end-to-end example. One-shot admin endpoint that generates 8 static reference images (one per moodboard sheet type) and uploads them into the public <code>moodboard-sheet-references</code> bucket.</p>
+<h3>What it does</h3>
+<ol>
+<li>Receives <code>POST { types?: string[], model?: &#39;flash&#39;|&#39;pro&#39;, overwrite?: boolean }</code>.</li>
+<li>Authenticates via <code>x-admin-secret</code> header against <code>SUPABASE_SERVICE_ROLE_KEY</code> (so only operators can call it; not user-callable).</li>
+<li>For each requested sheet type:<ul>
+<li>Skip if the file already exists in the bucket and <code>overwrite</code> is false.</li>
+<li>Call Gemini <code>generateContent</code> with a <strong>curated prompt</strong> that describes the visual layout of that specific sheet type (chip grid, swatch row, lighting plan diagram, etc.).</li>
+<li>Receive base64 inlineData + mimeType in the response.</li>
+<li>Decode and upload to <code>moodboard-sheet-references/&lt;sheet_type&gt;.png</code> with the actual mimeType from the response.</li>
+</ul>
+</li>
+<li>Returns a JSON summary of what was uploaded / skipped / failed.</li>
+</ol>
+<h3>Key prompt-engineering notes</h3>
+<ul>
+<li>The prompt must describe <strong>the page itself, not the room</strong> — &quot;a photograph of a designer&#39;s presentation board, A3 landscape, 4×2 chip grid, ...&quot; rather than &quot;a kitchen with brass fixtures&quot;. This is the difference between a useful reference image and a generic interior render.</li>
+<li>Always include &quot;no people&quot; if you don&#39;t want incidental humans in shot (Gemini sometimes adds them).</li>
+<li>Specify &quot;editorial photography style&quot; or &quot;architectural drafting style&quot; — gives Gemini a clear aesthetic anchor.</li>
+<li>Specify aspect ratio in the prompt language (&quot;A3 landscape&quot; — Gemini reads this from the words even though we don&#39;t pass <code>aspectRatio</code> for the REST endpoint).</li>
+<li>Hard-coded fixture symbols, hex codes, or label text help Gemini render diagrams more faithfully.</li>
+</ul>
+<h3>Calling it</h3>
+<pre><code class="language-bash"># All 8, skip existing
+curl -X POST https://&lt;project-ref&gt;.supabase.co/functions/v1/seed-sheet-references \
+  -H &quot;x-admin-secret: &lt;SUPABASE_SERVICE_ROLE_KEY&gt;&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;model&quot;:&quot;flash&quot;,&quot;overwrite&quot;:false}&#39;
+
+# Subset, force regenerate
+curl -X POST https://&lt;project-ref&gt;.supabase.co/functions/v1/seed-sheet-references \
+  -H &quot;x-admin-secret: &lt;SUPABASE_SERVICE_ROLE_KEY&gt;&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;types&quot;:[&quot;material_board&quot;,&quot;color_palette&quot;],&quot;model&quot;:&quot;pro&quot;,&quot;overwrite&quot;:true}&#39;
+</code></pre>
+<p>The function takes ~10 s per <code>flash</code> image, ~25 s per <code>pro</code> image. Edge runtime has a <strong>150 s response idle timeout</strong> that often fires before the call completes, but <strong>the function continues running on the backend until done</strong> — files appear in the bucket as they&#39;re uploaded one by one. Re-list the bucket after the timeout to confirm completion. Don&#39;t retry on <code>IDLE_TIMEOUT</code> unless storage actually shows missing files.</p>
+<hr>
+<h2>When to spin up a new image-generation endpoint</h2>
+<p>If you have a NEW image-generation use case, ask first:</p>
+<ol>
+<li><p><strong>Is it user-driven and per-request?</strong> (e.g. &quot;generate a hero image for this listing&quot;)
+→ Build a normal user-callable edge function with credit gating via <code>debit_user_credits</code>. Look at <code>generate-interior-gemini</code>, <code>generate-social-image</code>, or <code>generate-pbr-maps</code> for templates.</p>
+</li>
+<li><p><strong>Is it static admin content?</strong> (e.g. &quot;generate the platform&#39;s cover graphic for this email template&quot;)
+→ Copy the <code>seed-sheet-references</code> pattern. Admin-secret gate, idempotent (skip-if-exists by default), curated prompts in code, write to a public-read bucket excluded from <code>reset-platform</code>.</p>
+</li>
+<li><p><strong>Is it batch processing?</strong> (e.g. &quot;regenerate every product hero overnight&quot;)
+→ Background-agent pattern, NOT a synchronous edge function. Look at the <code>background-agent-runner</code> and <code>_shared/agents/*</code> directory.</p>
+</li>
+</ol>
+<h2>Buckets convention (post-consolidation 2026-05-23)</h2>
+<p>Storage now lives in 6 anchor buckets — see <a href="../CLAUDE.html">CLAUDE.md</a> &quot;Storage Buckets&quot; for the canonical map. New features should pick the right anchor + folder rather than creating a new bucket:</p>
+<ul>
+<li><strong>Static admin-curated reference images</strong> → <code>moodboard-sheet-references</code> (the platform&#39;s <code>&lt;feature&gt;-references</code> pattern collapsed into this single bucket). It&#39;s a public bucket and <code>reset-platform</code> does not clear it.</li>
+<li><strong>AI-generated or chat-uploaded media</strong> → <code>generation-images</code> under a <code>&lt;feature&gt;/</code> prefix (e.g. <code>social/</code>, <code>product-crops/</code>, <code>3d/</code>, <code>designer/</code>, <code>agent/</code>).</li>
+<li><strong>Generated PDFs</strong> → <code>pdf-documents</code> under <code>&lt;feature&gt;-output/</code> (e.g. <code>quote-output/</code>, <code>catalog-output/</code>, <code>moodboard-output/</code>). Private bucket; use <code>storage.from(&#39;pdf-documents&#39;).createSignedUrl(path, 60*60*24*7)</code> for client access.</li>
+<li><strong>Admin-managed templates</strong> → <code>quote-templates</code> (private, admin-RW). Use a <code>&lt;feature&gt;/</code> prefix to separate template sets.</li>
+</ul>
+<p>Patterns to follow:</p>
+<ul>
+<li>A BEFORE DELETE trigger on the owning row to clean up storage when the row is deleted (see <code>_cleanup_moodboard_sheet_storage</code>, <code>_cleanup_quote_pdf_storage</code> for the canonical pattern — both now target <code>pdf-documents</code>).</li>
+<li>Stop persisting full URLs in DB rows; store only the storage path and re-derive a fresh signed URL on each read.</li>
+</ul>
+<h2>Pitfalls we&#39;ve hit</h2>
+<ul>
+<li><strong><code>responseModalities: [&quot;IMAGE&quot;]</code> is required.</strong> Without it, Gemini returns a description of what the image would look like rather than the image itself.</li>
+<li><strong><code>role: &#39;user&#39;</code> is required</strong> in <code>contents[].role</code> — leaving it off works in some SDK paths but not the raw REST endpoint.</li>
+<li><strong>Don&#39;t hardcode <code>image/png</code></strong> as the upload content-type — Gemini sometimes returns JPEG. Use the mimeType from the response. (We hit this in v1 of the seed function, see git history for the fix.)</li>
+<li><strong>Edge timeout != function timeout.</strong> The edge runtime gives up waiting at 150s but the function keeps running. Build idempotent functions and re-check state via storage list / DB query rather than assuming a timeout means failure.</li>
+<li><strong>No streaming for image responses.</strong> The <code>:streamGenerateContent</code> endpoint exists but doesn&#39;t return useful chunks for IMAGE modality — stick with the standard <code>:generateContent</code>.</li>
+</ul>
+<h2>See also</h2>
+<ul>
+<li><a href="moodboard-presentation-sheets.html"><code>docs/moodboard-presentation-sheets.md</code></a> — the feature that drove the seed-sheet-references function.</li>
+<li><a href="../supabase/functions/generate-interior-gemini/"><code>supabase/functions/generate-interior-gemini/</code></a> — the production-grade Gemini integration with all editing modes.</li>
+<li><a href="../supabase/functions/_shared/ai-client.ts"><code>supabase/functions/_shared/ai-client.ts</code></a> — the shared <code>generateImageWithGemini</code> helper for image-edit flows.</li>
+</ul>
+
+</div></body></html>
