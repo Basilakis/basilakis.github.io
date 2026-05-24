@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Public Tools API</h1>
+<p>Unauthenticated lead-gen API that backs the <code>/tools</code> page. Lets any visitor type a product or brand name and receive live retailer prices + recent press mentions, with no signup required.</p>
+<p><strong>Base URL:</strong> <code>https://v1api.materialshub.gr</code>
+<strong>OpenAPI tag</strong>: <code>Public Tools</code>
+<strong>Interactive docs</strong>: <code>GET https://v1api.materialshub.gr/docs</code> — filter by tag
+<strong>Machine-readable spec</strong>: <code>GET https://v1api.materialshub.gr/openapi.json</code></p>
+<p>All paths below are relative to this host (e.g. <code>POST /api/v1/public/price-scan</code> → <code>POST https://v1api.materialshub.gr/api/v1/public/price-scan</code>).</p>
+<hr>
+<h2>Changelog</h2>
+<h3>v1.0 — 2026-05-23</h3>
+<ul>
+<li>🚀 <strong>Initial release</strong>. Three endpoints under <code>/api/v1/public</code>:<ul>
+<li><code>GET /quota</code> — current quota status + Turnstile site key</li>
+<li><code>POST /price-scan</code> — stateless price discovery</li>
+<li><code>POST /mention-scan</code> — stateless mention discovery</li>
+</ul>
+</li>
+<li>🛡 <strong>Cloudflare Turnstile</strong> required on every scan endpoint.</li>
+<li>📊 <strong>2 total scans/day per IP</strong> (combined across scan types).</li>
+<li>💾 <strong>24h result cache</strong> keyed on <code>(query_hash, scan_type)</code> — identical queries serve instantly without burning quota or upstream credits.</li>
+</ul>
+<hr>
+<h2>Authentication</h2>
+<p><strong>No authentication required.</strong> All endpoints are public.</p>
+<p>If an optional <code>Authorization: Bearer &lt;jwt&gt;</code> header IS supplied (Supabase session token), the quota is keyed on <code>user_id</code> instead of <code>ip_address</code>. This is useful behind shared IPs (offices, co-working spaces, mobile carriers) so users don&#39;t penalize each other.</p>
+<pre><code class="language-http"># Anonymous (quota keyed on IP)
+POST /api/v1/public/price-scan
+Content-Type: application/json
+
+# Signed-in (quota keyed on user_id)
+POST /api/v1/public/price-scan
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+</code></pre>
+<hr>
+<h2>Bot defense — Cloudflare Turnstile</h2>
+<p>Every POST request must include a fresh Turnstile token in <code>turnstile_token</code>. Tokens are single-use; the frontend widget reissues a new one after each scan via <code>turnstile.reset()</code>.</p>
+<p><strong>Server-side verification flow:</strong></p>
+<ol>
+<li>Page loads → <code>GET /quota</code> returns <code>turnstile_site_key</code>.</li>
+<li>Frontend renders the Turnstile widget with that site key + an <code>action</code> label (<code>price_scan</code> or <code>mention_scan</code>).</li>
+<li>User completes the challenge → widget callback fires with a token.</li>
+<li>Frontend includes the token in the scan POST body.</li>
+<li>Backend POSTs <code>{secret, response, remoteip}</code> to <code>https://challenges.cloudflare.com/turnstile/v0/siteverify</code>.</li>
+<li>Action label must match the one bound to the token (<code>expected_action</code> check). Mismatch → 400.</li>
+</ol>
+<p><strong>Failure modes:</strong></p>
+<ul>
+<li>Missing or empty <code>turnstile_token</code> → <code>400 captcha verification failed: missing-input-response</code></li>
+<li><code>TURNSTILE_SECRET_KEY</code> not configured server-side → fail-closed <code>400 configuration_error</code></li>
+<li>Token used twice → <code>400 captcha verification failed: timeout-or-duplicate</code></li>
+<li>Network failure to Cloudflare → <code>400 captcha verification failed: network_error</code></li>
+</ul>
+<hr>
+<h2>Quota</h2>
+<p><strong>2 scans/day, combined across price + mention</strong>, per IP (or per <code>user_id</code> when signed in).</p>
+<ul>
+<li><strong>Cache hits do NOT consume quota.</strong> A repeat query within 24h is served from <code>public_lookup_cache</code> without touching upstream APIs or the quota counter.</li>
+<li><strong>Failed scans do NOT consume quota.</strong> Captcha-failed, rate-limited, and errored attempts are logged but not counted toward the daily cap. Only <code>outcome=&#39;success&#39;</code> rows in <code>public_lookup_log</code> count.</li>
+<li><strong>Reset window is rolling 24h</strong>, not calendar-day. <code>reset_at</code> in the response = when the oldest successful scan in the trailing 24h window ages out.</li>
+</ul>
+<p>When the limit is reached, all scan endpoints return <code>429 Too Many Requests</code> with:</p>
+<pre><code class="language-json">{
+  &quot;detail&quot;: {
+    &quot;message&quot;: &quot;Daily scan quota reached.&quot;,
+    &quot;quota&quot;: {
+      &quot;used&quot;: 2,
+      &quot;remaining&quot;: 0,
+      &quot;limit&quot;: 2,
+      &quot;reset_at&quot;: &quot;2026-05-24T14:23:01+00:00&quot;,
+      &quot;turnstile_site_key&quot;: &quot;0x4AAAAAAA...&quot;,
+      &quot;is_authenticated&quot;: false
+    }
+  }
+}
+</code></pre>
+<p>The frontend uses this to render the <code>UpsellCard</code> with &quot;Create free account&quot; + &quot;See credit packs&quot; CTAs.</p>
+<hr>
+<h2>Endpoints</h2>
+<h3><code>GET /api/v1/public/quota</code></h3>
+<p>Returns current quota state. Cheap (single DB query). Called by the frontend on page load to render the widget and the quota chip.</p>
+<p><strong>Response 200:</strong></p>
+<pre><code class="language-json">{
+  &quot;used&quot;: 1,
+  &quot;remaining&quot;: 1,
+  &quot;limit&quot;: 2,
+  &quot;reset_at&quot;: &quot;2026-05-24T14:23:01+00:00&quot;,
+  &quot;turnstile_site_key&quot;: &quot;0x4AAAAAAA-publicSiteKey&quot;,
+  &quot;is_authenticated&quot;: false
+}
+</code></pre>
+<p>Note: <code>turnstile_site_key</code> is <code>null</code> until the operator configures it (see Configuration section below). The frontend renders a &quot;Loading bot check…&quot; placeholder when null, so the page is harmless before keys land.</p>
+<hr>
+<h3><code>POST /api/v1/public/price-scan</code></h3>
+<p>One-shot price discovery. Calls Perplexity Sonar + DataForSEO Shopping + Firecrawl verification (same engine as the authenticated <code>/market-check</code> endpoint, minus persistence).</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;turnstile_token&quot;: &quot;0.abc...&quot;,
+  &quot;product_name&quot;: &quot;Hansgrohe Talis E single-lever basin mixer&quot;,
+  &quot;manufacturer&quot;: &quot;Hansgrohe&quot;,
+  &quot;dimensions&quot;: null,
+  &quot;country_code&quot;: &quot;DE&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>turnstile_token</code></td>
+<td>string</td>
+<td>✅</td>
+<td>Fresh Cloudflare Turnstile token. Single-use. Bound to <code>action: &#39;price_scan&#39;</code>.</td>
+</tr>
+<tr>
+<td><code>product_name</code></td>
+<td>string (2–200 chars)</td>
+<td>✅</td>
+<td>Free-form query. The backend prepends <code>manufacturer</code> if it&#39;s not already in the query.</td>
+</tr>
+<tr>
+<td><code>manufacturer</code></td>
+<td>string (≤120)</td>
+<td>optional</td>
+<td>Helps disambiguation; passed as <code>manufacturer_hint</code> to Perplexity.</td>
+</tr>
+<tr>
+<td><code>dimensions</code></td>
+<td>string (≤80)</td>
+<td>optional</td>
+<td>Appended to the search query.</td>
+</tr>
+<tr>
+<td><code>country_code</code></td>
+<td>ISO 2-letter</td>
+<td>optional</td>
+<td>Biases retailer geography in Perplexity <code>user_location</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Response 200:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;query&quot;: &quot;Hansgrohe Talis E single-lever basin mixer&quot;,
+  &quot;country_code&quot;: &quot;DE&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;retailer_name&quot;: &quot;Hansgrohe Onlineshop&quot;,
+      &quot;product_url&quot;: &quot;https://www.hansgrohe.de/produkte/talis-e-71710000&quot;,
+      &quot;price&quot;: 189.00,
+      &quot;original_price&quot;: null,
+      &quot;currency&quot;: &quot;EUR&quot;,
+      &quot;availability&quot;: &quot;in_stock&quot;,
+      &quot;verified&quot;: true,
+      &quot;source&quot;: &quot;perplexity&quot;,
+      &quot;product_title&quot;: &quot;Talis E Single-Lever Basin Mixer 110&quot;,
+      &quot;match_kind&quot;: &quot;exact&quot;
+    }
+  ],
+  &quot;stats&quot;: {
+    &quot;count&quot;: 7,
+    &quot;verified_count&quot;: 5,
+    &quot;min&quot;: 159.00,
+    &quot;max&quot;: 215.50,
+    &quot;median&quot;: 189.00,
+    &quot;currency&quot;: &quot;EUR&quot;
+  },
+  &quot;summary&quot;: null,
+  &quot;from_cache&quot;: false,
+  &quot;quota&quot;: {
+    &quot;used&quot;: 1,
+    &quot;remaining&quot;: 1,
+    &quot;limit&quot;: 2,
+    &quot;reset_at&quot;: &quot;2026-05-24T14:23:01+00:00&quot;,
+    &quot;turnstile_site_key&quot;: &quot;0x4AAAAAAA...&quot;,
+    &quot;is_authenticated&quot;: false
+  }
+}
+</code></pre>
+<p><strong>Response fields:</strong></p>
+<ul>
+<li><code>from_cache</code> — <code>true</code> if served from the 24h cache (didn&#39;t consume quota; didn&#39;t spend upstream credits).</li>
+<li><code>stats</code> — aggregate of <code>results[]</code> with a non-null price.</li>
+<li><code>quota</code> — post-scan quota state (so the frontend doesn&#39;t need a separate <code>/quota</code> round trip).</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400</code> — Captcha verification failed (see <code>detail</code> for the Cloudflare error code).</li>
+<li><code>400</code> — Validation error (product name too short, etc.).</li>
+<li><code>429</code> — Quota exceeded. Response body includes the full quota object.</li>
+<li><code>502</code> — Upstream (Perplexity/DataForSEO/Firecrawl) failed. Try again in a few minutes.</li>
+</ul>
+<hr>
+<h3><code>POST /api/v1/public/mention-scan</code></h3>
+<p>One-shot mention discovery. Calls DataForSEO News + Perplexity Sonar (web mode) and returns recent mentions + top outlets. <strong>Deterministic facet build</strong> — no Anthropic / Haiku call on the public path, so the public surface stays cheap and independent of Anthropic key availability.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;turnstile_token&quot;: &quot;0.abc...&quot;,
+  &quot;subject_label&quot;: &quot;Geberit AquaClean Mera&quot;,
+  &quot;aliases&quot;: [&quot;AquaClean Mera&quot;, &quot;Mera Comfort&quot;],
+  &quot;country_code&quot;: &quot;CH&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>turnstile_token</code></td>
+<td>string</td>
+<td>✅</td>
+<td>Bound to <code>action: &#39;mention_scan&#39;</code>.</td>
+</tr>
+<tr>
+<td><code>subject_label</code></td>
+<td>string (2–200 chars)</td>
+<td>✅</td>
+<td>Brand or product name to monitor.</td>
+</tr>
+<tr>
+<td><code>aliases</code></td>
+<td>string[] (≤10 items)</td>
+<td>optional</td>
+<td>Alternative spellings or local-language versions. Used as additional <code>must_have_tokens</code> for matching.</td>
+</tr>
+<tr>
+<td><code>country_code</code></td>
+<td>ISO 2-letter</td>
+<td>optional</td>
+<td>Restricts news geography.</td>
+</tr>
+</tbody></table>
+<p><strong>Response 200:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;subject_label&quot;: &quot;Geberit AquaClean Mera&quot;,
+  &quot;country_code&quot;: &quot;CH&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;url&quot;: &quot;https://www.architonic.com/en/product/geberit-aquaclean-mera/...&quot;,
+      &quot;title&quot;: &quot;Geberit AquaClean Mera 2026 launch&quot;,
+      &quot;excerpt&quot;: &quot;Geberit announced the next generation of its premium shower toilet…&quot;,
+      &quot;outlet_domain&quot;: &quot;architonic.com&quot;,
+      &quot;outlet_name&quot;: &quot;Architonic&quot;,
+      &quot;published_at&quot;: &quot;2026-05-12T08:14:00+00:00&quot;,
+      &quot;source&quot;: &quot;dataforseo_news&quot;,
+      &quot;language_code&quot;: &quot;en&quot;,
+      &quot;country_code&quot;: &quot;CH&quot;
+    }
+  ],
+  &quot;total_results&quot;: 8,
+  &quot;top_outlets&quot;: [
+    { &quot;domain&quot;: &quot;architonic.com&quot;, &quot;count&quot;: 3 },
+    { &quot;domain&quot;: &quot;designboom.com&quot;, &quot;count&quot;: 2 }
+  ],
+  &quot;from_cache&quot;: false,
+  &quot;quota&quot;: { &quot;used&quot;: 2, &quot;remaining&quot;: 0, &quot;limit&quot;: 2, &quot;reset_at&quot;: &quot;...&quot;, &quot;turnstile_site_key&quot;: &quot;...&quot;, &quot;is_authenticated&quot;: false }
+}
+</code></pre>
+<p><strong>Error responses:</strong> Same shape as <code>/price-scan</code>.</p>
+<hr>
+<h2>Caching behaviour</h2>
+<p>Every scan request computes a <code>query_hash = sha1(scan_type | normalized_query | country_code)</code> where <code>normalized_query</code> is the lowercase / whitespace-collapsed input.</p>
+<ul>
+<li><strong>Cache write</strong> happens on every successful upstream scan.</li>
+<li><strong>Cache TTL</strong> is 24 hours.</li>
+<li><strong>Cache hit</strong> returns <code>from_cache: true</code> and serves the previous response verbatim (with refreshed <code>quota</code> field).</li>
+<li><strong>Cache hits do NOT count toward quota</strong>. This means a public scraper hammering the same query gets one upstream call per 24h, no matter how many requests they fire.</li>
+</ul>
+<p>The <code>public_lookup_cache.hit_count</code> column is bumped on every hit for cost-savings analytics.</p>
+<hr>
+<h2>Rate-limit handling</h2>
+<p>When <code>quota.remaining === 0</code>:</p>
+<ol>
+<li>Server returns <code>429</code> with the <code>detail.quota</code> object embedded.</li>
+<li>Frontend displays the <code>UpsellCard</code> with two CTAs:<ul>
+<li><strong>Create free account</strong> → <code>/auth?mode=signup</code> (path to higher quota on the authenticated tier — implementation pending).</li>
+<li><strong>See credit packs</strong> → <code>/auth?mode=signup&amp;redirect=/billing</code> (path to paid credits — <code>/billing</code> page pending).</li>
+</ul>
+</li>
+<li>After signup + redirect, signed-in users hit the same endpoints with <code>Authorization: Bearer &lt;jwt&gt;</code>. The quota is now keyed on <code>user_id</code> and (in v1.0) inherits the same 2/day cap. Authenticated higher quotas / credit-debit beyond 2/day is a tracked follow-up.</li>
+</ol>
+<hr>
+<h2>Configuration</h2>
+<h3>Cloudflare Turnstile keys</h3>
+<p>Both keys live in the <code>platform_secrets</code> table as <strong>platform-wide</strong> entries (no <code>primary_module_slug</code>) and surface in the admin UI at <strong><code>/admin/operations → Keys</code></strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Sensitive</th>
+<th>Where used</th>
+<th>Source priority</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TURNSTILE_SITE_KEY</code></td>
+<td>❌ public</td>
+<td>Returned by <code>GET /quota</code> → frontend widget</td>
+<td>env-first / DB-fallback</td>
+</tr>
+<tr>
+<td><code>TURNSTILE_SECRET_KEY</code></td>
+<td>✅ secret</td>
+<td>Server-side <code>siteverify</code> call</td>
+<td>env-first / DB-fallback</td>
+</tr>
+</tbody></table>
+<p><strong>Where to deploy them:</strong></p>
+<ol>
+<li><p><strong>MIVAA env (preferred, production)</strong> — add to <code>mivaa-pdf-extractor/.github/workflows/deploy.yml</code> <code>Environment=</code> lines on the systemd unit. Same pattern as <code>PERPLEXITY_API_KEY</code>, <code>FIRECRAWL_API_KEY</code>, <code>DATAFORSEO_BASE64</code>. Env always wins over DB. Takes effect on next deploy.</p>
+</li>
+<li><p><strong><code>/admin/operations → Keys</code></strong> — paste values into the secrets manager UI. The Python backend&#39;s <code>platform_secret_resolver.py</code> reads the DB row with a 30s cache, so changes take effect within 30 seconds without a redeploy. Use this for emergency rotation when a redeploy isn&#39;t immediately practical.</p>
+</li>
+</ol>
+<p>Both keys are consumed exclusively by the <strong>Python MIVAA backend</strong>, not by Supabase edge functions. The Turnstile widget script is loaded directly from <code>https://challenges.cloudflare.com/turnstile/v0/api.js</code> on the frontend; the <code>siteverify</code> call is made server-side by <a href="../../mivaa-pdf-extractor/app/services/integrations/turnstile_verifier.py">turnstile_verifier.py</a>.</p>
+<p><strong>To obtain the keys:</strong></p>
+<ol>
+<li>Visit <a href="https://dash.cloudflare.com/?to=/:account/turnstile">https://dash.cloudflare.com/?to=/:account/turnstile</a> (free tier — 1M verifications/month).</li>
+<li>Click <strong>Add Site</strong>. Pick <strong>Managed</strong> mode (invisible challenges on most traffic, checkbox on suspicious).</li>
+<li>Add the production domain(s) (e.g. <code>app.materialshub.gr</code>).</li>
+<li>Copy the <strong>Site Key</strong> → <code>TURNSTILE_SITE_KEY</code>.</li>
+<li>Copy the <strong>Secret Key</strong> → <code>TURNSTILE_SECRET_KEY</code>.</li>
+</ol>
+<p><strong>Until both keys are set:</strong></p>
+<ul>
+<li><code>GET /quota</code> returns <code>turnstile_site_key: null</code>.</li>
+<li>The frontend renders a &quot;Loading bot check…&quot; placeholder and the scan button stays disabled.</li>
+<li>All scan endpoints fail closed with <code>400 configuration_error</code>.</li>
+</ul>
+<p>The page is harmless before keys land. Set them, redeploy (or wait 30s for DB fallback), and the widget appears.</p>
+<hr>
+<h2>Data model</h2>
+<h3><code>public_lookup_log</code> (analytics + quota source)</h3>
+<p>One row per scan attempt — cache hit or miss, success or failure.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>uuid PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scan_type</code></td>
+<td>text</td>
+<td><code>&#39;price&#39;</code> or <code>&#39;mention&#39;</code></td>
+</tr>
+<tr>
+<td><code>ip_address</code></td>
+<td>inet</td>
+<td>Resolved from <code>cf-connecting-ip</code> → <code>x-forwarded-for</code> → <code>request.client.host</code></td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>uuid</td>
+<td>Set when Bearer JWT was provided + validated</td>
+</tr>
+<tr>
+<td><code>query_hash</code></td>
+<td>text</td>
+<td>sha1 stable hash</td>
+</tr>
+<tr>
+<td><code>query_text</code></td>
+<td>text</td>
+<td>Truncated to 500 chars</td>
+</tr>
+<tr>
+<td><code>cache_hit</code></td>
+<td>bool</td>
+<td><code>true</code> if served from cache</td>
+</tr>
+<tr>
+<td><code>upstream_cost_usd</code></td>
+<td>numeric(10,6)</td>
+<td>Sum of upstream API costs (Perplexity + DataForSEO + Firecrawl + Haiku)</td>
+</tr>
+<tr>
+<td><code>latency_ms</code></td>
+<td>int</td>
+<td>End-to-end wall time</td>
+</tr>
+<tr>
+<td><code>outcome</code></td>
+<td>text</td>
+<td><code>&#39;success&#39;</code> / <code>&#39;failed&#39;</code> / <code>&#39;rate_limited&#39;</code> / <code>&#39;captcha_failed&#39;</code></td>
+</tr>
+<tr>
+<td><code>error_message</code></td>
+<td>text</td>
+<td>Truncated to 500 chars</td>
+</tr>
+<tr>
+<td><code>user_agent</code></td>
+<td>text</td>
+<td>Truncated to 500 chars</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>timestamptz</td>
+<td>default now()</td>
+</tr>
+</tbody></table>
+<p><strong>Indexes:</strong></p>
+<ul>
+<li><code>(ip_address, created_at desc)</code> partial WHERE <code>ip_address IS NOT NULL</code> — quota query</li>
+<li><code>(user_id, created_at desc)</code> partial WHERE <code>user_id IS NOT NULL</code> — quota query for signed-in users</li>
+<li><code>(created_at desc)</code> — general analytics</li>
+</ul>
+<p><strong>RLS:</strong></p>
+<ul>
+<li>Read: admin / super_admin only.</li>
+<li>Write: service role only (no client-direct writes).</li>
+</ul>
+<h3><code>public_lookup_cache</code> (24h result cache)</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>query_hash</code></td>
+<td>text</td>
+<td>PK part 1</td>
+</tr>
+<tr>
+<td><code>scan_type</code></td>
+<td>text</td>
+<td>PK part 2</td>
+</tr>
+<tr>
+<td><code>result</code></td>
+<td>jsonb</td>
+<td>Cached response payload (minus <code>quota</code> field)</td>
+</tr>
+<tr>
+<td><code>hit_count</code></td>
+<td>int</td>
+<td>Bumped on every cache hit</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>timestamptz</td>
+<td>When the cache was first written</td>
+</tr>
+<tr>
+<td><code>expires_at</code></td>
+<td>timestamptz</td>
+<td><code>created_at + 24h</code></td>
+</tr>
+</tbody></table>
+<p><strong>Cleanup:</strong> pg_cron <code>public-lookup-cleanup-daily</code> runs daily at 04:15 UTC and deletes <code>WHERE expires_at &lt; now()</code> plus log rows older than 30d.</p>
+<hr>
+<h2>Cost model</h2>
+<p>Per-scan upstream COGS (typical):</p>
+<table>
+<thead>
+<tr>
+<th>Upstream</th>
+<th>Price scan</th>
+<th>Mention scan</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Perplexity Sonar</td>
+<td>~$0.005</td>
+<td>~$0.005</td>
+</tr>
+<tr>
+<td>DataForSEO Merchant / News</td>
+<td>~$0.0006</td>
+<td>~$0.0006</td>
+</tr>
+<tr>
+<td>Firecrawl verification (5–10 URLs)</td>
+<td>~$0.005–$0.015</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Haiku classification</td>
+<td>n/a (skipped on public path)</td>
+<td>n/a (skipped on public path)</td>
+</tr>
+<tr>
+<td><strong>Total per scan</strong></td>
+<td><strong>~$0.010–$0.020</strong></td>
+<td><strong>~$0.005–$0.010</strong></td>
+</tr>
+</tbody></table>
+<p>Worst-case ceiling per IP per year: <code>2 scans/day × 365 days × $0.020 = ~$15/IP/year</code>. Realistically much lower because most queries are repeats hitting the 24h cache.</p>
+<p>The visitor pays nothing on the free tier. Authenticated users who exceed 2/day pay credits (implementation pending — see follow-ups).</p>
+<hr>
+<h2>Implementation files</h2>
+<ul>
+<li><strong>Route</strong>: <a href="../../mivaa-pdf-extractor/app/api/public_tools_routes.py"><code>mivaa-pdf-extractor/app/api/public_tools_routes.py</code></a></li>
+<li><strong>Quota + cache service</strong>: <a href="../../mivaa-pdf-extractor/app/services/integrations/public_lookup_service.py"><code>mivaa-pdf-extractor/app/services/integrations/public_lookup_service.py</code></a></li>
+<li><strong>Turnstile verifier</strong>: <a href="../../mivaa-pdf-extractor/app/services/integrations/turnstile_verifier.py"><code>mivaa-pdf-extractor/app/services/integrations/turnstile_verifier.py</code></a></li>
+<li><strong>Env-first / DB-fallback secret resolver</strong>: <a href="../../mivaa-pdf-extractor/app/services/integrations/platform_secret_resolver.py"><code>mivaa-pdf-extractor/app/services/integrations/platform_secret_resolver.py</code></a></li>
+<li><strong>Frontend service</strong>: <a href="../../src/services/publicToolsService.ts"><code>src/services/publicToolsService.ts</code></a></li>
+<li><strong>Frontend page</strong>: <a href="../../src/pages/Tools/PublicToolsPage.tsx"><code>src/pages/Tools/PublicToolsPage.tsx</code></a></li>
+<li><strong>Turnstile widget</strong>: <a href="../../src/components/features/turnstile/TurnstileWidget.tsx"><code>src/components/features/turnstile/TurnstileWidget.tsx</code></a></li>
+<li><strong>Route registration</strong>: <a href="../../src/App.tsx"><code>src/App.tsx</code></a> — outside <code>&lt;AuthGuard&gt;</code></li>
+</ul>
+<hr>
+<h2>Follow-ups (not shipped in v1.0)</h2>
+<ol>
+<li><strong><code>/billing</code> credit-packs page</strong>. The upsell links there but the page doesn&#39;t exist yet. Stripe checkout + credit balance display.</li>
+<li><strong>Higher authenticated quota + credit-debit beyond free tier</strong>. Signed-in users currently inherit the same 2/day cap. Should become &quot;X free / day on signup, then N credits per scan&quot;.</li>
+<li><strong>Per-IP analytics page under <code>/admin/operations</code></strong>. Data is in <code>public_lookup_log</code> (scan volume, cost per IP, cache hit rate). UI pending.</li>
+<li><strong>Admin cache invalidation tool</strong>. Operator-driven flush by query or by <code>scan_type</code> when a query goes stale before the 24h TTL (e.g. a retailer relaunches with new pricing).</li>
+<li><strong>Vision-attached scans</strong>. Today the scan is text-only. Could accept a product image (multipart upload) → call MIVAA&#39;s visual search to identify the product → run the price/mention scan on the identified label. Higher conversion potential as a lead-gen demo.</li>
+</ol>
+
+</div></body></html>
