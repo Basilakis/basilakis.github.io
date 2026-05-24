@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,16 +19,59 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>User Levels &amp; Access Control</h1>
 <p>Reference document for all user roles on the Material KAI Vision Platform, how they are determined, and what each level can access.</p>
 <hr>
-<h2>How Roles Are Determined</h2>
-<p>Roles are computed from two database sources:</p>
+<h2>Platform Roles</h2>
+<p>The <code>public.roles</code> table currently has <strong>4 rows</strong> (the <code>manager</code> role was removed 2026-05-23 — collapsed into admin):</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>user</code></td>
+<td>Default for every signup. Basic access — view materials, create moodboards, view own profile.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>dealer</code></td>
+<td>View materials, manage orders, limited inventory access, manage customer contacts. <strong>Admin-granted only.</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>factory</code></td>
+<td>Create/manage materials, manage inventory, view reports, manage production. <strong>Admin-granted only.</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>admin</code></td>
+<td>Full platform access — user management, system config, billing, CRM.</td>
+</tr>
+</tbody></table>
+<p><code>super_admin</code> and <code>owner</code> also exist as code constants (workspace-level, not separate rows in <code>public.roles</code>) and count as admin for all platform-wide checks via <code>isAdmin()</code> in <a href="../src/auth/roles.ts"><code>src/auth/roles.ts</code></a>.</p>
+<h3>Signup flow (added 2026-05-23 / 24)</h3>
+<p>Public registration always lands a user at <code>role=&#39;user&#39;</code>, <code>entity_type=&#39;solo&#39;</code>, <code>subscription_tier=&#39;free&#39;</code>. To become a dealer or factory:</p>
+<ol>
+<li>User switches their profile from <strong>Solo</strong> to <strong>Business entity</strong> (Profile tab → Business section). They fill VAT, company name, address. Greek users get one-click pre-fill via VIES + ΑΑΔΕ.</li>
+<li>User opens Subscription → &quot;Apply for Dealer / Factory&quot; card → picks role + writes optional justification → submits.</li>
+<li><code>role-upgrade-requests</code> edge function fires: re-validates VAT via VIES, snapshots <code>vat_validated*</code> on the request row, emails admins + posts bell notifications.</li>
+<li>Admin reviews on the user detail page (<code>/admin/crm/users/{id}</code> → Role Upgrade Requests panel) → Approve flips <code>user_profiles.role_id</code> + emails the user (<code>role_upgrade_request.approved</code>).</li>
+</ol>
+<p>See <a href="../src/modules/myaade/README.html"><code>src/modules/myaade/README.md</code></a> for the Greek-business auto-fill that runs during step 1.</p>
+<hr>
+<h2>How Personas Are Determined (legacy <code>professional_type</code> flow, separate from platform roles)</h2>
+<p>Personas are computed from these sources:</p>
 <table>
 <thead>
 <tr>
@@ -45,6 +89,16 @@
 <td><code>user_profiles.factory_verified</code></td>
 <td>boolean</td>
 <td>Unlocks factory-side features</td>
+</tr>
+<tr>
+<td><code>user_profiles.entity_type</code></td>
+<td><code>&#39;solo&#39;</code> | <code>&#39;business&#39;</code> (default <code>solo</code>)</td>
+<td>Required = <code>&#39;business&#39;</code> before applying for dealer/factory role</td>
+</tr>
+<tr>
+<td><code>user_profiles.business_id</code></td>
+<td>FK → <code>crm_companies(id)</code></td>
+<td>Set when entity_type=&#39;business&#39;; links to a CRM company row</td>
 </tr>
 <tr>
 <td><code>workspace_members.role</code></td>
