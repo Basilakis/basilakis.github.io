@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Material Search</h1>
 <h2>Overview</h2>
 <p>The Material KAI Vision Platform provides powerful search capabilities to help you find exactly the materials you need. The search system understands natural language, recognizes visual patterns, and can filter by specific material properties.</p>
@@ -47,7 +49,7 @@
 <li>&quot;Fire-rated fabric Class 1&quot;</li>
 <li>&quot;3mm thickness vinyl plank&quot;</li>
 </ul>
-<p>This works because the platform embeds Qwen3-VL&#39;s structured analysis of each image (material type, dimensions, finishes, properties) via Voyage AI.</p>
+<p>This works because the platform embeds Claude Opus 4.7&#39;s structured <code>VisionAnalysis</code> of each image (material type, dimensions, finishes, properties) via Anthropic tool use → <code>serialize_vision_analysis_to_text</code> → Voyage AI. (Pre-2026-05-01 used Qwen3-VL&#39;s analysis; migration retired Qwen vision — the HF endpoint had been 404-ing for months and falling through to Claude.)</p>
 <h3>Natural Language Search</h3>
 <p>Simply describe what you&#39;re looking for in plain language:</p>
 <ul>
