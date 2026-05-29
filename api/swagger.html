@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Material KAI Vision Platform — Complete API Reference</h1>
 <blockquote>
 <p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co</code>
@@ -167,7 +169,7 @@
 </thead>
 <tbody><tr>
 <td><code>kai</code></td>
-<td>Default general-purpose KAI agent (Claude Sonnet)</td>
+<td>Default general-purpose KAI agent (Claude Opus)</td>
 <td>Any authenticated user</td>
 </tr>
 <tr>
@@ -200,7 +202,7 @@
 <p>Sub-agent tools, B2B manufacturer search, SEO tools, and the <code>price_lookup</code> tool are gated to <code>admin</code> or <code>owner</code> roles.</p>
 </blockquote>
 <h3>Admin-Only Tool: price_lookup (2026-04)</h3>
-<p>Searches the &quot;Pricing&quot; KB category and composes a price with a reasoning chain. Only available to admin/owner. See <a href="./pricing-api.md">pricing-api.md</a> for the full contract.</p>
+<p>Searches the &quot;Pricing&quot; KB category and composes a price with a reasoning chain. Only available to admin/owner. See <a href="./pricing-api.html">pricing-api.md</a> for the full contract.</p>
 <table>
 <thead>
 <tr>
@@ -297,7 +299,13 @@
 }
 </code></pre>
 <h3>File Upload (multipart)</h3>
-<p>Send <code>multipart/form-data</code> directly — auto-routed to <code>POST /api/rag/documents/upload-async</code>.</p>
+<p>Send <code>multipart/form-data</code> directly — auto-routed to <code>POST /api/rag/documents/upload</code>.</p>
+<p>Auth: requires a valid JWT in the <code>Authorization: Bearer &lt;token&gt;</code> header. The
+gateway forwards the caller&#39;s JWT (not the service key) so MIVAA&#39;s
+<code>get_workspace_context</code> resolves to the real user. The form-supplied
+<code>workspace_id</code> is validated against the JWT&#39;s workspace and rejected on
+mismatch (HTTP 403).</p>
+<p>Max file size: 100MB.</p>
 <h3>Job Status Check (URL path)</h3>
 <p><code>GET /functions/v1/mivaa-gateway/job-status/{job_id}</code></p>
 <hr>
@@ -598,11 +606,6 @@
 <td><code>admin_export_data</code></td>
 <td>GET</td>
 <td>Export data</td>
-</tr>
-<tr>
-<td><code>admin_packages_status</code></td>
-<td>GET</td>
-<td>Package status</td>
 </tr>
 <tr>
 <td><code>admin_job_progress</code></td>
@@ -1114,7 +1117,7 @@
   ],
   &quot;maxResults&quot;: 10,
   &quot;includeExplanations&quot;: false,
-  &quot;model&quot;: &quot;claude-sonnet-4-5&quot;
+  &quot;model&quot;: &quot;claude-opus-4-7&quot;
 }
 </code></pre>
 <table>
@@ -1154,16 +1157,16 @@
 <td><code>model</code></td>
 <td><code>string</code></td>
 <td>No</td>
-<td><code>&quot;claude-sonnet-4-5&quot;</code></td>
+<td><code>&quot;claude-opus-4-7&quot;</code></td>
 </tr>
 </tbody></table>
-<p>Valid models: <code>&quot;claude-sonnet-4-5&quot;</code> or <code>&quot;claude-haiku-4-5&quot;</code></p>
+<p>Valid models: <code>&quot;claude-opus-4-7&quot;</code> or <code>&quot;claude-haiku-4-5&quot;</code></p>
 <h3>Response</h3>
 <pre><code class="language-json">{
   &quot;rerankedResults&quot;: [...],
   &quot;explanations&quot;: { &quot;product-uuid&quot;: &quot;Ranked #1 because...&quot; },
   &quot;processingTimeMs&quot;: 420,
-  &quot;model&quot;: &quot;claude-sonnet-4-5&quot;,
+  &quot;model&quot;: &quot;claude-opus-4-7&quot;,
   &quot;cost&quot;: 0.0012,
   &quot;usage&quot;: { &quot;inputTokens&quot;: 1200, &quot;outputTokens&quot;: 150 }
 }
@@ -1173,7 +1176,7 @@
 <p><strong>Endpoint Base</strong>: <code>/functions/v1/quotes-api</code>
 <strong>Auth</strong>: User JWT or Service Role Key</p>
 <blockquote>
-<p><strong>Pricing audit fields (2026-04):</strong> <code>quote_items</code> rows now carry <code>price_source</code> (provenance tag: <code>manual | catalog | kb:ai:&lt;log_id&gt; | kb:quick:&lt;doc_id&gt; | product_price:&lt;id&gt;</code>) and <code>price_lookup_call_id</code> (FK → <code>agent_tool_call_logs.id</code>). Admin can update these via <code>PATCH /rest/v1/quote_items</code> directly or through the <code>QuotesService.updateItem()</code> frontend method. See <a href="./pricing-api.md">pricing-api.md</a> for full contract.</p>
+<p><strong>Pricing audit fields (2026-04):</strong> <code>quote_items</code> rows now carry <code>price_source</code> (provenance tag: <code>manual | catalog | kb:ai:&lt;log_id&gt; | kb:quick:&lt;doc_id&gt; | product_price:&lt;id&gt;</code>) and <code>price_lookup_call_id</code> (FK → <code>agent_tool_call_logs.id</code>). Admin can update these via <code>PATCH /rest/v1/quote_items</code> directly or through the <code>QuotesService.updateItem()</code> frontend method. See <a href="./pricing-api.html">pricing-api.md</a> for full contract.</p>
 </blockquote>
 <h3>POST /functions/v1/quotes-api/quote-requests</h3>
 <p>Create a quote request.</p>
@@ -1467,7 +1470,7 @@
       &quot;total_credits_debited&quot;: 367.0
     },
     &quot;byModel&quot;: [
-      { &quot;model&quot;: &quot;claude-sonnet-4-6&quot;, &quot;calls&quot;: 80, &quot;cost&quot;: 2.10, &quot;credits&quot;: 210 }
+      { &quot;model&quot;: &quot;claude-opus-4-7&quot;, &quot;calls&quot;: 80, &quot;cost&quot;: 2.10, &quot;credits&quot;: 210 }
     ]
   }
 }
@@ -2353,9 +2356,19 @@ Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quo
 <p>Cancel a queued or processing batch job.</p>
 <hr>
 <h2>21. Price Monitoring</h2>
+<blockquote>
+<p><strong>Heads-up</strong>: this section only covers the lightweight Supabase <em>edge function</em>
+shim. The actual price monitoring pipeline (Perplexity Sonar + DataForSEO
+Merchant discovery → Firecrawl verification → Haiku identity classification)
+runs on the MIVAA backend and is documented in full at
+<a href="price-monitoring-api.html">docs/api/price-monitoring-api.md</a>. Every row returned
+now carries <code>match_kind</code>, <code>match_score</code>, <code>match_note</code>, <code>product_title</code>,
+<code>original_price</code>, <code>verified</code>, and <code>source</code> — see that doc for the response
+schema.</p>
+</blockquote>
 <p><strong>Endpoint</strong>: <code>POST /functions/v1/price-monitoring</code>
 <strong>Auth</strong>: User JWT or Service Role Key
-<strong>Description</strong>: Monitor competitor prices for products using Firecrawl web scraping.</p>
+<strong>Description</strong>: Entry point for Factory/Store users to toggle monitoring for a product. Delegates the actual scraping + identity verification to the MIVAA backend.</p>
 <h3>Request Body</h3>
 <pre><code class="language-json">{
   &quot;action&quot;: &quot;start_monitoring&quot;,
@@ -2925,7 +2938,7 @@ Body: { &quot;email&quot;: &quot;user@example.com&quot; }
 <hr>
 <h2>31. Supabase Storage API</h2>
 <p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1</code></p>
-<h3>Storage Buckets</h3>
+<h3>Storage Buckets (post-consolidation 2026-05-23)</h3>
 <table>
 <thead>
 <tr>
@@ -2934,24 +2947,28 @@ Body: { &quot;email&quot;: &quot;user@example.com&quot; }
 </tr>
 </thead>
 <tbody><tr>
-<td><code>product-images</code></td>
-<td>Product and material images</td>
+<td><code>pdf-documents</code></td>
+<td>All PDF binaries: KB raw uploads (<code>{user_id}/</code>), catalog sources (<code>catalog-source/</code>), generated catalog PDFs (<code>catalog-output/</code>), quote PDFs (<code>quote-output/</code>), moodboard sheet PDFs (<code>moodboard-output/</code>). Private — readers use signed URLs.</td>
 </tr>
 <tr>
-<td><code>workspace-assets</code></td>
-<td>Workspace logos and banners</td>
+<td><code>pdf-tiles</code></td>
+<td>KB extracted page images (<code>extracted/</code>) + catalog page renders (<code>catalog-extracted/</code>). Public, RLS-gated writes.</td>
 </tr>
 <tr>
-<td><code>quote-documents</code></td>
-<td>Generated quote PDFs</td>
+<td><code>generation-images</code></td>
+<td>All AI-generated and chat-uploaded media: virtual staging, region edit, video, PBR maps, SAM crops (<code>product-crops/</code>), agent chat uploads (<code>agent/</code>), 3D models (<code>3d/</code>), designer assets (<code>designer/</code>). Public, 100 MB cap.</td>
 </tr>
 <tr>
 <td><code>quote-templates</code></td>
-<td>PDF template images (cover, background, back cover)</td>
+<td>Quote template PNGs at root + catalog template PNGs under <code>catalog/</code>. Private, admin-only RW.</td>
 </tr>
 <tr>
-<td><code>knowledge-base</code></td>
-<td>KB document files</td>
+<td><code>moodboard-sheet-references</code></td>
+<td>Static admin-curated illustrations for the sheet-type picker.</td>
+</tr>
+<tr>
+<td><code>profile-avatars</code></td>
+<td>User avatars (<code>{user_id}/avatar.ext</code>). Public, 2 MB cap.</td>
 </tr>
 </tbody></table>
 <h3>Upload File</h3>
@@ -3903,7 +3920,7 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 <p>These functions are callable but intended for internal/admin use. Not part of the standard 3rd-party API surface.</p>
 <h3>POST /functions/v1/ai-pricing-updater</h3>
 <p><strong>Auth</strong>: None (internal cron or manual trigger)
-<strong>Description</strong>: Updates AI model pricing table (<code>ai_model_pricing</code>) from hardcoded reference prices for Anthropic, OpenAI, Voyage, Qwen, Google, and Firecrawl.</p>
+<strong>Description</strong>: Updates AI model pricing table (<code>ai_model_pricing</code>) from hardcoded reference prices for Anthropic, OpenAI, Voyage, Google, and Firecrawl. (Qwen pricing entries retired 2026-05-01 alongside the Qwen-removal migration; vision is now Anthropic-only and chunking moved to Claude Sonnet 4.6.)</p>
 <pre><code class="language-json">{ &quot;force_update&quot;: false, &quot;provider&quot;: &quot;anthropic&quot; }
 </code></pre>
 <p><strong>Response:</strong></p>
@@ -4102,7 +4119,7 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 </tr>
 </thead>
 <tbody><tr>
-<td>KAI agent message (Sonnet)</td>
+<td>KAI agent message (Opus)</td>
 <td>0.5-5 credits depending on length</td>
 </tr>
 <tr>
