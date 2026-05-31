@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,64 +19,75 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>API Documentation</h1>
 <p>This directory contains per-function deep docs for Supabase Edge Function APIs.</p>
 <blockquote>
-<p><strong>📑 Looking for the master list?</strong> See <a href="../api-master-reference.md"><strong>api-master-reference.md</strong></a> — single page covering all <strong>68 edge functions + MIVAA Python endpoints</strong> (auth models, categories, call patterns). Start there if you&#39;re integrating; come here for endpoint details.</p>
+<p><strong>📑 Looking for the master list?</strong> See <a href="../api-master-reference.html"><strong>api-master-reference.md</strong></a> — single page covering all <strong>68 edge functions + MIVAA Python endpoints</strong> (auth models, categories, call patterns). Start there if you&#39;re integrating; come here for endpoint details.</p>
 </blockquote>
 <h2>Overview</h2>
 <p>All APIs are implemented as Supabase Edge Functions running on Deno and are accessible via:</p>
 <p><strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/</code></p>
 <h2>Available APIs</h2>
 <h3>Core Business APIs</h3>
-<h4><a href="./email-api.md">Email API</a></h4>
+<h4><a href="./email-api.html">Email API</a></h4>
 <p>Email sending, domain verification, and analytics using AWS SES.</p>
 <ul>
 <li><strong>Function:</strong> <code>email-api</code></li>
 <li><strong>Features:</strong> Template-based emails, domain verification, analytics, sending stats</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./messaging-api.md">Messaging API</a></h4>
+<h4><a href="./messaging-api.html">Messaging API</a></h4>
 <p>Multi-channel messaging (SMS, WhatsApp) using Twilio.</p>
 <ul>
 <li><strong>Function:</strong> <code>messaging-api</code></li>
 <li><strong>Features:</strong> SMS, WhatsApp messaging, templates, delivery tracking, analytics</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./crm-contacts-api.md">CRM Contacts API</a></h4>
+<h4><a href="./crm-contacts-api.html">CRM Contacts API</a></h4>
 <p>Contact management for CRM system.</p>
 <ul>
 <li><strong>Function:</strong> <code>crm-contacts-api</code></li>
 <li><strong>Features:</strong> CRUD operations, user linking, relationship management</li>
-<li><strong>Access:</strong> Admin, Manager, Factory roles</li>
+<li><strong>Access:</strong> Admin, Factory roles (<code>manager</code> role removed 2026-05-23)</li>
 </ul>
-<h4><a href="./crm-users-api.md">CRM Users API</a></h4>
+<h4><a href="./crm-users-api.html">CRM Users API</a></h4>
 <p>User account and profile management.</p>
 <ul>
 <li><strong>Function:</strong> <code>crm-users-api</code></li>
 <li><strong>Features:</strong> User listing, profile updates, role management</li>
 <li><strong>Access:</strong> Admin only</li>
 </ul>
-<h4><a href="./crm-companies-api.md">CRM Companies API</a></h4>
+<h4><a href="./crm-companies-api.html">CRM Companies API</a></h4>
 <p>Company records management.</p>
 <ul>
 <li><strong>Function:</strong> <code>crm-companies-api</code></li>
 <li><strong>Features:</strong> Company CRUD, contact linking, search</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./quotes-api.md">Quotes API</a></h4>
+<h4><a href="./quotes-api.html">Quotes API</a></h4>
 <p>Quote requests and proposal management.</p>
 <ul>
 <li><strong>Function:</strong> <code>quotes-api</code></li>
-<li><strong>Features:</strong> Quote requests, proposals, status tracking, <strong>price audit fields</strong> (<code>price_source</code>, <code>price_lookup_call_id</code>), <code>product_prices</code> cache table</li>
+<li><strong>Features:</strong> Quote requests, proposals, status tracking, <strong>price audit fields</strong> (<code>price_source</code>, <code>price_lookup_call_id</code>), <code>product_prices</code> cache table, <strong>revision chain</strong> (<code>parent_quote_id</code> + <code>revision_number</code>)</li>
 <li><strong>Access:</strong> Authenticated users (admin/owner for pricing fields)</li>
 </ul>
-<h4><a href="./pricing-api.md">Pricing API</a> <span style="color:#ec4899">(NEW — 2026-04)</span></h4>
+<h4><a href="./projects-api.html">Project Workspace API</a> <span style="color:#ec4899">(NEW — 2026-05-24)</span></h4>
+<p>Container above moodboards and quotes for one engagement — rooms, budget vs actual, tasks (with subtasks), revisions, append-only timeline, passwordless email collaborator invites.</p>
+<ul>
+<li><strong>Endpoint surface:</strong> MIVAA Python — <code>/api/v1/projects/*</code> (16 endpoints across project CRUD, rooms, tasks, collaborators, events)</li>
+<li><strong>Auth:</strong> <code>Authorization: Bearer kai_*</code> (same <code>api_keys</code> flow as price / mention / job tracking)</li>
+<li><strong>Tag in OpenAPI:</strong> <code>Project Workspace (Public API)</code> — filter at <a href="https://v1api.materialshub.gr/docs">https://v1api.materialshub.gr/docs</a></li>
+<li><strong>Credits:</strong> writes 0 cr (DB-only) except <code>invite_collaborator</code> = 1 cr (covers the transactional email)</li>
+<li><strong>Module doc:</strong> <a href="../projects.html">docs/projects.md</a> — full architecture, RLS, triggers, frontend integration</li>
+<li><strong>Access:</strong> Authenticated users (every project / room / task / collaborator scoped to the API key&#39;s user via RLS)</li>
+</ul>
+<h4><a href="./pricing-api.html">Pricing API</a> <span style="color:#ec4899">(NEW — 2026-04)</span></h4>
 <p>Admin-only API for sourcing, composing, and committing prices from the
 &quot;Pricing&quot; Knowledge Base category. Covers: category setup, ingesting price
 docs, AI-mode lookup via <code>price_lookup</code> agent tool, quick-pick direct
@@ -88,7 +100,7 @@ sub-types (price_list / discount_rule / contract_terms / promotion),
 upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</code></li>
 <li><strong>Access:</strong> Admin / Owner only (every layer enforced)</li>
 </ul>
-<h4><a href="./recommendations-api.md">Recommendations API</a></h4>
+<h4><a href="./recommendations-api.html">Recommendations API</a></h4>
 <p>Collaborative filtering recommendations and interaction tracking.</p>
 <ul>
 <li><strong>Function:</strong> <code>recommendations-api</code></li>
@@ -96,15 +108,15 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
 <h3>AI &amp; Agent APIs</h3>
-<h4><a href="./agent-chat-api.md">Agent Chat API</a></h4>
+<h4><a href="./agent-chat-api.html">Agent Chat API</a></h4>
 <p>Unified multi-agent AI system powered by LangChain.js and Claude.</p>
 <ul>
 <li><strong>Function:</strong> <code>agent-chat</code></li>
-<li><strong>Agents:</strong> <code>kai</code> (default, Sonnet), <code>interior-designer</code> (Sonnet), <code>demo</code> (Haiku). Legacy aliases <code>search</code>/<code>insights</code>/<code>seo</code> resolve to <code>kai</code>.</li>
+<li><strong>Agents:</strong> <code>kai</code> (default, Opus), <code>interior-designer</code> (Opus), <code>demo</code> (Haiku). Legacy aliases <code>search</code>/<code>insights</code>/<code>seo</code> resolve to <code>kai</code>.</li>
 <li><strong>Features:</strong> RBAC tool gating, skills system (<code>load_skill</code>), multimodal images, SSE streaming, long-term memory</li>
 <li><strong>Access:</strong> JWT (all users for core tools; admin/owner for B2B/SEO/sub-agents)</li>
 </ul>
-<h4><a href="./mivaa-gateway-api.md">MIVAA Gateway API</a></h4>
+<h4><a href="./mivaa-gateway-api.html">MIVAA Gateway API</a></h4>
 <p>Gateway to Python backend services (RAG, search, AI services).</p>
 <ul>
 <li><strong>Function:</strong> <code>mivaa-gateway</code></li>
@@ -112,36 +124,45 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Access:</strong> Authenticated users or API key</li>
 </ul>
 <h3>Processing APIs</h3>
-<h4><a href="./pdf-batch-process-api.md">PDF Batch Process API</a></h4>
+<h4><a href="./pdf-batch-process-api.html">PDF Batch Process API</a></h4>
 <p>Batch processing of PDF documents.</p>
 <ul>
 <li><strong>Function:</strong> <code>pdf-batch-process</code></li>
 <li><strong>Features:</strong> Batch extraction, status tracking, priority processing</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./scrape-session-manager-api.md">Scrape Session Manager API</a></h4>
+<h4><a href="./scrape-session-manager-api.html">Scrape Session Manager API</a></h4>
 <p>Web scraping session control and management.</p>
 <ul>
 <li><strong>Function:</strong> <code>scrape-session-manager</code></li>
 <li><strong>Features:</strong> Start, pause, resume, stop scraping sessions</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./xml-import-orchestrator-api.md">XML Import Orchestrator API</a></h4>
+<h4><a href="./xml-import-orchestrator-api.html">XML Import Orchestrator API</a></h4>
 <p>Intelligent XML file imports with AI-powered field mapping.</p>
 <ul>
 <li><strong>Function:</strong> <code>xml-import-orchestrator</code></li>
 <li><strong>Features:</strong> Field detection, mapping suggestions, preview mode, bulk import</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
+<h3>Public / Lead-gen APIs</h3>
+<h4><a href="./public-tools-api.html">Public Tools API</a></h4>
+<p>Unauthenticated price + mention scan API that backs the <code>/tools</code> page.</p>
+<ul>
+<li><strong>Endpoints:</strong> <code>GET /api/v1/public/quota</code>, <code>POST /api/v1/public/price-scan</code>, <code>POST /api/v1/public/mention-scan</code></li>
+<li><strong>Features:</strong> 2 scans/day per IP, Cloudflare Turnstile required, 24h result cache, stateless (no DB writes to <code>tracked_*</code> tables)</li>
+<li><strong>Access:</strong> Public (no auth). Optional Bearer JWT switches quota keying to <code>user_id</code>.</li>
+<li><strong>Configuration:</strong> <code>TURNSTILE_SITE_KEY</code> + <code>TURNSTILE_SECRET_KEY</code> in MIVAA env (preferred) or <code>/admin/operations → Keys</code> (DB fallback)</li>
+</ul>
 <h3>Automation APIs</h3>
-<h4><a href="./price-monitoring-cron-api.md">Price Monitoring Cron API</a></h4>
+<h4><a href="./price-monitoring-cron-api.html">Price Monitoring Cron API</a></h4>
 <p>Scheduled price monitoring from competitor sources.</p>
 <ul>
 <li><strong>Function:</strong> <code>price-monitoring-cron</code></li>
 <li><strong>Features:</strong> Automated price checks, alerts, history tracking</li>
 <li><strong>Access:</strong> Cron secret (scheduled)</li>
 </ul>
-<h4><a href="./flow-engine-api.md">Flow Engine API</a></h4>
+<h4><a href="./flow-engine-api.html">Flow Engine API</a></h4>
 <p>Visual workflow automation — execute, test, and event-trigger flows.</p>
 <ul>
 <li><strong>Function:</strong> <code>flow-engine</code>, <code>flow-scheduler-cron</code>, <code>flow-webhook</code></li>
@@ -149,7 +170,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
 <h3>AI Generation APIs</h3>
-<h4><a href="./generate-interior-video-v2-api.md">Interior Video Generation API</a></h4>
+<h4><a href="./generate-interior-video-v2-api.html">Interior Video Generation API</a></h4>
 <p>Multi-model AI video generation for interior design.</p>
 <ul>
 <li><strong>Function:</strong> <code>generate-interior-video-v2</code>, <code>generate-social-video</code></li>
@@ -157,7 +178,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Credits:</strong> 12–40 per video</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./generate-virtual-staging-api.md">Virtual Staging API</a></h4>
+<h4><a href="./generate-virtual-staging-api.html">Virtual Staging API</a></h4>
 <p>Transform empty room photos into furnished renders.</p>
 <ul>
 <li><strong>Function:</strong> <code>generate-virtual-staging</code></li>
@@ -165,7 +186,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Credits:</strong> 20 per generation</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./generate-interior-gemini-api.md">Gemini Interior Generation API</a></h4>
+<h4><a href="./generate-interior-gemini-api.html">Gemini Interior Generation API</a></h4>
 <p>Gemini-powered interior image generation with 4 modes.</p>
 <ul>
 <li><strong>Function:</strong> <code>generate-interior-gemini</code></li>
@@ -173,7 +194,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Credits:</strong> 6 (flash) or 15 (pro) per generation</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./generate-region-edit-api.md">Region Edit API</a></h4>
+<h4><a href="./generate-region-edit-api.html">Region Edit API</a></h4>
 <p>Masked inpainting — regenerate a painted zone in a room image.</p>
 <ul>
 <li><strong>Function:</strong> <code>generate-region-edit</code></li>
@@ -187,7 +208,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Function:</strong> <code>generate-vr-world</code></li>
 <li><strong>Models:</strong> <code>marble-1.0-draft</code> (18 cr, ~30–45s), <code>marble-1.1</code> (190 cr, ~5min). Legacy <code>0.1-mini</code>/<code>0.1-plus</code> deprecated.</li>
 <li><strong>Output:</strong> SPZ splat files (100k/500k/full), collider GLB, panorama, caption — stored in <code>vr_worlds</code></li>
-<li><strong>Documentation:</strong> <a href="../vr-world-generation.md">vr-world-generation.md</a></li>
+<li><strong>Documentation:</strong> <a href="../vr-world-generation.html">vr-world-generation.md</a></li>
 <li><strong>Access:</strong> JWT</li>
 </ul>
 <h4>PBR Maps (AR)</h4>
@@ -196,14 +217,14 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Function:</strong> <code>generate-pbr-maps</code></li>
 <li><strong>Outputs:</strong> albedo, normal, roughness, metalness (Replicate)</li>
 <li><strong>Credits:</strong> 8 per generation</li>
-<li><strong>Documentation:</strong> <a href="../ar-material-preview.md">ar-material-preview.md</a></li>
+<li><strong>Documentation:</strong> <a href="../ar-material-preview.html">ar-material-preview.md</a></li>
 <li><strong>Access:</strong> JWT</li>
 </ul>
-<h4><a href="./ai-rerank-api.md">AI Re-rank API</a></h4>
+<h4><a href="./ai-rerank-api.html">AI Re-rank API</a></h4>
 <p>Claude-powered search result re-ordering for improved relevance.</p>
 <ul>
 <li><strong>Function:</strong> <code>ai-rerank</code></li>
-<li><strong>Features:</strong> Semantic re-ranking, optional explanations, sonnet/haiku model choice</li>
+<li><strong>Features:</strong> Semantic re-ranking, optional explanations, opus/haiku model choice</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
 <h3>Knowledge Base APIs</h3>
@@ -213,7 +234,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Function:</strong> <code>kb-generate-embedding</code></li>
 <li><strong>Features:</strong> Auto-triggered on <code>kb_docs</code> insert/content change. Idempotent via content hash.</li>
 <li><strong>Access:</strong> JWT or service-role</li>
-<li><strong>Documentation:</strong> <a href="../knowledge-base-implementation.md">knowledge-base-implementation.md</a></li>
+<li><strong>Documentation:</strong> <a href="../knowledge-base-implementation.html">knowledge-base-implementation.md</a></li>
 </ul>
 <h3>Pinterest Integration</h3>
 <h4>Pinterest OAuth</h4>
@@ -232,6 +253,31 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Actions:</strong> <code>extract-pin</code>, <code>import-pin</code>, <code>import-pins-bulk</code></li>
 <li><strong>Pipeline:</strong> Extract → download image → MIVAA visual-search for matching catalog products</li>
 <li><strong>Access:</strong> JWT</li>
+</ul>
+<h3>Business Profile / Verification</h3>
+<h4>VIES VAT Validation</h4>
+<p>Public EU VAT validation via the official VIES REST API. No secrets — VIES is unauthenticated.</p>
+<ul>
+<li><strong>Function:</strong> <code>vies-validate</code></li>
+<li><strong>Features:</strong> EU-only (skips with <code>non_eu</code> reason for non-EU country codes); returns <code>valid</code>, <code>legal_name</code>, <code>trade_name</code>, <code>address</code>, <code>address_parsed</code> (per-country structured street/number/postal/city for EL/DE/FR/IT/ES/NL/AT/BE/PT). Caches result on <code>crm_companies.vat_validated*</code> (90-day refresh policy) when <code>company_id</code> is passed.</li>
+<li><strong>Access:</strong> JWT (any authenticated user)</li>
+</ul>
+<h4>myAADE — RgWsPublic2 (Greek business lookup)</h4>
+<p>SOAP wrapper for ΑΑΔΕ&#39;s <code>rgWsPublic2AfmMethod</code>. Returns the basic record + ΚΑΔ activities for a Greek ΑΦΜ.</p>
+<ul>
+<li><strong>Function:</strong> <code>myaade-rgwspublic2</code> (first of the <code>myaade-*</code> family)</li>
+<li><strong>Features:</strong> Auto-fill business profile (legal name, ΔΟΥ, ΚΑΔ, legal form, structured address). 90-day cache on <code>crm_companies.aade_data_at</code>. Every lookup writes an audit entry to the looked-up ΑΦΜ&#39;s TAXISnet inbox — module only calls when the user is verifying their OWN business.</li>
+<li><strong>Secrets:</strong> <code>AADE_USERNAME</code>, <code>AADE_PASSWORD</code>, <code>AADE_AFM_CALLED_BY</code> via <code>platform_secrets</code> (env-first → DB)</li>
+<li><strong>Access:</strong> JWT</li>
+<li><strong>Documentation:</strong> <a href="../../src/modules/myaade/README.html"><code>src/modules/myaade/README.md</code></a></li>
+</ul>
+<h4>Role Upgrade Requests</h4>
+<p>Dealer/Factory promotion workflow. User submits → admin reviews → approval flips <code>user_profiles.role_id</code>.</p>
+<ul>
+<li><strong>Function:</strong> <code>role-upgrade-requests</code> (action: <code>submit</code> | <code>approve</code> | <code>reject</code> in body)</li>
+<li><strong>Features:</strong> Gated on <code>entity_type=&#39;business&#39;</code>. Re-validates VAT via VIES on submit, snapshots <code>vat_validated*</code> on the request row. Fans out bell notifications + emails (templates <code>role_upgrade_request.{submitted,approved,rejected}</code>) via <code>email-api</code>. Partial unique index prevents duplicate pending applications per (user, role).</li>
+<li><strong>Tables:</strong> <code>role_upgrade_requests</code></li>
+<li><strong>Access:</strong> JWT (submit own); admin/super_admin/owner (approve/reject)</li>
 </ul>
 <h3>SEO Pipeline (admin/owner only)</h3>
 <p>Complete SEO content generation pipeline — 5 functions, all POST + JWT.</p>
@@ -252,7 +298,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 </tr>
 <tr>
 <td><code>seo-write</code></td>
-<td>Full article via Claude Sonnet</td>
+<td>Full article via Claude Opus</td>
 </tr>
 <tr>
 <td><code>seo-analyze</code></td>
@@ -265,23 +311,23 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 </tbody></table>
 <p>Surfaced to the <code>kai</code> agent as sub-agent tools (admin-gated).</p>
 <h3>Social Media APIs</h3>
-<h4><a href="./late-social-api.md">Late.dev Social API</a></h4>
+<h4><a href="./zernio-social-api.html">Zernio Social API</a></h4>
 <p>Social media OAuth, publishing, analytics, and content generation.</p>
 <ul>
-<li><strong>Functions:</strong> <code>late-oauth</code>, <code>late-publish</code>, <code>late-analytics</code>, <code>generate-social-content</code>, <code>generate-social-image</code>, <code>generate-social-video</code></li>
+<li><strong>Functions:</strong> <code>zernio-api</code>, <code>zernio-webhook-handler</code>, <code>generate-social-content</code>, <code>generate-social-image</code>, <code>generate-social-video</code></li>
 <li><strong>Features:</strong> 8 platforms, publish/schedule, engagement sync, AI caption/image/video generation</li>
-<li><strong>Credits:</strong> 2–30 per generation; publishing uses Late.dev subscription</li>
+<li><strong>Credits:</strong> 2–30 per generation; publishing uses Zernio subscription</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
 <h3>Payment APIs</h3>
-<h4><a href="./crm-stripe-api.md">CRM Stripe API</a></h4>
+<h4><a href="./crm-stripe-api.html">CRM Stripe API</a></h4>
 <p>Subscriptions and credit purchases via Stripe.</p>
 <ul>
 <li><strong>Functions:</strong> <code>crm-stripe-api</code>, <code>stripe-checkout</code>, <code>stripe-customer-portal</code></li>
 <li><strong>Features:</strong> Subscription checkout, credit packages, customer portal, balance queries</li>
 <li><strong>Access:</strong> Authenticated users</li>
 </ul>
-<h4><a href="./stripe-webhooks-api.md">Stripe Webhooks API</a></h4>
+<h4><a href="./stripe-webhooks-api.html">Stripe Webhooks API</a></h4>
 <p>Stripe webhook event handling for subscriptions and payments.</p>
 <ul>
 <li><strong>Function:</strong> <code>stripe-webhooks</code></li>
@@ -295,12 +341,12 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <li><strong>Function:</strong> <code>background-agent-runner</code></li>
 <li><strong>Features:</strong> Run agents by <code>agent_id</code>, catalog endpoint, chain/event/cron/manual triggers</li>
 <li><strong>Access:</strong> Authenticated users or service-role key</li>
-<li><strong>Documentation:</strong> <a href="../background-agents.md">background-agents.md</a></li>
+<li><strong>Documentation:</strong> <a href="../background-agents.html">background-agents.md</a></li>
 </ul>
 <h4>SLIG Inference</h4>
 <p>SigLIP2 visual embedding generation.</p>
 <ul>
-<li><strong>Function:</strong> See <a href="./slig-inference.md">slig-inference.md</a></li>
+<li><strong>Function:</strong> See <a href="./slig-inference.html">slig-inference.md</a></li>
 <li><strong>Access:</strong> Internal / service-role</li>
 </ul>
 <h3>Cron / Scheduled Functions (service-role only)</h3>
@@ -364,7 +410,7 @@ upsert-by-title doc ingestion, full audit trail via <code>agent_tool_call_logs</
 <p>Wipe derived data while preserving accounts/KB/CRM/prompts.</p>
 <ul>
 <li><strong>Function:</strong> <code>reset-platform</code></li>
-<li><strong>Documentation:</strong> <a href="../deployment-guide.md#-platform-reset-admin-destructive-operation">deployment-guide.md § Platform Reset</a></li>
+<li><strong>Documentation:</strong> <a href="../deployment-guide.html#-platform-reset-admin-destructive-operation">deployment-guide.md § Platform Reset</a></li>
 <li><strong>Access:</strong> Service-role (admin-only, via admin UI confirmation modal)</li>
 </ul>
 <h4>Health Check</h4>
@@ -459,17 +505,17 @@ Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE, PATCH
 </code></pre>
 <h2>Related Documentation</h2>
 <ul>
-<li><a href="../api-endpoints.md">API Endpoints</a> - Complete list of all backend endpoints</li>
-<li><a href="../email-system.md">Email System</a> - Email system architecture</li>
-<li><a href="../agent-system.md">Agent System</a> - AI agent architecture</li>
-<li><a href="../crm-system.md">CRM System</a> - CRM architecture</li>
-<li><a href="../price-monitoring-system.md">Price Monitoring</a> - Price monitoring system</li>
+<li><a href="../api-endpoints.html">API Endpoints</a> - Complete list of all backend endpoints</li>
+<li><a href="../email-system.html">Email System</a> - Email system architecture</li>
+<li><a href="../agent-system.html">Agent System</a> - AI agent architecture</li>
+<li><a href="../crm-system.html">CRM System</a> - CRM architecture</li>
+<li><a href="../price-monitoring-system.html">Price Monitoring</a> - Price monitoring system</li>
 </ul>
 <h2>Support</h2>
 <p>For API support or questions:</p>
 <ul>
 <li>Check the specific API documentation</li>
-<li>Review the <a href="../troubleshooting-guide.md">Troubleshooting Guide</a></li>
+<li>Review the <a href="../troubleshooting-guide.html">Troubleshooting Guide</a></li>
 <li>Contact the development team</li>
 </ul>
 

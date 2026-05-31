@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Price Monitoring Public API</h1>
+<p>External integration reference for the price lookup + price tracking endpoints.</p>
+<p><strong>Base URL:</strong> <code>https://v1api.materialshub.gr</code>
+<strong>OpenAPI tags</strong>: <code>Price Lookup (Public API)</code>, <code>Price Tracking (Public API)</code>
+<strong>Interactive docs (Swagger UI)</strong>: <code>GET https://v1api.materialshub.gr/docs</code> — filter by tag
+<strong>Machine-readable spec</strong>: <code>GET https://v1api.materialshub.gr/openapi.json</code> — auto-generated from FastAPI route signatures, always in sync with what&#39;s deployed.</p>
+<p>All paths below are relative to this host (e.g. <code>POST /api/v1/prices/track</code> → <code>POST https://v1api.materialshub.gr/api/v1/prices/track</code>).</p>
+<hr>
+<h2>Changelog</h2>
+<h3>v3.2 — 2026-05-01</h3>
+<ul>
+<li>🔄 <strong><code>tracked_queries</code> is now the single subject table</strong> for both internal product flow and external API flow. The legacy <code>competitor_sources</code> / <code>price_history</code> / <code>price_monitoring_products</code> tables were dropped. All retailer rows now live in <code>tracked_query_price_history</code> (FK → <code>tracked_queries.id</code>).</li>
+<li>🆕 Denormalized cache on <code>tracked_queries</code>: <code>current_price</code>, <code>current_currency</code>, <code>current_availability</code>, <code>current_original_price</code>, <code>current_price_verified</code>, <code>current_metadata</code>, <code>current_price_updated_at</code>. Cheapest non-anomaly verified hit wins.</li>
+<li>🆕 Cost optimizations apply uniformly to both flows: tier-skip on Tier 2 marketplaces, brand-retailer cache, sonar/sonar-pro selection, classifier verdict cache (7d TTL), rule-based pre-classifier, volatility-aware <code>next_check_at</code>, recipe-driven httpx fallback.</li>
+<li>📦 Internal product flow (web app, session JWT) and external API flow (<code>kai_*</code> Bearer) share the same orchestrator. Internal cron only refreshes <code>api_key_id IS NULL</code> rows. External rows are refreshed only when the partner calls <code>/refresh</code>.</li>
+</ul>
+<h3>v3.1 — 2026-04-27</h3>
+<ul>
+<li>🆕 <strong>Family-kept policy</strong>: <code>match_kind=&#39;family&#39;</code> rows persist (rendered as &quot;Similar Products in this series&quot;) instead of being dropped. Inert downstream — never feed chart, never trigger alerts. Only <code>match_kind=&#39;mismatch&#39;</code> is dropped.</li>
+<li>🆕 Manual promotion: <code>POST /promote-family-row</code> and <code>POST /demote-to-family</code> (admin-only) flip a family/mismatch row to <code>exact</code> or <code>variant</code> with sticky URL override.</li>
+<li>🆕 Adapter facet pass-through: Greek marketplaces + Idealo accept facets and prepend SKU tokens to search queries; URL-slug post-filter drops accessory-tier hits.</li>
+<li>🆕 Source-label fix: marketplace hits now report their actual source (<code>skroutz</code> / <code>bestprice</code> / <code>shopflix</code> / <code>idealo</code>) instead of being collapsed under <code>perplexity_web_search</code>.</li>
+</ul>
+<h3>v3.0 — 2026-04-26</h3>
+<ul>
+<li>🆕 <strong>Sanity bands + anomaly flags</strong>: every reading checked against trailing 7d median per (subject, retailer); rows outside <code>[median × 0.33, median × 3.0]</code> get <code>is_anomaly=true</code> + <code>anomaly_reason</code>.</li>
+<li>🆕 <strong>Alerts</strong>: 4 types — <code>price_drop</code>, <code>new_retailer</code>, <code>promo_started</code> (opt-in) + <code>anomaly_detected</code> (always). Multi-channel (bell / email / webhook), 24h dedupe.</li>
+<li>🆕 <strong>First-refresh double-read</strong> on <code>tracked_queries</code>: first refresh runs Firecrawl twice with a 30s gap; &gt;5% disagreement → <code>verified=false</code>.</li>
+<li>🆕 <strong>Adaptive Stage A re-issue</strong>: when the initial Perplexity returned ≥1 exact match and no SKU was supplied, fire one additional Perplexity call with the discovered SKU. Capped at one extra call per refresh.</li>
+<li>🆕 <strong>Retailer-list memory</strong>: <code>known_retailer_domains</code> from prior refreshes biases the prompt away from already-known retailers and toward new ones.</li>
+<li>🆕 <strong>Idealo module</strong> (DACH/IT/UK/ES/FR price comparison) parallels Greek marketplaces.</li>
+<li>🆕 <strong>Classifier feedback loop</strong>: <code>match_corrections</code> table — admin &quot;wrong match&quot; clicks become few-shot examples in subsequent classifier calls.</li>
+</ul>
+<h3>v2.0 — 2026-04-25</h3>
+<ul>
+<li>🆕 <strong>Two-stage discovery + verification</strong>: Perplexity Sonar-pro + DataForSEO Merchant run in parallel for discovery, then every URL is re-verified via Firecrawl with <code>PriceExtraction</code> schema. Live-page price replaces the LLM/feed price; <code>verified=true</code> is set.</li>
+<li>🆕 <strong>Product-identity verification</strong>: Haiku-decomposed facets → URL pre-filter → expanded Firecrawl extraction → batched Haiku classifier → <code>match_kind</code> ∈ {<code>exact</code>, <code>variant</code>, <code>family</code>, <code>mismatch</code>, <code>unverifiable</code>} per hit.</li>
+<li>🆕 <code>original_price</code> column for promo &quot;was&quot; pricing when retailers display both.</li>
+</ul>
+<h3>v1.0 — 2026-04-24</h3>
+<ul>
+<li>🚀 <strong>Initial release</strong>: <code>POST /api/v1/prices/lookup</code> (URL or query mode) and <code>POST /api/v1/prices/track</code> family — partner integrations register tracked queries and poll for prices.</li>
+</ul>
+<hr>
+<h2>Authentication</h2>
+<p>Every request authenticates with a Bearer token from the <code>api_keys</code> table.</p>
+<pre><code class="language-http">Authorization: Bearer kai_&lt;32-char-alphanumeric&gt;
+</code></pre>
+<h3>How to get a key</h3>
+<ol>
+<li>Sign in at <code>/profile?tab=subscription</code></li>
+<li>Click <strong>+ Generate Key</strong>, name it (e.g. <code>price-integration-prod</code>)</li>
+<li>Copy the value once — it&#39;s not shown in full again</li>
+<li>Paste into your consumer project as <code>BEARER_TOKEN</code> or equivalent</li>
+</ol>
+<h3>Key settings (per row in <code>api_keys</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>is_active</code></td>
+<td><code>true</code></td>
+<td>Set to <code>false</code> via the Profile UI or <code>UPDATE</code> to revoke immediately</td>
+</tr>
+<tr>
+<td><code>rate_limit_override</code></td>
+<td><code>null</code> (60 req/min)</td>
+<td>Override to 1–600 per minute if you need higher throughput</td>
+</tr>
+<tr>
+<td><code>allowed_endpoints</code></td>
+<td><code>null</code> (all)</td>
+<td>Optional array of path prefixes to scope the key</td>
+</tr>
+<tr>
+<td><code>expires_at</code></td>
+<td><code>null</code> (never)</td>
+<td>Optional ISO timestamp</td>
+</tr>
+</tbody></table>
+<h3>Revoking a key</h3>
+<p>Either set <code>is_active = false</code> (soft) or delete the row entirely (hard). <strong>Deleting the row CASCADEs out every <code>tracked_queries</code> row + every <code>tracked_query_price_history</code> row that was created with that key.</strong> This is by design — revoking a leaked key wipes the data it produced.</p>
+<hr>
+<h2>Endpoints</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/prices/lookup</code></td>
+<td>Stateless one-shot price lookup (URL or search query)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/prices/track</code></td>
+<td>Register a tracked query, get initial results</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/prices/track</code></td>
+<td>List all tracked queries owned by this key</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/prices/track/{id}</code></td>
+<td>Get one tracked query + latest results</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/prices/track/{id}/history</code></td>
+<td>Full price-point history</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>PUT</code></td>
+<td><code>/api/v1/prices/track/{id}</code></td>
+<td>Update cadence / country / preferred retailers</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/prices/track/{id}/refresh</code></td>
+<td>Force refresh now (bypasses cadence)</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/prices/track/{id}</code></td>
+<td>Stop tracking (soft delete — keeps history)</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/prices/track/{id}/exclude</code></td>
+<td>Exclude a URL or domain from this tracked query (NEW v6)</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/prices/track/{id}/include</code></td>
+<td>Undo a previous exclusion (NEW v6)</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/prices/track/{id}/exclusions</code></td>
+<td>List all exclusions on this tracked query (NEW v6)</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/prices/track/{id}/verify</code></td>
+<td>Re-verify the latest results by re-scraping each URL via Firecrawl — refreshes the <code>verified</code> flag + price without doing a full discovery (NEW v6)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>1. Stateless lookup — <code>POST /api/v1/prices/lookup</code></h2>
+<p>One-shot. Not stored as a tracked query. Two modes; pass exactly one of <code>url</code> or <code>search_query</code>.</p>
+<h3>Mode A — URL (Firecrawl)</h3>
+<p>Scrape one specific product page.</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/v1/prices/lookup \
+  -H &quot;Authorization: Bearer $KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;url&quot;: &quot;https://youbath.gr/shop/keros-ferrara-beige-60x120/&quot;,
+    &quot;product_name&quot;: &quot;Keros Ferrara Beige 60x120&quot;,
+    &quot;use_javascript_render&quot;: false
+  }&#39;
+</code></pre>
+<p>Response:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;source&quot;: &quot;firecrawl_url&quot;,
+  &quot;price&quot;: 25.0,
+  &quot;currency&quot;: &quot;EUR&quot;,
+  &quot;availability&quot;: &quot;out_of_stock&quot;,
+  &quot;shipping_cost&quot;: null,
+  &quot;product_name&quot;: &quot;Keros Ferrara Beige 60×120 – Πλακάκι δαπέδου γρανίτη&quot;,
+  &quot;scraped_at&quot;: &quot;2026-04-24T07:01:15.799Z&quot;,
+  &quot;credits_used&quot;: 1,
+  &quot;latency_ms&quot;: 5013,
+  &quot;results&quot;: null,
+  &quot;query&quot;: null
+}
+</code></pre>
+<h3>Mode B — Search query (Perplexity Sonar)</h3>
+<p>Find retailers across the web. Up to 25 results, sorted cheapest first.</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/v1/prices/lookup \
+  -H &quot;Authorization: Bearer $KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;search_query&quot;: &quot;Ferrara Beige Keros&quot;,
+    &quot;dimensions&quot;: &quot;60x120&quot;,
+    &quot;country_code&quot;: &quot;GR&quot;,
+    &quot;limit&quot;: 20
+  }&#39;
+</code></pre>
+<p>Response:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;source&quot;: &quot;claude_web_search&quot;,
+  &quot;query&quot;: &quot;Ferrara Beige Keros&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;retailer_name&quot;: &quot;leffetto.gr&quot;,
+      &quot;product_url&quot;: &quot;https://leffetto.gr/product/ferrara-beige-60x120cm/&quot;,
+      &quot;price&quot;: 21.4,
+      &quot;currency&quot;: &quot;EUR&quot;,
+      &quot;price_unit&quot;: &quot;m2&quot;,
+      &quot;availability&quot;: &quot;in_stock&quot;,
+      &quot;city&quot;: &quot;Athens&quot;,
+      &quot;ships_from_abroad&quot;: false,
+      &quot;is_quote_only&quot;: false,
+      &quot;last_verified&quot;: &quot;2026-04-24&quot;,
+      &quot;notes&quot;: null
+    }
+    // ... up to 20 more
+  ],
+  &quot;summary&quot;: &quot;Multiple Greek retailers offer the Ferrara Beige Keros 60x120 at competitive prices starting from €21.40/m²...&quot;,
+  &quot;credits_used&quot;: 2,
+  &quot;latency_ms&quot;: 6196,
+  &quot;scraped_at&quot;: &quot;2026-04-24T07:02:45.100Z&quot;,
+  &quot;price&quot;: null,
+  &quot;currency&quot;: null
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>url</code></td>
+<td>string (URL)</td>
+<td>URL mode — mutually exclusive with <code>search_query</code></td>
+</tr>
+<tr>
+<td><code>search_query</code></td>
+<td>string</td>
+<td>Search mode — mutually exclusive with <code>url</code></td>
+</tr>
+<tr>
+<td><code>dimensions</code></td>
+<td>string (optional)</td>
+<td>Size spec, e.g. <code>&quot;60x120&quot;</code> or <code>&quot;120 cm&quot;</code>. Appended to the query</td>
+</tr>
+<tr>
+<td><code>country_code</code></td>
+<td>ISO-3166 α-2 (optional)</td>
+<td><code>GR</code>, <code>DE</code>, <code>GB</code>, etc. Biases Perplexity toward local retailers</td>
+</tr>
+<tr>
+<td><code>product_name</code></td>
+<td>string (optional)</td>
+<td>Hint for URL mode to pick the main product on a multi-item page</td>
+</tr>
+<tr>
+<td><code>use_javascript_render</code></td>
+<td>boolean (default false)</td>
+<td>URL mode only. Adds 3s wait + longer timeout. Costs ~2 extra credits</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>int 1–25 (default 10)</td>
+<td>Search mode only. Max retailers to return</td>
+</tr>
+<tr>
+<td><code>verify_prices</code></td>
+<td>boolean (default <code>true</code>)</td>
+<td>Search mode only. When <code>true</code>, every hit is re-fetched via Firecrawl to confirm the price on the live page. Adds latency (~N × 1–3s parallel) and ~1 credit per hit, but eliminates LLM-hallucinated prices. Set <code>false</code> for speed-over-accuracy workloads.</td>
+</tr>
+</tbody></table>
+<h3>Result fields (search mode)</h3>
+<p>Each entry in <code>results</code> now carries the verification + promo fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>price</code></td>
+<td>number | null</td>
+<td>Current numeric price. When <code>verified: true</code> this is the price Firecrawl read from the live page.</td>
+</tr>
+<tr>
+<td><code>original_price</code></td>
+<td>number | null</td>
+<td>On-page &quot;was&quot; price if the retailer displays a promo (e.g. <code>€89</code> strikethrough → <code>€79</code>). <code>null</code> if no markdown is shown. Do NOT assume — only set when the retailer displays both values.</td>
+</tr>
+<tr>
+<td><code>currency</code></td>
+<td>string | null</td>
+<td>ISO 4217 currency code (<code>EUR</code>, <code>USD</code>, <code>GBP</code>, …).</td>
+</tr>
+<tr>
+<td><code>availability</code></td>
+<td><code>in_stock</code> | <code>out_of_stock</code> | <code>limited</code> | <code>unknown</code></td>
+<td>Out-of-stock listings <strong>are included</strong> as long as a numeric price is printed on the page.</td>
+</tr>
+<tr>
+<td><code>verified</code></td>
+<td>boolean</td>
+<td><code>true</code> if Firecrawl fetched the retailer URL and confirmed the price. <code>false</code> when verification was skipped or the page couldn&#39;t be re-fetched. Treat <code>verified: false</code> rows as indicative only.</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td><code>perplexity</code> | <code>dataforseo</code></td>
+<td>Which engine surfaced this retailer.</td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>string | null</td>
+<td>Free-form. Includes discrepancy flags when Firecrawl&#39;s price differed by &gt;20% from the LLM&#39;s snippet price (e.g. <code>&quot;verify: was perplexity=€45.00, actual on page=€54.90&quot;</code>).</td>
+</tr>
+<tr>
+<td><code>last_verified</code></td>
+<td>string (ISO date)</td>
+<td>Date Firecrawl confirmed the price. <code>null</code> when <code>verified: false</code>.</td>
+</tr>
+<tr>
+<td><code>image_url</code>, <code>rating_value</code>, <code>rating_votes</code></td>
+<td>(DataForSEO only)</td>
+<td>Thumbnail + merchant star rating from the Google Shopping feed.</td>
+</tr>
+<tr>
+<td><code>product_title</code></td>
+<td>string | null</td>
+<td>Exact product name on the retailer&#39;s page. Use as a subtitle to disambiguate multiple rows from the same retailer selling different variants.</td>
+</tr>
+<tr>
+<td><code>match_kind</code></td>
+<td><code>&quot;exact&quot; | &quot;variant&quot; | &quot;family&quot; | &quot;unverifiable&quot; | null</code></td>
+<td>Product-identity verdict. <code>exact</code> = page confirmed to match the asked product. <code>variant</code> = same model, different color/finish/size (kept with a note, excluded from stats). <code>family</code> = <strong>same brand+series, different SKU</strong> (kept since 2026-04-27 — render under &quot;Similar products in this series&quot;, do <strong>not</strong> include in chart/median/alerts). <code>unverifiable</code> = identity couldn&#39;t be judged from the page (kept, grey badge recommended). <code>mismatch</code> is dropped server-side, you&#39;ll never see it. <code>null</code> only on rows created before 2026-04-25.</td>
+</tr>
+<tr>
+<td><code>match_score</code></td>
+<td>int 0-100 | null</td>
+<td>Classifier confidence. 90+ exact, 70-89 variant, &lt;50 mismatch.</td>
+</tr>
+<tr>
+<td><code>match_note</code></td>
+<td>string | null</td>
+<td>Human-readable facet diff, e.g. <code>&quot;Color differs: asked BLACK MATT, page shows WHITE MATT&quot;</code>. <code>null</code> for exact matches.</td>
+</tr>
+</tbody></table>
+<h3>Rate limit</h3>
+<p>Default <strong>60 requests/minute</strong> per key. 429 response if exceeded, with <code>Retry-After: 60</code>.</p>
+<h3>Billing</h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Cost per call</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>firecrawl_url</code></td>
+<td>~1 Firecrawl credit (≈ $0.01)</td>
+</tr>
+<tr>
+<td><code>claude_web_search</code> (Perplexity under the hood)</td>
+<td>~2 platform credits (≈ $0.02)</td>
+</tr>
+<tr>
+<td><code>dataforseo_shopping</code></td>
+<td>per-task DataForSEO Merchant cost, baked into the same call</td>
+</tr>
+<tr>
+<td><code>marketplace_skroutz</code> / <code>marketplace_bestprice</code> / <code>marketplace_shopflix</code></td>
+<td>~1 Firecrawl credit each (≈ $0.01) when the Greek Marketplaces module is active and <code>country_code=&#39;GR&#39;</code>. Returns 0 cost when off.</td>
+</tr>
+</tbody></table>
+<p>Every call writes a row to <code>price_lookups</code> (tables in Supabase) with <code>api_key_id</code>, inputs, results, credits, latency. Use that for audit.</p>
+<h3>Source values you may see on a hit</h3>
+<p>The <code>source</code> field on each retailer hit identifies which engine produced it. Treat this as an open enumeration — we add new sources without notice, all values are non-breaking strings:</p>
+<table>
+<thead>
+<tr>
+<th><code>source</code></th>
+<th>Where it comes from</th>
+<th>When it appears</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>firecrawl_url</code></td>
+<td>Direct page scrape via Firecrawl</td>
+<td>When you submit a <code>url</code> to <code>/lookup</code>, or when we re-verify a discovered URL</td>
+</tr>
+<tr>
+<td><code>claude_web_search</code></td>
+<td>Perplexity Sonar-pro web search (legacy enum name, still used)</td>
+<td>Default discovery for any query without a URL</td>
+</tr>
+<tr>
+<td><code>perplexity_web_search</code></td>
+<td>Same as above, future canonical name</td>
+<td>Reserved — currently rows are still written as <code>claude_web_search</code></td>
+</tr>
+<tr>
+<td><code>dataforseo_shopping</code></td>
+<td>DataForSEO Merchant (Google Shopping feed)</td>
+<td>Runs in parallel with Perplexity on every discovery</td>
+</tr>
+<tr>
+<td><code>marketplace_skroutz</code></td>
+<td>Skroutz.gr (price-comparison aggregator)</td>
+<td>Greek-market queries (<code>country_code=&#39;GR&#39;</code>) when the platform&#39;s Greek Marketplaces module is enabled</td>
+</tr>
+<tr>
+<td><code>marketplace_bestprice</code></td>
+<td>Bestprice.gr (price-comparison aggregator)</td>
+<td>Same condition as above</td>
+</tr>
+<tr>
+<td><code>marketplace_shopflix</code></td>
+<td>Shopflix.gr (3rd-party seller marketplace)</td>
+<td>Same condition as above</td>
+</tr>
+</tbody></table>
+<p><strong>You don&#39;t need to opt in to the new marketplace sources</strong> — when the module is on, your <code>country_code=&#39;GR&#39;</code> queries automatically receive the extra hits in the same <code>hits[]</code> array. If you want to filter or weight the marketplace sources differently in your UI, switch on the <code>source</code> field. Otherwise no change is required.</p>
+<hr>
+<h2>2. Register a tracked query — <code>POST /api/v1/prices/track</code></h2>
+<p>Register a product for ongoing price tracking. The first refresh runs <strong>synchronously</strong> and the response contains the initial results. Subsequent refreshes happen automatically on your <code>refresh_interval_hours</code> cadence via our cron.</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/v1/prices/track \
+  -H &quot;Authorization: Bearer $KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;search_query&quot;: &quot;Ferrara Beige Keros&quot;,
+    &quot;dimensions&quot;: &quot;60x120&quot;,
+    &quot;country_code&quot;: &quot;GR&quot;,
+    &quot;manufacturer&quot;: &quot;Keros Ceramica&quot;,
+    &quot;preferred_retailer_domains&quot;: [&quot;youbath.gr&quot;, &quot;fshome.gr&quot;],
+    &quot;refresh_interval_hours&quot;: 12,
+    &quot;verify_prices&quot;: true
+  }&#39;
+</code></pre>
+<p><strong>201 Created:</strong></p>
+<pre><code class="language-json">{
+  &quot;tracking_id&quot;: &quot;220f05d1-eca7-45e6-af9c-d2ca1370fb2d&quot;,
+  &quot;search_query&quot;: &quot;Ferrara Beige Keros&quot;,
+  &quot;dimensions&quot;: &quot;60x120&quot;,
+  &quot;country_code&quot;: &quot;GR&quot;,
+  &quot;manufacturer&quot;: &quot;Keros Ceramica&quot;,
+  &quot;preferred_retailer_domains&quot;: [&quot;youbath.gr&quot;, &quot;fshome.gr&quot;],
+  &quot;refresh_interval_hours&quot;: 12,
+  &quot;verify_prices&quot;: true,
+  &quot;last_refreshed_at&quot;: &quot;2026-04-24T07:01:15.799Z&quot;,
+  &quot;last_error&quot;: null,
+  &quot;is_active&quot;: true,
+  &quot;total_credits_used&quot;: 14,
+  &quot;created_at&quot;: &quot;2026-04-24T07:01:04.300Z&quot;,
+  &quot;results&quot;: [
+    {
+      &quot;retailer_name&quot;: &quot;leffetto.gr&quot;,
+      &quot;product_url&quot;: &quot;https://leffetto.gr/product/ferrara-beige-60x120cm/&quot;,
+      &quot;price&quot;: 21.4,
+      &quot;original_price&quot;: null,
+      &quot;currency&quot;: &quot;EUR&quot;,
+      &quot;price_unit&quot;: &quot;m2&quot;,
+      &quot;availability&quot;: &quot;in_stock&quot;,
+      &quot;city&quot;: &quot;Athens&quot;,
+      &quot;ships_from_abroad&quot;: false,
+      &quot;verified&quot;: true,
+      &quot;notes&quot;: null,
+      &quot;scraped_at&quot;: &quot;2026-04-24T07:01:15.799Z&quot;
+    },
+    {
+      &quot;retailer_name&quot;: &quot;youbath.gr&quot;,
+      &quot;product_url&quot;: &quot;https://youbath.gr/shop/keros-ferrara-beige-60x120/&quot;,
+      &quot;price&quot;: 25.0,
+      &quot;original_price&quot;: 32.0,
+      &quot;currency&quot;: &quot;EUR&quot;,
+      &quot;price_unit&quot;: &quot;m2&quot;,
+      &quot;availability&quot;: &quot;out_of_stock&quot;,
+      &quot;city&quot;: null,
+      &quot;ships_from_abroad&quot;: false,
+      &quot;verified&quot;: true,
+      &quot;notes&quot;: &quot;verify: was perplexity=€28.50, actual on page=€25.00&quot;,
+      &quot;scraped_at&quot;: &quot;2026-04-24T07:01:15.799Z&quot;
+    }
+    // …
+  ]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>search_query</code></td>
+<td>string, required</td>
+<td><strong>RECOMMENDED format</strong>: <code>{ProductName} {Model/Series} {SKU}</code> concatenated, e.g. <code>&quot;ORABELLA PRECIOSA 10202 Modern Chrome Single Lever Basin Mixer&quot;</code>. The SKU is the strongest identity disambiguator — when present, our classifier drops sibling SKUs in the same series. Brand/series-only queries still work but return wider sets and may include sibling-SKU rows flagged as <code>family</code> (dropped) or <code>variant</code> (kept, excluded from price stats).</td>
+</tr>
+<tr>
+<td><code>dimensions</code></td>
+<td>string (optional)</td>
+<td>Size spec</td>
+</tr>
+<tr>
+<td><code>country_code</code></td>
+<td>ISO-3166 α-2 (optional)</td>
+<td>Biases Perplexity toward local retailers</td>
+</tr>
+<tr>
+<td><code>manufacturer</code></td>
+<td>string (optional)</td>
+<td>Disambiguates generic product names</td>
+</tr>
+<tr>
+<td><code>preferred_retailer_domains</code></td>
+<td>string[] (optional, max 10)</td>
+<td>Forces Perplexity to probe these domains too. Closes retailer-coverage gaps</td>
+</tr>
+<tr>
+<td><code>refresh_interval_hours</code></td>
+<td>int 1–720, default 24</td>
+<td>How often our cron re-runs the query. 1h minimum, 30d maximum</td>
+</tr>
+<tr>
+<td><code>verify_prices</code></td>
+<td>boolean (default <code>true</code>)</td>
+<td>Persists on the tracked query row. Every refresh (initial + cron) will re-fetch each retailer URL via Firecrawl to confirm the price on the live page. Set to <code>false</code> if you value refresh speed / cost over accuracy. Can be toggled later via <code>PUT</code>.</td>
+</tr>
+<tr>
+<td><code>alert_channels</code></td>
+<td>string[] (optional)</td>
+<td>Delivery channels for price alerts on this query. Allowed values: <code>bell</code>, <code>email</code>, <code>webhook</code>. Default <code>[&#39;bell&#39;]</code> for external API consumers. Bell + webhook are free; email costs 1 credit per send.</td>
+</tr>
+<tr>
+<td><code>alert_on_price_drop</code></td>
+<td>boolean (default <code>false</code>)</td>
+<td>Fire an alert when the trailing 7-day median drops ≥10% week-over-week (per retailer).</td>
+</tr>
+<tr>
+<td><code>alert_on_new_retailer</code></td>
+<td>boolean (default <code>false</code>)</td>
+<td>Fire an alert when discovery surfaces a retailer domain we have never tracked for this query.</td>
+</tr>
+<tr>
+<td><code>alert_on_promo</code></td>
+<td>boolean (default <code>false</code>)</td>
+<td>Fire an alert when <code>original_price</code> becomes non-null on a row that previously had it null.</td>
+</tr>
+<tr>
+<td><code>alert_webhook_url</code></td>
+<td>string (optional, requires <code>webhook</code> in <code>alert_channels</code>)</td>
+<td>Per-tracked-query webhook destination. Receives <code>POST</code> with JSON <code>{alert_type, title, body, retailer_name, retailer_domain, payload, fired_at}</code>. Idempotency window: 24h dedupe per (alert_type, retailer_domain).</td>
+</tr>
+</tbody></table>
+<p><strong>Caveat</strong>: the initial POST blocks for ~15–30 seconds while Perplexity runs (or ~30–60 seconds when <code>verify_prices: true</code>, because Firecrawl verifies each hit in parallel). If your integration needs a non-blocking path, create the tracked query with <code>refresh_interval_hours: 1</code>, ignore the initial results, and <code>GET</code> a minute later.</p>
+<h3>Result row fields (added 2026-04-26, updated 2026-04-27)</h3>
+<p>Every result row now carries identity-classification and sanity-band fields. Non-null even on legacy rows after the next refresh.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>match_kind</code></td>
+<td><code>&#39;exact&#39; | &#39;variant&#39; | &#39;family&#39; | &#39;unverifiable&#39; | null</code></td>
+<td>Identity verdict from our classifier. <strong><code>family</code> (since 2026-04-27)</strong> = same brand+series, different SKU — render under &quot;Similar products in this series&quot;, exclude from chart/median/alerts. <strong><code>mismatch</code></strong> is dropped server-side, you&#39;ll never see it. <strong><code>variant</code></strong> = same SKU, different colour/finish (kept with note, excluded from stats). <strong><code>unverifiable</code></strong> = page didn&#39;t load enough info (kept, grey badge).</td>
+</tr>
+<tr>
+<td><code>match_score</code></td>
+<td>int 0–100</td>
+<td>Confidence of the verdict. Treat ≥90 as <code>exact</code>-grade, 70–89 as <code>variant</code>.</td>
+</tr>
+<tr>
+<td><code>match_note</code></td>
+<td>string | null</td>
+<td>One-line human-readable explanation when <code>match_kind</code> ≠ <code>exact</code>.</td>
+</tr>
+<tr>
+<td><code>product_title</code></td>
+<td>string | null</td>
+<td>The exact product name as shown on the retailer page. Use to disambiguate multiple rows from the same retailer (different colors / sizes).</td>
+</tr>
+<tr>
+<td><code>manual_override</code></td>
+<td>boolean</td>
+<td><code>true</code> when an admin promoted this row from <code>family</code>/<code>mismatch</code> via the platform&#39;s <a href="#manual-promotion-endpoints-admin-only">promote-family-row</a> endpoint. The override sticks across refreshes.</td>
+</tr>
+</tbody></table>
+<h4>Recommended split rendering (since 2026-04-27)</h4>
+<p>In your UI we recommend two sections:</p>
+<ol>
+<li><strong>Main retailers list</strong> — every row whose <code>match_kind</code> is <code>&#39;exact&#39;</code>, <code>&#39;variant&#39;</code>, or <code>&#39;unverifiable&#39;</code>. Feed the chart, the median, and price-drop alerts from this list.</li>
+<li><strong>&quot;Similar products in this series&quot; (collapsed by default)</strong> — every row whose <code>match_kind</code> is <code>&#39;family&#39;</code>. These are real retailer prices but for <strong>different SKUs</strong> in the same brand+series. They never feed the chart, median, or alerts.</li>
+</ol>
+<p>If you want a server-side split rather than filtering client-side, we expose <code>latest_results_split()</code> on <code>GET /api/v1/prices/track/{id}</code> (response: <code>{ &quot;results&quot;: [...], &quot;family_results&quot;: [...] }</code>). The legacy mixed-array form remains for back-compat.
+| <code>is_anomaly</code> | boolean | <code>true</code> when the reading was outside the 7-day rolling-median sanity band (&gt;3× or &lt;0.33× the median for the same retailer). The price is still surfaced for transparency, but it is not used to compute medians until reviewed. |
+| <code>anomaly_reason</code> | string | null | When <code>is_anomaly=true</code>, a one-line explanation. |
+| <code>rolling_median_at_check</code> | number | null | The trailing 7-day median we compared against. |
+| <code>verified</code> | boolean | <code>true</code> when Firecrawl confirmed the price on the live retailer page. Pure-Perplexity / pure-DataForSEO rows surface as <code>false</code>. |</p>
+<hr>
+<h2>3. List tracked queries — <code>GET /api/v1/prices/track</code></h2>
+<pre><code class="language-bash">curl https://v1api.materialshub.gr/api/v1/prices/track \
+  -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<p>Optional query params: <code>include_inactive=true</code> (default false), <code>limit=100</code> (max 500).</p>
+<p>Returns an array of tracked queries <strong>owned by the key in the request</strong>. Other keys&#39; queries are invisible.</p>
+<hr>
+<h2>4. Get one tracked query — <code>GET /api/v1/prices/track/{tracking_id}</code></h2>
+<pre><code class="language-bash">curl https://v1api.materialshub.gr/api/v1/prices/track/220f05d1-eca7-45e6-af9c-d2ca1370fb2d \
+  -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<p>Returns the tracked query row + the <strong>latest refresh&#39;s retailer results</strong> (cheapest first).</p>
+<ul>
+<li><code>404</code> if <code>tracking_id</code> doesn&#39;t exist</li>
+<li><code>403</code> if the key doesn&#39;t own it</li>
+</ul>
+<hr>
+<h2>5. Full history — <code>GET /api/v1/prices/track/{tracking_id}/history</code></h2>
+<pre><code class="language-bash">curl &quot;https://v1api.materialshub.gr/api/v1/prices/track/$TID/history?limit=200&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<p>Returns an array of every retailer-price-point captured across all refresh runs, newest first. Useful for charting price drift over time.</p>
+<p>Each entry:</p>
+<pre><code class="language-json">{
+  &quot;scraped_at&quot;: &quot;2026-04-24T07:01:15.799Z&quot;,
+  &quot;refresh_run_id&quot;: &quot;7b9f...&quot;,
+  &quot;retailer_name&quot;: &quot;leffetto.gr&quot;,
+  &quot;product_url&quot;: &quot;https://leffetto.gr/product/ferrara-beige-60x120cm/&quot;,
+  &quot;price&quot;: 21.4,
+  &quot;original_price&quot;: null,
+  &quot;verified&quot;: true,
+  &quot;currency&quot;: &quot;EUR&quot;,
+  &quot;price_unit&quot;: &quot;m2&quot;,
+  &quot;availability&quot;: &quot;in_stock&quot;,
+  &quot;city&quot;: &quot;Athens&quot;
+}
+</code></pre>
+<p><code>original_price</code> and <code>verified</code> are populated on refreshes run after 2026-04-25 (the verification release). Older history rows have <code>original_price: null</code> and <code>verified: false</code> — that doesn&#39;t mean the price was wrong at the time, just that verification wasn&#39;t available yet.</p>
+<hr>
+<h2>6. Update — <code>PUT /api/v1/prices/track/{tracking_id}</code></h2>
+<p>Change cadence, country, or preferred retailers. All fields optional; only the ones you send are updated.</p>
+<pre><code class="language-bash">curl -X PUT https://v1api.materialshub.gr/api/v1/prices/track/$TID \
+  -H &quot;Authorization: Bearer $KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;refresh_interval_hours&quot;: 6,
+    &quot;preferred_retailer_domains&quot;: [&quot;youbath.gr&quot;, &quot;fshome.gr&quot;, &quot;artiles.gr&quot;],
+    &quot;verify_prices&quot;: false
+  }&#39;
+</code></pre>
+<p>Accepted fields: <code>refresh_interval_hours</code>, <code>country_code</code>, <code>preferred_retailer_domains</code>, <code>dimensions</code>, <code>manufacturer</code>, <code>verify_prices</code>. All optional — only fields present in the body are updated.</p>
+<p>Returns the full tracked-query row post-update.</p>
+<hr>
+<h2>7. Force refresh — <code>POST /api/v1/prices/track/{tracking_id}/refresh</code></h2>
+<p>Run Perplexity <em>now</em>, regardless of when the last refresh happened.</p>
+<pre><code class="language-bash">curl -X POST https://v1api.materialshub.gr/api/v1/prices/track/$TID/refresh \
+  -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<p>Response:</p>
+<pre><code class="language-json">{
+  &quot;tracking_id&quot;: &quot;220f05d1-eca7-45e6-af9c-d2ca1370fb2d&quot;,
+  &quot;status&quot;: &quot;refreshed&quot;,
+  &quot;credits_used&quot;: 2,
+  &quot;latency_ms&quot;: 5192,
+  &quot;results&quot;: [ /* retailer rows */ ],
+  &quot;summary&quot;: &quot;Multiple Greek retailers offer…&quot;
+}
+</code></pre>
+<p><code>status</code> values: <code>refreshed</code> | <code>throttled</code> | <code>inactive</code> | <code>error</code> | <code>not_found</code>. <code>force</code> always wins unless the tracking is inactive.</p>
+<p>Respects per-key rate limits. Use sparingly — normal cadence is always cheaper.</p>
+<hr>
+<h2>8. Stop tracking — <code>DELETE /api/v1/prices/track/{tracking_id}</code></h2>
+<pre><code class="language-bash">curl -X DELETE https://v1api.materialshub.gr/api/v1/prices/track/$TID \
+  -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;tracking_id&quot;: &quot;220f05d1-…&quot;, &quot;is_active&quot;: false }
+</code></pre>
+<p><strong>Soft delete</strong>. Row + history preserved; cron stops refreshing. To permanently wipe, delete the <code>api_keys</code> row that created it — CASCADEs everything.</p>
+<hr>
+<h2>Error codes</h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Common causes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code></td>
+<td>Bad request</td>
+<td>Both <code>url</code> and <code>search_query</code> on <code>/lookup</code>, or neither. <code>refresh_interval_hours</code> out of range (1–720).</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Unauthorized</td>
+<td>Missing / empty / expired / revoked Bearer token</td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>Forbidden</td>
+<td>Key exists but <code>allowed_endpoints</code> doesn&#39;t include <code>/api/v1/prices/lookup</code> or <code>/track</code>. Or <code>tracking_id</code> owned by a different key.</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Not found</td>
+<td><code>tracking_id</code> doesn&#39;t exist</td>
+</tr>
+<tr>
+<td><code>429</code></td>
+<td>Rate limited</td>
+<td>Exceeded <code>rate_limit_override</code> (default 60/min). Respect <code>Retry-After: 60</code></td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Upstream failure</td>
+<td>Perplexity API down, Firecrawl timeout, DB unavailable. Safe to retry after backoff</td>
+</tr>
+</tbody></table>
+<p>Every error returns JSON:</p>
+<pre><code class="language-json">{ &quot;detail&quot;: &quot;Human-readable reason&quot; }
+</code></pre>
+<hr>
+<h2>Integration recipes</h2>
+<h3>TypeScript / Node (fetch)</h3>
+<pre><code class="language-ts">const BASE = process.env.PRICE_API_BASE_URL!;
+const KEY  = process.env.PRICE_API_KEY!;
+
+async function track(searchQuery: string, opts: { country_code?: string; dimensions?: string; refresh_interval_hours?: number } = {}) {
+  const res = await fetch(`${BASE}/api/v1/prices/track`, {
+    method: &#39;POST&#39;,
+    headers: {
+      &#39;Authorization&#39;: `Bearer ${KEY}`,
+      &#39;Content-Type&#39;: &#39;application/json&#39;,
+    },
+    body: JSON.stringify({ search_query: searchQuery, ...opts }),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+// Usage
+const tracked = await track(&#39;Ferrara Beige Keros&#39;, {
+  dimensions: &#39;60x120&#39;, country_code: &#39;GR&#39;, refresh_interval_hours: 12,
+});
+console.log(`Got ${tracked.results.length} initial retailers`);
+</code></pre>
+<h3>Python (httpx)</h3>
+<pre><code class="language-python">import httpx, os
+
+BASE = os.environ[&quot;PRICE_API_BASE_URL&quot;]
+KEY  = os.environ[&quot;PRICE_API_KEY&quot;]
+
+async def track(search_query: str, **opts):
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.post(
+            f&quot;{BASE}/api/v1/prices/track&quot;,
+            headers={&quot;Authorization&quot;: f&quot;Bearer {KEY}&quot;},
+            json={&quot;search_query&quot;: search_query, **opts},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+tracked = await track(&quot;Ferrara Beige Keros&quot;, dimensions=&quot;60x120&quot;, country_code=&quot;GR&quot;)
+</code></pre>
+<h3>curl quickstart</h3>
+<pre><code class="language-bash">export KEY=kai_your_key_here
+export BASE=https://your-mivaa-host
+
+# 1. Register + get initial results
+curl -sX POST &quot;$BASE/api/v1/prices/track&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &#39;Content-Type: application/json&#39; \
+  -d &#39;{&quot;search_query&quot;:&quot;Ferrara Beige Keros&quot;,&quot;dimensions&quot;:&quot;60x120&quot;,&quot;country_code&quot;:&quot;GR&quot;,&quot;refresh_interval_hours&quot;:12}&#39; | jq .
+
+# 2. Check results later (no cost — just DB read)
+curl -s &quot;$BASE/api/v1/prices/track/$TID&quot; -H &quot;Authorization: Bearer $KEY&quot; | jq .results
+
+# 3. Full history for charting
+curl -s &quot;$BASE/api/v1/prices/track/$TID/history?limit=500&quot; -H &quot;Authorization: Bearer $KEY&quot; | jq .
+
+# 4. Adjust cadence later
+curl -sX PUT &quot;$BASE/api/v1/prices/track/$TID&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &#39;Content-Type: application/json&#39; \
+  -d &#39;{&quot;refresh_interval_hours&quot;:6}&#39; | jq .
+
+# 5. Stop tracking
+curl -sX DELETE &quot;$BASE/api/v1/prices/track/$TID&quot; -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<hr>
+<h2>FAQ</h2>
+<p><strong>Q: What does &quot;quote-only&quot; mean and why do those rows never appear?</strong>
+A: When a retailer page shows &quot;Price on request&quot; / &quot;Contact for quote&quot; with no visible number, we skip it. If a retailer publishes €25/m² but the item is out of stock, we include it with <code>availability: &quot;out_of_stock&quot;</code>. That&#39;s a deliberate filter — quote-only rows are noise for price comparison.</p>
+<p><strong>Q: Does <code>preferred_retailer_domains</code> force those exact domains into the results?</strong>
+A: It passes them as Perplexity&#39;s <code>search_domain_filter</code>, which forces Perplexity to probe those sites. It doesn&#39;t guarantee they&#39;ll appear in the final list — if the retailer&#39;s page for the product doesn&#39;t rank or doesn&#39;t have a visible price, Perplexity may still exclude it. Best used when you <em>know</em> a specific retailer carries the product and want to pin them.</p>
+<p><strong>Q: Can I get alerts when a price drops?</strong>
+A: Not in this API. Alerts are part of the internal platform&#39;s price-monitoring feature for logged-in users. For your external project, poll <code>GET /api/v1/prices/track/{id}/history</code> and compute deltas on your side.</p>
+<p><strong>Q: How is this billed?</strong>
+A: Each Perplexity refresh logs to <code>ai_usage_logs</code> with <code>api_provider: &quot;perplexity&quot;</code> tagged to your <code>workspace_id</code>. Each Firecrawl scrape similarly logged as <code>operation_type: &quot;scrape&quot;</code>. Check your platform&#39;s usage dashboard for spend.</p>
+<p><strong>Q: What does <code>verified: true</code> actually mean — and why would I turn it off?</strong>
+A: When <code>verify_prices</code> is <code>true</code> (default), we take each retailer URL the LLM / Shopping feed surfaced and actually fetch it through Firecrawl to read the price off the rendered page. This is the single biggest accuracy improvement in the system — LLMs will occasionally hallucinate a lower price from stale training data or misread a related-product price. The cost: <strong>~3× total credits per refresh</strong> (1 Perplexity + ~N Firecrawl scrapes, where N is the number of hits) and <strong>~30s extra latency on the synchronous POST</strong>. Turn it off if you need the cheaper/faster path and can tolerate stale prices — e.g. rough market-coverage surveys where exact figures don&#39;t matter.</p>
+<p><strong>Q: What&#39;s <code>original_price</code> and when should I display it?</strong>
+A: It&#39;s the retailer&#39;s own &quot;was&quot; price shown next to a promo (e.g. <code>€89</code> strikethrough, <code>€79</code> current). Only populated when the retailer prints both values on the page. Display it as strikethrough next to <code>price</code> to communicate the discount. Never infer it from price history — that&#39;s tracked separately in <code>/history</code>.</p>
+<p><strong>Q: When <code>verified: false</code> what does that mean exactly?</strong>
+A: Either (a) <code>verify_prices</code> was <code>false</code> on the request, (b) Firecrawl couldn&#39;t fetch the page (timeout, bot-detection, 404), or (c) the page loaded but no price could be extracted from it. In all three cases we leave the LLM/shopping-feed price in place and flag it so you can treat it as indicative rather than authoritative.</p>
+<p><strong>Q: The <code>source</code> field in lookup responses says <code>claude_web_search</code> — didn&#39;t you switch to Perplexity?</strong>
+A: <code>source</code> is an enum value in the DB (<code>competitor_source_type</code>) that predates the Perplexity migration. Under the hood it&#39;s Perplexity; we kept the enum value stable to avoid breaking existing consumers. A future version may add <code>perplexity_web_search</code> as the canonical name and migrate — we&#39;ll deprecate with notice.</p>
+<p><strong>Q: I&#39;m seeing new <code>marketplace_skroutz</code> / <code>marketplace_bestprice</code> / <code>marketplace_shopflix</code> source values on my Greek queries — what changed?</strong>
+A: Greek-market queries (<code>country_code=&#39;GR&#39;</code>) now also pull the cheapest available offer from Skroutz, Bestprice, and Shopflix when the platform&#39;s Greek Marketplaces module is enabled. <strong>No request change required on your side</strong> — the new hits show up in the same <code>hits[]</code> array. They use the existing <code>PriceHit</code> schema with the new <code>source</code> values listed in the table above. <code>marketplace_skroutz</code> returns an aggregator URL (skroutz.gr product page) where users can see every merchant; the other two return a direct merchant URL on bestprice.gr / shopflix.gr. Treat them as additional discovery — same <code>verified: false</code> semantics as Perplexity hits, same Firecrawl re-verification flow if <code>verify_prices: true</code>.</p>
+<hr>
+<h2>Server-side env vars reference (for ops)</h2>
+<p>These are the env vars the MIVAA backend needs set via <strong>GitHub Secrets → <code>deploy.yml</code> → systemd <code>Environment=</code></strong>. No <code>.env</code> file involvement on the server — purely systemd-injected. Code reads them via <code>pydantic-settings</code> in <code>app/config.py</code>, which falls back to hardcoded defaults for any var not set.</p>
+<h3>Price engine</h3>
+<table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Code default</th>
+<th>Set in Secrets?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PERPLEXITY_API_KEY</code></td>
+<td>none</td>
+<td><strong>Required</strong> (primary discovery engine)</td>
+</tr>
+<tr>
+<td><code>FIRECRAWL_API_KEY</code></td>
+<td>none</td>
+<td><strong>Required</strong> for URL-mode lookup + Custom Monitoring</td>
+</tr>
+<tr>
+<td><code>DATAFORSEO_BASE64</code></td>
+<td>empty</td>
+<td>Either this <strong>or</strong> the login+password pair below</td>
+</tr>
+<tr>
+<td><code>DATAFORSEO_LOGIN</code> + <code>DATAFORSEO_PASSWORD</code></td>
+<td>empty</td>
+<td>Either this pair or <code>DATAFORSEO_BASE64</code></td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td>none</td>
+<td><strong>Required</strong> (validates <code>x-cron-secret</code> on the cron-refresh endpoint)</td>
+</tr>
+</tbody></table>
+<h3>SLIG (SigLIP2 visual embeddings — separate feature, same deploy pipeline)</h3>
+<p>Only one of these is actually required — the rest have sensible defaults that match your current endpoint.</p>
+<table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Code default</th>
+<th>Set in Secrets?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SLIG_ENDPOINT_TOKEN</code></td>
+<td><code>&quot;&quot;</code></td>
+<td><strong>Required</strong> — without it, SLIG requests get 401</td>
+</tr>
+<tr>
+<td><code>SLIG_ENDPOINT_URL</code></td>
+<td><code>https://f4kbl5do4tz6svct.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+<td>Optional — override only if endpoint changes</td>
+</tr>
+<tr>
+<td><code>SLIG_ENDPOINT_NAME</code></td>
+<td><code>mh-slig</code></td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>SLIG_NAMESPACE</code></td>
+<td><code>basiliskan</code></td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>SLIG_MODEL_NAME</code></td>
+<td><code>basiliskan/slig</code></td>
+<td>Optional (logs + validation only)</td>
+</tr>
+<tr>
+<td><code>SLIG_EMBEDDING_DIMENSION</code></td>
+<td><code>768</code></td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>SLIG_ENABLED</code></td>
+<td><code>true</code></td>
+<td>Optional — set <code>false</code> to bypass SLIG entirely</td>
+</tr>
+<tr>
+<td><code>SLIG_TIMEOUT</code></td>
+<td><code>300</code></td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>SLIG_MAX_RETRIES</code></td>
+<td><code>3</code></td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>SLIG_RETRY_DELAY</code></td>
+<td><code>2</code></td>
+<td>Optional</td>
+</tr>
+</tbody></table>
+<h3>Deployment pattern</h3>
+<pre><code>GitHub Secrets (Settings → Secrets and variables → Actions)
+    ↓
+.github/workflows/deploy.yml  (adds Environment=KEY=${{ secrets.KEY }} to the systemd unit)
+    ↓
+/etc/systemd/system/mivaa-pdf-extractor.service  (rewritten on each deploy)
+    ↓
+os.environ  (injected by systemd at service start)
+    ↓
+pydantic-settings in app/config.py reads it, falls back to defaults if absent
+</code></pre>
+<p><strong>To add a new secret:</strong> add it to GitHub Secrets, add one <code>Environment=KEY=${{ secrets.KEY }}</code> line in <code>deploy.yml</code>, redeploy. Nothing else — no <code>.env</code> files, no manual drop-ins on the server.</p>
+<h3>Legacy drop-in to remove</h3>
+<p>After the next successful deploy, the legacy <code>/etc/systemd/system/mivaa-pdf-extractor.service.d/slig-env.conf</code> file can be deleted — its contents are now pushed through <code>deploy.yml</code>. Cleanup:</p>
+<pre><code class="language-bash">sudo rm /etc/systemd/system/mivaa-pdf-extractor.service.d/slig-env.conf
+sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart mivaa-pdf-extractor.service
+</code></pre>
+<p><strong>Note on a drift between the legacy <code>.conf</code> and the code defaults</strong> (worth knowing before you remove the file):</p>
+<ul>
+<li><code>SLIG_TIMEOUT</code>: <code>.conf</code> says <code>60</code>, code default is <code>300</code>. The 300s default is actually <em>preferred</em> (prevents HF endpoint re-warmup during long jobs). Recommend going with the code default unless you have a reason.</li>
+<li>(<code>SLIG_MODEL_NAME</code> previously drifted between <code>basiliskan/slig</code> in <code>.conf</code> and <code>basiliskan/siglip2</code> in the code default — fixed 2026-05-03; both now agree on <code>basiliskan/slig</code>.)</li>
+</ul>
+<hr>
+<h2>Result confidence — when a row comes back as &quot;non-confirmed&quot;</h2>
+<p>Every row in the response carries <strong>two independent confidence flags</strong>. They mean different things and can be <code>true</code>/<code>false</code> in any combination.</p>
+<h3>Flag 1 — <code>verified</code> (price-level confirmation)</h3>
+<p>Whether the price came from a fresh fetch of the retailer&#39;s live page.</p>
+<h4><code>verified: true</code> is set when:</h4>
+<ul>
+<li>A successful Firecrawl scrape (or a high-confidence extraction-recipe httpx fetch) of <code>product_url</code> returned a parseable price; AND</li>
+<li>For first-refresh queries: the 30-second double-read scrape returned a price within 5% of the first reading; OR</li>
+<li>The row came from the DataForSEO Shopping feed (auto-stamped — feed payload is authoritative).</li>
+</ul>
+<h4><code>verified: false</code> is set when ANY of these triggers fire:</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Trigger</th>
+<th>Why it happens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Caller set <code>verify_prices: false</code> on the request</td>
+<td>Verification step skipped entirely. Price comes from the discovery snippet, not a confirmed page fetch.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Firecrawl request crashed or threw an exception</td>
+<td>Network blip, Firecrawl timeout, etc.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Firecrawl returned <code>success=false</code> or <code>data=null</code></td>
+<td>404, captcha, JS-only render that timed out, ad-wall, anti-bot block.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Firecrawl loaded the page but no price was extractable</td>
+<td>&quot;Call for price&quot;, login-gated price, JS-only price that hydrated after the snapshot, missing price tag.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Double-read inconsistency</strong> (first refresh only)</td>
+<td>Two Firecrawl scrapes 30 seconds apart returned prices &gt;5% apart — signals A/B testing or transient promo. Row is reset to <code>verified=false</code> and <code>notes</code> carries <code>&quot;double-read inconsistent: €X vs €Y&quot;</code>.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Extraction-recipe (httpx fast path) matched the URL but selectors returned no price text</td>
+<td>Selector drift — recipe self-heals over consecutive failures. Falls through to Firecrawl, which then itself fails.</td>
+</tr>
+</tbody></table>
+<p>When <code>verified: false</code>, the <code>price</code> field still has whatever the upstream engine reported — we just can&#39;t confirm it&#39;s still on the page right now.</p>
+<h3>Flag 2 — <code>match_kind</code> (identity-level confirmation)</h3>
+<p>Whether the page actually shows the product you asked for. Set by the Haiku batched classifier.</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Meaning</th>
+<th>Stats inclusion</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>exact</code></td>
+<td>Brand + model + product_type all match. Fully confirmed identity.</td>
+<td>Included</td>
+</tr>
+<tr>
+<td><code>variant</code></td>
+<td>Same model, different finish/color/size (chrome vs matte black).</td>
+<td>Excluded</td>
+</tr>
+<tr>
+<td><code>family</code></td>
+<td>Same brand+series, different SKU within that series.</td>
+<td>Excluded (inert)</td>
+</tr>
+<tr>
+<td><code>unverifiable</code></td>
+<td>Couldn&#39;t confirm identity from the page.</td>
+<td>Excluded</td>
+</tr>
+<tr>
+<td><code>mismatch</code></td>
+<td>Wrong brand or wrong product type entirely.</td>
+<td>Dropped server-side — never returned to API consumers.</td>
+</tr>
+</tbody></table>
+<h4><code>match_kind: unverifiable</code> is set when ANY of these triggers fire:</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Trigger</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><strong>Page extraction was empty</strong> — both <code>product_name</code> AND <code>url_slug_tokens</code> came back blank. The classifier literally has nothing to judge identity from.</td>
+<td>Classifier rule: <em>&quot;unverifiable: page_name is empty AND url_slug_tokens is empty. Can&#39;t judge.&quot;</em></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Brand-only query, no SKU, no explicit variant — extraction also failed</td>
+<td><code>classify_hits</code> early-return</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Haiku timeout / API error / malformed response → fallback to rule-based classifier, which defaults to <code>unverifiable</code> for any page with empty name + empty slug</td>
+<td><code>_rule_based_verdict</code> fallback</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Rule-based fallback sees a query with no <code>required_tokens</code> AND no <code>sku_tokens</code> (catalog product had no brand/model/SKU at all)</td>
+<td><code>_rule_based_verdict</code> early-return</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Sanitization fallback — Haiku returned an unrecognized <code>match_kind</code> string (model misbehavior); clamped to <code>unverifiable</code></td>
+<td><code>_sanitize_verdicts</code></td>
+</tr>
+</tbody></table>
+<p>Once a row is <code>unverifiable</code>:</p>
+<ul>
+<li><strong>Excluded</strong> from price statistics (min/median/max/percentile).</li>
+<li><strong>Excluded</strong> from price-drop / new-retailer / promo / anomaly alerts.</li>
+<li><strong>Shown</strong> to the consumer with an &quot;Unverified&quot; / &quot;?&quot; badge — we keep it because dropping every row we couldn&#39;t classify would silently shrink result counts, and most &quot;can&#39;t extract&quot; cases are temporary (CDN blip, captcha, slow JS render).</li>
+</ul>
+<h3>Combining the two flags</h3>
+<table>
+<thead>
+<tr>
+<th><code>match_kind</code></th>
+<th><code>verified</code></th>
+<th>What it means</th>
+<th>UI / data treatment</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>exact</code></td>
+<td><code>true</code></td>
+<td>Fully confirmed — right product, fresh price.</td>
+<td>Default — included in stats.</td>
+</tr>
+<tr>
+<td><code>exact</code></td>
+<td><code>false</code></td>
+<td>Right product, but price couldn&#39;t be re-fetched (page blocked, double-read disagreed, or you set <code>verify_prices: false</code>).</td>
+<td>Same product, &quot;stale price&quot; indicator. Still in stats — <code>match_kind</code> filter wins.</td>
+</tr>
+<tr>
+<td><code>variant</code></td>
+<td><code>true</code></td>
+<td>Same model, different finish — fresh price.</td>
+<td>&quot;Variant&quot; badge. Excluded from stats, kept for context.</td>
+</tr>
+<tr>
+<td><code>family</code></td>
+<td>any</td>
+<td>Different SKU in the same series.</td>
+<td>&quot;Similar Products in this series&quot; collapsed section. Inert.</td>
+</tr>
+<tr>
+<td><code>unverifiable</code></td>
+<td><code>true</code></td>
+<td>Couldn&#39;t extract product name from the page, but a price was readable. Rare — happens on heavily JS-rendered pages.</td>
+<td>Grey &quot;?&quot; badge. Excluded from stats.</td>
+</tr>
+<tr>
+<td><code>unverifiable</code></td>
+<td><code>false</code></td>
+<td>Couldn&#39;t extract anything — page broken, blocked, 404. Lowest-confidence row.</td>
+<td>Grey &quot;?&quot; badge. Excluded from stats.</td>
+</tr>
+<tr>
+<td><code>mismatch</code></td>
+<td>any</td>
+<td>Brand or product type wrong.</td>
+<td><strong>Dropped before reaching you — never returned via the API.</strong></td>
+</tr>
+</tbody></table>
+<h3>Recovering from <code>verified: false</code> rows — <code>POST /track/{id}/verify</code></h3>
+<p>If a row comes back unverified because the page was transiently blocked / captcha&#39;d / 404&#39;d, you can re-trigger Firecrawl on demand without doing a full discovery. See endpoint #12 in the table above and the v6 changelog accordion below for full details. Cost: 1 Firecrawl credit per URL re-verified.</p>
+<hr>
+<h2>Changelog</h2>
+<details>
+<summary><b>2026-04-28 (v6)</b> — <b>Per-tracked-query result exclusions + 24h cadence + cron-controlled refreshes.</b> Click to expand.</summary><h4>What&#39;s new</h4>
+<p><strong>Three new endpoints</strong> for excluding noisy or wrong-product results from a specific <code>tracking_id</code>. Exclusions are scoped to the tracking_id you create them on — they do NOT affect any other tracked query (yours or any other consumer&#39;s).</p>
+<ul>
+<li><strong><code>POST /api/v1/prices/track/{tracking_id}/exclude</code></strong> — body <code>{url?, domain?, reason?}</code>. Either <code>url</code> (specific page) OR <code>domain</code> (whole retailer wildcard) is required. Returns <code>{id, url?, domain?, reason?, excluded_at}</code> with HTTP 201. Idempotent: re-excluding the same URL just updates the <code>reason</code> field.</li>
+<li><strong><code>POST /api/v1/prices/track/{tracking_id}/include</code></strong> — body <code>{url?, domain?}</code>. Removes a previous exclusion. Returns <code>{success, removed_count}</code>.</li>
+<li><strong><code>GET  /api/v1/prices/track/{tracking_id}/exclusions</code></strong> — returns the current exclusion list for this tracking_id, newest first.</li>
+</ul>
+<p><strong>Behaviour after exclusion:</strong></p>
+<ul>
+<li>The next <code>/refresh</code> call drops matching hits BEFORE persistence. They never enter <code>tracked_query_price_history</code>, never feed the rolling median, never trigger price-drop / new-retailer / promo / anomaly alerts.</li>
+<li><code>GET /track/{id}</code> and <code>GET /track/{id}/history</code> filter out excluded rows by default. If you need to see what&#39;s hidden (audit / debugging), pass <code>?include_excluded=true</code> (server-side support landed in this release).</li>
+<li>The exclusion is persistent — survives across refreshes — until you call <code>/include</code> to undo it.</li>
+<li>Per-call billing is unchanged. You&#39;re only billed for the actual refreshes you trigger.</li>
+</ul>
+<p><strong>When to use it (vs. <code>preferred_retailer_domains</code> you already had):</strong></p>
+<ul>
+<li><code>preferred_retailer_domains</code> is a positive bias (&quot;probe these&quot;), not a filter. It can&#39;t suppress unwanted results.</li>
+<li>The new exclusion endpoints are subtractive: surgically remove specific URLs you&#39;ve reviewed and don&#39;t want, or blanket-block a whole noisy aggregator domain. Combine both for fine-grained control.</li>
+</ul>
+<p><strong>Use cases that motivated this:</strong></p>
+<ul>
+<li>Marketplace returned a sibling-SKU page that the classifier scored as <code>unverifiable</code>/<code>variant</code> — exclude the URL so it stops re-appearing.</li>
+<li>An aggregator subdomain you don&#39;t want to track (e.g. &quot;aggregator-blog.example.com&quot; while keeping &quot;shop.example.com&quot;).</li>
+<li>Wrong-product page that consistently scores <code>exact</code> because the brand+model match by accident.</li>
+</ul>
+<p><strong>Curl example:</strong></p>
+<pre><code class="language-bash"># Exclude a specific page
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/prices/track/{tracking_id}/exclude&quot; \
+  -H &quot;Authorization: Bearer mhub_live_...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;url&quot;:&quot;https://retailer.com/wrong-sku&quot;,&quot;reason&quot;:&quot;sibling SKU, classifier false-positive&quot;}&#39;
+
+# Block a whole domain
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/prices/track/{tracking_id}/exclude&quot; \
+  -H &quot;Authorization: Bearer mhub_live_...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;domain&quot;:&quot;aggregator.com&quot;,&quot;reason&quot;:&quot;noise&quot;}&#39;
+
+# Undo
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/prices/track/{tracking_id}/include&quot; \
+  -H &quot;Authorization: Bearer mhub_live_...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;url&quot;:&quot;https://retailer.com/wrong-sku&quot;}&#39;
+
+# List
+curl &quot;https://v1api.materialshub.gr/api/v1/prices/track/{tracking_id}/exclusions&quot; \
+  -H &quot;Authorization: Bearer mhub_live_...&quot;
+</code></pre>
+<p><strong>Other changes in v6:</strong></p>
+<ul>
+<li><strong>Caller-controlled refresh cadence is now strict.</strong> Our internal cron no longer touches <code>tracked_queries</code>. Each tracked query is refreshed only when you call <code>POST /api/v1/prices/track/{tracking_id}/refresh</code>. The previously-documented &quot;automatic cron refresh on <code>refresh_interval_hours</code> cadence&quot; is removed — <code>refresh_interval_hours</code> now ONLY drives the throttle response when you call <code>/refresh</code> too soon (returns <code>status: &quot;throttled&quot;</code> with <code>throttle_until</code>). This eliminates surprise per-call billing.</li>
+<li><strong>24h single-tier cadence</strong> for the platform&#39;s own internal monitoring (does not apply to your tracked queries — caller controls cadence).</li>
+</ul>
+<h4>On-demand re-verification — <code>POST /api/v1/prices/track/{tracking_id}/verify</code></h4>
+<p>Re-runs Firecrawl verification on every URL (or just the URLs you specify) in the latest refresh run for this tracked query. Refreshes the <code>verified</code> flag, the on-page price, the <code>original_price</code> (was/now), the availability label, and the <code>notes</code> field — in place, on the existing rows.</p>
+<p><strong>Different from <code>/refresh</code>:</strong> does NOT re-run discovery. No Perplexity, no DataForSEO, no marketplace adapters. Cheaper, faster, narrower scope. Use this when:</p>
+<ul>
+<li>You see a row with <code>verified=false</code> and want to retry the page (transient blocked / 404 / captcha)</li>
+<li>You suspect a price changed but don&#39;t want to spend the full discovery cost</li>
+<li>You want to refresh just a few specific URLs without re-fetching the whole list</li>
+</ul>
+<p><strong>Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;urls&quot;: [&quot;https://retailer.com/sku-1&quot;, &quot;https://retailer.com/sku-2&quot;]
+}
+</code></pre>
+<ul>
+<li><code>urls</code> (optional) — whitelist of URLs to re-verify. Each must already exist in the latest refresh run for this tracking_id (URLs not in the run are silently dropped).</li>
+<li>Omit <code>urls</code> entirely to re-verify every URL in the latest run.</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;tracking_id&quot;: &quot;...&quot;,
+  &quot;status&quot;: &quot;verified&quot;,
+  &quot;rows_processed&quot;: 12,
+  &quot;verified_count&quot;: 10,
+  &quot;unverified_count&quot;: 2,
+  &quot;credits_used&quot;: 12,
+  &quot;latency_ms&quot;: 8421,
+  &quot;results&quot;: [ ...freshly-updated TrackedQueryResultRow objects, exclusion filter applied... ]
+}
+</code></pre>
+<p><code>status</code> values: <code>&quot;verified&quot;</code> (success), <code>&quot;no_results&quot;</code> (no prior refresh — call <code>/refresh</code> first), <code>&quot;no_match&quot;</code> (none of the supplied URLs belong to the latest run), <code>&quot;inactive&quot;</code> (tracking deactivated), <code>&quot;error&quot;</code> (Firecrawl pipeline crashed).</p>
+<p><strong>Cost:</strong> 1 Firecrawl credit per URL re-verified. No LLM cost. Tallied into <code>total_credits_used</code> so partner dashboards reflect the spend.</p>
+<p><strong>Curl:</strong></p>
+<pre><code class="language-bash"># Re-verify everything in the latest run
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/prices/track/{tracking_id}/verify&quot; \
+  -H &quot;Authorization: Bearer mhub_live_...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{}&#39;
+
+# Re-verify just one URL
+curl -X POST &quot;https://v1api.materialshub.gr/api/v1/prices/track/{tracking_id}/verify&quot; \
+  -H &quot;Authorization: Bearer mhub_live_...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;urls&quot;:[&quot;https://retailer.com/specific-sku&quot;]}&#39;
+</code></pre>
+<h4>Backwards compatibility</h4>
+<ul>
+<li>All v5 endpoints, response shapes, and field names unchanged.</li>
+<li><code>preferred_retailer_domains</code> continues to work alongside the new exclusion endpoints.</li>
+<li>Tracked queries with <code>refresh_interval_hours</code> set continue to validate the value, but as documented above the value no longer triggers automatic refreshes.</details></li>
+</ul>
+<details>
+<summary><b>2026-04-27 (v5)</b> — <b>Family-kept policy + Greek marketplaces (Skroutz / Bestprice / Shopflix) + manual promotion + cost overhaul.</b> Click to expand.</summary><h4>What&#39;s new</h4>
+<ul>
+<li><strong><code>match_kind</code> enum extended.</strong> Was <code>&quot;exact&quot; | &quot;variant&quot; | &quot;unverifiable&quot; | null</code>. Now also includes <code>&quot;family&quot;</code>. Same-brand-and-series rows where the SKU differs are no longer dropped — they come back to you as <code>family</code> so you can render them under a <em>Similar products in this series</em> section. They&#39;re inert downstream (excluded from price-drop / new-retailer / promo / anomaly alerts and from rolling-median stats).</li>
+<li><strong>Three new <code>source</code> values.</strong> <code>tracked_query_price_history.source</code> (and <code>competitor_sources.source_type</code>) can now be <code>&quot;marketplace_skroutz&quot;</code>, <code>&quot;marketplace_bestprice&quot;</code>, <code>&quot;marketplace_shopflix&quot;</code> in addition to <code>&quot;perplexity_web_search&quot;</code> and <code>&quot;dataforseo_shopping&quot;</code>. Rows from these sources are first-party retailer data (post-fanout from the marketplace&#39;s product page).</li>
+<li><strong>Idealo source value.</strong> <code>competitor_source_type</code> enum gained <code>&quot;idealo&quot;</code> for DACH/IT/UK/ES/FR refreshes. Module is opt-in per workspace.</li>
+<li><strong>Manual promotion endpoints (admin-only, session JWT).</strong><ul>
+<li><code>POST /api/v1/price-monitoring/promote-family-row</code> — flip a row&#39;s <code>match_kind</code> from <code>family</code>/<code>mismatch</code>/<code>unverifiable</code> to <code>exact</code> or <code>variant</code>. Sticky: every future refresh of the same URL keeps the override until you demote it. Body: <code>{competitor_source_id?, tracked_query_history_id?, override_kind: &quot;exact&quot;|&quot;variant&quot;, reason?}</code>.</li>
+<li><code>POST /api/v1/price-monitoring/demote-to-family</code> — undo a prior promotion.</li>
+<li>Both endpoints write to <code>match_corrections</code>, so the few-shot classifier loop learns from the correction globally.</li>
+</ul>
+</li>
+<li><strong>API response split (recommended).</strong> New <code>latest_results_split()</code> returns <code>{ &quot;results&quot;: [...], &quot;family_results&quot;: [...] }</code> instead of one mixed array. Existing <code>latest_results()</code> still works for back-compat (family rows interleaved by price). UI consumers should prefer the split form. Same approach is recommended on your side: render the <code>family_results</code> section collapsed by default, no chart contribution.</li>
+<li><strong>Source-label fix.</strong> Before this release, every non-DataForSEO hit was forced to <code>&quot;perplexity_web_search&quot;</code> on persist — marketplace hits were invisible by source filter. Now <code>source</code> reflects the real adapter that produced the row. <strong>Backwards-compatible</strong>: rows persisted before today still have the old label; new rows have the correct one.</li>
+<li><strong>Cost optimizations (~60% cut on stable refreshes).</strong><ul>
+<li>Tier-skip: marketplace adapters only run on first refresh / admin force-refresh / when known retailer set is sparse.</li>
+<li>Sonar model downgrade: <code>sonar</code> (cheaper) on stable cron refreshes, <code>sonar-pro</code> on first refresh + admin force-refresh.</li>
+<li>Classifier verdict cache (7-day TTL per URL+facets-hash) — repeat retailers across daily refreshes are ~95% cache hits.</li>
+<li>Volatility-based cadence: <code>tracked_queries.next_check_at</code> is auto-extended to 48h / 72h after consecutive stable refreshes (≤2% move). Any ≥5% move snaps cadence back to 24h. <strong>No client change required</strong> — the cron picks it up automatically.</li>
+<li>Brand-level retailer cache: when one SKU in a brand has been discovered, future SKUs in the same brand seed <code>known_retailer_domains</code> from the cached set.</li>
+<li>Recipe-driven httpx fallback: validated retailers can be re-scraped via cheap <code>httpx + selectolax</code> instead of Firecrawl. Recipes start unseeded; activation grows over time.</li>
+</ul>
+</li>
+</ul>
+<h4>⚠️ Recommended request change for partners — <strong>send the SKU</strong></h4>
+<p>The single most impactful thing you can do: include the SKU in the <code>search_query</code> string. Without it, marketplace search engines (Skroutz / Bestprice / Shopflix) sort by price-asc and return the cheapest item in the brand line, which is usually a wrong-product accessory like a spout/εκροή — those rows then get correctly filtered out as wrong-product-type, and you get fewer marketplace results.</p>
+<p><strong>Recommended format</strong> — <code>&quot;{Brand} {Model/Series} {SKU}&quot;</code> (with optional finish/colour after):</p>
+<pre><code>✅  &quot;ORABELLA PRECIOSA 10356 Brushed Nickel&quot;
+✅  &quot;MAIDTEC 7012MT Stainless Steel&quot;
+✅  &quot;Ferrara Beige Keros 60x120&quot;
+
+⚠️  &quot;ORABELLA PRECIOSA&quot;                  ← works, but marketplaces will mostly miss
+⚠️  &quot;ORABELLA PRECIOSA Μπαταρία Νιπτήρα&quot; ← works, no SKU disambiguation
+</code></pre>
+<p>When <code>search_query</code> carries a SKU, our facet extractor populates <code>sku_tokens=[&quot;10356&quot;]</code> and the marketplace adapters build a tight <code>&quot;{BRAND} {MODEL} {SKU}&quot;</code> query that finds the right product page directly (validated end-to-end against ORABELLA PRECIOSA 10356 — Skroutz + Bestprice both land at €155, the actual basin-faucet price).</p>
+<p>Note: the <code>Νυπτήρα</code> (with <strong>Υ</strong>, upsilon) typo we sometimes see should be <code>Νιπτήρα</code> (with <strong>Ι</strong>, iota). The pipeline tolerates the typo via SKU anchoring, but the right Greek spelling improves recall.</p>
+<h4>Verified results table (✅ good / ⚠️ caveat / ❌ won&#39;t work)</h4>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Result</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>search_query</code> includes SKU</td>
+<td>✅</td>
+<td>All applicable marketplaces find the exact SKU page. Rows tagged <code>exact</code>. Same-series different-SKU rows tagged <code>family</code> and returned in <code>family_results</code>.</td>
+</tr>
+<tr>
+<td><code>search_query</code> is brand+model only (no SKU)</td>
+<td>⚠️</td>
+<td>DataForSEO + Perplexity work fine. Marketplaces often return wrong-product-type rows (spouts) that get filtered out — you&#39;ll see fewer marketplace rows.</td>
+</tr>
+<tr>
+<td><code>search_query</code> in Greek script</td>
+<td>✅</td>
+<td>Best recall. Perplexity + DataForSEO both index Greek pages directly.</td>
+</tr>
+<tr>
+<td><code>search_query</code> in Greeklish (<code>Mpataria Niptiros</code>)</td>
+<td>✅</td>
+<td>Works. Marginally lower ranking on Greek-locale results vs native Greek.</td>
+</tr>
+<tr>
+<td>Shopflix specifically</td>
+<td>⚠️</td>
+<td>Their fuzzy search prioritises numeric token matches, so without a brand+model+SKU triplet they often return unrelated products that share the digit (a phone case with <code>10356</code> in its slug, etc.). Our plausibility filter rejects these — net result: zero false positives, but Shopflix may yield no rows when their catalog doesn&#39;t carry that SKU.</td>
+</tr>
+<tr>
+<td>Bestprice with <code>{BRAND} {SKU}</code> only</td>
+<td>❌</td>
+<td>Returns zero. Their search needs <code>{BRAND} {MODEL} {SKU}</code> (validated). Our adapters now build this automatically.</td>
+</tr>
+<tr>
+<td><code>casasolutionsgekas.com</code> appearing twice in results</td>
+<td>✅</td>
+<td>One row from <code>dataforseo_shopping</code> (Google Shopping feed entry), one from <code>perplexity_web_search</code> (real retailer page with the on-page promo <code>original_price</code>). Both are correct and useful — the DataForSEO row gives you the verified feed price + image + rating; the Perplexity row gives you the on-page was/now price (<code>original_price</code> populated). UI tip: render one row per retailer-domain and surface both data points.</td>
+</tr>
+</tbody></table>
+<h4>What stays the same</h4>
+<ul>
+<li>Endpoint URLs, auth (api_keys Bearer), request bodies — <strong>fully back-compat</strong>. No partner integrations need to change.</li>
+<li><code>latest_results()</code> still returns the mixed array if you don&#39;t migrate to the split form.</li>
+<li>Existing rows with <code>match_kind = null</code> keep working — clients that don&#39;t read it are unaffected.</li>
+</ul>
+</details><ul>
+<li><strong>2026-04-25 (v4)</strong> — <strong>Product-identity verification + DataForSEO merchant fixes + <code>product_title</code>.</strong><ul>
+<li>Every retailer row now carries <code>match_kind</code> (<code>&quot;exact&quot; | &quot;variant&quot; | &quot;unverifiable&quot; | null</code>), <code>match_score</code> (0-100), <code>match_note</code> (e.g. <em>&quot;Color differs: asked BLACK MATT, page shows WHITE MATT&quot;</em>). Rows the classifier flagged as <code>mismatch</code> or <code>family</code> (wrong product, even if same brand) are dropped before the response leaves the server.</li>
+<li>Every retailer row also carries <code>product_title</code> — the exact product name as shown on the retailer page. Use as a subtitle when rendering, especially when a retailer appears multiple times for different variants.</li>
+<li>Behavioral change: DataForSEO merchant coverage ~8× higher — a dedupe bug was collapsing every Google Shopping merchant to a single <code>google.gr</code> domain row. Fixed. DataForSEO fetch depth also bumped to ≥30.</li>
+<li>Behavioral change: wrong-product rows are now dropped server-side. Clients will see FEWER rows but every row is correct.</li>
+<li>Behavioral change: variants stay in the list with their <code>match_note</code>, but <code>/market-check</code> statistics (<code>stats.min</code>, <code>stats.median</code>, <code>stats.max</code>) exclude them.</li>
+<li>Historical rows pre-dating this release have <code>match_kind: null</code>, <code>product_title: null</code>. Both are additive-safe — clients that don&#39;t read them keep working.</li>
+</ul>
+</li>
+<li><strong>2026-04-25 (v3)</strong> — <strong>Firecrawl price verification + on-page was/now pricing.</strong><ul>
+<li>New request param <code>verify_prices</code> (default <code>true</code>) on <code>/prices/lookup</code> (search mode), <code>POST /prices/track</code>, and <code>PUT /prices/track/{id}</code>. When true, every retailer hit is re-fetched via Firecrawl and the price on the live page replaces the LLM/Shopping-feed price.</li>
+<li>New response fields on every retailer row: <code>verified: bool</code>, <code>original_price: number | null</code>, <code>source: &quot;perplexity&quot; | &quot;dataforseo&quot;</code>. Image + rating fields (<code>image_url</code>, <code>rating_value</code>, <code>rating_votes</code>) also surface on DataForSEO hits.</li>
+<li><code>GET /prices/track/{id}/history</code> now includes <code>original_price</code> and <code>verified</code> on each row.</li>
+<li><code>TrackedQueryResponse</code> now includes <code>verify_prices</code> so clients can read the current setting.</li>
+<li><code>notes</code> field may include discrepancy tags like <code>&quot;verify: was perplexity=€45.00, actual on page=€54.90&quot;</code> when Firecrawl disagreed with the LLM by &gt;20%.</li>
+<li>Billing: verification adds ~1 credit per hit and ~30s latency on synchronous POST. Set <code>verify_prices: false</code> to opt out for speed/cost-sensitive workloads.</li>
+<li><strong>Backwards compatible.</strong> All new fields are additive. Omitting <code>verify_prices</code> defaults to <code>true</code>, matching the improved-accuracy behavior.</li>
+</ul>
+</li>
+<li><strong>2026-04-24 (v2)</strong> — Added DataForSEO Merchant as a second parallel discovery source alongside Perplexity. One <code>/prices/lookup</code> (search_query mode) or <code>/prices/track</code> call now returns both sources merged, deduped by domain, tagged per-hit with <code>source: &quot;perplexity&quot; | &quot;dataforseo&quot;</code>. Supports <code>DATAFORSEO_BASE64</code> env var in addition to <code>DATAFORSEO_LOGIN</code>/<code>DATAFORSEO_PASSWORD</code>.</li>
+<li><strong>2026-04-24</strong> — Initial external API release. <code>/prices/lookup</code> (URL + search query modes), <code>/prices/track/*</code> CRUD + refresh + history, Perplexity Sonar-pro engine, api_keys Bearer auth, preferred-domain pinning, hourly cron refresh.</li>
+</ul>
+
+</div></body></html>
