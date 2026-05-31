@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Payments</h1>
+<p>Payment processing + invoice provider routing. The Payments module is the <strong>parent / shared surface</strong>: business identity printed on every invoice, the <strong>built-in invoice generator</strong>, and a <strong>provider registry</strong> that lists every enabled payment-provider module + routes invoice issuance to the active ERP.</p>
+<p>Specific payment processors are <strong>sibling modules</strong> (<code>payments-stripe</code> today; future <code>payments-paypal</code>, <code>payments-adyen</code>, <code>payments-viva</code>, <code>payments-bank-transfer</code>). ERPs that bring native payment processing can also declare <code>provides: { payments: true }</code> and slot into the same registry.</p>
+<hr>
+<h2>Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│  payments  (parent module)                                          │
+│  ─────────                                                          │
+│  Owns:                                                              │
+│   • Business identity (name / VAT / address) → finance_settings    │
+│   • Built-in invoice generator (numbering / templates)             │
+│   • Provider routing                                                │
+│       - useInvoiceProvider()  →  single-winner (Oxygen vs built-in) │
+│       - useActivePaymentProviders()  →  multi-provider array       │
+└─────────────────────────────────────────────────────────────────────┘
+       ▲                                  ▲
+       │ provides.invoicing               │ provides.payments
+       │                                  │
+┌──────┴──────────┐               ┌───────┴────────────┐
+│  oxygen         │               │  payments-stripe   │
+│  ──────         │               │  ──────────────    │
+│  Greek          │               │  Checkout for      │
+│  e-invoicing    │               │  subs + credits    │
+│  (notices only) │               │  + invoice pay-    │
+│                 │               │  link, webhooks    │
+└─────────────────┘               └────────────────────┘
+
+  Future ERPs (xero, quickbooks, sap) can declare BOTH flags.
+  Future payment providers (paypal, adyen, viva, bank-transfer)
+  declare provides.payments only.
+</code></pre>
+<hr>
+<h2>Two capability flags</h2>
+<p>Modules declare what they bring in their <code>manifest.json</code>:</p>
+<pre><code class="language-jsonc">{
+  &quot;slug&quot;: &quot;...&quot;,
+  &quot;provides&quot;: {
+    &quot;invoicing&quot;: true,   // handles invoice issuance end-to-end (ERP-style)
+    &quot;payments&quot;:  true    // accepts payments from customers (provider-style)
+  }
+}
+</code></pre>
+<ul>
+<li><p><strong><code>provides.invoicing</code></strong> — <strong>single-winner</strong>. Only one ERP wins the active-provider role at a time (alphabetical sort by slug on ties). When an ERP wins:</p>
+<ul>
+<li>Built-in numbering + template UI on Payments → Invoicing tab <strong>deactivates</strong> with a banner</li>
+<li><code>IssueInvoiceButton</code> on the quote admin page <strong>hides</strong> for new quotes</li>
+<li>The ERP&#39;s own push button (e.g. <code>OxygenPreInvoiceButton</code>) is the active surface</li>
+<li><strong>Payment collection is unaffected</strong> — customers still pay ERP-issued invoices through whichever payment providers are enabled</li>
+</ul>
+</li>
+<li><p><strong><code>provides.payments</code></strong> — <strong>multi-provider</strong>. Every enabled provider is listed on the Payments → Providers tab. Admins may operate several simultaneously (Stripe + PayPal + bank-transfer) and the checkout UI offers the customer a choice.</p>
+</li>
+</ul>
+<p>These flags are independent. An ERP may declare both (Xero or QuickBooks if you add them, for example, since they handle both invoicing AND payment processing). The parent Payments module declares neither — it&#39;s the registry / shared surface, not a provider itself.</p>
+<hr>
+<h2>Module folders</h2>
+<h3><code>src/modules/payments/</code> (parent)</h3>
+<pre><code>src/modules/payments/
+├── manifest.json                          ← slug=&#39;payments&#39;, no provides flags
+├── index.ts                               ← registers 3 settingsPanels
+├── services/
+│   └── invoiceProviderService.ts          ← useInvoiceProvider, useActivePaymentProviders
+└── components/
+    ├── BusinessDetailsPanel.tsx           ← Business tab
+    ├── ProvidersPanel.tsx                 ← Providers tab (lists active payment providers)
+    └── InvoicingPanel.tsx                 ← Invoicing tab (numbering + design uploader + ERP banner)
+</code></pre>
+<p>Four tabs on <code>/admin/modules/payments/settings</code>:</p>
+<ul>
+<li><strong>Keys</strong> — auto-mounted. Shows Stripe secrets that are linked to this module via <code>platform_secret_module_links</code> (the primary location is <code>payments-stripe</code>, but they appear here for convenience too).</li>
+<li><strong>Business</strong> — legal entity printed on invoices.</li>
+<li><strong>Providers</strong> — list of enabled payment-provider modules with &quot;Configure&quot; deep-links.</li>
+<li><strong>Invoicing</strong> — built-in numbering + invoice template uploader. Banner-and-dim when an ERP wins.</li>
+</ul>
+<h3><code>src/modules/payments-stripe/</code> (child — Stripe provider)</h3>
+<pre><code>src/modules/payments-stripe/
+├── manifest.json                          ← slug=&#39;payments-stripe&#39;, provides.payments=true
+├── index.ts                               ← registers 1 settingsPanel
+└── components/
+    └── StripeConfigPanel.tsx              ← webhook URL, dashboard links, product/price ID docs
+</code></pre>
+<p>Two tabs on <code>/admin/modules/payments-stripe/settings</code>:</p>
+<ul>
+<li><strong>Keys</strong> — STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET (primary location, <code>platform_secrets.primary_module_slug=&#39;payments-stripe&#39;</code>)</li>
+<li><strong>Configure</strong> — webhook URL with copy button, Stripe Dashboard quick links</li>
+</ul>
+<p>Stripe edge functions (<code>stripe-checkout</code>, <code>stripe-webhooks</code>, <code>stripe-customer-portal</code>, <code>finance-pay-invoice</code>) <strong>stay in their current locations</strong> — <code>supabase/functions/</code>. The module split is logical (config + UI surface); the runtime code wasn&#39;t co-located before and doesn&#39;t need to be now. Secrets are bootstrapped into <code>Deno.env</code> at function start regardless of which module slug owns them.</p>
+<hr>
+<h2>Storage</h2>
+<p>All persistent config lives on <strong><code>finance_settings</code></strong> (one row per workspace). Same row read by the Finance module&#39;s SettingsTab — single source of truth.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Purpose</th>
+<th>Tab</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>business_name</code>, <code>business_vat</code>, <code>business_tax_office</code>, <code>business_address</code>, <code>business_city</code>, <code>business_postal_code</code>, <code>business_country_code</code>, <code>business_phone</code>, <code>business_email</code>, <code>business_website</code></td>
+<td>Legal entity on invoices + Stripe statement descriptor source</td>
+<td>Payments → <strong>Business</strong></td>
+</tr>
+<tr>
+<td><code>invoice_number_prefix</code> (default <code>INV-</code>), <code>invoice_next_number</code> (default 1), <code>invoice_number_pad</code> (default 6)</td>
+<td>Built-in invoice numbering. Atomic increment by <code>finance-issue-invoice</code>. <strong>Ignored when ERP wins.</strong></td>
+<td>Payments → <strong>Invoicing</strong></td>
+</tr>
+<tr>
+<td><code>default_payment_terms_days</code>, <code>default_vat_rate</code></td>
+<td>Stamp <code>due_at</code> + VAT on issued invoices</td>
+<td>Payments → <strong>Invoicing</strong></td>
+</tr>
+<tr>
+<td><code>invoice_template_cover_path</code>, <code>invoice_template_footer_path</code></td>
+<td>Storage paths in <code>quote-templates</code> bucket. Signed-URL&#39;d at PDF generation time.</td>
+<td>Payments → <strong>Invoicing</strong></td>
+</tr>
+<tr>
+<td>(existing) <code>statement_template_cover_path</code>, <code>statement_template_footer_path</code>, <code>digest_*</code>, <code>statements_*</code></td>
+<td>Owned by Finance — not edited from Payments.</td>
+<td>Finance module</td>
+</tr>
+</tbody></table>
+<p><strong>Stripe secrets</strong> in <code>platform_secrets</code>:</p>
+<ul>
+<li><code>STRIPE_SECRET_KEY</code> — <code>primary_module_slug=&#39;payments-stripe&#39;</code>, also linked to <code>payments</code> + <code>sales-finance</code> (visible on all three Keys tabs)</li>
+<li><code>STRIPE_WEBHOOK_SECRET</code> — same scope as above</li>
+<li><code>STRIPE_CREDITS_PRODUCT_ID</code>, <code>STRIPE_PRO_PRICE_ID</code>, <code>STRIPE_ENTERPRISE_PRICE_ID</code> — env vars on MIVAA + checkout function (not stored in <code>platform_secrets</code> — they&#39;re lower-sensitivity and admins rotate them through the Stripe Dashboard)</li>
+</ul>
+<p>Env vars always win over DB rows (<code>_shared/secrets.ts → resolveSecret</code>).</p>
+<hr>
+<h2>Provider routing</h2>
+<h3>Invoice provider — single winner</h3>
+<p><a href="../src/modules/payments/services/invoiceProviderService.ts"><code>useInvoiceProvider()</code></a>:</p>
+<pre><code>useInvoiceProvider()
+  ↓
+registeredModules                   ← in-memory from src/modules/*/manifest.json
+  .filter(m =&gt; m.manifest.provides?.invoicing === true)
+  .filter(m =&gt; enabledSlugs.has(m.slug))   ← from /admin/modules toggle state (React Query)
+  .sort((a, b) =&gt; a.slug.localeCompare(b.slug))
+  [0]                               ← winner, or built-in &#39;payments&#39; fallback
+</code></pre>
+<p>Returns <code>{ slug, name, isErp }</code>.</p>
+<h3>Payment providers — multi-provider</h3>
+<p><a href="../src/modules/payments/services/invoiceProviderService.ts"><code>useActivePaymentProviders()</code></a>:</p>
+<pre><code>useActivePaymentProviders()
+  ↓
+registeredModules
+  .filter(m =&gt; m.manifest.provides?.payments === true)
+  .filter(m =&gt; enabledSlugs.has(m.slug))
+  .sort((a, b) =&gt; a.slug.localeCompare(b.slug))
+  → PaymentProvider[]               ← every active provider listed
+</code></pre>
+<p>Returns <code>Array&lt;{ slug, name }&gt;</code>. The Providers tab renders this list directly. Future checkout-time picker UIs (when there&#39;s more than one provider) read from the same hook.</p>
+<hr>
+<h2>Adding a new provider</h2>
+<h3>A new payment processor (e.g. PayPal)</h3>
+<pre><code>src/modules/payments-paypal/
+├── manifest.json                          { &quot;provides&quot;: { &quot;payments&quot;: true } }
+├── index.ts                               (settings panel for PayPal-specific config)
+└── components/PaypalConfigPanel.tsx
+</code></pre>
+<p>Plus:</p>
+<ul>
+<li>DB migration: insert the module row, set PayPal-specific secrets with <code>primary_module_slug=&#39;payments-paypal&#39;</code></li>
+<li>Edge functions: <code>supabase/functions/paypal-checkout/</code>, <code>supabase/functions/paypal-webhooks/</code></li>
+<li>It auto-appears on Payments → Providers as soon as the migration ships + the module is enabled</li>
+</ul>
+<p><strong>No code change in the parent Payments module.</strong> No change to <code>IssueInvoiceButton</code>. No change to the registry.</p>
+<h3>A new ERP (e.g. Xero)</h3>
+<pre><code>src/modules/xero/
+├── manifest.json                          { &quot;provides&quot;: { &quot;invoicing&quot;: true } }
+├── index.ts                               (settings panel, push button)
+└── services/xeroService.ts                (integration logic)
+</code></pre>
+<p>If Xero also handles payment processing (some ERPs do — they ride their own merchant-of-record), add <code>&quot;payments&quot;: true</code> too:</p>
+<pre><code class="language-json">{ &quot;provides&quot;: { &quot;invoicing&quot;: true, &quot;payments&quot;: true } }
+</code></pre>
+<p>It will then appear on BOTH the invoice-provider single-winner race AND the Providers tab list.</p>
+<h3>Multi-ERP priority (future)</h3>
+<p>If two ERPs are ever enabled simultaneously, the alphabetical sort by slug wins. That&#39;s deterministic but probably not what you want when this becomes real. Three ways to handle:</p>
+<ol>
+<li>Add a numeric <code>priority</code> field under <code>provides.invoicing</code> and sort by it.</li>
+<li>One-ERP-at-a-time rule — disable enabling a second one without explicit confirmation.</li>
+<li>Per-workspace operator dropdown in Payments → Invoicing: &quot;Active provider: [Oxygen ▼ / Xero / Built-in]&quot;.</li>
+</ol>
+<p>(3) is the right answer when you actually have two ERPs. Multi-payment-provider doesn&#39;t have this problem (it&#39;s already a list).</p>
+<hr>
+<h2>What stays in the parent Payments module regardless of provider</h2>
+<p>Even when an ERP wins invoice issuance, the parent Payments module continues to own:</p>
+<ul>
+<li><strong>Business identity</strong> (Business tab) — used by Stripe statement descriptors AND for any payment-provider that needs a billing entity</li>
+<li><strong>Provider registry</strong> (Providers tab) — lists enabled payment processors</li>
+<li><strong>Pay-token flow</strong> for invoice payment — <code>finance-pay-invoice</code> edge function. The invoice the pay-link is for can come from EITHER the built-in provider OR the ERP; the pay-link flow doesn&#39;t care</li>
+<li><strong>Stripe webhook reconciliation</strong> — <code>stripe-webhooks</code> handles <code>payment_intent.succeeded</code> and writes to <code>payments</code> + <code>payment_allocations</code>, marks invoices as paid</li>
+</ul>
+<p>Only <strong>invoice numbering + design</strong> in the Invoicing tab deactivates when an ERP is on (because the ERP supplies its own number + PDF). Everything else stays live.</p>
+<hr>
+<h2>Migration history</h2>
+<table>
+<thead>
+<tr>
+<th>Migration</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>payments_module_phase_1</code></td>
+<td>Initial. <code>provides_invoicing</code> column on <code>modules</code>, business + numbering + template columns on <code>finance_settings</code>, registered the <code>payments</code> module row, re-scoped STRIPE_* secrets to <code>primary_module_slug=&#39;payments&#39;</code>, linked to <code>sales-finance</code>.</td>
+</tr>
+<tr>
+<td><code>payments_module_drop_provides_invoicing_column</code></td>
+<td>Cleanup. Dropped <code>modules.provides_invoicing</code> — runtime is manifest-driven; the column was redundant.</td>
+</tr>
+<tr>
+<td><code>payments_stripe_module_split</code></td>
+<td>Split. Inserted the <code>payments-stripe</code> module row, re-scoped STRIPE_* secrets to <code>primary_module_slug=&#39;payments-stripe&#39;</code>, added link to <code>payments</code> so secrets stay visible on the parent&#39;s Keys tab.</td>
+</tr>
+</tbody></table>
+<p>Applied via <code>mcp__supabase__apply_migration</code> per the platform&#39;s <a href="../CLAUDE.html">SQL workflow rule</a>. No local <code>.sql</code> migration files.</p>
+<hr>
+<h2>What we deliberately don&#39;t do</h2>
+<ul>
+<li><strong>Don&#39;t move Stripe edge functions into <code>src/modules/payments-stripe/</code></strong> — they live under <code>supabase/functions/</code> and there&#39;s no benefit to relocating them (the deploy.yml + main.py + agent-chat references would all need updating for zero behavior change). The MODULE is the config + UI surface; the edge functions are the runtime.</li>
+<li><strong>Don&#39;t auto-deactivate any tab other than Invoicing</strong> when an ERP wins. Business + Providers + Keys all stay active because they&#39;re orthogonal to who issues invoices.</li>
+<li><strong>Don&#39;t hide existing internal invoices</strong> when an ERP becomes active. History is always reachable via the &quot;Open invoice&quot; link on the quote admin page.</li>
+<li><strong>Don&#39;t add a public partner API</strong> (<code>/api/v1/payments/*</code>) yet. Payment processing is inherently customer-facing — pay-links, Checkout sessions, webhooks — not partner-facing data the way Projects / Mention / Job tracking are. Revisit when there&#39;s demand.</li>
+<li><strong>Don&#39;t enforce one-provider-only</strong> for payments. Multi-provider checkout (e.g. customer picks Stripe vs PayPal at checkout time) is a real use case for future providers.</li>
+</ul>
+<hr>
+<h2>Integration points</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Integration</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong><code>payments-stripe</code></strong></td>
+<td>Sibling. Owns Stripe-specific config + secrets. Declares <code>provides.payments=true</code>.</td>
+</tr>
+<tr>
+<td><strong><code>sales-finance</code></strong></td>
+<td>Shares storage on <code>finance_settings</code> (business details + invoice config). Finance&#39;s <code>SettingsTab</code> and Payments&#39; <code>BusinessDetailsPanel</code>/<code>InvoicingPanel</code> edit the same rows. STRIPE_SECRET_KEY linked here too for the pay-token flow.</td>
+</tr>
+<tr>
+<td><strong><code>oxygen</code></strong></td>
+<td>Declares <code>provides.invoicing=true</code> in its manifest → wins the active-invoice-provider role when enabled. Has no <code>provides.payments</code> (it does NOT process payments — invoices it issues are still paid via whichever payment-provider is enabled here).</td>
+</tr>
+<tr>
+<td><strong><code>quotes</code></strong></td>
+<td>The <code>IssueInvoiceButton</code> on the quote admin page is a consumer of <code>useInvoiceProvider()</code> — hides for new quotes when ERP wins.</td>
+</tr>
+<tr>
+<td><strong>Stripe edge functions</strong></td>
+<td><code>stripe-checkout</code>, <code>stripe-webhooks</code>, <code>stripe-customer-portal</code>, <code>finance-pay-invoice</code> — unchanged behaviour. Read STRIPE_* secrets via env, bootstrapped from <code>platform_secrets</code> regardless of module slug.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Shared edge-function helpers</h2>
+<p>Two complementary helpers cover every edge function that calls an external API:</p>
+<h3>1. <a href="../supabase/functions/_shared/api-provider-errors.ts"><code>_shared/api-provider-errors.ts</code></a> — generic</h3>
+<p>Used by <code>email-api</code>, <code>messaging-api</code>, <code>messaging-processor</code>, <code>mivaa-gateway</code>, <code>generate-pbr-maps</code>, and any other edge function that calls a third-party API (Resend, Twilio, Replicate, OpenAI, Anthropic, MIVAA, etc.) when the required secret is unset.</p>
+<pre><code class="language-typescript">import { notConfiguredResponse } from &#39;../_shared/api-provider-errors.ts&#39;;
+
+if (!resendApiKey()) {
+  return notConfiguredResponse({
+    provider: &#39;Resend&#39;,
+    envVarHint: &#39;Set RESEND_API_KEY on the host, or paste it&#39;,
+    settingsPath: &#39;/admin/modules/email/settings → Keys&#39;,
+  });
+}
+</code></pre>
+<p>Returns 503 with uniform shape <code>{ error, code: &#39;provider_not_configured&#39;, provider: &#39;&lt;lowercase-slug&gt;&#39; }</code> so a single frontend hook can branch on the code regardless of which provider failed.</p>
+<h3>2. <a href="../supabase/functions/_shared/stripe-clients.ts"><code>_shared/stripe-clients.ts</code></a> — Stripe-specific</h3>
+<p>Stripe-touching edge functions (<code>stripe-api/*</code>, <code>stripe-webhooks</code>, <code>finance-pay-invoice</code>, future processors) get extra ergonomics on top of the generic helper:</p>
+<ul>
+<li><code>stripeSecretKey()</code>, <code>stripeWebhookSecret()</code>, <code>supabaseUrlEnv()</code>, <code>supabaseServiceKeyEnv()</code> — lazy env getters</li>
+<li><code>getStripe(): Stripe | null</code> — memoised Stripe client built on first call</li>
+<li><code>getSupabase(): SupabaseClient | null</code> — same for the service-role Supabase client</li>
+<li><code>noPaymentProviderResponse(extraHeaders)</code> — wraps <code>notConfiguredResponse({ provider: &#39;Stripe&#39;, ... })</code> with the canonical customer-facing copy and <code>code: &#39;no_payment_provider_configured&#39;</code> (the customer-facing variant; admin-facing services use <code>provider_not_configured</code>)</li>
+<li><code>resetStripeClients()</code> — drops memoised clients for tests / post-rotation flows</li>
+</ul>
+<pre><code class="language-typescript">import { bootstrapForFunction } from &#39;../_shared/secrets-bootstrap.ts&#39;;
+import { getStripe, getSupabase, noPaymentProviderResponse } from &#39;../_shared/stripe-clients.ts&#39;;
+
+Deno.serve(async (req) =&gt; {
+  await bootstrapForFunction();           // populate Deno.env from platform_secrets
+  const stripe = getStripe();
+  const supabase = getSupabase();
+  if (!stripe || !supabase) return noPaymentProviderResponse();
+  // … use stripe / supabase normally
+});
+</code></pre>
+<p>Both helpers are the canonical pattern for new and existing edge functions touching external APIs. The error-code split (<code>provider_not_configured</code> vs <code>no_payment_provider_configured</code>) lets the frontend distinguish customer-facing payment failures from back-office service outages.</p>
+<hr>
+<h2>Pending follow-ups</h2>
+<ul>
+<li><strong>Wire the shared <code>stripe-clients.ts</code> helper into existing call sites</strong> — <code>stripe-api/handlers/checkout.ts</code>, <code>stripe-api/handlers/customer-portal.ts</code>, <code>stripe-webhooks/index.ts</code>, and <code>finance-pay-invoice/index.ts</code> are still on the per-file module-load capture pattern. The helper is ready; adopting it makes DB-fallback secrets work without a cold restart and surfaces a clean 503 (<code>no_payment_provider_configured</code>) when Stripe isn&#39;t configured.</li>
+<li><strong>Multi-ERP picker</strong> when a second ERP integration ships (Xero / QuickBooks). See &quot;Multi-ERP priority&quot; above.</li>
+<li><strong>Checkout-time provider picker</strong> when there&#39;s a second payment provider (PayPal etc.) — today the platform implicitly assumes Stripe; the UI needs a small refactor to ask the customer which provider to use.</li>
+<li><strong>Invoice template preview in PDF context</strong> — today the cover/footer uploader shows the raw image. A side-by-side preview rendering the cover + a fake invoice body + the footer would help operators verify alignment before issuing real invoices.</li>
+<li><strong>Consolidate quote PDF business fields</strong> — quote PDFs currently read <code>system_settings.company_*</code> (separate path). Should consolidate to the <code>finance_settings.business_*</code> columns this module manages. Tracked as a Phase 2 cleanup.</li>
+</ul>
+<hr>
+<h2>See also</h2>
+<ul>
+<li><a href="payments-stripe.html">docs/payments-stripe.md</a> — Stripe sibling module reference</li>
+<li><a href="billing-credits-system.html">docs/billing-credits-system.md</a> — subscription + credit purchase flows</li>
+<li><a href="quotes-system-architecture.html">docs/quotes-system-architecture.md</a> — quote → invoice handoff</li>
+<li><a href="projects.html">docs/projects.md</a> — example of the documentation pattern this doc follows</li>
+<li><a href="../src/modules/payments/services/invoiceProviderService.ts">src/modules/payments/services/invoiceProviderService.ts</a> — provider resolver source</li>
+<li><a href="../src/modules/_core/ModuleDefinition.ts">src/modules/_core/ModuleDefinition.ts</a> — <code>ModuleManifest.provides</code> typing</li>
+</ul>
+
+</div></body></html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Pinterest API</h1>
+<p><strong>Edge Function:</strong> <code>pinterest-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/pinterest-api</code></p>
+<h2>Actions</h2>
+<h3>Import (no OAuth required — uses Pinterest oEmbed)</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Body</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>extract_pin</code></td>
+<td><code>{ pin_url }</code></td>
+<td>Returns pin metadata (title, image, author, source_url).</td>
+</tr>
+<tr>
+<td><code>import_pin</code></td>
+<td><code>{ pin_url, moodboard_id, notes? }</code></td>
+<td>Imports a single pin into a moodboard. Auto-runs visual search to suggest matching catalog products.</td>
+</tr>
+<tr>
+<td><code>import_pins_bulk</code></td>
+<td><code>{ pin_urls: string[], moodboard_id }</code></td>
+<td>Imports many pins in parallel. Returns <code>{ imported, failed, results[] }</code>.</td>
+</tr>
+</tbody></table>
+<h3>OAuth (browse user&#39;s boards + pins)</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Body</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>get_auth_url</code></td>
+<td><code>{ workspace_id }</code></td>
+<td>Returns the Pinterest OAuth authorization URL.</td>
+</tr>
+<tr>
+<td><code>callback</code></td>
+<td><code>{ code, state }</code></td>
+<td>Exchanges the OAuth code for tokens, stores in <code>social_accounts</code>.</td>
+</tr>
+<tr>
+<td><code>get_boards</code></td>
+<td><code>{}</code></td>
+<td>Lists the connected user&#39;s Pinterest boards.</td>
+</tr>
+<tr>
+<td><code>get_board_pins</code></td>
+<td><code>{ board_id, bookmark? }</code></td>
+<td>Lists pins in a specific board.</td>
+</tr>
+<tr>
+<td><code>disconnect</code></td>
+<td><code>{}</code></td>
+<td>Removes the Pinterest OAuth tokens.</td>
+</tr>
+</tbody></table>
+<h2>Authentication</h2>
+<pre><code class="language-http">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<h2>Request</h2>
+<pre><code class="language-http">POST /functions/v1/pinterest-api
+Content-Type: application/json
+
+{ &quot;action&quot;: &quot;extract_pin&quot;, &quot;pin_url&quot;: &quot;https://www.pinterest.com/pin/123/&quot; }
+</code></pre>
+<h2>Environment</h2>
+<p>Required when using OAuth actions:</p>
+<ul>
+<li><code>PINTEREST_APP_ID</code></li>
+<li><code>PINTEREST_APP_SECRET</code></li>
+<li><code>PINTEREST_REDIRECT_URI</code> (must match the URL registered in the Pinterest app — point at <code>/functions/v1/pinterest-api</code>)</li>
+</ul>
+
+</div></body></html>
