@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Presentation Catalogs</h1>
+<p>Admin-only catalog builder. Upload manufacturer source PDFs, extract sections + images via Claude Vision, build editable web catalogs with email-gated public landing pages, export as PDF.</p>
+<p>Shipped 2026-05-08.</p>
+<hr>
+<h2>Table of contents</h2>
+<ol>
+<li><a href="#what-it-is">What it is</a></li>
+<li><a href="#architecture-overview">Architecture overview</a></li>
+<li><a href="#agent-tools-admin-only">Agent tools (admin-only)</a></li>
+<li><a href="#database-schema">Database schema</a></li>
+<li><a href="#storage-buckets">Storage buckets</a></li>
+<li><a href="#edge-functions">Edge functions</a></li>
+<li><a href="#mivaa-endpoint--pdf-page-rasterization">MIVAA endpoint — PDF page rasterization</a></li>
+<li><a href="#workflow-building-a-catalog">Workflow: building a catalog</a></li>
+<li><a href="#workflow-publishing--email-gate">Workflow: publishing + email-gate</a></li>
+<li><a href="#operations--observability">Operations / observability</a></li>
+<li><a href="#cost-model">Cost model</a></li>
+<li><a href="#permissions--rls">Permissions / RLS</a></li>
+<li><a href="#activation--deploy">Activation / deploy</a></li>
+<li><a href="#file-by-file-reference">File-by-file reference</a></li>
+<li><a href="#known-limitations">Known limitations</a></li>
+</ol>
+<hr>
+<h2>What it is</h2>
+<p>Two interlocking flows behind one entity (<code>presentation_catalogs</code>):</p>
+<ul>
+<li><strong>Admin flow</strong> — KAI agent + admin UI work together to build a catalog from manufacturer PDFs. The admin uploads source PDFs, then asks the agent to extract sections (free-form Vision query) or translate the whole PDF. Materials can also be added manually with prices pulled from the catalog / price-monitoring / market-check / manual entry. Every material can have an image lifted from the source PDF (auto-rasterized via PyMuPDF on MIVAA), pulled from our DB (visual search), or fetched from the web (DataForSEO Images) and approved inline in chat.</li>
+<li><strong>Public flow</strong> — published catalogs render as a web page at <code>/c/:slug</code> behind an email-gate. Visitor enters email → matched against <code>auth.users</code> + <code>crm_contacts</code> + <code>crm_companies</code> + a per-catalog <code>catalog_email_grants</code> allowlist → signed cookie issued → page rendered. Same JSONB body that drives the PDF also drives the web page, so updates to the catalog show up live without regenerating anything.</li>
+</ul>
+<p>Module slug: <code>presentation-catalogs</code>. Disabled by toggling the row in <code>public.modules</code>.</p>
+<hr>
+<h2>Architecture overview</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────┐
+│                              Admin (browser)                              │
+│  /admin/catalogs                                                          │
+│   ├── List + create + open builder                                        │
+│   ├── /admin/catalogs/sources         — upload manufacturer PDFs          │
+│   └── /admin/catalogs/:id             — body editor + email grants + log  │
+│                                                                           │
+│  /agent-hub  (KAI)  — drives the building via 8 admin-only tools          │
+│  /admin/operations?tab=catalogs       — cross-catalog views/downloads     │
+└──────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+        ┌────────────────────────────────────────────────────────────┐
+        │       supabase/functions/agent-chat/index.ts                │
+        │  - Lazy-imports _shared/tools/catalog-tools.ts              │
+        │  - Admin-only gate (userRole ∈ {admin, owner})              │
+        │  - Streams catalog_* chunks back to AgentHub                │
+        └────────────────────────────────────────────────────────────┘
+                       │
+        ┌──────────────┼─────────────────────────────────────────────┐
+        │ 8 LangChain tools (admin only):                             │
+        │   create_catalog            attach_catalog_pdfs             │
+        │   extract_from_catalog_pdfs translate_pdf_to_catalog        │
+        │   add_material_to_catalog   find_image_for_material         │
+        │   generate_catalog_pdf      publish_catalog                 │
+        └──────────────┬─────────────────────────────────────────────┘
+                       │
+        ┌──────────────┴────────────────────────────────────────────┐
+        ▼                              ▼                            ▼
+┌────────────────────┐  ┌─────────────────────────┐  ┌────────────────────────┐
+│ catalog-extract-   │  │ catalog-translate-pdf   │  │ catalog-image-search   │
+│ from-pdfs          │  │ (Sonnet 4.6 PDF Vision  │  │ (DB visual_search →    │
+│ (Sonnet 4.6 PDF    │  │  whole-catalog pass +   │  │  DataForSEO Images)    │
+│  Vision per query  │  │  bbox per material)     │  │                        │
+│  + bbox per        │  │  Auto-rasterize → MIVAA │  │                        │
+│  candidate)        │  │                         │  │                        │
+│ Auto-rasterize →   │  │                         │  │                        │
+│ MIVAA              │  │                         │  │                        │
+└─────────┬──────────┘  └────────┬────────────────┘  └────────────────────────┘
+          │                       │
+          └───────┬───────────────┘
+                  ▼
+        ┌──────────────────────────────┐         ┌──────────────────────────┐
+        │ catalog-render-pdf-page      │ ──────► │ MIVAA                    │
+        │ (proxy edge function,        │ POST    │ POST /api/internal/      │
+        │  x-cron-secret)              │         │ catalog/rasterize-pdf-page│
+        └──────────────────────────────┘         │  (PyMuPDF + Pillow)       │
+                                                 │  Crops bbox, returns PNG  │
+                                                 │  → catalog-extracted-     │
+                                                 │    images bucket          │
+                                                 └──────────────────────────┘
+
+  generate-catalog-pdf — A4 cover + body sections + back cover via pdf-lib.
+                          Materials reuse image_url (could be PDF crop or DB or web).
+
+  catalog-access      — public email-gate. 5 actions:
+                         public_meta / request / verify / track_view / track_download
+                         Atomic counters via SQL RPCs.
+</code></pre>
+<hr>
+<h2>Agent tools (admin-only)</h2>
+<p>Loaded in <a href="../supabase/functions/agent-chat/index.ts">supabase/functions/agent-chat/index.ts</a> only when <code>userRole ∈ {admin, owner}</code>. All 8 tools are gated by the <code>presentation-catalogs</code> module slug. Tool source: <a href="../supabase/functions/_shared/tools/catalog-tools.ts">_shared/tools/catalog-tools.ts</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+<th>Key inputs</th>
+<th>Emits chunk</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>create_catalog</code></td>
+<td>Initialize a new catalog row. Always step 1.</td>
+<td><code>title</code>, <code>subtitle?</code>, <code>description?</code>, <code>template_id?</code>, <code>cover_client_name?</code></td>
+<td><code>catalog_created</code></td>
+</tr>
+<tr>
+<td><code>attach_catalog_pdfs</code></td>
+<td>Link uploaded source PDFs (rows in <code>catalog_source_pdfs</code>) to a catalog.</td>
+<td><code>catalog_id</code>, <code>source_pdf_ids[]</code></td>
+<td><code>catalog_pdfs_attached</code></td>
+</tr>
+<tr>
+<td><code>extract_from_catalog_pdfs</code></td>
+<td>Free-form Vision query over attached PDFs. Returns candidate materials with bbox-cropped images.</td>
+<td><code>catalog_id</code>, <code>query</code> (e.g. &quot;white porcelain tiles&quot;), <code>max_results?</code>, <code>auto_add?</code></td>
+<td><code>catalog_extraction_candidates</code></td>
+</tr>
+<tr>
+<td><code>translate_pdf_to_catalog</code></td>
+<td>Whole-PDF → catalog body in one Vision pass. <code>preserve_original_layout</code> mirrors page-by-page; default restructures by category.</td>
+<td><code>source_pdf_id</code>, <code>target_catalog_id?</code>, <code>new_catalog_title?</code>, <code>preserve_original_layout?</code></td>
+<td><code>catalog_translation_ready</code></td>
+</tr>
+<tr>
+<td><code>add_material_to_catalog</code></td>
+<td>Add a single material to a section. Resolves price + image from <code>catalog_product</code> / <code>price_monitoring</code> / <code>market_check</code> / <code>manual</code> (or <code>uploaded</code> / <code>web_search_approved</code> / <code>extracted_from_pdf</code> for image).</td>
+<td><code>catalog_id</code>, <code>section_title</code>, <code>material{...}</code></td>
+<td><code>catalog_material_added</code></td>
+</tr>
+<tr>
+<td><code>find_image_for_material</code></td>
+<td>Search platform DB first (<code>material_search</code>), then fall back to web (DataForSEO Images). Admin clicks ✓ in the inline approval card.</td>
+<td><code>catalog_id</code>, <code>material_id?</code>, <code>material_name</code>, <code>search_db_first?</code>, <code>max_candidates?</code></td>
+<td><code>catalog_image_candidates</code></td>
+</tr>
+<tr>
+<td><code>generate_catalog_pdf</code></td>
+<td>Render the body as A4 PDF (cover + body + back cover) using the catalog&#39;s template.</td>
+<td><code>catalog_id</code>, <code>regenerate?</code></td>
+<td><code>catalog_pdf_ready</code></td>
+</tr>
+<tr>
+<td><code>publish_catalog</code></td>
+<td>Mint a slug + flip status to <code>published</code>. Returns the public URL. <code>unpublish:true</code> flips back to <code>archived</code>.</td>
+<td><code>catalog_id</code>, <code>desired_slug?</code>, <code>unpublish?</code></td>
+<td><code>catalog_published</code> / <code>catalog_unpublished</code></td>
+</tr>
+</tbody></table>
+<p>Tool entries also live in <a href="../src/components/features/ai/agentToolsCatalog.ts">src/components/features/ai/agentToolsCatalog.ts</a> so the PromptBuilderModal + ToolkitPickerModal can browse them.</p>
+<p>The KAI prompt got an addendum (idempotent migration <code>20260508_kai_prompt_catalogs_addendum.sql</code>) explaining the order of tool calls and policy: never invent product names, prices, or images.</p>
+<h3>Inline approval cards in AgentHub</h3>
+<ul>
+<li><strong><code>CatalogExtractionCandidatesCard</code></strong> (<a href="../src/components/features/ai/CatalogExtractionCandidatesCard.tsx">src</a>) — checkbox grid with rasterized thumbnails, per-row preview lightbox, editable section title input, single &quot;Add to catalog&quot; button calling <code>catalogsService.approveExtractionCandidates</code>. Renders for <code>catalog_extraction_candidates</code> chunks.</li>
+<li><strong><code>CatalogImageCandidatesCard</code></strong> (<a href="../src/components/features/ai/CatalogImageCandidatesCard.tsx">src</a>) — DB vs Web source badges, click-to-select with optimistic check overlay, calls <code>catalogsService.setMaterialImage</code> directly. Renders for <code>catalog_image_candidates</code> chunks.</li>
+</ul>
+<p>Both cards are wired into <a href="../src/components/features/ai/AgentHub.tsx">AgentHub.tsx</a> via the standard <code>message.catalog*Data</code> branches.</p>
+<hr>
+<h2>Database schema</h2>
+<p>Migration: <a href="../supabase/migrations/20260508_presentation_catalogs_module.sql">supabase/migrations/20260508_presentation_catalogs_module.sql</a> + view-events extension <a href="../supabase/migrations/20260508_catalog_view_events.sql">20260508_catalog_view_events.sql</a>.</p>
+<h3>Tables</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Cardinality</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>presentation_catalogs</code></td>
+<td>one per catalog</td>
+<td>Title + JSONB cover/body/back + status + slug + denormalized counters (<code>view_count</code>, <code>unique_email_count</code>). Source-of-truth row.</td>
+</tr>
+<tr>
+<td><code>catalog_source_pdfs</code></td>
+<td>one per uploaded PDF</td>
+<td>Owned by an admin user. Stores <code>storage_path</code> in <code>pdf-documents</code> (under the <code>catalog-source/</code> prefix). Manufacturer name + URL + notes for provenance. Status: <code>uploaded</code> / <code>processing</code> / <code>ready</code> / <code>failed</code>.</td>
+</tr>
+<tr>
+<td><code>catalog_templates</code></td>
+<td>one per visual template</td>
+<td>Cover image path, content background path, back-cover image path, accent color hex. One <code>is_default=true</code> row at a time.</td>
+</tr>
+<tr>
+<td><code>catalog_email_grants</code></td>
+<td>one per (catalog, email)</td>
+<td>Admin-managed allowlist. Visitors with these emails get access in addition to platform-user / CRM auto-match. Supports <code>expires_at</code> and <code>revoked_at</code>.</td>
+</tr>
+<tr>
+<td><code>catalog_access_log</code></td>
+<td>one per email-gate submit</td>
+<td>Forensic record of every gate attempt — email + matched_kind enum + matched_user_id + matched_crm_contact_id + matched_crm_company_id + matched_grant_id + ip_address + cookie_token + cookie_expires_at.</td>
+</tr>
+<tr>
+<td><code>catalog_view_events</code></td>
+<td>one per page_view / pdf_download</td>
+<td>Granular event log per visitor session (after gate granted). FK back to <code>catalog_access_log</code> for forensic correlation. Powers the operations dashboard.</td>
+</tr>
+</tbody></table>
+<h3>Enums</h3>
+<ul>
+<li><code>presentation_catalog_status</code> — <code>draft | generating | ready | published | archived | failed</code></li>
+<li><code>catalog_source_pdf_status</code> — <code>uploaded | processing | ready | failed</code></li>
+<li><code>catalog_access_match_kind</code> — <code>platform_user | crm_contact | crm_company | email_grant | denied</code></li>
+<li><code>catalog_view_event_type</code> — <code>page_view | pdf_download | pdf_view</code></li>
+</ul>
+<h3>RPCs</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>is_admin_user()</code></td>
+<td>RLS helper. Returns <code>true</code> when <code>auth.uid()</code> is in <code>user_profiles</code> with <code>role.name = &#39;admin&#39;</code>. SECURITY DEFINER.</td>
+</tr>
+<tr>
+<td><code>catalog_increment_view_count(uuid)</code></td>
+<td>Atomic UPDATE … RETURNING for the <code>view_count</code> column. Avoids the read/write race the previous &quot;select then update&quot; had.</td>
+</tr>
+<tr>
+<td><code>catalog_bump_unique_email_count(uuid, text)</code></td>
+<td>Conditional bump: only increments <code>unique_email_count</code> if this is the first granted-access row for the (catalog, email) pair. Same round-trip as the COUNT lookup.</td>
+</tr>
+</tbody></table>
+<h3>View</h3>
+<p><code>catalog_operations_summary</code> — per-catalog rollup: catalog meta + denormalized counters + lateral subqueries for gate attempts/grants/denials and view event counts. Single SELECT returns everything the operations dashboard needs.</p>
+<hr>
+<h2>Storage layout (post-consolidation 2026-05-23)</h2>
+<p>The 5 dedicated catalog buckets were folded into the 3 anchor buckets. Identity now lives in the path prefix, not the bucket name. See <a href="../CLAUDE.html">CLAUDE.md</a> &quot;Storage Buckets&quot; for the platform-wide map.</p>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Prefix</th>
+<th>Contents</th>
+<th>Lifecycle</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pdf-documents</code></td>
+<td><code>catalog-source/&lt;user_id&gt;/&lt;uuid&gt;.pdf</code></td>
+<td>Admin-uploaded source PDFs.</td>
+<td>Deleted when <code>catalog_source_pdfs</code> row is deleted from the admin UI.</td>
+</tr>
+<tr>
+<td><code>pdf-documents</code></td>
+<td><code>catalog-output/&lt;catalog_id&gt;/catalog-&lt;ts&gt;.pdf</code></td>
+<td>Generated catalog PDFs.</td>
+<td>Signed URL with 7-day TTL written into <code>presentation_catalogs.pdf_url</code>. Regenerated on <code>generate_catalog_pdf</code> calls.</td>
+</tr>
+<tr>
+<td><code>pdf-tiles</code></td>
+<td><code>catalog-extracted/&lt;source_pdf_id&gt;/page-&lt;n&gt;-&lt;bbox-hash&gt;.png</code></td>
+<td>Page region crops produced by MIVAA&#39;s PyMuPDF rasterizer.</td>
+<td>Signed URL TTL = 7 days; deterministic path means re-extraction reuses the same key.</td>
+</tr>
+<tr>
+<td><code>quote-templates</code></td>
+<td><code>catalog/cover.png</code>, <code>catalog/backcover.png</code>, <code>catalog/content-bg.png</code></td>
+<td>Cover / body-background / back-cover template assets.</td>
+<td>Admin-uploaded; one set per row in <code>catalog_templates</code>.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Edge functions</h2>
+<p>All under <a href="../supabase/functions/">supabase/functions/</a>.</p>
+<h3><code>generate-catalog-pdf</code></h3>
+<p>A4 portrait PDF builder using <code>pdf-lib</code>. Cover page (full-page template image with overlay text) + N body pages (4 materials per page, image left + name/desc/specs/price right) + back cover. Accent color from template. Refuses to render an empty catalog (returns 422). Updates <code>presentation_catalogs.status / pdf_url / pdf_generated_at / page_count</code> on success.</p>
+<p><a href="../supabase/functions/generate-catalog-pdf/">supabase/functions/generate-catalog-pdf/</a>: <code>index.ts</code> (router + auth), <code>data-fetcher.ts</code>, <code>pdf-builder.ts</code>, <code>types.ts</code>.</p>
+<h3><code>catalog-extract-from-pdfs</code></h3>
+<p>For every attached <code>catalog_source_pdfs</code> row, downloads the PDF, base64-encodes, sends to Claude Sonnet 4.6 with the user&#39;s free-form query and the <code>record_candidates</code> tool schema. Sonnet returns matched candidates with <code>name</code>, <code>description</code>, <code>page_no</code>, optional <code>price/currency/specs</code>, and a normalized [0..1] <code>bbox</code>. Then runs a <strong>4-way concurrent worker pool</strong> invoking <code>catalog-render-pdf-page</code> for each candidate that has a page_no, populating <code>image_url</code> from the bbox crop. Every Anthropic call is logged to <code>ai_usage_logs</code> with <code>feature=&#39;presentation_catalogs&#39;</code> + <code>sub_feature=&#39;extract_from_pdf&#39;</code>.</p>
+<h3><code>catalog-translate-pdf</code></h3>
+<p>Same shape as extract, but a single Vision pass over the whole PDF. <code>preserve_original_layout=true</code> mirrors page-by-page; <code>false</code> (default) restructures into category sections. Materials cap = 200. Same bbox + auto-rasterize pattern.</p>
+<h3><code>catalog-image-search</code></h3>
+<p>Two-stage image search for materials that don&#39;t have one yet:</p>
+<ol>
+<li><strong>DB first</strong> — POST to MIVAA <code>/api/rag/search</code> with <code>strategy=multi_vector</code>. For each hit, looks up the first <code>document_images</code> row for the matched product and creates a 7-day signed URL.</li>
+<li><strong>Web fallback</strong> — DataForSEO <code>serp/google/images/live/advanced</code> if DB returned fewer than <code>max_candidates</code>. Hits get tagged with <code>source: &#39;web&#39;</code> and source domain in metadata.</li>
+</ol>
+<h3><code>catalog-render-pdf-page</code></h3>
+<p>Thin proxy to MIVAA&#39;s rasterizer endpoint. Injects <code>x-cron-secret</code> from edge env. Used by extract + translate (and could be called manually by admin tooling).</p>
+<h3><code>catalog-access</code></h3>
+<p>The only public-reachable endpoint for the catalog flow. 5 actions:</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Body</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>public_meta</code></td>
+<td><code>{slug}</code></td>
+<td><code>{title, subtitle, cover_image_url, branding}</code> — minimal pre-auth payload for the email-gate landing page.</td>
+</tr>
+<tr>
+<td><code>request</code></td>
+<td><code>{slug, email}</code></td>
+<td><code>{granted_access, token?, expires_at?, match_kind, access_log_id}</code>. Resolves the email against platform user / CRM contact / CRM company / email_grant. Mints a 30-day cookie token. Bumps <code>unique_email_count</code> via the conditional RPC.</td>
+</tr>
+<tr>
+<td><code>verify</code></td>
+<td><code>{slug, token}</code></td>
+<td><code>{granted_access, email, catalog{cover/body/back/pdf_url}, branding}</code> — full payload to render the page.</td>
+</tr>
+<tr>
+<td><code>track_view</code></td>
+<td><code>{slug, token}</code></td>
+<td><code>{tracked, event_type}</code> — writes <code>catalog_view_events.event_type=&#39;page_view&#39;</code> + atomic <code>catalog_increment_view_count</code>.</td>
+</tr>
+<tr>
+<td><code>track_download</code></td>
+<td><code>{slug, token, metadata?}</code></td>
+<td><code>{tracked, event_type}</code> — writes <code>catalog_view_events.event_type=&#39;pdf_download&#39;</code>.</td>
+</tr>
+</tbody></table>
+<p>No bearer auth required — the function uses the service role internally and validates tokens / slug binding before exposing data.</p>
+<hr>
+<h2>MIVAA endpoint — PDF page rasterization</h2>
+<p><a href="../mivaa-pdf-extractor/app/api/catalog_routes.py">mivaa-pdf-extractor/app/api/catalog_routes.py</a></p>
+<p>Single endpoint: <code>POST /api/internal/catalog/rasterize-pdf-page</code>. Auth: <code>x-cron-secret</code> header.</p>
+<p><strong>Input</strong>:</p>
+<pre><code class="language-json">{
+  &quot;source_pdf_id&quot;: &quot;uuid&quot;,
+  &quot;page_no&quot;: 12,
+  &quot;bbox&quot;: { &quot;x1&quot;: 0.10, &quot;y1&quot;: 0.20, &quot;x2&quot;: 0.55, &quot;y2&quot;: 0.60 },
+  &quot;dpi&quot;: 200,
+  &quot;target_path&quot;: &quot;optional/override/path.png&quot;,
+  &quot;signed_url_ttl_seconds&quot;: 604800
+}
+</code></pre>
+<p><strong>Flow</strong>:</p>
+<ol>
+<li>Look up <code>catalog_source_pdfs</code> row → <code>storage_path</code></li>
+<li>Download PDF bytes from <code>pdf-documents</code> bucket (path stored on the row)</li>
+<li>Open with PyMuPDF (<code>fitz.open(stream=pdf_bytes, filetype=&quot;pdf&quot;)</code>)</li>
+<li>Render page at <code>dpi</code> zoom (<code>page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)</code>)</li>
+<li>If bbox provided, crop with Pillow to the normalized region</li>
+<li>Upload to <code>pdf-tiles</code> bucket (path = <code>catalog-extracted/&lt;source_pdf_id&gt;/page-&lt;NNNN&gt;-&lt;bbox-hash&gt;.png</code>)</li>
+<li>Return signed URL + storage_path + width/height</li>
+</ol>
+<p><strong>Why MIVAA, not edge runtime</strong>: PyMuPDF needs system libraries (already installed for the main pipeline). Deno-compatible PDF rasterizers either don&#39;t render to PNG (pdf-lib) or are heavyweight Wasm bundles that hit memory + cold-start limits on Supabase edge. MIVAA was the safest bet.</p>
+<hr>
+<h2>Workflow: building a catalog</h2>
+<p>End-to-end admin journey, driven by KAI in chat:</p>
+<ol>
+<li><strong>Upload source PDFs</strong> — admin opens <code>/admin/catalogs/sources</code>, uploads one or more manufacturer PDFs with optional manufacturer name + URL + notes. <code>catalogsService.uploadSourcePdf(file, opts)</code> writes to <code>pdf-documents</code> bucket under <code>catalog-source/&lt;user_id&gt;/&lt;uuid&gt;.pdf</code> + inserts <code>catalog_source_pdfs</code> row. Admin copies the IDs (or notes them).</li>
+<li><strong>Create the catalog</strong> — admin opens <code>/admin/catalogs</code>, clicks &quot;+ New Catalog&quot;, fills the modal. Or in chat: <code>Start a new catalog called &quot;Spring 2026 Range&quot; for Vasilis Imports</code>. KAI calls <code>create_catalog</code> → returns <code>catalog_id</code>.</li>
+<li><strong>Attach PDFs</strong> — <code>Attach source PDFs &lt;id1&gt;, &lt;id2&gt; to catalog &lt;catalog_id&gt;</code>. KAI calls <code>attach_catalog_pdfs</code>. Catalog now references those source PDFs.</li>
+<li><strong>Extract sections</strong> — <code>From the attached PDFs, pull all white porcelain tiles in 600×600 format</code>. KAI calls <code>extract_from_catalog_pdfs</code>. Edge function runs Sonnet Vision + auto-rasterizes bbox crops via MIVAA. Chat surface renders <code>CatalogExtractionCandidatesCard</code> with thumbnails. Admin reviews, edits the section title input, clicks ✓ on the ones to keep, hits &quot;Add to catalog&quot; (calls <code>catalogsService.approveExtractionCandidates</code>).</li>
+<li><strong>(Alternate) Translate the entire PDF</strong> — <code>Translate this manufacturer PDF into a new catalog grouped by category</code>. KAI calls <code>translate_pdf_to_catalog</code>. Single Vision pass, hundreds of materials at once, auto-rasterized.</li>
+<li><strong>Add manual materials</strong> — <code>Also add Crema Marfil 600×600 at €24.50 to the Porcelain section</code>. KAI calls <code>add_material_to_catalog</code> with <code>price_source=&#39;manual&#39;</code>. If <code>needs_image:true</code> came back (no image yet), KAI calls <code>find_image_for_material</code> next; admin clicks ✓ on a candidate.</li>
+<li><strong>Pricing from existing data</strong> — <code>Add product &lt;id&gt; to the Wood section, pulling price from the cheapest verified retailer</code>. KAI uses <code>price_source=&#39;price_monitoring&#39;</code> + <code>price_source_ref=&lt;tracked_query_id&gt;</code>. The tool reads <code>tracked_queries.current_price</code> directly.</li>
+<li><strong>Edit cover/back</strong> — admin opens the builder page, Cover &amp; Back tab. Title / subtitle / description / client name / closing message / contact line are all <code>onBlur</code> saves directly to <code>presentation_catalogs.cover_data</code> / <code>back_cover_data</code>.</li>
+<li><strong>Generate PDF</strong> — admin clicks &quot;Generate PDF&quot; in the builder header (or KAI calls <code>generate_catalog_pdf</code>). PDF preview iframe renders inline in the PDF tab.</li>
+<li><strong>Publish</strong> — admin clicks &quot;Publish&quot; (or <code>publish_catalog</code> from chat). Slug auto-generated from title; admin can override. Status flips to <code>published</code>, public URL surfaced as <code>/c/&lt;slug&gt;</code>.</li>
+</ol>
+<p>Throughout, every chunk emitted by the agent (<code>catalog_extraction_candidates</code>, <code>catalog_pdf_ready</code>, etc.) renders as an inline message in AgentHub so the admin doesn&#39;t context-switch between chat and the admin UI.</p>
+<hr>
+<h2>Workflow: publishing + email-gate</h2>
+<p><code>/c/:slug</code> is a single React route (<a href="../src/components/business/catalogs/PublicCatalogPage.tsx">PublicCatalogPage.tsx</a>) that runs no auth.</p>
+<pre><code>Visitor lands on /c/spring-2026-porcelain
+   │
+   │ POST /functions/v1/catalog-access {action: &#39;public_meta&#39;, slug}
+   ▼
+Renders cover image + title + email form
+   │
+   │ POST {action: &#39;request&#39;, slug, email: &#39;jane@acme.com&#39;}
+   ▼
+catalog-access resolveEmailMatch():
+   1. user_profiles.email ILIKE &#39;jane@acme.com&#39;  →  match_kind=&#39;platform_user&#39;
+   2. crm_contacts.email ILIKE …                 →  match_kind=&#39;crm_contact&#39;
+   3. crm_companies.email ILIKE …                →  match_kind=&#39;crm_company&#39;
+   4. catalog_email_grants WHERE catalog_id+email →  match_kind=&#39;email_grant&#39;
+   5. otherwise                                   →  match_kind=&#39;denied&#39;
+   │
+   ▼
+If granted: mint random 24-byte hex cookie token, write catalog_access_log row,
+            bump unique_email_count via SQL RPC, return token + 30-day expiry
+            ↓
+Frontend writes mk_catalog_token_&lt;slug&gt; cookie, calls verify
+   │
+   │ POST {action: &#39;verify&#39;, slug, token}
+   ▼
+catalog-access returns full catalog body + branding
+   │
+   ▼
+CatalogReader renders cover hero + sections + materials + footer.
+On render:    {action: &#39;track_view&#39;, slug, token}    → writes page_view + atomic view_count++
+On download:  {action: &#39;track_download&#39;, slug, token} → writes pdf_download
+</code></pre>
+<p>Cookie name: <code>mk_catalog_token_&lt;slug&gt;</code> — per-slug so a visitor with access to multiple catalogs has independent sessions. Cookie has 30-day expiry, <code>Path=/</code>, <code>SameSite=Lax</code>.</p>
+<p>Subsequent visits to the same slug skip the email form: <code>useEffect</code> reads the cookie, calls <code>verify</code>, renders the body. If the token was revoked or expired, falls back to the gate.</p>
+<p><strong>Per-catalog email allowlist</strong>: admin manages it in the builder page Access tab — <code>add catalog_email_grants</code> row, optional <code>note</code>, optional <code>expires_at</code>. Revoke via <code>revoked_at</code> timestamp; the resolver checks both <code>revoked_at</code> and <code>expires_at</code> before granting.</p>
+<hr>
+<h2>Operations / observability</h2>
+<p>Lives at <a href="../src/components/Admin/OperationsDashboard/OperationsDashboard.tsx">/admin/operations</a> → <strong>Catalogs</strong> tab (deep-link: <code>/admin/operations?tab=catalogs</code>).</p>
+<p><a href="../src/components/Admin/OperationsDashboard/CatalogOperationsTab.tsx">src/components/Admin/OperationsDashboard/CatalogOperationsTab.tsx</a> is the embeddable component. Driven by the <code>catalog_operations_summary</code> view + <code>catalog_view_events</code> + <code>catalog_access_log</code> queries via <code>catalogsService.list*</code>.</p>
+<p><strong>Stats strip (7 cards)</strong>:</p>
+<ul>
+<li>Catalogs (with <code>n published</code> sub) — Mail / unique emails — Eye / page views — FileDown / downloads — Activity / gate attempts — ShieldAlert / denied (red).</li>
+</ul>
+<p><strong>Filters (4)</strong>:</p>
+<ul>
+<li>Catalog (one or All) — Event type (all / page_view / pdf_download) — Range (24h / 7d / 30d / all) — Email contains (substring match).</li>
+</ul>
+<p><strong>Three sub-tabs</strong>:</p>
+<ul>
+<li><strong>By catalog</strong> — table per <code>catalog_operations_summary</code>: views / downloads / gate (granted/denied) / unique emails / last activity / open + open-public-page actions.</li>
+<li><strong>Events</strong> — timeline of every <code>page_view</code> + <code>pdf_download</code> event with email + matched_kind + linked user profile (joined via <code>getUserProfilesByIds</code>) + IP. Click catalog name to jump into the builder.</li>
+<li><strong>Email-gate</strong> — every gate attempt (granted + denied) with the same join. Lets admin see who tried, who got in, who got denied.</li>
+</ul>
+<p><strong>Per-catalog Visitors tab</strong> (<a href="../src/modules/presentation-catalogs/pages/CatalogBuilderPage.tsx">CatalogBuilderPage.tsx</a>) shows the same data scoped to one catalog: 4 mini-stats + page-views/downloads table + gate attempts table.</p>
+<hr>
+<h2>Cost model</h2>
+<p>Costs are absorbed by the platform (admin tools don&#39;t debit user credits). All calls land in <code>ai_usage_logs</code> with <code>feature=&#39;presentation_catalogs&#39;</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Provider</th>
+<th>Approx cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>extract_from_catalog_pdfs</code></td>
+<td>Anthropic Sonnet 4.6 (PDF Vision)</td>
+<td>~$0.05–0.15 per source PDF (depends on page count)</td>
+</tr>
+<tr>
+<td><code>translate_pdf_to_catalog</code></td>
+<td>Anthropic Sonnet 4.6 (PDF Vision)</td>
+<td>~$0.10–0.40 per PDF (whole-doc pass with <code>max_tokens: 8000</code>)</td>
+</tr>
+<tr>
+<td>Per-candidate rasterization</td>
+<td>MIVAA PyMuPDF</td>
+<td>~free (server CPU)</td>
+</tr>
+<tr>
+<td><code>find_image_for_material</code> (DB hit)</td>
+<td>MIVAA <code>/api/rag/search</code></td>
+<td>~free</td>
+</tr>
+<tr>
+<td><code>find_image_for_material</code> (web fallback)</td>
+<td>DataForSEO Images SERP</td>
+<td>~$0.0006 per call</td>
+</tr>
+<tr>
+<td><code>generate_catalog_pdf</code></td>
+<td>pdf-lib (edge)</td>
+<td>~free</td>
+</tr>
+<tr>
+<td><code>catalog-access</code> (gate / verify / track)</td>
+<td>service role only</td>
+<td>~free</td>
+</tr>
+</tbody></table>
+<p>For per-product/per-image cost attribution, look at <code>ai_usage_logs.metadata.catalog_id</code>, <code>metadata.source_pdf_id</code>, <code>metadata.sub_feature</code>.</p>
+<hr>
+<h2>Permissions / RLS</h2>
+<ul>
+<li><strong>All five tables</strong> have RLS enabled. Default policy = <strong>admin-only</strong> (<code>is_admin_user()</code> helper). <code>catalog_templates</code> allows <code>SELECT</code> to any authenticated user when <code>is_active=true</code> so the create-catalog modal can list templates without privilege escalation.</li>
+<li><strong>Public catalog access</strong> does NOT go through RLS. <code>catalog-access</code> runs as service role inside the edge function and validates email/cookie before exposing the body. The anon role cannot SELECT from <code>presentation_catalogs</code> directly.</li>
+<li><strong>Admin tool gating</strong>: <code>agent-chat/index.ts</code> only injects the 8 catalog tools when <code>userRole ∈ {admin, owner}</code>. Same gate as B2B tools and SEO Article Pipeline.</li>
+</ul>
+<hr>
+<h2>Activation / deploy</h2>
+<p>After pulling the branch:</p>
+<ol>
+<li><p><strong>Apply migrations</strong> (already applied on dev DB; for fresh deployments):</p>
+<ul>
+<li><code>supabase/migrations/20260508_presentation_catalogs_module.sql</code></li>
+<li><code>supabase/migrations/20260508_kai_prompt_catalogs_addendum.sql</code></li>
+<li><code>supabase/migrations/20260508_catalog_view_events.sql</code></li>
+</ul>
+</li>
+<li><p><strong>Deploy MIVAA</strong> with the new <a href="../mivaa-pdf-extractor/app/api/catalog_routes.py">catalog_routes.py</a>. PyMuPDF + Pillow are already installed for the main pipeline; no requirements bump.</p>
+</li>
+<li><p><strong>Deploy 6 Supabase edge functions</strong>:</p>
+<pre><code class="language-bash">supabase functions deploy generate-catalog-pdf
+supabase functions deploy catalog-extract-from-pdfs
+supabase functions deploy catalog-translate-pdf
+supabase functions deploy catalog-image-search
+supabase functions deploy catalog-access
+supabase functions deploy catalog-render-pdf-page
+</code></pre>
+</li>
+<li><p><strong>Redeploy <code>agent-chat</code></strong> so the new tools load:</p>
+<pre><code class="language-bash">supabase functions deploy agent-chat
+</code></pre>
+</li>
+<li><p><strong>Edge function secrets</strong>:</p>
+<ul>
+<li><code>ANTHROPIC_API_KEY</code> — required by extract/translate</li>
+<li><code>CRON_SECRET</code> — required by <code>catalog-render-pdf-page</code> (must match MIVAA&#39;s)</li>
+<li><code>MIVAA_GATEWAY_URL</code> — defaults to <code>https://v1api.materialshub.gr</code></li>
+<li><code>DATAFORSEO_BASE64</code> (or <code>_LOGIN</code>+<code>_PASSWORD</code>) — required for web image fallback in <code>catalog-image-search</code></li>
+<li><code>PUBLIC_APP_URL</code> — optional, used for the published-catalog URL in agent responses (defaults to <code>https://app.materialshub.gr</code>)</li>
+</ul>
+</li>
+<li><p><strong>Upload default template assets</strong> to the <code>quote-templates</code> bucket under the <code>catalog/</code> prefix. The seeded &quot;Default&quot; row in <code>catalog_templates</code> references <code>catalog/cover.png</code> + <code>catalog/backcover.png</code> — replace those before the first PDF generation.</p>
+</li>
+</ol>
+<hr>
+<h2>File-by-file reference</h2>
+<h3>Database</h3>
+<ul>
+<li><a href="../supabase/migrations/20260508_presentation_catalogs_module.sql">supabase/migrations/20260508_presentation_catalogs_module.sql</a> — 5 tables + 4 enums + RLS + 5 storage buckets + <code>is_admin_user()</code> helper + module entry + default template seed.</li>
+<li><a href="../supabase/migrations/20260508_kai_prompt_catalogs_addendum.sql">supabase/migrations/20260508_kai_prompt_catalogs_addendum.sql</a> — appends catalog tool guidance to the <code>kai</code> prompt row. Idempotent via <code>--END_PRESENTATION_CATALOGS_ADDENDUM--</code> marker.</li>
+<li><a href="../supabase/migrations/20260508_catalog_view_events.sql">supabase/migrations/20260508_catalog_view_events.sql</a> — <code>catalog_view_events</code> table + enum + 2 atomic RPCs + <code>catalog_operations_summary</code> view.</li>
+</ul>
+<h3>Backend (edge functions)</h3>
+<ul>
+<li><a href="../supabase/functions/generate-catalog-pdf/">supabase/functions/generate-catalog-pdf/</a> — PDF builder (cover + body + back).</li>
+<li><a href="../supabase/functions/catalog-extract-from-pdfs/">supabase/functions/catalog-extract-from-pdfs/</a> — Sonnet Vision per-query extraction + auto-rasterize.</li>
+<li><a href="../supabase/functions/catalog-translate-pdf/">supabase/functions/catalog-translate-pdf/</a> — Sonnet Vision whole-PDF translation + auto-rasterize.</li>
+<li><a href="../supabase/functions/catalog-image-search/">supabase/functions/catalog-image-search/</a> — DB-then-web image search.</li>
+<li><a href="../supabase/functions/catalog-access/">supabase/functions/catalog-access/</a> — public email-gate + tracking.</li>
+<li><a href="../supabase/functions/catalog-render-pdf-page/">supabase/functions/catalog-render-pdf-page/</a> — proxy to MIVAA rasterizer.</li>
+<li><a href="../supabase/functions/_shared/tools/catalog-tools.ts">supabase/functions/_shared/tools/catalog-tools.ts</a> — 8 LangChain tools.</li>
+<li><a href="../supabase/functions/agent-chat/index.ts">supabase/functions/agent-chat/index.ts</a> — <code>needsCatalog</code> lazy-import + tool registration block (admin-gated).</li>
+</ul>
+<h3>Backend (MIVAA)</h3>
+<ul>
+<li><a href="../mivaa-pdf-extractor/app/api/catalog_routes.py">mivaa-pdf-extractor/app/api/catalog_routes.py</a> — <code>POST /api/internal/catalog/rasterize-pdf-page</code> (PyMuPDF + Pillow).</li>
+<li><a href="../mivaa-pdf-extractor/app/main.py">mivaa-pdf-extractor/app/main.py</a> — <code>app.include_router(catalog_internal_router)</code>.</li>
+</ul>
+<h3>Frontend (services)</h3>
+<ul>
+<li><a href="../src/services/catalogsService.ts">src/services/catalogsService.ts</a> — full CRUD + PDF gen + grants + access log + view events + operations summary + user profile lookups.</li>
+</ul>
+<h3>Frontend (admin pages — module)</h3>
+<ul>
+<li><a href="../src/modules/presentation-catalogs/manifest.json">src/modules/presentation-catalogs/manifest.json</a></li>
+<li><a href="../src/modules/presentation-catalogs/index.ts">src/modules/presentation-catalogs/index.ts</a> — 3 admin routes + 1 nav item.</li>
+<li><a href="../src/modules/presentation-catalogs/pages/CatalogsListPage.tsx">src/modules/presentation-catalogs/pages/CatalogsListPage.tsx</a></li>
+<li><a href="../src/modules/presentation-catalogs/pages/CatalogSourcesPage.tsx">src/modules/presentation-catalogs/pages/CatalogSourcesPage.tsx</a></li>
+<li><a href="../src/modules/presentation-catalogs/pages/CatalogBuilderPage.tsx">src/modules/presentation-catalogs/pages/CatalogBuilderPage.tsx</a></li>
+</ul>
+<h3>Frontend (operations dashboard integration)</h3>
+<ul>
+<li><a href="../src/components/Admin/OperationsDashboard/CatalogOperationsTab.tsx">src/components/Admin/OperationsDashboard/CatalogOperationsTab.tsx</a> — embedded tab body.</li>
+<li><a href="../src/components/Admin/OperationsDashboard/OperationsDashboard.tsx">src/components/Admin/OperationsDashboard/OperationsDashboard.tsx</a> — Catalogs tab wired in + URL <code>?tab=</code> deep-link support.</li>
+</ul>
+<h3>Frontend (public + agent surface)</h3>
+<ul>
+<li><a href="../src/components/business/catalogs/PublicCatalogPage.tsx">src/components/business/catalogs/PublicCatalogPage.tsx</a> — <code>/c/:slug</code> email-gate + reader.</li>
+<li><a href="../src/components/business/catalogs/CreateCatalogModal.tsx">src/components/business/catalogs/CreateCatalogModal.tsx</a></li>
+<li><a href="../src/components/features/ai/CatalogExtractionCandidatesCard.tsx">src/components/features/ai/CatalogExtractionCandidatesCard.tsx</a></li>
+<li><a href="../src/components/features/ai/CatalogImageCandidatesCard.tsx">src/components/features/ai/CatalogImageCandidatesCard.tsx</a></li>
+<li><a href="../src/components/features/ai/AgentHub.tsx">src/components/features/ai/AgentHub.tsx</a> — <code>catalog_*</code> chunk dispatcher + card rendering.</li>
+<li><a href="../src/components/features/ai/agentToolsCatalog.ts">src/components/features/ai/agentToolsCatalog.ts</a> — 8 tool browse entries.</li>
+<li><a href="../src/App.tsx">src/App.tsx</a> — public <code>/c/:slug</code> route.</li>
+</ul>
+<hr>
+<h2>Known limitations</h2>
+<ol>
+<li><strong>No version history on catalog edits</strong> — saves overwrite. If a published catalog is edited, the public page reflects changes immediately. Acceptable for the current admin workflow but a versioned snapshot table would let &quot;what did the client see when they opened the link?&quot; be answered.</li>
+<li><strong>Single currency per material</strong> — no live FX. The catalog renders whatever currency was on the material when added. Cross-currency display would need a price snapshot job.</li>
+<li><strong>No realtime fan-out</strong> — admin operations dashboard refreshes on demand. Realtime is not wired up because the typical write rate is dozens-per-day, not thousands.</li>
+<li><strong><code>catalog-image-search</code> web fallback hits UK SERP</strong> — <code>location_code=2826</code>. Country-aware routing would need a per-catalog <code>country_code</code> field.</li>
+<li><strong>Per-page Vision token usage</strong> — extract/translate base64-encode the entire PDF on every call. Larger PDFs (&gt;50 pages) approach the Sonnet input-token cap. A future optimization would chunk the PDF and run multiple Vision passes.</li>
+</ol>
+
+</div></body></html>

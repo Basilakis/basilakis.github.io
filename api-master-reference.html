@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,18 +19,19 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>API Master Reference</h1>
 <p>Single source of truth for every API surface in the platform. Two layers:</p>
 <ol>
 <li><strong>Supabase Edge Functions</strong> (Deno/TypeScript) — 68 functions, base URL <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/{name}</code></li>
 <li><strong>MIVAA Python API</strong> (FastAPI) — 140+ endpoints, base URL <code>https://v1api.materialshub.gr</code></li>
 </ol>
-<p>For deep per-endpoint docs see <a href="api/"><code>docs/api/</code></a> (edge) and <a href="api-endpoints.md"><code>docs/api-endpoints.md</code></a> (Python).</p>
+<p>For deep per-endpoint docs see <a href="api/"><code>docs/api/</code></a> (edge) and <a href="api-endpoints.html"><code>docs/api-endpoints.md</code></a> (Python).</p>
 <hr>
 <h2>Auth models</h2>
 <table>
@@ -52,7 +54,7 @@
 </tr>
 <tr>
 <td><strong>Webhook signature</strong></td>
-<td>Provider-specific (Svix <code>svix-signature</code>, Stripe <code>stripe-signature</code>, Twilio <code>x-twilio-signature</code>, AWS SNS, Late.dev)</td>
+<td>Provider-specific (Svix <code>svix-signature</code>, Stripe <code>stripe-signature</code>, Twilio <code>x-twilio-signature</code>, AWS SNS, Zernio)</td>
 <td>Inbound webhooks — no bearer token</td>
 </tr>
 <tr>
@@ -90,7 +92,7 @@
 <td>POST (SSE)</td>
 <td>JWT</td>
 <td>Unified multi-agent chat (kai / interior-designer / demo). RBAC-gated tools, multimodal, skills.</td>
-<td><a href="api/agent-chat-api.md">agent-chat-api</a>, <a href="agent-system.md">agent-system</a></td>
+<td><a href="api/agent-chat-api.html">agent-chat-api</a>, <a href="agent-system.html">agent-system</a></td>
 </tr>
 <tr>
 <td><code>agent-chat-debug</code></td>
@@ -104,7 +106,7 @@
 <td>POST</td>
 <td>JWT or service-role</td>
 <td>Universal executor for <code>kai-task</code>, <code>product-enrichment</code>, <code>material-tagger</code>, <code>factory-enrichment</code>, <code>social-analytics-sync</code>, <code>social-insights-sync</code>. Accepts <code>?catalog=1</code> GET for type listing.</td>
-<td><a href="background-agents.md">background-agents</a></td>
+<td><a href="background-agents.html">background-agents</a></td>
 </tr>
 </tbody></table>
 <h3>1.2 AI Generation (image / video / 3D / VR / PBR)</h3>
@@ -125,7 +127,7 @@
 <td>JWT</td>
 <td>4 modes: text-to-image / image-edit / floor-plan-render / floor-plan-text. Two-step style-transfer pipeline.</td>
 <td>6 (flash) / 15 (pro)</td>
-<td><a href="api/generate-interior-gemini-api.md">generate-interior-gemini-api</a></td>
+<td><a href="api/generate-interior-gemini-api.html">generate-interior-gemini-api</a></td>
 </tr>
 <tr>
 <td><code>generate-interior-video-v2</code></td>
@@ -133,7 +135,7 @@
 <td>JWT</td>
 <td>Auto-routes by video type to Veo-2, Kling v3.0, Wan 2.1, Runway Gen4. Async polling.</td>
 <td>12–40</td>
-<td><a href="api/generate-interior-video-v2-api.md">generate-interior-video-v2-api</a></td>
+<td><a href="api/generate-interior-video-v2-api.html">generate-interior-video-v2-api</a></td>
 </tr>
 <tr>
 <td><code>generate-virtual-staging</code></td>
@@ -141,7 +143,7 @@
 <td>JWT</td>
 <td>Furnishes empty room photos (Replicate proplabs, 8 room types × 8 styles).</td>
 <td>20</td>
-<td><a href="api/generate-virtual-staging-api.md">generate-virtual-staging-api</a></td>
+<td><a href="api/generate-virtual-staging-api.html">generate-virtual-staging-api</a></td>
 </tr>
 <tr>
 <td><code>generate-region-edit</code></td>
@@ -149,7 +151,7 @@
 <td>JWT</td>
 <td>Masked inpainting with Grok Aurora. SAM 2 auto-mask + Pillow fallback.</td>
 <td>20</td>
-<td><a href="api/generate-region-edit-api.md">generate-region-edit-api</a></td>
+<td><a href="api/generate-region-edit-api.html">generate-region-edit-api</a></td>
 </tr>
 <tr>
 <td><code>generate-vr-world</code></td>
@@ -157,7 +159,7 @@
 <td>JWT</td>
 <td>WorldLabs Marble → 3D Gaussian Splat worlds (models: <code>marble-1.0-draft</code> / <code>marble-1.1</code>). Stored in <code>vr_worlds</code>.</td>
 <td>18 / 190</td>
-<td><a href="vr-world-generation.md">vr-world-generation</a></td>
+<td><a href="vr-world-generation.html">vr-world-generation</a></td>
 </tr>
 <tr>
 <td><code>generate-pbr-maps</code></td>
@@ -165,7 +167,7 @@
 <td>JWT</td>
 <td>PBR texture maps (albedo / normal / roughness / metalness) for AR preview.</td>
 <td>8</td>
-<td><a href="ar-material-preview.md">ar-material-preview</a></td>
+<td><a href="ar-material-preview.html">ar-material-preview</a></td>
 </tr>
 <tr>
 <td><code>generate-quote-pdf</code></td>
@@ -195,7 +197,7 @@
 </tr>
 <tr>
 <td><code>seo-write</code></td>
-<td>Full article generation from plan via Claude Sonnet</td>
+<td>Full article generation from plan via Claude Opus</td>
 </tr>
 <tr>
 <td><code>seo-analyze</code></td>
@@ -239,8 +241,8 @@
 <td><code>ai-rerank</code></td>
 <td>POST</td>
 <td>JWT</td>
-<td>Claude-powered re-ordering of search results. Sonnet/Haiku model choice, optional per-item explanations.</td>
-<td><a href="api/ai-rerank-api.md">ai-rerank-api</a></td>
+<td>Claude-powered re-ordering of search results. Opus/Haiku model choice, optional per-item explanations.</td>
+<td><a href="api/ai-rerank-api.html">ai-rerank-api</a></td>
 </tr>
 </tbody></table>
 <h3>1.6 Background agents &amp; cron jobs</h3>
@@ -319,25 +321,25 @@
 <td><code>crm-companies-api</code></td>
 <td>GET/POST/PATCH/DELETE</td>
 <td>Companies CRUD + contact linking + search</td>
-<td><a href="api/crm-companies-api.md">crm-companies-api</a></td>
+<td><a href="api/crm-companies-api.html">crm-companies-api</a></td>
 </tr>
 <tr>
 <td><code>crm-contacts-api</code></td>
 <td>GET/POST/PATCH/DELETE</td>
 <td>Contacts CRUD + user linking + custom fields</td>
-<td><a href="api/crm-contacts-api.md">crm-contacts-api</a></td>
+<td><a href="api/crm-contacts-api.html">crm-contacts-api</a></td>
 </tr>
 <tr>
 <td><code>crm-users-api</code></td>
 <td>GET/POST/PATCH</td>
 <td>User account + workspace + role management (admin only)</td>
-<td><a href="api/crm-users-api.md">crm-users-api</a></td>
+<td><a href="api/crm-users-api.html">crm-users-api</a></td>
 </tr>
 <tr>
 <td><code>crm-stripe-api</code></td>
 <td>GET</td>
 <td>Stripe invoice / subscription history for CRM contacts</td>
-<td><a href="api/crm-stripe-api.md">crm-stripe-api</a></td>
+<td><a href="api/crm-stripe-api.html">crm-stripe-api</a></td>
 </tr>
 </tbody></table>
 <h3>1.8 Stripe / billing</h3>
@@ -366,7 +368,7 @@
 <td><code>stripe-webhooks</code></td>
 <td>POST</td>
 <td>signature</td>
-<td>Handle Stripe events — sub created/updated/cancelled, invoice paid, payment failed. See <a href="api/stripe-webhooks-api.md">stripe-webhooks-api</a></td>
+<td>Handle Stripe events — sub created/updated/cancelled, invoice paid, payment failed. See <a href="api/stripe-webhooks-api.html">stripe-webhooks-api</a></td>
 </tr>
 </tbody></table>
 <h3>1.9 Messaging (email / SMS / WhatsApp)</h3>
@@ -385,14 +387,14 @@
 <td>POST</td>
 <td>JWT</td>
 <td>Send transactional email via AWS SES. Templates, analytics, domain verification.</td>
-<td><a href="api/email-api.md">email-api</a></td>
+<td><a href="api/email-api.html">email-api</a></td>
 </tr>
 <tr>
 <td><code>messaging-api</code></td>
 <td>POST</td>
 <td>JWT</td>
 <td>Send SMS / WhatsApp via Twilio. Actions: <code>send</code>, <code>create-campaign</code>, Twilio Content API for WA templates.</td>
-<td><a href="api/messaging-api.md">messaging-api</a></td>
+<td><a href="api/messaging-api.html">messaging-api</a></td>
 </tr>
 <tr>
 <td><code>messaging-processor</code></td>
@@ -446,7 +448,7 @@
 <td>GET/POST/PATCH/DELETE</td>
 <td>JWT</td>
 <td>Quote CRUD + proposal lifecycle + FF&amp;E fields (room, dimensions, installation, delivery) + pricing audit fields on <code>quote_items</code> (<code>price_source</code>, <code>price_lookup_call_id</code>). Actions: <code>list</code>, <code>create</code>, <code>update</code>, <code>delete</code>, <code>addItem</code>, <code>addCustomItem</code>.</td>
-<td><a href="api/quotes-api.md">quotes-api</a></td>
+<td><a href="api/quotes-api.html">quotes-api</a></td>
 </tr>
 </tbody></table>
 <h3>1.10.1 Pricing (admin-only, 2026-04)</h3>
@@ -465,7 +467,7 @@
 <td>POST (SSE)</td>
 <td>JWT (admin/owner)</td>
 <td>AI-mode price composition from the KB &quot;Pricing&quot; category. Emits <code>tool_call_ids</code>, <code>price_lookup_matches</code>, <code>price_proposal</code> chunks.</td>
-<td><a href="api/pricing-api.md">pricing-api</a></td>
+<td><a href="api/pricing-api.html">pricing-api</a></td>
 </tr>
 <tr>
 <td><code>mivaa-gateway</code> action <code>search_knowledge_base</code> + <code>category_slug:&quot;pricing&quot;</code></td>
@@ -489,7 +491,7 @@
 <td>↑</td>
 </tr>
 </tbody></table>
-<h3>1.11 Social (Late.dev)</h3>
+<h3>1.11 Social (Zernio)</h3>
 <table>
 <thead>
 <tr>
@@ -501,31 +503,17 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>late-oauth</code></td>
+<td><code>zernio-api</code></td>
 <td>GET/POST</td>
-<td>public</td>
-<td>Late.dev OAuth callback handler</td>
-<td><a href="api/late-social-api.md">late-social-api</a></td>
-</tr>
-<tr>
-<td><code>late-publish</code></td>
-<td>POST</td>
 <td>JWT</td>
-<td>Publish / schedule posts to 8 platforms via Late.dev</td>
-<td>↑</td>
+<td>Unified router; <code>action</code> selects handler — oauth (<code>connect</code>/<code>callback</code>/<code>disconnect</code>/<code>list</code>), publish (<code>publish_now</code>/<code>schedule</code>), analytics (<code>get_post_analytics</code>/<code>get_account_insights</code>/<code>get_best_time</code>). Publishes to 8 platforms via Zernio.</td>
+<td><a href="api/zernio-social-api.html">zernio-social-api</a></td>
 </tr>
 <tr>
-<td><code>late-analytics</code></td>
+<td><code>zernio-webhook-handler</code></td>
 <td>POST</td>
-<td>JWT</td>
-<td>Actions: <code>get-post-analytics</code>, <code>get-account-insights</code>, <code>get-best-time</code></td>
-<td>↑</td>
-</tr>
-<tr>
-<td><code>late-webhook-handler</code></td>
-<td>POST</td>
-<td>signature</td>
-<td>Receives <code>post.published</code> / <code>post.failed</code> events</td>
+<td>signature (<code>X-Zernio-Signature</code>)</td>
+<td>Receives <code>post.published</code> / <code>post.partial</code> / <code>post.failed</code> / <code>post.cancelled</code> / <code>post.scheduled</code> / <code>account.disconnected</code></td>
 <td>↑</td>
 </tr>
 <tr>
@@ -587,9 +575,76 @@
 <td><code>price-monitoring</code></td>
 <td>POST</td>
 <td>JWT</td>
-<td>Actions: <code>start-monitoring</code>, <code>stop-monitoring</code>, <code>check-now</code>, <code>get-status</code>. See <a href="api/price-monitoring-cron-api.md">price-monitoring-cron-api</a> for cron variant.</td>
+<td>Actions: <code>start-monitoring</code>, <code>stop-monitoring</code>, <code>check-now</code>, <code>get-status</code>. See <a href="api/price-monitoring-cron-api.html">price-monitoring-cron-api</a> for cron variant.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/prices/lookup</code></td>
+<td>POST</td>
+<td>API key (Bearer)</td>
+<td><strong>Public curl-callable</strong> one-shot price lookup. Two modes: <code>url</code> (Firecrawl) or <code>search_query</code> (Perplexity Sonar). Rate-limited per key. Does NOT create a monitoring subscription.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/prices/track</code></td>
+<td>POST</td>
+<td>API key (Bearer)</td>
+<td><strong>External project integration</strong> — register a tracked query (search_query + country_code + refresh_interval_hours). First refresh runs synchronously; subsequent refreshes via cron on the caller&#39;s cadence. CASCADE-deletes on api_key deletion.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/prices/track</code></td>
+<td>GET</td>
+<td>API key (Bearer)</td>
+<td>List all tracked queries owned by this api_key.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/prices/track/{id}</code></td>
+<td>GET</td>
+<td>API key (Bearer)</td>
+<td>Get one tracked query + latest retailer results.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/prices/track/{id}/history</code></td>
+<td>GET</td>
+<td>API key (Bearer)</td>
+<td>Full price-point history across all refresh runs.</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/prices/track/{id}</code></td>
+<td>PUT</td>
+<td>API key (Bearer)</td>
+<td>Update cadence, country, or preferred retailer domains.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/prices/track/{id}/refresh</code></td>
+<td>POST</td>
+<td>API key (Bearer)</td>
+<td>Force refresh now (bypasses cadence).</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/prices/track/{id}</code></td>
+<td>DELETE</td>
+<td>API key (Bearer)</td>
+<td>Soft delete (<code>is_active=false</code>); history preserved. Hard delete by revoking the api_key.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/price-monitoring/discover</code></td>
+<td>POST</td>
+<td>User JWT</td>
+<td>Internal: Perplexity + DataForSEO + Firecrawl discovery for a monitored product (UI-triggered). 6h throttle; admin <code>force_refresh</code> bypass. Every row now carries <code>match_kind</code> (product-identity verdict), <code>product_title</code>, and optional <code>original_price</code> / <code>verified</code>.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/price-monitoring/market-check</code></td>
+<td>POST</td>
+<td>User JWT (admin)</td>
+<td>Stateless one-shot market scan used by the KB-price drawer. Reuses the monitoring snapshot when the product is already enrolled and ≤6h old (<code>from_monitoring_cache=true</code>, 0 credits). Returns <code>stats {min, median, max, count, verified_count, currency}</code> computed over exact matches only.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/price-monitoring/tracked-queries/cron-refresh</code></td>
+<td>POST</td>
+<td><code>x-cron-secret</code></td>
+<td>Internal cron: refreshes all due <code>tracked_queries</code> rows. Called hourly from the Supabase price-monitoring-cron edge function.</td>
 </tr>
 </tbody></table>
+<p><strong>Full external-API reference</strong>: <a href="api/price-monitoring-api.html">docs/api/price-monitoring-api.md</a> — auth, schemas, error codes, curl/TypeScript/Python recipes.</p>
 <h3>1.14 Data import &amp; scraping</h3>
 <table>
 <thead>
@@ -604,7 +659,7 @@
 <td><code>xml-import-orchestrator</code></td>
 <td>POST</td>
 <td>JWT</td>
-<td>Intelligent XML imports with AI field mapping. See <a href="api/xml-import-orchestrator-api.md">xml-import-orchestrator-api</a></td>
+<td>Intelligent XML imports with AI field mapping. See <a href="api/xml-import-orchestrator-api.html">xml-import-orchestrator-api</a></td>
 </tr>
 <tr>
 <td><code>scheduled-import-runner</code></td>
@@ -616,7 +671,7 @@
 <td><code>scrape-session-manager</code></td>
 <td>POST</td>
 <td>JWT</td>
-<td>Multi-page scrape sessions (start/pause/resume/stop). See <a href="api/scrape-session-manager-api.md">scrape-session-manager-api</a></td>
+<td>Multi-page scrape sessions (start/pause/resume/stop). See <a href="api/scrape-session-manager-api.html">scrape-session-manager-api</a></td>
 </tr>
 <tr>
 <td><code>scrape-preview</code></td>
@@ -658,7 +713,7 @@
 <td><code>pdf-batch-process</code></td>
 <td>POST</td>
 <td>JWT</td>
-<td>Batch PDF upload → MIVAA extraction. See <a href="api/pdf-batch-process-api.md">pdf-batch-process-api</a></td>
+<td>Batch PDF upload → MIVAA extraction. See <a href="api/pdf-batch-process-api.html">pdf-batch-process-api</a></td>
 </tr>
 </tbody></table>
 <h3>1.15 Flows</h3>
@@ -677,7 +732,7 @@
 <td>POST</td>
 <td>JWT</td>
 <td>Execute / test / dry-run flows. Template variable resolution.</td>
-<td><a href="api/flow-engine-api.md">flow-engine-api</a></td>
+<td><a href="api/flow-engine-api.html">flow-engine-api</a></td>
 </tr>
 <tr>
 <td><code>flow-scheduler-cron</code></td>
@@ -708,7 +763,7 @@
 <td><code>reset-platform</code></td>
 <td>POST</td>
 <td>service-role</td>
-<td>Wipes derived data + VECS + MIVAA <code>/tmp</code>, preserves accounts/KB/CRM/prompts. See <a href="deployment-guide.md#-platform-reset-admin-destructive-operation">deployment-guide § Platform Reset</a></td>
+<td>Wipes derived data + VECS + MIVAA <code>/tmp</code>, preserves accounts/KB/CRM/prompts. See <a href="deployment-guide.html#-platform-reset-admin-destructive-operation">deployment-guide § Platform Reset</a></td>
 </tr>
 <tr>
 <td><code>health-check</code></td>
@@ -738,7 +793,7 @@
 <td><code>mivaa-gateway</code></td>
 <td>POST</td>
 <td>JWT or API key</td>
-<td>Thin auth-passthrough to MIVAA Python backend (see §2). See <a href="api/mivaa-gateway-api.md">mivaa-gateway-api</a></td>
+<td>Thin auth-passthrough to MIVAA Python backend (see §2). See <a href="api/mivaa-gateway-api.html">mivaa-gateway-api</a></td>
 </tr>
 </tbody></table>
 <hr>
@@ -751,7 +806,7 @@ Auth: <code>Authorization: Bearer &lt;JWT&gt;</code> (Supabase JWT passed throug
 <li>ReDoc — <code>https://v1api.materialshub.gr/redoc</code></li>
 <li>OpenAPI JSON — <code>https://v1api.materialshub.gr/openapi.json</code></li>
 </ul>
-<p>Full endpoint-by-endpoint reference: <a href="api-endpoints.md">api-endpoints.md</a> (1940 lines, all 19 route groups).</p>
+<p>Full endpoint-by-endpoint reference: <a href="api-endpoints.html">api-endpoints.md</a> (1940 lines, all 19 route groups).</p>
 <h3>High-level route groups</h3>
 <table>
 <thead>
@@ -836,7 +891,107 @@ Auth: <code>Authorization: Bearer &lt;JWT&gt;</code> (Supabase JWT passed throug
 <td><code>/api/messaging/*</code></td>
 <td>SMS/WhatsApp (backend Twilio bridge)</td>
 </tr>
+<tr>
+<td>Modules</td>
+<td><code>/api/v1/modules/*</code></td>
+<td>Module-system control + per-module routers — see §2.1 below</td>
+</tr>
 </tbody></table>
+<h3>2.1 Module system</h3>
+<p>The platform is divided into 7 toggleable modules. Frontend modules live in <code>src/modules/&lt;slug&gt;/</code>; MIVAA-backed modules live in <code>mivaa-pdf-extractor/app/modules/&lt;slug&gt;/</code>. Each module&#39;s row in <code>public.modules</code> controls whether its routes/agents/tools/cards appear at runtime. Toggle from <code>/admin/modules</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Module slug</th>
+<th>Frontend</th>
+<th>MIVAA backend</th>
+<th>Edge tier</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>greek-marketplaces</code></td>
+<td>yes</td>
+<td>yes (3 routes mounted at <code>/api/v1/modules/greek-marketplaces/*</code>)</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>crm</code></td>
+<td>yes</td>
+<td>no</td>
+<td>edge fns: <code>crm-{users,contacts,companies,stripe}-api</code></td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>yes</td>
+<td>no</td>
+<td>edge fns: <code>email-api</code>, <code>email-webhook(s)</code>, <code>campaign-processor</code>, <code>ses-webhook</code></td>
+</tr>
+<tr>
+<td><code>messaging</code></td>
+<td>yes</td>
+<td>yes (<code>/api/messaging/*</code>)</td>
+<td>edge fns: <code>messaging-api</code>, <code>messaging-processor</code>, <code>messaging-webhook</code></td>
+</tr>
+<tr>
+<td><code>quotes</code></td>
+<td>yes</td>
+<td>no</td>
+<td>edge fns: <code>quotes-api</code>, <code>generate-quote-pdf</code></td>
+</tr>
+<tr>
+<td><code>notifications</code></td>
+<td>yes (header bell-icon)</td>
+<td>no</td>
+<td>edge fn: <code>notification-dispatcher</code></td>
+</tr>
+<tr>
+<td><code>social-media</code></td>
+<td>yes</td>
+<td>no</td>
+<td>edge fns: <code>zernio-api</code>, <code>zernio-webhook-handler</code>, <code>generate-social-{content,image,video}</code> + 11 LLM tool factories under <code>_shared/modules/social-media/</code></td>
+</tr>
+</tbody></table>
+<p><strong>Top-level MIVAA endpoints owned by the module system (always present, regardless of which modules are enabled):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/modules/_invalidate</code></td>
+<td>JWT (admin)</td>
+<td>Drop the in-process enabled-flag cache. Called by <code>/admin/modules</code> toggle UI so backend picks up the change in ~1s instead of waiting up to 5min for the cache TTL.</td>
+</tr>
+</tbody></table>
+<p><strong>Greek Marketplaces module</strong> (only mounted when <code>slug=&#39;greek-marketplaces&#39;</code> is enabled):</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/modules/greek-marketplaces/status</code></td>
+<td>JWT (admin)</td>
+<td>Source credential check + 7-day usage stats (Skroutz / Bestprice / Shopflix)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/modules/greek-marketplaces/search</code></td>
+<td>JWT (admin)</td>
+<td>One-off admin test query against all 3 adapters in parallel</td>
+</tr>
+</tbody></table>
+<p>For the platform-wide architecture (manifest contract, slot patterns, agent gating), see <a href="../.claude/plans/modular-architecture.html">.claude/plans/modular-architecture.md</a> and <a href="../.claude/plans/modules-extraction-roadmap.html">.claude/plans/modules-extraction-roadmap.md</a>.</p>
 <hr>
 <h2>3. Typical call patterns</h2>
 <h3>Frontend (browser) → Edge function</h3>
@@ -883,11 +1038,11 @@ const result = await mivaaApi.get(
 <hr>
 <h2>4. Related docs</h2>
 <ul>
-<li><a href="api/README.md">api/README.md</a> — per-edge-function deep docs index</li>
-<li><a href="api-endpoints.md">api-endpoints.md</a> — MIVAA Python endpoint-by-endpoint reference</li>
-<li><a href="api-docs.md">api-docs.md</a> — MIVAA search-strategy focused reference</li>
-<li><a href="api/swagger.md">api/swagger.md</a> — OpenAPI/Swagger export</li>
-<li><a href="agent-system.md">agent-system.md</a>, <a href="background-agents.md">background-agents.md</a>, <a href="flow-engine.md">flow-engine.md</a>, <a href="deployment-guide.md">deployment-guide.md</a></li>
+<li><a href="api/README.html">api/README.md</a> — per-edge-function deep docs index</li>
+<li><a href="api-endpoints.html">api-endpoints.md</a> — MIVAA Python endpoint-by-endpoint reference</li>
+<li><a href="api-docs.html">api-docs.md</a> — MIVAA search-strategy focused reference</li>
+<li><a href="api/swagger.html">api/swagger.md</a> — OpenAPI/Swagger export</li>
+<li><a href="agent-system.html">agent-system.md</a>, <a href="background-agents.html">background-agents.md</a>, <a href="flow-engine.html">flow-engine.md</a>, <a href="deployment-guide.html">deployment-guide.md</a></li>
 </ul>
 <hr>
 <p><strong>Last Updated:</strong> April 15, 2026</p>

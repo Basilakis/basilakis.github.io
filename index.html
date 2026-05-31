@@ -8,13 +8,12 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #34495e; margin-top: 30px; }
-        .docs-list { margin-top: 30px; }
-        .doc-item { background: #f8f9fa; padding: 15px 20px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #3498db; }
-        .doc-item a { color: #3498db; text-decoration: none; font-weight: 500; font-size: 16px; }
+        h2 { color: #34495e; margin-top: 40px; border-bottom: 1px solid #ecf0f1; padding-bottom: 8px; }
+        .docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; margin-top: 15px; }
+        .doc-item { background: #f8f9fa; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #3498db; }
+        .doc-item a { color: #3498db; text-decoration: none; font-weight: 500; font-size: 15px; display: block; }
         .doc-item a:hover { text-decoration: underline; }
-        .doc-item .description { color: #7f8c8d; font-size: 14px; margin-top: 5px; }
-        .api-links { display: flex; gap: 15px; margin-bottom: 30px; }
+        .api-links { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
         .api-link { background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .api-link.redoc { background: #e74c3c; }
         .stats { background: #ecf0f1; padding: 20px; border-radius: 6px; margin-bottom: 30px; }
@@ -37,370 +36,199 @@
         <div class="stats">
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-value">39</div>
+                    <div class="stat-value">129</div>
                     <div class="stat-label">Documentation Files</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">120+</div>
-                    <div class="stat-label">API Endpoints</div>
+                    <div class="stat-value">34</div>
+                    <div class="stat-label">API Reference Pages</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-value">14</div>
                     <div class="stat-label">AI Models</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">5,000+</div>
-                    <div class="stat-label">Active Users</div>
-                </div>
-                <div class="stat-item">
                     <div class="stat-value">14</div>
                     <div class="stat-label">Pipeline Stages</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">6</div>
+                    <div class="stat-value">7</div>
                     <div class="stat-label">Embedding Types</div>
                 </div>
             </div>
         </div>
-
-        <h2>📚 Documentation Files</h2>
-        <div class="docs-list">
-                      <div class="doc-item">
-                          <a href="INDEX.html">INDEX</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="README.html">README</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="agent-system.html">Agent System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="ai-models-architecture.html">Ai Models Architecture</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="ai-models-complete-list.html">Ai Models Complete List</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="ai-models-guide.html">Ai Models Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="ai-reranking.html">Ai Reranking</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="ai-usage-logging-guide.html">Ai Usage Logging Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api-configuration-examples.html">Api Configuration Examples</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api-docs.html">Api Docs</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api-endpoints.html">Api Endpoints</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api-master-reference.html">Api Master Reference</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/README.html">README</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/agent-chat-api.html">Agent Chat Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/ai-rerank-api.html">Ai Rerank Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/crm-companies-api.html">Crm Companies Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/crm-contacts-api.html">Crm Contacts Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/crm-stripe-api.html">Crm Stripe Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/crm-users-api.html">Crm Users Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/email-api.html">Email Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/flow-engine-api.html">Flow Engine Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/generate-interior-gemini-api.html">Generate Interior Gemini Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/generate-interior-video-v2-api.html">Generate Interior Video V2 Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/generate-region-edit-api.html">Generate Region Edit Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/generate-virtual-staging-api.html">Generate Virtual Staging Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/late-social-api.html">Late Social Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/messaging-api.html">Messaging Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/mivaa-gateway-api.html">Mivaa Gateway Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/pdf-batch-process-api.html">Pdf Batch Process Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/price-monitoring-cron-api.html">Price Monitoring Cron Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/pricing-api.html">Pricing Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/quotes-api.html">Quotes Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/recommendations-api.html">Recommendations Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/scrape-session-manager-api.html">Scrape Session Manager Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/slig-inference.html">Slig Inference</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/stripe-webhooks-api.html">Stripe Webhooks Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/swagger.html">Swagger</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="api/xml-import-orchestrator-api.html">Xml Import Orchestrator Api</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="app-details.html">App Details</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="ar-material-preview.html">Ar Material Preview</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="async-processing-and-limits.html">Async Processing And Limits</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="background-agents.html">Background Agents</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="billing-credits-system.html">Billing Credits System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="campaign-system.html">Campaign System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="category-field-registry.html">Category Field Registry</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="collaborative-filtering-recommendations.html">Collaborative Filtering Recommendations</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="comprehensive-metadata-fields-guide.html">Comprehensive Metadata Fields Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="crm-system.html">Crm System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="data-import-system.html">Data Import System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="data-retention-policy.html">Data Retention Policy</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="deployment-guide.html">Deployment Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="design-system.html">Design System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="duplicate-detection-merging.html">Duplicate Detection Merging</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="email-system.html">Email System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="embedding-generation-improvements.html">Embedding Generation Improvements</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="extract-categories-guide.html">Extract Categories Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="features-guide.html">Features Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="flow-engine.html">Flow Engine</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="image-relevancy-and-search.html">Image Relevancy And Search</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="intelligent-page-type-detection.html">Intelligent Page Type Detection</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="interior-design-data-flow.html">Interior Design Data Flow</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="interior-design-models.html">Interior Design Models</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="interior-designer-agent-user-guide.html">Interior Designer Agent User Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="interior-video-generation.html">Interior Video Generation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="internal-pricing-credit-system.html">Internal Pricing Credit System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="job-queue-system.html">Job Queue System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="knowledge-base-implementation.html">Knowledge Base Implementation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="langgraph-implementation.html">Langgraph Implementation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="lighting-simulation.html">Lighting Simulation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="logger-service.html">Logger Service</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="manufacturer-analytics.html">Manufacturer Analytics</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="meta-field-aggregation.html">Meta Field Aggregation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="metadata-management-system.html">Metadata Management System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="metadata-prototype-validation-system.html">Metadata Prototype Validation System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="metafield-extraction-guide.html">Metafield Extraction Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="modular-pipeline-endpoints.html">Modular Pipeline Endpoints</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="monitoring-analytics-system.html">Monitoring Analytics System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="monitoring-and-alerting.html">Monitoring And Alerting</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="multi-source-meta-extraction-plan.html">Multi Source Meta Extraction Plan</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="overview.html">Overview</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="page-aware-chunking-implementation.html">Page Aware Chunking Implementation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="pdf-processing-pipeline.html">Pdf Processing Pipeline</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="pinterest-integration.html">Pinterest Integration</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="platform-flows.html">Platform Flows</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="price-monitoring-deployment-guide.html">Price Monitoring Deployment Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="price-monitoring-system.html">Price Monitoring System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="product-discovery-architecture.html">Product Discovery Architecture</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="professional-marketplace.html">Professional Marketplace</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="prompt-based-extraction-architecture.html">Prompt Based Extraction Architecture</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="prompt-enhancement-system.html">Prompt Enhancement System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="push-notifications-admin.html">Push Notifications Admin</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="quotes-system-architecture.html">Quotes System Architecture</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="relevancy-system.html">Relevancy System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="saved-searches-deduplication.html">Saved Searches Deduplication</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="scraping-job-integration.html">Scraping Job Integration</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="scraping-workflow-guide.html">Scraping Workflow Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="search-strategies.html">Search Strategies</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="search-suggestions.html">Search Suggestions</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="segmentation-inpainting.html">Segmentation Inpainting</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="social-media-system.html">Social Media System</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="supabase-types-automation.html">Supabase Types Automation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="system-architecture.html">System Architecture</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="troubleshooting-guide.html">Troubleshooting Guide</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="unified-job-tracking.html">Unified Job Tracking</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="unified-product-generation-flow.html">Unified Product Generation Flow</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="user-levels-access.html">User Levels Access</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="virtual-staging.html">Virtual Staging</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="vr-world-generation.html">Vr World Generation</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="web-scraping-integration.html">Web Scraping Integration</a>
-                      </div>
-                      <div class="doc-item">
-                          <a href="xml-import-orchestrator.html">Xml Import Orchestrator</a>
-                      </div>
+        <h2>🎯 Getting Started <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(7)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="INDEX.html">INDEX</a></div>
+            <div class="doc-item"><a href="README.html">README</a></div>
+            <div class="doc-item"><a href="app-details.html">App Details</a></div>
+            <div class="doc-item"><a href="design-system.html">Design System</a></div>
+            <div class="doc-item"><a href="features-guide.html">Features Guide</a></div>
+            <div class="doc-item"><a href="overview.html">Overview</a></div>
+            <div class="doc-item"><a href="platform-flows.html">Platform Flows</a></div>
         </div>
-
+        <h2>📡 API Reference <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(38)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="api-configuration-examples.html">Api Configuration Examples</a></div>
+            <div class="doc-item"><a href="api-docs.html">Api Docs</a></div>
+            <div class="doc-item"><a href="api-endpoints.html">Api Endpoints</a></div>
+            <div class="doc-item"><a href="api-master-reference.html">Api Master Reference</a></div>
+            <div class="doc-item"><a href="api/README.html">README</a></div>
+            <div class="doc-item"><a href="api/agent-chat-api.html">Agent Chat Api</a></div>
+            <div class="doc-item"><a href="api/agent-chat-partner-api.html">Agent Chat Partner Api</a></div>
+            <div class="doc-item"><a href="api/ai-rerank-api.html">Ai Rerank Api</a></div>
+            <div class="doc-item"><a href="api/crm-api.html">Crm Api</a></div>
+            <div class="doc-item"><a href="api/email-api.html">Email Api</a></div>
+            <div class="doc-item"><a href="api/flow-engine-api.html">Flow Engine Api</a></div>
+            <div class="doc-item"><a href="api/generate-interior-gemini-api.html">Generate Interior Gemini Api</a></div>
+            <div class="doc-item"><a href="api/generate-interior-video-v2-api.html">Generate Interior Video V2 Api</a></div>
+            <div class="doc-item"><a href="api/generate-region-edit-api.html">Generate Region Edit Api</a></div>
+            <div class="doc-item"><a href="api/generate-virtual-staging-api.html">Generate Virtual Staging Api</a></div>
+            <div class="doc-item"><a href="api/job-research-api.html">Job Research Api</a></div>
+            <div class="doc-item"><a href="api/mention-monitoring-api.html">Mention Monitoring Api</a></div>
+            <div class="doc-item"><a href="api/messaging-api.html">Messaging Api</a></div>
+            <div class="doc-item"><a href="api/mivaa-gateway-api.html">Mivaa Gateway Api</a></div>
+            <div class="doc-item"><a href="api/oxygen-api.html">Oxygen Api</a></div>
+            <div class="doc-item"><a href="api/pdf-batch-process-api.html">Pdf Batch Process Api</a></div>
+            <div class="doc-item"><a href="api/pinterest-api.html">Pinterest Api</a></div>
+            <div class="doc-item"><a href="api/price-monitoring-api.html">Price Monitoring Api</a></div>
+            <div class="doc-item"><a href="api/price-monitoring-cron-api.html">Price Monitoring Cron Api</a></div>
+            <div class="doc-item"><a href="api/price-monitoring-v3-partner-update.html">Price Monitoring V3 Partner Update</a></div>
+            <div class="doc-item"><a href="api/pricing-api.html">Pricing Api</a></div>
+            <div class="doc-item"><a href="api/projects-api.html">Projects Api</a></div>
+            <div class="doc-item"><a href="api/public-tools-api.html">Public Tools Api</a></div>
+            <div class="doc-item"><a href="api/quotes-api.html">Quotes Api</a></div>
+            <div class="doc-item"><a href="api/recommendations-api.html">Recommendations Api</a></div>
+            <div class="doc-item"><a href="api/scrape-session-manager-api.html">Scrape Session Manager Api</a></div>
+            <div class="doc-item"><a href="api/seo-api.html">Seo Api</a></div>
+            <div class="doc-item"><a href="api/slig-inference.html">Slig Inference</a></div>
+            <div class="doc-item"><a href="api/stripe-api.html">Stripe Api</a></div>
+            <div class="doc-item"><a href="api/stripe-webhooks-api.html">Stripe Webhooks Api</a></div>
+            <div class="doc-item"><a href="api/swagger.html">Swagger</a></div>
+            <div class="doc-item"><a href="api/xml-import-orchestrator-api.html">Xml Import Orchestrator Api</a></div>
+            <div class="doc-item"><a href="api/zernio-social-api.html">Zernio Social Api</a></div>
+        </div>
+        <h2>🤖 AI Models & Embeddings <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(6)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="ai-models-architecture.html">Ai Models Architecture</a></div>
+            <div class="doc-item"><a href="ai-models-complete-list.html">Ai Models Complete List</a></div>
+            <div class="doc-item"><a href="ai-models-guide.html">Ai Models Guide</a></div>
+            <div class="doc-item"><a href="ai-reranking.html">Ai Reranking</a></div>
+            <div class="doc-item"><a href="ai-usage-logging-guide.html">Ai Usage Logging Guide</a></div>
+            <div class="doc-item"><a href="embedding-generation-improvements.html">Embedding Generation Improvements</a></div>
+        </div>
+        <h2>📄 PDF Processing <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(4)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="intelligent-page-type-detection.html">Intelligent Page Type Detection</a></div>
+            <div class="doc-item"><a href="modular-pipeline-endpoints.html">Modular Pipeline Endpoints</a></div>
+            <div class="doc-item"><a href="page-aware-chunking-implementation.html">Page Aware Chunking Implementation</a></div>
+            <div class="doc-item"><a href="pdf-processing-pipeline.html">Pdf Processing Pipeline</a></div>
+        </div>
+        <h2>🔍 Search & Discovery <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(8)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="collaborative-filtering-recommendations.html">Collaborative Filtering Recommendations</a></div>
+            <div class="doc-item"><a href="duplicate-detection-merging.html">Duplicate Detection Merging</a></div>
+            <div class="doc-item"><a href="image-relevancy-and-search.html">Image Relevancy And Search</a></div>
+            <div class="doc-item"><a href="product-discovery-architecture.html">Product Discovery Architecture</a></div>
+            <div class="doc-item"><a href="relevancy-system.html">Relevancy System</a></div>
+            <div class="doc-item"><a href="saved-searches-deduplication.html">Saved Searches Deduplication</a></div>
+            <div class="doc-item"><a href="search-strategies.html">Search Strategies</a></div>
+            <div class="doc-item"><a href="search-suggestions.html">Search Suggestions</a></div>
+        </div>
+        <h2>🧠 Agents & Automation <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(10)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="agent-and-tools-reference.html">Agent And Tools Reference</a></div>
+            <div class="doc-item"><a href="agent-system.html">Agent System</a></div>
+            <div class="doc-item"><a href="async-processing-and-limits.html">Async Processing And Limits</a></div>
+            <div class="doc-item"><a href="background-agents.html">Background Agents</a></div>
+            <div class="doc-item"><a href="flow-engine.html">Flow Engine</a></div>
+            <div class="doc-item"><a href="interior-designer-agent-user-guide.html">Interior Designer Agent User Guide</a></div>
+            <div class="doc-item"><a href="langgraph-implementation.html">Langgraph Implementation</a></div>
+            <div class="doc-item"><a href="prompt-based-extraction-architecture.html">Prompt Based Extraction Architecture</a></div>
+            <div class="doc-item"><a href="prompt-enhancement-system.html">Prompt Enhancement System</a></div>
+            <div class="doc-item"><a href="unified-product-generation-flow.html">Unified Product Generation Flow</a></div>
+        </div>
+        <h2>✨ Features <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(12)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="ar-material-preview.html">Ar Material Preview</a></div>
+            <div class="doc-item"><a href="campaign-system.html">Campaign System</a></div>
+            <div class="doc-item"><a href="interior-design-data-flow.html">Interior Design Data Flow</a></div>
+            <div class="doc-item"><a href="interior-design-models.html">Interior Design Models</a></div>
+            <div class="doc-item"><a href="interior-video-generation.html">Interior Video Generation</a></div>
+            <div class="doc-item"><a href="lighting-simulation.html">Lighting Simulation</a></div>
+            <div class="doc-item"><a href="manufacturer-analytics.html">Manufacturer Analytics</a></div>
+            <div class="doc-item"><a href="pinterest-integration.html">Pinterest Integration</a></div>
+            <div class="doc-item"><a href="segmentation-inpainting.html">Segmentation Inpainting</a></div>
+            <div class="doc-item"><a href="social-media-system.html">Social Media System</a></div>
+            <div class="doc-item"><a href="virtual-staging.html">Virtual Staging</a></div>
+            <div class="doc-item"><a href="vr-world-generation.html">Vr World Generation</a></div>
+        </div>
+        <h2>🏷️ Metadata Management <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(8)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="category-field-registry.html">Category Field Registry</a></div>
+            <div class="doc-item"><a href="comprehensive-metadata-fields-guide.html">Comprehensive Metadata Fields Guide</a></div>
+            <div class="doc-item"><a href="extract-categories-guide.html">Extract Categories Guide</a></div>
+            <div class="doc-item"><a href="meta-field-aggregation.html">Meta Field Aggregation</a></div>
+            <div class="doc-item"><a href="metadata-management-system.html">Metadata Management System</a></div>
+            <div class="doc-item"><a href="metadata-prototype-validation-system.html">Metadata Prototype Validation System</a></div>
+            <div class="doc-item"><a href="metafield-extraction-guide.html">Metafield Extraction Guide</a></div>
+            <div class="doc-item"><a href="multi-source-meta-extraction-plan.html">Multi Source Meta Extraction Plan</a></div>
+        </div>
+        <h2>💼 Business & CRM <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(4)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="crm-system.html">Crm System</a></div>
+            <div class="doc-item"><a href="email-system.html">Email System</a></div>
+            <div class="doc-item"><a href="professional-marketplace.html">Professional Marketplace</a></div>
+            <div class="doc-item"><a href="quotes-system-architecture.html">Quotes System Architecture</a></div>
+        </div>
+        <h2>💳 Billing & Pricing <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(4)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="billing-credits-system.html">Billing Credits System</a></div>
+            <div class="doc-item"><a href="internal-pricing-credit-system.html">Internal Pricing Credit System</a></div>
+            <div class="doc-item"><a href="price-monitoring-deployment-guide.html">Price Monitoring Deployment Guide</a></div>
+            <div class="doc-item"><a href="price-monitoring-system.html">Price Monitoring System</a></div>
+        </div>
+        <h2>📚 Knowledge Base <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(1)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="knowledge-base-implementation.html">Knowledge Base Implementation</a></div>
+        </div>
+        <h2>📥 Data Import & Scraping <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(5)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="data-import-system.html">Data Import System</a></div>
+            <div class="doc-item"><a href="scraping-job-integration.html">Scraping Job Integration</a></div>
+            <div class="doc-item"><a href="scraping-workflow-guide.html">Scraping Workflow Guide</a></div>
+            <div class="doc-item"><a href="web-scraping-integration.html">Web Scraping Integration</a></div>
+            <div class="doc-item"><a href="xml-import-orchestrator.html">Xml Import Orchestrator</a></div>
+        </div>
+        <h2>⚙️ Infrastructure & Operations <span style="color:#95a5a6;font-size:14px;font-weight:normal;">(22)</span></h2>
+        <div class="docs-grid">
+            <div class="doc-item"><a href="data-retention-policy.html">Data Retention Policy</a></div>
+            <div class="doc-item"><a href="deployment-guide.html">Deployment Guide</a></div>
+            <div class="doc-item"><a href="gemini-image-generation.html">Gemini Image Generation</a></div>
+            <div class="doc-item"><a href="job-queue-system.html">Job Queue System</a></div>
+            <div class="doc-item"><a href="logger-service.html">Logger Service</a></div>
+            <div class="doc-item"><a href="mention-monitoring-deployment-guide.html">Mention Monitoring Deployment Guide</a></div>
+            <div class="doc-item"><a href="monitoring-analytics-system.html">Monitoring Analytics System</a></div>
+            <div class="doc-item"><a href="monitoring-and-alerting.html">Monitoring And Alerting</a></div>
+            <div class="doc-item"><a href="moodboard-presentation-sheets.html">Moodboard Presentation Sheets</a></div>
+            <div class="doc-item"><a href="partner-email-mention-monitoring-launch.html">Partner Email Mention Monitoring Launch</a></div>
+            <div class="doc-item"><a href="payments-stripe.html">Payments Stripe</a></div>
+            <div class="doc-item"><a href="payments.html">Payments</a></div>
+            <div class="doc-item"><a href="presentation-catalogs.html">Presentation Catalogs</a></div>
+            <div class="doc-item"><a href="projects.html">Projects</a></div>
+            <div class="doc-item"><a href="push-notifications-admin.html">Push Notifications Admin</a></div>
+            <div class="doc-item"><a href="seo-pipeline-mention-monitoring-integration.html">Seo Pipeline Mention Monitoring Integration</a></div>
+            <div class="doc-item"><a href="seo-toolkit-integration-plan.html">Seo Toolkit Integration Plan</a></div>
+            <div class="doc-item"><a href="supabase-types-automation.html">Supabase Types Automation</a></div>
+            <div class="doc-item"><a href="system-architecture.html">System Architecture</a></div>
+            <div class="doc-item"><a href="troubleshooting-guide.html">Troubleshooting Guide</a></div>
+            <div class="doc-item"><a href="unified-job-tracking.html">Unified Job Tracking</a></div>
+            <div class="doc-item"><a href="user-levels-access.html">User Levels Access</a></div>
+        </div>
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ecf0f1; color: #7f8c8d; text-align: center;">
             <p><strong>Material Kai Vision Platform v2.5.0</strong></p>
             <p><em>AI-Powered Material Intelligence System with Real-time Monitoring & Analytics</em></p>
-            <p>Last updated: $(date +"%Y-%m-%d %H:%M:%S UTC")</p>
+            <p>Last updated: 2026-05-31 05:18:34 UTC</p>
             <p>This documentation is automatically generated and deployed from the main repository.</p>
         </div>
     </div>

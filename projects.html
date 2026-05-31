@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Project Workspace</h1>
+<p>Container above moodboards, quotes, and tasks — one row per engagement. Tracks rooms, deadlines, budget vs. actual, presentation sheets, and <strong>passwordless email invitations</strong> so clients can view a curated read-only slice without creating an account.</p>
+<hr>
+<h2>Overview</h2>
+<p>Before Projects, moodboards and quotes were standalone objects scoped to one user. There was no place to say <em>&quot;these three moodboards + this quote + that pinboard + the tile-selection task all belong to the same client engagement.&quot;</em> Projects fixes that — it&#39;s an opt-in container that gathers all the related artifacts under one roof and adds the missing primitives: <strong>rooms</strong>, <strong>budget vs actual</strong>, <strong>tasks</strong> (with one-level GitHub-style subtasks), an <strong>append-only timeline</strong>, and <strong>read-only collaborator invites</strong> that work over plain email.</p>
+<p><strong>Routes:</strong></p>
+<ul>
+<li><code>/projects</code> — list of the user&#39;s active projects (card grid)</li>
+<li><code>/projects/:id</code> — project detail (7 tabs: Overview / Rooms / Moodboards / Quotes / Sheets / Tasks / Timeline)</li>
+<li><code>/projects/invite/:token</code> — public landing for invitees (no auth)</li>
+<li><code>/projects/accept-invite?token=…</code> — post-OTP redirect target</li>
+</ul>
+<p><strong>Top-level nav:</strong> between Agent Hub and MoodBoards. Module-gated on <code>projects</code> (default-enabled).</p>
+<p><strong>Module folder:</strong> <a href="../src/modules/projects/"><code>src/modules/projects/</code></a> — manifest, ModuleDefinition, service, pages, components.</p>
+<p><strong>External API:</strong> <a href="api/projects-api.html">docs/api/projects-api.md</a> (<code>/api/v1/projects/*</code> — Bearer <code>kai_*</code> partner integrations).</p>
+<p><strong>KAI agent surface:</strong> four tools on the <code>kai</code> + <code>interior-designer</code> agents — <code>create_project</code>, <code>list_my_projects</code>, <code>find_project</code>, <code>add_task</code>. See <a href="../supabase/functions/_shared/tools/project-tools.ts">supabase/functions/_shared/tools/project-tools.ts</a>.</p>
+<hr>
+<h2>Mental model</h2>
+<p>A project is the <strong>engagement</strong> — one client, one timeline, one budget. Everything else hangs off it:</p>
+<pre><code>workspace (tenant)
+  └─ project (&quot;Kavouri Villa Renovation&quot;)
+       ├─ client (crm_company XOR crm_contact)
+       ├─ rooms (optional — bedroom / bathroom / kitchen / …)
+       ├─ moodboards (existing table, gains project_id + room_id)
+       │    └─ presentation sheets (existing — roll up at project level)
+       ├─ quotes (existing table, gains project_id + parent_quote_id + revision_number)
+       ├─ tasks (with subtasks, max 1 level of nesting)
+       ├─ events (append-only audit log — capped at 500 per project)
+       └─ collaborators (passwordless email invites — read-only)
+</code></pre>
+<p><strong>Critical design call:</strong> projects are an <strong>opt-in overlay</strong>. Existing moodboards and quotes keep working untouched; they just have no <code>project_id</code>. We do not backfill or force migration. (Per the <a href="../CLAUDE.html">no dual-read transitions</a> rule, we add one new path — we don&#39;t try to maintain two semantics on the existing tables.)</p>
+<hr>
+<h2>Tables</h2>
+<p>All four tables landed across migrations <code>projects_module_phase_1</code> → <code>projects_module_phase_4_collaborators</code> (applied via <code>mcp__supabase__apply_migration</code>). RLS is owner-only by default; Phase 4 adds permissive collaborator-read overlays.</p>
+<h3><code>projects</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>uuid PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>uuid FK auth.users</td>
+<td>Required. CASCADE on user delete.</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>uuid FK workspaces</td>
+<td>Optional (nullable).</td>
+</tr>
+<tr>
+<td><code>name</code>, <code>description</code></td>
+<td>text</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>text</td>
+<td><code>planning</code> / <code>in_progress</code> / <code>on_hold</code> / <code>completed</code> / <code>archived</code>.</td>
+</tr>
+<tr>
+<td><code>client_company_id</code></td>
+<td>uuid FK crm_companies</td>
+<td>XOR with <code>client_contact_id</code>. Both nullable (no client yet).</td>
+</tr>
+<tr>
+<td><code>client_contact_id</code></td>
+<td>uuid FK crm_contacts</td>
+<td>XOR with <code>client_company_id</code>.</td>
+</tr>
+<tr>
+<td><code>deadline</code></td>
+<td>date</td>
+<td>Optional.</td>
+</tr>
+<tr>
+<td><code>budget_amount</code></td>
+<td>numeric(12,2)</td>
+<td>Optional.</td>
+</tr>
+<tr>
+<td><code>budget_currency</code></td>
+<td>text</td>
+<td>Default <code>EUR</code>.</td>
+</tr>
+<tr>
+<td><code>cover_image_url</code></td>
+<td>text</td>
+<td>Optional.</td>
+</tr>
+<tr>
+<td><strong>Denormalised cache</strong></td>
+<td></td>
+<td>Maintained by triggers — read directly, do not write.</td>
+</tr>
+<tr>
+<td><code>actual_amount</code></td>
+<td>numeric(12,2)</td>
+<td><code>SUM(grand_total)</code> of <code>accepted</code> quotes attached to the project.</td>
+</tr>
+<tr>
+<td><code>accepted_quote_count</code></td>
+<td>int</td>
+<td></td>
+</tr>
+<tr>
+<td><code>moodboard_count</code></td>
+<td>int</td>
+<td></td>
+</tr>
+<tr>
+<td><code>last_activity_at</code></td>
+<td>timestamptz</td>
+<td>Bumped on every trigger fire.</td>
+</tr>
+</tbody></table>
+<h3><code>project_rooms</code></h3>
+<p><code>(id, project_id, name, room_type, sort_order, budget_amount, deadline, notes, created_at, updated_at)</code> — <code>room_type</code> is constrained to the enum <code>bedroom / bathroom / kitchen / living / dining / office / outdoor / hallway / other</code>.</p>
+<p>Optional — single-space projects skip this table. The UI hides the room column when count = 0.</p>
+<h3><code>project_tasks</code></h3>
+<p><code>(id, project_id, parent_task_id, room_id, title, description, status, assignee_id, due_date, visibility, sort_order, created_by, created_at, updated_at, completed_at)</code></p>
+<p><strong>Subtask rule (enforced by <code>_project_tasks_enforce_depth_cap</code> trigger):</strong> a task with <code>parent_task_id IS NOT NULL</code> cannot itself become a parent, and a task with children cannot become a subtask. Max nesting depth = 1 — same as GitHub sub-issues. Cross-project links are also rejected by the trigger.</p>
+<p><strong><code>status</code></strong>: <code>todo</code> / <code>in_progress</code> / <code>done</code> / <code>blocked</code>. Flipping to/from <code>done</code> auto-stamps <code>completed_at</code> via the <code>_project_tasks_sync_completed_at</code> trigger.</p>
+<p><strong><code>visibility</code></strong>: <code>internal</code> (default) or <code>client_visible</code>. The collaborator read policy (Phase 4) filters tasks down to <code>client_visible</code>-only.</p>
+<h3><code>project_events</code></h3>
+<p>Append-only audit log: <code>(id, project_id, event_type, actor_id, payload jsonb, occurred_at)</code>. Capped at <strong>500 entries per project</strong> by the <code>append_project_event</code> SECURITY DEFINER RPC (oldest pruned when overflowing).</p>
+<p><strong>Emitted event types</strong> (by triggers on the source tables):</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Events</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>projects</code></td>
+<td><code>project.created</code>, <code>project.status_changed</code>, <code>project.budget_changed</code>, <code>project.deadline_changed</code></td>
+</tr>
+<tr>
+<td><code>project_rooms</code></td>
+<td><code>room.added</code>, <code>room.removed</code></td>
+</tr>
+<tr>
+<td><code>moodboards</code></td>
+<td><code>moodboard.attached</code>, <code>moodboard.detached</code></td>
+</tr>
+<tr>
+<td><code>quotes</code></td>
+<td><code>quote.attached</code>, <code>quote.detached</code>, <code>quote.status_changed</code>, <code>quote.revised</code></td>
+</tr>
+<tr>
+<td><code>project_tasks</code></td>
+<td><code>task.created</code>, <code>task.completed</code>, <code>task.deleted</code>, <code>subtask.created</code>, <code>subtask.completed</code>, <code>subtask.deleted</code></td>
+</tr>
+</tbody></table>
+<p>Each row carries a <code>payload jsonb</code> with the fields relevant to that event (e.g. <code>quote.status_changed</code> carries <code>quote_id, name, from, to, grand_total, currency</code>).</p>
+<h3><code>project_collaborators</code> (Phase 4 — passwordless invites)</h3>
+<p><code>(id, project_id, email, user_id, share_token, role, invited_by, invited_at, accepted_at, revoked_at, expires_at, message, created_at)</code></p>
+<ul>
+<li><code>email</code> is the load-bearing identity (immutable from the moment of invite).</li>
+<li><code>user_id</code> stays NULL until the invitee signs in via OTP and accepts.</li>
+<li><code>share_token</code> is a UUID embedded in the public invite URL.</li>
+<li><code>expires_at</code> defaults to <code>invited_at + 90 days</code>.</li>
+<li><code>role</code> is reserved for future use (currently only <code>client</code>).</li>
+</ul>
+<hr>
+<h2>RLS model</h2>
+<p><strong>Owner-all</strong> (Phase 1): <code>user_id = auth.uid()</code> gets full ALL on <code>projects</code> / <code>project_rooms</code> / <code>project_tasks</code> / (via parent project lookup) <code>project_events</code>.</p>
+<p><strong>Collaborator-read</strong> (Phase 4): five additional permissive SELECT policies on <code>projects</code> / <code>project_rooms</code> / <code>project_tasks</code> (filtered to <code>client_visible</code>) / <code>moodboards</code> / <code>moodboard_items</code> / <code>moodboard_presentation_sheets</code> / <code>quotes</code>, gated on the EXISTS predicate:</p>
+<pre><code class="language-sql">EXISTS (
+  SELECT 1 FROM public.project_collaborators pc
+  WHERE pc.project_id = &lt;table&gt;.project_id
+    AND pc.user_id = auth.uid()
+    AND pc.revoked_at IS NULL
+    AND (pc.expires_at IS NULL OR pc.expires_at &gt; now())
+)
+</code></pre>
+<p>Tasks add the extra <code>visibility = &#39;client_visible&#39;</code> filter so internal tasks stay hidden.</p>
+<p><strong>Note</strong>: <code>quote_items</code> is intentionally <strong>not</strong> in the collaborator-read set. Collaborators can see that a quote exists (<code>name</code>, <code>status</code>, <code>grand_total</code>) but not its line items. That keeps the internal pricing surface hidden by default. Adjust deliberately if you need to expose it.</p>
+<hr>
+<h2>RPCs</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Returns</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>append_project_event(project_id, event_type, actor_id, payload)</code></td>
+<td>uuid</td>
+<td>SECURITY DEFINER. Caps the timeline at 500 events per project.</td>
+</tr>
+<tr>
+<td><code>accept_project_invitation(share_token)</code></td>
+<td>TABLE(project_id, project_name)</td>
+<td>SECURITY DEFINER. Verifies the JWT <code>email</code> matches the invitation, stamps <code>user_id</code> + <code>accepted_at</code>.</td>
+</tr>
+<tr>
+<td><code>get_project_invitation_preview(share_token)</code></td>
+<td>TABLE(project_name, project_id, invited_email_masked, invited_by_name, expires_at, is_revoked, is_expired)</td>
+<td>SECURITY DEFINER. Pre-auth lookup for the public landing page. Grant: <code>anon, authenticated</code>.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Triggers</h2>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>When</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>quotes_refresh_project_budget_iu</code> / <code>_d</code></td>
+<td>After INSERT/UPDATE OF (status, project_id, grand_total) / DELETE on <code>quotes</code></td>
+<td>Recomputes <code>projects.actual_amount</code> + <code>accepted_quote_count</code> + <code>last_activity_at</code>. Handles cross-project moves.</td>
+</tr>
+<tr>
+<td><code>moodboards_refresh_project_count_iu</code> / <code>_d</code></td>
+<td>Same for <code>moodboards</code></td>
+<td>Recomputes <code>projects.moodboard_count</code>.</td>
+</tr>
+<tr>
+<td><code>project_tasks_depth_cap</code></td>
+<td>Before INSERT/UPDATE OF parent_task_id</td>
+<td>Enforces max 1 level of nesting + same-project constraint.</td>
+</tr>
+<tr>
+<td><code>project_tasks_completed_at</code></td>
+<td>Before INSERT/UPDATE OF status</td>
+<td>Auto-stamps <code>completed_at</code> on flip to/from <code>done</code>.</td>
+</tr>
+<tr>
+<td><code>projects_log_events</code></td>
+<td>After INSERT/UPDATE on <code>projects</code></td>
+<td>Writes <code>project.created</code> / <code>status_changed</code> / <code>budget_changed</code> / <code>deadline_changed</code> to <code>project_events</code>.</td>
+</tr>
+<tr>
+<td><code>project_rooms_log_events</code></td>
+<td>After INSERT/DELETE on <code>project_rooms</code></td>
+<td>Writes <code>room.added</code> / <code>room.removed</code>.</td>
+</tr>
+<tr>
+<td><code>moodboards_log_project_events</code></td>
+<td>After INSERT/UPDATE OF project_id on <code>moodboards</code></td>
+<td>Writes <code>moodboard.attached</code> / <code>moodboard.detached</code>.</td>
+</tr>
+<tr>
+<td><code>quotes_log_project_events</code></td>
+<td>After INSERT/UPDATE OF (project_id, status) on <code>quotes</code></td>
+<td>Writes <code>quote.attached</code> / <code>detached</code> / <code>status_changed</code> / <code>revised</code> (the last when <code>parent_quote_id IS NOT NULL</code>).</td>
+</tr>
+<tr>
+<td><code>project_tasks_log_events</code></td>
+<td>After INSERT/UPDATE OF status / DELETE on <code>project_tasks</code></td>
+<td>Writes <code>task.created</code> / <code>completed</code> / <code>deleted</code> (or the <code>subtask.*</code> variants).</td>
+</tr>
+<tr>
+<td>Trigger functions for <code>updated_at</code></td>
+<td>Before UPDATE on each of the new tables</td>
+<td>Single shared <code>_projects_touch_updated_at()</code> function.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Service layer</h2>
+<p><a href="../src/modules/projects/services/projectsService.ts"><code>src/modules/projects/services/projectsService.ts</code></a> — single class with three concerns:</p>
+<ol>
+<li><strong>CRUD</strong> for projects / rooms / tasks (<code>listProjects</code>, <code>getProject</code>, <code>createProject</code>, <code>updateProject</code>, <code>archiveProject</code>, <code>listRooms</code>, <code>createRoom</code>, …).</li>
+<li><strong>Rollups</strong>: <code>getRoomBudgetSummary(projectId)</code> aggregates <code>accepted</code> quote-item <code>line_total</code> per <code>room_id</code>.</li>
+<li><strong>Collaborators</strong>: <code>inviteCollaborator</code>, <code>listCollaborators</code>, <code>revokeCollaborator</code>, <code>resendCollaboratorInvite</code>, <code>getInvitationPreview</code>, <code>acceptInvitation</code>, <code>isCollaborator</code>.</li>
+</ol>
+<p>It talks to Supabase directly (anon key for authenticated user reads/writes, RLS enforces ownership). The invite email is sent via the <code>email-api</code> edge function.</p>
+<hr>
+<h2>Collaborator invitation flow (Phase 4 — passwordless)</h2>
+<ol>
+<li><strong>Owner</strong> clicks <strong>Invite client</strong> on <code>/projects/:id</code>. Modal opens → owner types email + optional message → submit.</li>
+<li>We <code>INSERT INTO project_collaborators (project_id, email, invited_by, message)</code>. The DB defaults <code>share_token</code> + <code>expires_at</code>.</li>
+<li>We dispatch a branded HTML email via <code>email-api?action=send</code> with a link to <code>/projects/invite/{share_token}</code>.</li>
+<li><strong>Invitee</strong> opens the link → public <a href="../src/modules/projects/pages/InviteLandingPage.tsx">InviteLandingPage</a>. The page calls <code>get_project_invitation_preview</code> (no auth required) to render the project name + a masked email (<code>ba••••@gmail.com</code>) so the invitee can confirm they&#39;re at the right invite.</li>
+<li>Invitee types their email → submit → we call <code>supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: &#39;/projects/accept-invite?token=…&#39; } })</code>. Supabase sends a magic link.</li>
+<li>Invitee clicks the magic link → Supabase auth exchanges the OTP for a session and redirects to <a href="../src/modules/projects/pages/AcceptInvitePage.tsx">AcceptInvitePage</a>.</li>
+<li>AcceptInvitePage calls the <code>accept_project_invitation(share_token)</code> RPC. The RPC checks <code>auth.jwt() -&gt;&gt; &#39;email&#39;</code> matches <code>project_collaborators.email</code>, then stamps <code>user_id = auth.uid()</code> + <code>accepted_at = now()</code>. RLS now grants read access.</li>
+<li>Redirect to <code>/projects/:id</code>. The same <code>ProjectDetailPage</code> renders, but the <code>isOwner</code> check is false → collaborator-only UI (no Timeline tab, no budget, no internal tasks, no add/edit/delete controls).</li>
+</ol>
+<p><strong>Security</strong>: 2-factor — possession of the share-token link AND control of the matching email inbox. Either alone isn&#39;t enough. Revocation is immediate (RLS checks <code>revoked_at IS NULL</code> on every query).</p>
+<hr>
+<h2>Quote revisions (Phase 2)</h2>
+<p><code>quotes.parent_quote_id</code> + <code>quotes.revision_number</code> form a per-quote revision chain. &quot;Issue Revision&quot; on <code>QuoteDetailAdminPage</code> clones the source quote + all items, links the new row to the chain root, bumps <code>revision_number</code>, status = <code>draft</code>. The project&#39;s <code>QuotesTab</code> groups quotes by chain root and renders them as <code>rev 1 → rev 2 → rev 3</code> so the audit trail of &quot;what was sent, when, accepted by whom&quot; stays intact.</p>
+<hr>
+<h2>Structured rooms on quote items (Phase 2 — partially shipped)</h2>
+<p><code>quote_items.room_id</code> (FK → <code>project_rooms</code>, ON DELETE SET NULL) co-exists with the legacy freeform <code>quote_items.room</code> text column. The <code>quote_items_with_room</code> view exposes <code>effective_room_name = COALESCE(joined room.name, freeform string)</code> so consumers can switch transparently.</p>
+<p><strong>Status:</strong> the column + view + service support are live. The structured-room-picker UI swap in <code>AddProductsSheet</code> is a deferred follow-up — the freeform text input still works.</p>
+<hr>
+<h2>KAI agent integration</h2>
+<p>Four tools on the <code>kai</code> + <code>interior-designer</code> agents. Source: <a href="../supabase/functions/_shared/tools/project-tools.ts">supabase/functions/_shared/tools/project-tools.ts</a>. All are 0 credits (DB-only) and module-gated on <code>projects</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>When the agent should call it</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>create_project(name, description?, deadline?, budget_amount?, budget_currency?, rooms[]?)</code></td>
+<td>User says &quot;start a project for X&quot;</td>
+<td>Rooms only when explicitly listed.</td>
+</tr>
+<tr>
+<td><code>list_my_projects(include_archived?)</code></td>
+<td>&quot;what am I working on&quot;, &quot;show my projects&quot;</td>
+<td>Returns budget + deadline + counts.</td>
+</tr>
+<tr>
+<td><code>find_project(query)</code></td>
+<td>Before any project-scoped action when project is referenced by name</td>
+<td>Fuzzy name match, max 5 results.</td>
+</tr>
+<tr>
+<td><code>add_task(project_id ∣ project_name, title, parent_task_id?, room_name?, due_date?, visibility?)</code></td>
+<td>&quot;remind me to X for [project]&quot;</td>
+<td>Resolves project + room by name internally. Pass <code>parent_task_id</code> for subtasks.</td>
+</tr>
+</tbody></table>
+<p>A KAI prompt addendum (idempotent block <code>--BEGIN_PROJECT_WORKSPACE_ADDENDUM--</code>) teaches both agents the natural-language mappings to these tools.</p>
+<hr>
+<h2>Frontend pages + components</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="../src/modules/projects/pages/ProjectsListPage.tsx">pages/ProjectsListPage.tsx</a></td>
+<td>Card grid with budget bar + deadline countdown.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/pages/ProjectDetailPage.tsx">pages/ProjectDetailPage.tsx</a></td>
+<td>7 tabs. <code>isOwner</code> check switches between owner UX and collaborator UX.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/pages/InviteLandingPage.tsx">pages/InviteLandingPage.tsx</a></td>
+<td>Public, no auth. Pre-auth invitation preview + email entry.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/pages/AcceptInvitePage.tsx">pages/AcceptInvitePage.tsx</a></td>
+<td>Magic-link redirect target. Calls <code>accept_project_invitation</code>.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/components/CreateProjectModal.tsx">components/CreateProjectModal.tsx</a></td>
+<td>Wizard: name + client + rooms + deadline + budget. Calls <code>useUserRole()</code> to switch the client picker between admin/simple modes.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/components/ClientPicker.tsx">components/ClientPicker.tsx</a></td>
+<td>Admin mode: B2B/B2C tabs over full CRM. Simple mode: contact-only, scoped to user&#39;s own contacts, with inline &quot;+ Add new client&quot; form.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/components/ProjectPickerInline.tsx">components/ProjectPickerInline.tsx</a></td>
+<td>Reusable picker embedded in <code>CreateQuoteModal</code> + <code>AddToMoodboardModal</code> so existing flows can attach to a project.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/components/InviteCollaboratorsModal.tsx">components/InviteCollaboratorsModal.tsx</a></td>
+<td>Owner-only invite/list/revoke/resend/copy-link.</td>
+</tr>
+<tr>
+<td><a href="../src/modules/projects/components/tabs/">components/tabs/</a></td>
+<td>Seven tab components: Overview / Rooms / Moodboards / Quotes / Sheets / Tasks / Timeline. Each accepts <code>isOwner</code> for collaborator-aware rendering.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Integration points with other modules</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Integration</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Moodboards</strong></td>
+<td><code>moodboards.project_id</code> + <code>room_id</code> columns. <code>AddToMoodboardModal</code> shows the project picker on the new-moodboard branch. <code>MoodboardsTab</code> in the project lists every linked moodboard.</td>
+</tr>
+<tr>
+<td><strong>Quotes</strong></td>
+<td><code>quotes.project_id</code> column. <code>CreateQuoteModal</code> shows the project picker. <code>QuotesTab</code> groups quotes by revision chain. Quote acceptance feeds <code>projects.actual_amount</code> via trigger.</td>
+</tr>
+<tr>
+<td><strong>CRM</strong></td>
+<td><code>projects.client_company_id</code> XOR <code>client_contact_id</code> (mirrors <code>quotes</code> pattern). Owner picker hits the full CRM; non-admin picker is scoped to the user&#39;s own contacts with inline add-new.</td>
+</tr>
+<tr>
+<td><strong>Presentation sheets</strong></td>
+<td><code>SheetsTab</code> rolls up <code>moodboard_presentation_sheets</code> across every moodboard attached to the project.</td>
+</tr>
+<tr>
+<td><strong>KAI agent</strong></td>
+<td>Four tools listed above + system-prompt addendum on <code>kai</code> + <code>interior-designer</code>.</td>
+</tr>
+<tr>
+<td><strong>email-api</strong></td>
+<td>Used by both the frontend service AND the MIVAA wrapper to send branded HTML invite emails. No template needed (HTML is rendered inline).</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>What we deliberately don&#39;t do</h2>
+<ul>
+<li><strong>No forced backfill.</strong> Existing moodboards and quotes created before Projects shipped stay project-less.</li>
+<li><strong>Projects ≠ workspaces.</strong> Workspace = tenant/org boundary. Project = one engagement inside the workspace.</li>
+<li><strong>No hard delete via API.</strong> Archive only — the financial / audit history is load-bearing.</li>
+<li><strong>Quote line items are not exposed to collaborators.</strong> They see quote name + status + total only.</li>
+<li><strong>No collaborator write access.</strong> Read-only by design; comments/approval is a future feature (issue #2 in the brainstorm).</li>
+<li><strong>No realtime collaboration.</strong> Standard cache-invalidate-on-action; no presence channels.</li>
+</ul>
+<hr>
+<h2>Operational notes</h2>
+<ul>
+<li>The MIVAA wrapper at <code>/api/v1/projects/*</code> requires <code>PUBLIC_APP_URL</code> env var on the MIVAA host so the invite emails point at production (falls back to <code>https://app.materialshub.gr</code>).</li>
+<li>Frontend invite emails read <code>VITE_PUBLIC_APP_URL</code> (build-time env var, falls back to <code>window.location.origin</code>).</li>
+<li>After applying any migration touching projects, regenerate <code>src/integrations/supabase/types.ts</code> to drop the <code>as any</code> casts in <code>projectsService.ts</code> — non-blocking, runtime works without it.</li>
+<li>Edge functions touched: <code>agent-chat</code> (added 4 KAI tools) + <code>email-api</code> (used for invites, no changes). Deploy <code>agent-chat</code> to bring the agent tools live.</li>
+</ul>
+<hr>
+<h2>Pending follow-ups (not shipped)</h2>
+<ul>
+<li><strong>Structured room picker on <code>AddProductsSheet</code></strong> — DB column ready, UI swap not done. Freeform <code>quote_items.room</code> text still works.</li>
+<li><strong>Client share + approval flow</strong> (issue #2 in the brainstorm) — read-only collaborator surface is live (Phase 4); per-item comments + approve/reject is the natural next layer on top.</li>
+<li><strong>AgentHub rich-card chunk renderer for <code>project_created</code></strong> — agent&#39;s text reply works fine, cards are polish.</li>
+<li><strong>Activity surface for collaborators</strong> — they currently can&#39;t see Timeline events. A <code>client_visible_events</code> filter would be the equivalent of <code>client_visible</code> on tasks.</li>
+<li><strong>External-API collaborator acceptance via partner credentials</strong> — today the invitee MUST go through Supabase OTP. A future API could let a partner accept on the invitee&#39;s behalf via the share_token + a verified-email assertion.</li>
+</ul>
+<hr>
+<h2>See also</h2>
+<ul>
+<li><a href="api/projects-api.html">docs/api/projects-api.md</a> — full external API reference (Bearer <code>kai_*</code> partner endpoints).</li>
+<li><a href="../src/modules/projects/">src/modules/projects/</a> — frontend source.</li>
+<li><a href="../supabase/functions/_shared/tools/project-tools.ts">supabase/functions/_shared/tools/project-tools.ts</a> — KAI agent tools.</li>
+<li><a href="../mivaa-pdf-extractor/app/api/project_tracking_routes.py">mivaa-pdf-extractor/app/api/project_tracking_routes.py</a> — Python MIVAA wrapper.</li>
+<li>Phase 1 → 4 migrations (apply order):<ul>
+<li><code>projects_module_phase_1</code> — tables, columns, triggers, RLS.</li>
+<li><code>projects_module_phase_2</code> — quote revisions + <code>quote_items.room_id</code>.</li>
+<li><code>projects_module_phase_3</code> — <code>project_events</code> + timeline triggers.</li>
+<li><code>projects_module_phase_4_collaborators</code> — invitations + accept/preview RPCs + collaborator-read RLS.</li>
+</ul>
+</li>
+</ul>
+
+</div></body></html>
