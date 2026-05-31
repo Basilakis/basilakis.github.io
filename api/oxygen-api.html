@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Oxygen API</h1>
+<p><strong>Edge Function:</strong> <code>oxygen-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/oxygen-api</code></p>
+<p>Wrapper around the Greek e-invoicing provider (oxygen.gr). Admin-only.</p>
+<h2>Actions</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Body</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>create_pre_invoice</code></td>
+<td><code>{ quote_id }</code></td>
+<td>Pushes the accepted quote to Oxygen as a notice (pre-invoice). Idempotent — once <code>quotes.oxygen_notice_id</code> is set, returns the existing id without external calls.</td>
+</tr>
+<tr>
+<td><code>get_settings</code></td>
+<td><code>{}</code></td>
+<td>Reads <code>OXYGEN_API_KEY</code> / <code>OXYGEN_API_BASE_URL</code> / default tax + warehouse from <code>platform_secrets</code>. Masks sensitive values.</td>
+</tr>
+<tr>
+<td><code>save_settings</code></td>
+<td><code>{ apiKey?, apiBaseUrl?, defaultTaxId24?, defaultWarehouseId? }</code></td>
+<td>Persists to <code>platform_secrets</code>.</td>
+</tr>
+<tr>
+<td><code>list_taxes</code></td>
+<td><code>{ apiBaseUrl, apiKey }</code></td>
+<td>Calls Oxygen <code>/taxes</code> and returns the list.</td>
+</tr>
+<tr>
+<td><code>list_warehouses</code></td>
+<td><code>{ apiBaseUrl, apiKey }</code></td>
+<td>Calls Oxygen <code>/warehouses</code> and returns the list.</td>
+</tr>
+<tr>
+<td><code>test_connection</code></td>
+<td><code>{ apiBaseUrl, apiKey }</code></td>
+<td>Verifies a valid Oxygen endpoint + key combination.</td>
+</tr>
+</tbody></table>
+<h2>Authentication</h2>
+<p>Bearer JWT with <code>admin</code> or <code>super_admin</code> role.</p>
+<pre><code class="language-http">POST /functions/v1/oxygen-api
+Authorization: Bearer &lt;supabase_access_token&gt;
+Content-Type: application/json
+
+{ &quot;action&quot;: &quot;create_pre_invoice&quot;, &quot;quote_id&quot;: &quot;uuid&quot; }
+</code></pre>
+<h2>Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td>Invalid JSON or missing required fields (e.g. <code>quote_id</code>)</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Unauthorized</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Role mismatch</td>
+</tr>
+<tr>
+<td>409</td>
+<td>Quote is not in an Oxygen-pushable state (status ≠ accepted)</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Oxygen API error or internal failure</td>
+</tr>
+</tbody></table>
+
+</div></body></html>
