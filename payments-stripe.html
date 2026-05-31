@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Payments — Stripe</h1>
+<p>Stripe as a payment provider. Sibling to the parent <a href="payments.html">Payments module</a>; registers itself via <code>provides.payments = true</code> in its manifest. Owns Stripe-specific config, secrets, and the existing edge functions (<code>stripe-checkout</code>, <code>stripe-webhooks</code>, <code>stripe-customer-portal</code>, <code>finance-pay-invoice</code>).</p>
+<p>For the umbrella architecture — registry, multi-provider model, ERP routing, business identity — see <a href="payments.html">docs/payments.md</a>. This doc covers Stripe specifics only.</p>
+<hr>
+<h2>Overview</h2>
+<p>The platform&#39;s Stripe integration was scattered across edge functions + platform-wide secrets before being formalised as a module. Nothing about the runtime behaviour changed in the split — <code>stripe-checkout</code> still mints Checkout sessions, <code>stripe-webhooks</code> still reconciles <code>payment_intent.succeeded</code> events, <code>finance-pay-invoice</code> still mints public pay-tokens for customer invoice payment. The module is the <strong>config + UI surface</strong>, not the runtime.</p>
+<p>Why this is its own module instead of a tab inside the parent Payments module:</p>
+<ol>
+<li><strong>Pluggability</strong> — future PayPal / Adyen / Viva / bank-transfer slot in as siblings (<code>payments-paypal/</code>, <code>payments-adyen/</code>) with their own manifests, edge functions, secrets, and Settings UIs. Same shape as Stripe.</li>
+<li><strong>Per-provider toggling</strong> — admins can disable Stripe without disabling the parent Payments module.</li>
+<li><strong>Secret scoping</strong> — STRIPE_* keys live under <code>primary_module_slug=&#39;payments-stripe&#39;</code>. A future <code>payments-paypal</code> would scope its secrets to its own slug. No cross-contamination on the Keys tabs.</li>
+</ol>
+<p><strong>Routes:</strong> No top-level routes. Reachable at:</p>
+<ul>
+<li><code>/admin/modules</code> → Stripe card → Keys icon</li>
+<li><code>/admin/modules/payments-stripe/settings</code> → 2 tabs: Keys / Configure</li>
+</ul>
+<p><strong>Module folder:</strong> <a href="../src/modules/payments-stripe/"><code>src/modules/payments-stripe/</code></a></p>
+<hr>
+<h2>Module shape</h2>
+<pre><code>src/modules/payments-stripe/
+├── manifest.json                          ← slug=&#39;payments-stripe&#39;, provides.payments=true
+├── index.ts                               ← registers Configure tab
+└── components/
+    └── StripeConfigPanel.tsx              ← webhook URL, dashboard links, product/price ID docs
+</code></pre>
+<p>Two tabs on <code>/admin/modules/payments-stripe/settings</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Source</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Keys</strong></td>
+<td>Auto-mounted by <code>ModuleSettingsPage</code> (renders <code>SecretsManagerCard</code>)</td>
+<td><code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code></td>
+</tr>
+<tr>
+<td><strong>Configure</strong></td>
+<td>This module&#39;s <code>StripeConfigPanel</code></td>
+<td>Webhook URL (with copy button), Stripe Dashboard quick links, list of product/price ID env vars</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Secrets</h2>
+<p>In <code>platform_secrets</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Sensitive</th>
+<th>Used by</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>STRIPE_SECRET_KEY</code></td>
+<td>✅</td>
+<td>All Stripe edge functions</td>
+<td>Primary scope: <code>payments-stripe</code>. Linked to: <code>payments</code> (parent visibility), <code>sales-finance</code> (invoice pay-token flow).</td>
+</tr>
+<tr>
+<td><code>STRIPE_WEBHOOK_SECRET</code></td>
+<td>✅</td>
+<td><code>stripe-webhooks</code></td>
+<td>Same scope as above. Validated at function startup; missing → boot fails loud.</td>
+</tr>
+</tbody></table>
+<p>Not in <code>platform_secrets</code> (env vars only on MIVAA + the checkout function — rotate from the Stripe Dashboard, no platform UI):</p>
+<table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>STRIPE_CREDITS_PRODUCT_ID</code></td>
+<td><code>stripe-checkout</code> (credit purchase mode)</td>
+</tr>
+<tr>
+<td><code>STRIPE_PRO_PRICE_ID</code></td>
+<td><code>stripe-checkout</code> (subscription mode — Pro tier)</td>
+</tr>
+<tr>
+<td><code>STRIPE_ENTERPRISE_PRICE_ID</code></td>
+<td><code>stripe-checkout</code> (subscription mode — Enterprise tier)</td>
+</tr>
+</tbody></table>
+<p>Env always wins over DB rows (<a href="../supabase/functions/_shared/secrets.ts"><code>_shared/secrets.ts → resolveSecret</code></a>). The bootstrap pattern (<a href="../supabase/functions/_shared/secrets-bootstrap.ts"><code>_shared/secrets-bootstrap.ts</code></a>) loads <code>platform_secrets</code> into <code>Deno.env</code> at function start — so when a function reads <code>Deno.env.get(&#39;STRIPE_SECRET_KEY&#39;)</code>, it sees env first OR the DB row if env was unset. The <code>primary_module_slug</code> field only controls UI grouping; the secret&#39;s <code>key</code> is the runtime identifier.</p>
+<hr>
+<h2>Edge functions (live in <code>supabase/functions/</code> — not under the module folder)</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stripe-api</code></td>
+<td><a href="../supabase/functions/stripe-api/"><code>supabase/functions/stripe-api/</code></a></td>
+<td>Unified action-dispatch endpoint. Body <code>{action: &#39;checkout&#39; | &#39;customer_portal&#39;, ...}</code>. Creates Checkout sessions for credit purchases + subscriptions, opens Stripe&#39;s customer billing portal. Auth: JWT or admin key.</td>
+</tr>
+<tr>
+<td><code>stripe-webhooks</code></td>
+<td><a href="../supabase/functions/stripe-webhooks/"><code>supabase/functions/stripe-webhooks/</code></a></td>
+<td>Handles <code>payment_intent.succeeded</code>, <code>checkout.session.completed</code>, <code>customer.subscription.*</code>, <code>invoice.payment_failed</code>. Auth: HMAC signature against <code>STRIPE_WEBHOOK_SECRET</code>. Kept separate from <code>stripe-api</code> for security boundary + Stripe Dashboard URL stability (see <a href="api/stripe-api.html">stripe-api.md</a> for rationale).</td>
+</tr>
+<tr>
+<td><code>finance-pay-invoice</code></td>
+<td><a href="../supabase/functions/finance-pay-invoice/"><code>supabase/functions/finance-pay-invoice/</code></a></td>
+<td>Mints invoice pay-tokens (admin auth) + creates Checkout sessions for customer-initiated invoice payment (public token auth). Webhook reconciles back to <code>payments</code> + <code>payment_allocations</code>.</td>
+</tr>
+</tbody></table>
+<p>The edge functions stay co-located under <code>supabase/functions/</code> rather than moving into the module folder — they&#39;re deployed via Supabase&#39;s per-function deploy command, referenced from <code>deploy.yml</code> / <code>main.py</code> / <code>agent-chat</code>, and relocating them would be churn for zero behavior change.</p>
+<h3>Canonical shared helper</h3>
+<p>New Stripe-touching code should use <strong><a href="../supabase/functions/_shared/stripe-clients.ts"><code>_shared/stripe-clients.ts</code></a></strong> — single source of truth for the lazy-getter pattern (<code>getStripe()</code>, <code>getSupabase()</code>, <code>noPaymentProviderResponse()</code>). See <a href="payments.html#shared-edge-function-helper">docs/payments.md → Shared edge-function helper</a> for the call-site pattern and rationale.</p>
+<p>Migration of the four existing Stripe-touching functions to this helper is a tracked follow-up — the helper is ready, the call-site swap is a small per-file edit.</p>
+<hr>
+<h2>Webhook setup</h2>
+<p>On the Configure tab, the panel shows a Webhook URL with a copy button:</p>
+<pre><code>https://&lt;your-project&gt;.supabase.co/functions/v1/stripe-webhooks
+</code></pre>
+<p>Steps to wire it up in the Stripe Dashboard:</p>
+<ol>
+<li>Navigate to Stripe Dashboard → Developers → Webhooks → Add endpoint</li>
+<li>Paste the URL from the Configure tab</li>
+<li>Select events: <code>payment_intent.succeeded</code>, <code>checkout.session.completed</code>, <code>customer.subscription.created</code>, <code>customer.subscription.updated</code>, <code>customer.subscription.deleted</code>, <code>invoice.payment_failed</code></li>
+<li>Copy the signing secret from Stripe</li>
+<li>Save it as <code>STRIPE_WEBHOOK_SECRET</code> on the Keys tab (or set as env var on MIVAA — env wins)</li>
+</ol>
+<hr>
+<h2>What this module does NOT do</h2>
+<ul>
+<li><strong>It does not handle invoice issuance.</strong> That&#39;s the <a href="payments.html">parent Payments module</a> (built-in invoicer) or an <a href="payments.html#two-capability-flags">ERP module</a> (Oxygen today; future Xero, QuickBooks, SAP). Stripe just charges the customer for whatever invoice / subscription / credit purchase exists.</li>
+<li><strong>It does not own business identity.</strong> Business name, VAT, address are on the parent Payments module → Business tab.</li>
+<li><strong>It does not declare <code>provides.invoicing</code>.</strong> Stripe is a payment processor, not an invoice generator. If Stripe ever offered an invoice-issuance product the platform wanted to use, the flag would be set then.</li>
+</ul>
+<hr>
+<h2>Migration history</h2>
+<p>The split from &quot;Stripe inside Payments&quot; → &quot;Stripe as its own module&quot; landed in <code>payments_stripe_module_split</code> (applied 2026-05-24). That migration:</p>
+<ul>
+<li>Inserted the <code>payments-stripe</code> row into <code>modules</code></li>
+<li>Updated <code>platform_secrets.primary_module_slug</code> for STRIPE_* keys from <code>&#39;payments&#39;</code> → <code>&#39;payments-stripe&#39;</code></li>
+<li>Added cross-links so STRIPE_* secrets remain visible from the parent Payments module&#39;s Keys tab and the Finance module&#39;s Keys tab</li>
+</ul>
+<p>See <a href="payments.html#migration-history">docs/payments.md → Migration history</a> for the full chain.</p>
+<hr>
+<h2>See also</h2>
+<ul>
+<li><a href="payments.html">docs/payments.md</a> — parent module + provider registry + ERP routing</li>
+<li><a href="billing-credits-system.html">docs/billing-credits-system.md</a> — subscription + credit purchase flows (Stripe Checkout details)</li>
+<li><a href="../src/modules/payments-stripe/components/StripeConfigPanel.tsx">src/modules/payments-stripe/components/StripeConfigPanel.tsx</a> — panel source</li>
+<li><a href="../supabase/functions/stripe-checkout/index.ts">supabase/functions/stripe-checkout/index.ts</a> — Checkout session creation</li>
+<li><a href="../supabase/functions/stripe-webhooks/index.ts">supabase/functions/stripe-webhooks/index.ts</a> — webhook handler</li>
+</ul>
+
+</div></body></html>
