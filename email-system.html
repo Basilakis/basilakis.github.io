@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Email System</h1>
 <p>Complete documentation for the Resend email system with domain management, template management, and delivery analytics.</p>
 <blockquote>
@@ -31,10 +33,10 @@
 <blockquote>
 <p><strong>📚 Related Documentation:</strong></p>
 <ul>
-<li><a href="./campaign-system.md">Campaign System</a> - Email campaign management</li>
-<li><a href="./deployment-guide.md">Deployment Guide</a> - Supabase Secrets configuration</li>
-<li><a href="./api-endpoints.md">API Endpoints</a> - Complete API reference</li>
-<li><a href="./system-architecture.md">System Architecture</a> - Platform overview</li>
+<li><a href="./campaign-system.html">Campaign System</a> - Email campaign management</li>
+<li><a href="./deployment-guide.html">Deployment Guide</a> - Supabase Secrets configuration</li>
+<li><a href="./api-endpoints.html">API Endpoints</a> - Complete API reference</li>
+<li><a href="./system-architecture.html">System Architecture</a> - Platform overview</li>
 </ul>
 </blockquote>
 <hr>
@@ -77,9 +79,9 @@
 <h3>System Overview</h3>
 <p>┌─────────────────────────────────────────────────────────────┐
 │ FRONTEND (React)                                            │
-│ ├─ Email Service (src/services/email/emailService.ts)      │
+│ ├─ Email Service (src/modules/email/services/emailService.ts) │
 │ ├─ Admin Dashboard (/admin/emails)                         │
-│ └─ React Email Templates (src/services/email/templates/)   │
+│ └─ React Email Templates (src/modules/email/services/templates/) │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -106,7 +108,7 @@
 └─────────────────────────────────────────────────────────────┘</p>
 <h3>Components</h3>
 <h4>1. Frontend Service Layer</h4>
-<p><strong>Location:</strong> <code>src/services/email/emailService.ts</code></p>
+<p><strong>Location:</strong> <code>src/modules/email/services/emailService.ts</code></p>
 <ul>
 <li>Calls Supabase Edge Functions (NO direct AWS SDK)</li>
 <li>Type-safe interfaces for all operations</li>
@@ -132,7 +134,7 @@
 <li>Track email lifecycle</li>
 </ul>
 <h4>3. React Email Templates</h4>
-<p><strong>Location:</strong> <code>src/services/email/templates/</code></p>
+<p><strong>Location:</strong> <code>src/modules/email/services/templates/</code></p>
 <ul>
 <li><code>BaseEmailTemplate.tsx</code> - Base layout with branding</li>
 <li><code>WelcomeEmail.tsx</code> - Welcome email template</li>
@@ -140,7 +142,7 @@
 <li>Template registry in <code>index.ts</code></li>
 </ul>
 <h4>4. Admin Dashboard</h4>
-<p><strong>Location:</strong> <code>src/components/Admin/EmailManagement/</code></p>
+<p><strong>Location:</strong> <code>src/modules/email/components/</code></p>
 <ul>
 <li><strong>Analytics Tab</strong> - Delivery rates, charts, recommendations</li>
 <li><strong>Email Logs Tab</strong> - View all sent emails with filtering</li>
