@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Agent Chat — Partner API (kai_* keys)</h1>
+<p>Conversational access to the <strong>KAI agent</strong> (material intelligence, search, insights, research, analytics, SEO, B2B) and the <strong>Interior Designer agent</strong> (spatial analysis + room generation) over HTTP. Streaming NDJSON response. Multimodal — accepts user-attached images. Optional partner-supplied knowledge-base context block in the user message.</p>
+<blockquote>
+<p>This is the <strong>partner-facing</strong> doc for integrations using a <code>kai_*</code> Bearer key, parallel to the Price Tracking + Mention Tracking APIs.
+For the <strong>internal</strong> session-JWT version of the same endpoint (used by our own web app), see <a href="./agent-chat-api.html"><code>agent-chat-api.md</code></a>.</p>
+</blockquote>
+<p><strong>Host</strong>: <code>https://&lt;your-supabase-project&gt;.supabase.co</code>
+<strong>Endpoint</strong>: <code>POST /functions/v1/agent-chat</code>
+<strong>Auth scope</strong>: Partner integrations using an <code>api_keys</code> Bearer token (<code>kai_*</code> prefix), parallel to <code>/api/v1/prices/track/*</code> and <code>/api/v1/mentions/track/*</code>.</p>
+<hr>
+<h2>Changelog</h2>
+<h3>v0.1.0 — 2026-05-14 — Initial partner release</h3>
+<ul>
+<li>🆕 <strong>Partner kai_* Bearer auth</strong> added to <code>agent-chat</code>. Mirror of the auth used by <code>/api/v1/prices/track/*</code> and <code>/api/v1/mentions/track/*</code>. Validates against the same <code>public.api_keys</code> table.</li>
+<li>🆕 <strong>Per-turn credit debit</strong>: 10 credits charged on top of any per-tool credit costs that fire mid-turn. Refunded on hard pre-stream failure (agent crashed before producing any real content).</li>
+<li>🆕 <strong>Partner-mode permission lock</strong>: role forced to <code>member</code> server-side regardless of underlying user role. Admin-gated tools (B2B research, SEO article pipeline, sub-agent orchestration, dispatch_background_task, price_lookup, presentation catalogs) are unavailable to partner keys.</li>
+<li>🆕 <strong>Partner-allowed agents</strong>: <code>kai</code>, <code>interior-designer</code>. <code>demo</code> and legacy aliases (<code>search</code>, <code>insights</code>, <code>seo</code>) rejected.</li>
+</ul>
+<hr>
+<h2>Auth</h2>
+<pre><code>Authorization: Bearer kai_&lt;32-char-alphanumeric&gt;
+Content-Type: application/json
+</code></pre>
+<p>The key must be active and not expired. <code>allowed_endpoints</code> on the api_keys row must include <code>/functions/v1/agent-chat</code> (or a trailing-<code>*</code> prefix match), or be <code>NULL</code> (allow-all).</p>
+<p>Each call is billed against the api_key owner&#39;s user balance via <code>debit_user_credits</code>. Insufficient balance → <code>402 Payment Required</code> BEFORE the agent runs (no partial debit).</p>
+<hr>
+<h2>Cost</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Credits</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Per turn (kai or interior-designer)</td>
+<td><strong>10</strong></td>
+<td>Charged BEFORE the agent runs. Refunded if the agent crashes before producing any content.</td>
+</tr>
+<tr>
+<td>Per tool invocation</td>
+<td>varies</td>
+<td>Underlying tools that fire (<code>material_search</code>, <code>analyze_inspiration_url</code>, etc.) bill their own credits on top. Most search tools are 0 credits; sheet generation is 0–3 credits; mention tracking + LLM probes + Firecrawl are 1–15 credits.</td>
+</tr>
+<tr>
+<td>Per Anthropic + Voyage token</td>
+<td>passthrough</td>
+<td>Logged in <code>ai_usage_logs</code> against the api_key owner&#39;s user_id.</td>
+</tr>
+</tbody></table>
+<p>1 credit = $0.01.</p>
+<p>The 10-credit per-turn fee covers the orchestration overhead (system prompt, tool routing, conversation memory, streaming). Tools and AI usage are billed at their normal platform rates. There is no &quot;all-included&quot; rate — partner cost scales with what the agent actually does on each turn.</p>
+<hr>
+<h2>Quickstart</h2>
+<pre><code class="language-bash">curl -N -X POST https://&lt;your-project&gt;.supabase.co/functions/v1/agent-chat \
+  -H &quot;Authorization: Bearer kai_YOUR_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;agentId&quot;: &quot;kai&quot;,
+    &quot;messages&quot;: [
+      { &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Find me a matte black porcelain tile with a stone-look texture, 60×60.&quot; }
+    ]
+  }&#39;
+</code></pre>
+<p>Response is <strong>newline-delimited JSON</strong> (NDJSON). Each line is a single JSON object — parse line by line. Use <code>curl -N</code> (no buffering) to see chunks as they arrive.</p>
+<hr>
+<h2>Request body</h2>
+<pre><code class="language-ts">{
+  // REQUIRED — Anthropic-style chat history. System prompt is loaded server-side
+  // from the agent&#39;s database row; do NOT include a &#39;system&#39; role here.
+  messages: Array&lt;{ role: &#39;user&#39; | &#39;assistant&#39;, content: string }&gt;;
+
+  // REQUIRED — &#39;kai&#39; or &#39;interior-designer&#39;. Other values → 403.
+  agentId: &#39;kai&#39; | &#39;interior-designer&#39;;
+
+  // Optional — user-attached images as data URLs (data:image/jpeg;base64,...).
+  // Each image is forwarded to Claude as an image_url content block on the
+  // last user message.
+  images?: string[];
+
+  // Optional — a conversation identifier YOU control. Used to correlate
+  // multi-turn calls in our `ai_usage_logs` rows for your billing audit.
+  // Pass the same UUID on every call in a thread.
+  conversation_id?: string | null;
+
+  // Optional — array of catalog product image URLs (must be hosted by us).
+  // Used by the interior-designer agent for multi-reference room generation.
+  pinned_material_images?: string[];
+
+  // Optional — toolkit IDs the agent should preload. When null/empty the
+  // agent gets Core tools only (search, knowledge_base, inspiration analysis,
+  // presentation sheets) plus the `load_toolkit` meta-tool so it can request
+  // more on demand.
+  selected_toolkits?: string[] | null;
+
+  // Optional — explicit generation-mode override (interior-designer only).
+  // Most partners should leave this null and let the agent route on intent.
+  generation_mode?: &#39;restyle&#39; | &#39;staging&#39; | &#39;redesign&#39; | null;
+}
+</code></pre>
+<h3>Injecting partner knowledge-base context</h3>
+<p>If you want the agent to answer from YOUR knowledge base, do the retrieval on your side and inject the top chunks into the user&#39;s message:</p>
+<pre><code class="language-json">{
+  &quot;messages&quot;: [
+    {
+      &quot;role&quot;: &quot;user&quot;,
+      &quot;content&quot;: &quot;What&#39;s the bond strength of our XYZ adhesive on porcelain?\n\n&lt;knowledge_base&gt;\n[chunk 1: ...]\n[chunk 2: ...]\n[chunk 3: ...]\n&lt;/knowledge_base&gt;&quot;
+    }
+  ],
+  &quot;agentId&quot;: &quot;kai&quot;
+}
+</code></pre>
+<p>The agent will treat the <code>&lt;knowledge_base&gt;</code> block as authoritative context. No server-side change required. You own retrieval, embeddings, and access control on your side; we never touch your DB.</p>
+<hr>
+<h2>Response — NDJSON chunk stream</h2>
+<p>Each line is one JSON object. Read the stream until you see <code>{&quot;type&quot;:&quot;done&quot;}</code>. Possible chunk types:</p>
+<table>
+<thead>
+<tr>
+<th><code>type</code></th>
+<th>When it fires</th>
+<th>Use it for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>status</code></td>
+<td>Pre-execution, very first chunk</td>
+<td>Show &quot;Initializing...&quot; in your UI</td>
+</tr>
+<tr>
+<td><code>heartbeat</code></td>
+<td>Every 1s</td>
+<td>Keep your HTTP client alive; ignore in UI</td>
+</tr>
+<tr>
+<td><code>tool_call</code></td>
+<td>Agent invoked a tool</td>
+<td>Render &quot;Searching catalog...&quot; UX hint</td>
+</tr>
+<tr>
+<td><code>tool_call_ids</code></td>
+<td>Tool call IDs mapped</td>
+<td>(Internal; safe to ignore)</td>
+</tr>
+<tr>
+<td><code>tool_result</code></td>
+<td>Tool finished</td>
+<td>Render inline result card (see Tool-specific chunks below)</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td>LLM streamed a token chunk</td>
+<td>Append to the assistant message bubble</td>
+</tr>
+<tr>
+<td><code>final_result</code></td>
+<td>Turn complete</td>
+<td>Replace the streamed text with the canonical final text; payload also carries <code>materialResults</code>, <code>tool_results</code>, optional <code>generation_job</code></td>
+</tr>
+<tr>
+<td><code>done</code></td>
+<td>Stream finished</td>
+<td>Close the reader</td>
+</tr>
+</tbody></table>
+<h3>Tool-specific chunks (inline cards in our reference UI)</h3>
+<p>These emit alongside <code>tool_result</code> so your UI can render rich inline cards. Each carries its own payload shape — see the agent&#39;s source for the exact schema, or render the raw payload behind a collapsible block.</p>
+<ul>
+<li><code>search_spec</code> — explainable search spec the agent built before searching (color swatches, material/style tags, spec details)</li>
+<li><code>inspiration_analysis</code> — Firecrawl + Haiku design-token extraction from a URL the user shared</li>
+<li><code>mention_summary</code>, <code>mention_feed</code>, <code>mention_tracking_started</code>, <code>llm_visibility_result</code> — mention monitoring cards</li>
+<li><code>sheet_canvas_open</code> — interactive presentation sheet (lighting plan, annotated render, elevation pair) — partner UI needs to mount a canvas widget or present the inputs another way</li>
+<li><code>sheet_pdf_ready</code> — passive presentation sheet (material board, color palette, concept board, F&amp;E schedule, full deck) — payload has <code>pdf_url</code> + <code>page_count</code></li>
+<li><code>generation_job_created</code> — async image/video/3D generation kicked off; payload has <code>job_id</code> you poll separately</li>
+</ul>
+<h3>Final result payload</h3>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;final_result&quot;,
+  &quot;text&quot;: &quot;&lt;canonical assistant response&gt;&quot;,
+  &quot;agentId&quot;: &quot;kai&quot;,
+  &quot;model&quot;: &quot;claude-opus-4-7&quot;,
+  &quot;materialResults&quot;: [ /* if material_search fired */ ],
+  &quot;tool_results&quot;: [ /* every tool the agent called, with args + result */ ],
+  &quot;generation_job&quot;: null  // or { job_id, kind, ... } for async generation
+}
+</code></pre>
+<hr>
+<h2>Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Body</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>401</td>
+<td><code>{&quot;error&quot;:&quot;Invalid API key&quot;}</code></td>
+<td>Token not found / inactive</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>{&quot;error&quot;:&quot;API key expired&quot;}</code></td>
+<td><code>expires_at</code> in the past</td>
+</tr>
+<tr>
+<td>402</td>
+<td><code>{&quot;error&quot;:&quot;insufficient_credits&quot;,&quot;required_credits&quot;:10,&quot;current_balance&quot;:4}</code></td>
+<td>Balance &lt; per-turn cost. No debit happens.</td>
+</tr>
+<tr>
+<td>403</td>
+<td><code>{&quot;error&quot;:&quot;This API key does not permit access to agent-chat&quot;}</code></td>
+<td><code>allowed_endpoints</code> excludes this path</td>
+</tr>
+<tr>
+<td>403</td>
+<td><code>{&quot;error&quot;:&quot;Partner API keys may only call agents: kai, interior-designer...&quot;}</code></td>
+<td><code>agentId</code> rejected (demo / alias)</td>
+</tr>
+<tr>
+<td>500</td>
+<td><code>{&quot;error&quot;:&quot;...&quot;}</code></td>
+<td>Server-side error. <strong>If this happens before any streaming chunk, the per-turn credit is automatically refunded.</strong> Once streaming starts (any <code>tool_call</code>, <code>text</code>, <code>final_result</code>, etc. has been sent), the credit is non-refundable.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Tools available in partner mode</h2>
+<p>Partners run as the <code>member</code> role. Available tools:</p>
+<p><strong>Always available</strong></p>
+<ul>
+<li><code>knowledge_base_search</code> — search our material/product KB</li>
+<li><code>material_search</code> — 7-vector fusion search (text + visual + understanding + 4 aspects)</li>
+<li><code>visual_search</code> — image-as-query catalog search</li>
+<li><code>analyze_inspiration_url</code> — Firecrawl scrape + Haiku design-token extraction → product matching</li>
+<li><code>generate_presentation_sheet</code> — produce moodboard sheets (material_board, color_palette, concept_board, lighting_plan, annotated_render, elevation_render_pair, ffe_schedule, full_deck)</li>
+<li><code>seo_research_keyword</code> — research card for a keyword (DataForSEO + opportunity engine)</li>
+<li>Most SEO toolkit tools (keyword difficulty, SERP audit, domain snapshot, ranked keywords, backlinks, trends, YouTube/Reddit/Pinterest/Amazon/Trustpilot search) — 0-credit user-facing wrappers around DataForSEO</li>
+<li>Mention monitoring tools — <code>track_product_mentions</code>, <code>get_mention_summary</code>, <code>check_llm_visibility</code>, <code>find_negative_mentions</code></li>
+<li><code>interior-designer</code> only — <code>generate_3d</code>, <code>apply_lighting_preset</code>, <code>generate_vr_world</code></li>
+</ul>
+<p><strong>Blocked for partner keys</strong> (admin/owner-only — server-side gating via the <code>member</code> role lock)</p>
+<ul>
+<li><code>b2b_manufacturer_search</code>, <code>company_website_scrape</code>, <code>company_enrichment</code>, <code>contact_discovery</code>, <code>email_validate</code>, <code>save_to_crm</code></li>
+<li><code>research_analysis</code>, <code>analytics_analysis</code>, <code>business_analysis</code>, <code>product_analysis</code> (sub-agent orchestration)</li>
+<li><code>create_seo_article</code>, <code>seo_article_planner</code>, <code>seo_article_writer</code>, <code>seo_content_analyzer</code>, <code>seo_keyword_research</code></li>
+<li><code>dispatch_background_task</code></li>
+<li><code>price_lookup</code></li>
+<li>Presentation catalog tools (<code>create_catalog</code>, <code>attach_catalog_pdfs</code>, <code>extract_from_catalog_pdfs</code>, <code>translate_pdf_to_catalog</code>, <code>add_material_to_catalog</code>, <code>find_image_for_material</code>, <code>generate_catalog_pdf</code>, <code>publish_catalog</code>)</li>
+<li><code>seo_dataforseo_call</code> (DataForSEO escape hatch)</li>
+</ul>
+<p>If your integration needs anything in the blocked list, contact us — we can either lift the gate on a per-key basis or expose a narrower public surface for that capability.</p>
+<hr>
+<h2>Operational notes</h2>
+<ul>
+<li><strong>Rate limit</strong>: <code>rate_limit_override</code> on the api_keys row caps requests/minute (default 60, max 600). 429 is enforced upstream at the Supabase function gateway, not in this function.</li>
+<li><strong>Conversation memory</strong>: agent-chat persists conversation history server-side keyed by <code>conversation_id</code> (Supabase <code>conversations</code> + <code>conversation_messages</code> tables). If you pass the same <code>conversation_id</code> across turns, the agent will see prior context automatically — you don&#39;t need to replay every prior message in <code>messages</code>. If you don&#39;t pass it (or pass <code>null</code>), no server-side memory is written for that thread; you&#39;re responsible for sending the full message history yourself.</li>
+<li><strong>Long-running tools</strong>: some tools (3D generation, VR world generation, full-deck PDF) can take 30s–5min. The agent emits <code>generation_job_created</code> immediately with a <code>job_id</code> and returns; you poll a separate job-status endpoint for completion. This pattern keeps the agent turn snappy and your HTTP connection from timing out.</li>
+<li><strong>Multimodal</strong>: pass images as <code>data:image/jpeg;base64,...</code> data URLs in the <code>images</code> array. Forwarded as <code>image_url</code> blocks on the last user message. Recommended max 6 images per turn.</li>
+<li><strong>No automatic background calls</strong>: agent-chat is purely on-demand. Partners are never billed for cron-driven refreshes of agent state.</li>
+</ul>
+<hr>
+<h2>OpenAPI</h2>
+<p>There is no auto-generated OpenAPI spec for this endpoint today — it lives in a Supabase Edge Function (Deno), not the MIVAA FastAPI service that powers <code>/openapi.json</code>. A hand-written spec is on the v0.2.0 roadmap. For now, treat this document + the request/response shapes above as the source of truth.</p>
+<hr>
+<h2>Required api_keys row config</h2>
+<p>To enable a partner key for agent-chat:</p>
+<pre><code class="language-sql">update public.api_keys
+set is_active = true,
+    allowed_endpoints = array_append(coalesce(allowed_endpoints, &#39;{}&#39;), &#39;/functions/v1/agent-chat&#39;),
+    -- or set allowed_endpoints = null for allow-all (not recommended)
+    rate_limit_override = 60
+where api_key = &#39;kai_...&#39;;
+</code></pre>
+<p>The api_key owner&#39;s <code>user_credits.balance</code> must cover at least 10 credits at call time.</p>
+<hr>
+<h2>Comparison with our existing partner APIs</h2>
+<table>
+<thead>
+<tr>
+<th>Trait</th>
+<th><code>/api/v1/prices/track/*</code></th>
+<th><code>/api/v1/mentions/track/*</code></th>
+<th><code>/functions/v1/agent-chat</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Service</td>
+<td>MIVAA FastAPI</td>
+<td>MIVAA FastAPI</td>
+<td>Supabase Edge (Deno)</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td><code>kai_*</code> Bearer</td>
+<td><code>kai_*</code> Bearer</td>
+<td><code>kai_*</code> Bearer ✅ same</td>
+</tr>
+<tr>
+<td>Response</td>
+<td>JSON</td>
+<td>JSON</td>
+<td>NDJSON stream</td>
+</tr>
+<tr>
+<td>Billing</td>
+<td>per-call (2 / 5 / 15 credits)</td>
+<td>per-call (2 / 5 / 15 credits)</td>
+<td>per-turn (10 credits) + tool passthrough</td>
+</tr>
+<tr>
+<td>Refund on failure</td>
+<td>yes (no-op outcomes)</td>
+<td>yes (no-op outcomes)</td>
+<td>yes (pre-stream crash only)</td>
+</tr>
+<tr>
+<td>Auto-generated OpenAPI</td>
+<td>yes (<code>/openapi.json</code> tag filter)</td>
+<td>yes (<code>/openapi.json</code> tag filter)</td>
+<td><strong>no</strong> — hand-written reference</td>
+</tr>
+<tr>
+<td>Background work on partner subjects</td>
+<td>none for external keys</td>
+<td>none for external keys</td>
+<td>none</td>
+</tr>
+</tbody></table>
+
+</div></body></html>
