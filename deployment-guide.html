@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,14 +19,25 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Deployment Guide</h1>
 <h2>🔐 <strong>Complete Secrets Reference</strong></h2>
 <p><strong>All secrets required for deployment across all platforms.</strong></p>
+<blockquote>
+<p><strong>Resolution priority (platform-wide)</strong>: every edge function resolves secrets via <code>_shared/secrets.ts → resolveSecret(key)</code>, which checks the <strong>environment variable first</strong>, then the <code>platform_secrets</code> table as fallback. Env always wins. The <code>platform_secrets</code> table lets admins configure any non-env&#39;d key from the UI (<code>/admin/operations → Keys</code> for platform-wide keys, or each module&#39;s own Settings tab for module-specific keys) without a redeploy.</p>
+<p>Practical implications:</p>
+<ul>
+<li><strong>Production deployment</strong>: set env vars as you always have. The DB layer never overrides them.</li>
+<li><strong>Self-service config</strong>: leave env unset to let an admin configure a key from <code>/admin/operations → Keys</code> or the relevant module Settings tab.</li>
+<li><strong>Sensitive values are masked</strong> in admin GETs (<code>oxy_••••wxyz</code>). The full plaintext only leaves the edge function when it makes an outbound call.</li>
+<li>Module-specific keys (per-module API wrappers) live in each module&#39;s Settings tab. AI/Stripe/VAPID/cron keys live in <code>/admin/operations → Keys</code>.</li>
+</ul>
+</blockquote>
 <h3><strong>Supabase Secrets</strong></h3>
 <table>
 <thead>
@@ -313,31 +325,73 @@
 <td><code>pa-xxxxxxxxxxxxxxxx</code></td>
 </tr>
 <tr>
-<td><code>QWEN_ENDPOINT_URL</code></td>
-<td>Public</td>
-<td>Server ENV</td>
-<td>Qwen HuggingFace endpoint URL</td>
-<td><code>https://gbz6krk3i2is85b0.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+<td><del><code>QWEN_ENDPOINT_URL</code></del></td>
+<td>—</td>
+<td><strong>DEPRECATED 2026-05-01</strong></td>
+<td>The Qwen HF endpoint is no longer wired — vision moved to Anthropic Claude Opus 4.7 via tool use. Safe to remove from systemd unit at next deploy.</td>
+<td>—</td>
 </tr>
 <tr>
-<td><code>QWEN_ENDPOINT_TOKEN</code></td>
-<td><strong>Secret</strong></td>
-<td>Server ENV</td>
-<td>Qwen HuggingFace endpoint token</td>
-<td><code>hf_xxxxxxxxxxxxxxxx</code></td>
+<td><del><code>QWEN_ENDPOINT_NAME</code></del></td>
+<td>—</td>
+<td><strong>DEPRECATED 2026-05-01</strong></td>
+<td>(See above.)</td>
+<td>—</td>
 </tr>
 <tr>
-<td><code>QWEN_ENDPOINT_NAME</code></td>
-<td>Public</td>
-<td>Server ENV</td>
-<td>Qwen endpoint service name</td>
-<td><code>mh-qwen332binstruct</code></td>
+<td><del><code>QWEN_NAMESPACE</code></del></td>
+<td>—</td>
+<td><strong>DEPRECATED 2026-05-01</strong></td>
+<td>(See above.)</td>
+<td>—</td>
 </tr>
 <tr>
-<td><code>QWEN_NAMESPACE</code></td>
+<td><del><code>QWEN_MODEL</code></del></td>
+<td>—</td>
+<td><strong>DEPRECATED 2026-05-01</strong></td>
+<td>(See above.)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>YOLO_ENDPOINT_URL</code></td>
 <td>Public</td>
 <td>Server ENV</td>
-<td>Qwen endpoint namespace</td>
+<td>YOLO HF endpoint URL</td>
+<td><code>https://f763mkb5o68lmwtu.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+</tr>
+<tr>
+<td><code>YOLO_ENDPOINT_NAME</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>YOLO endpoint service name</td>
+<td><code>mh-yolo</code></td>
+</tr>
+<tr>
+<td><code>YOLO_NAMESPACE</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>YOLO endpoint namespace</td>
+<td><code>basiliskan</code></td>
+</tr>
+<tr>
+<td><code>CHANDRA_ENDPOINT_URL</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Chandra OCR HF endpoint URL</td>
+<td><code>https://v75ni2jqufw1mtad.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+</tr>
+<tr>
+<td><code>CHANDRA_ENDPOINT_NAME</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Chandra endpoint service name</td>
+<td><code>chandra-ocr-2</code></td>
+</tr>
+<tr>
+<td><code>CHANDRA_NAMESPACE</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>Chandra endpoint namespace</td>
 <td><code>basiliskan</code></td>
 </tr>
 <tr>
@@ -345,13 +399,13 @@
 <td>Public</td>
 <td>Server ENV</td>
 <td>SLIG HuggingFace endpoint URL</td>
-<td><code>https://xxxxxxxx.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+<td><code>https://f4kbl5do4tz6svct.us-east-1.aws.endpoints.huggingface.cloud</code></td>
 </tr>
 <tr>
 <td><code>SLIG_ENDPOINT_TOKEN</code></td>
 <td><strong>Secret</strong></td>
 <td>Server ENV</td>
-<td>SLIG HuggingFace endpoint token</td>
+<td>SLIG HuggingFace endpoint token (usually same as <code>HUGGING_FACE_ACCESS_TOKEN</code>)</td>
 <td><code>hf_xxxxxxxxxxxxxxxx</code></td>
 </tr>
 <tr>
@@ -359,7 +413,7 @@
 <td>Public</td>
 <td>Server ENV</td>
 <td>SLIG endpoint service name</td>
-<td><code>mh-siglip2</code></td>
+<td><code>mh-slig</code></td>
 </tr>
 <tr>
 <td><code>SLIG_NAMESPACE</code></td>
@@ -367,6 +421,20 @@
 <td>Server ENV</td>
 <td>SLIG endpoint namespace</td>
 <td><code>basiliskan</code></td>
+</tr>
+<tr>
+<td><code>HUGGING_FACE_ACCESS_TOKEN</code></td>
+<td><strong>Secret</strong></td>
+<td>Server ENV</td>
+<td>Single HF token used for the active endpoints (YOLO / Chandra v2 / SLIG resume + inference) — get from <a href="https://huggingface.co/settings/tokens">https://huggingface.co/settings/tokens</a>. Qwen retired 2026-05-01.</td>
+<td><code>hf_xxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>MAX_CONCURRENT_PRODUCTS</code></td>
+<td>Public</td>
+<td>Server ENV</td>
+<td>How many products process in parallel inside one PDF job. <strong>Set to <code>1</code> on a 4 GB droplet</strong> (anything higher hits cgroup MemoryHigh). Bump to 2-3 on 8 GB+</td>
+<td><code>1</code></td>
 </tr>
 <tr>
 <td><code>REPLICATE_API_TOKEN</code></td>
@@ -381,20 +449,6 @@
 <td>Server ENV</td>
 <td>Firecrawl API key for price scraping</td>
 <td><code>fc-xxxxxxxxxxxxxxxx</code></td>
-</tr>
-<tr>
-<td><code>GOOGLE_SHOPPING_API_KEY</code></td>
-<td><strong>Secret</strong></td>
-<td>Server ENV</td>
-<td>Google Shopping API key (optional)</td>
-<td><code>AIzaSyxxxxxxxxxxxxxxxx</code></td>
-</tr>
-<tr>
-<td><code>GOOGLE_SHOPPING_CX</code></td>
-<td><strong>Secret</strong></td>
-<td>Server ENV</td>
-<td>Google Custom Search Engine ID (optional)</td>
-<td><code>xxxxxxxxxxxxxxxx</code></td>
 </tr>
 <tr>
 <td><code>SENTRY_DSN</code></td>
@@ -449,8 +503,8 @@
 <td><code>VISION_GUIDED_MODEL</code></td>
 <td>Public</td>
 <td>Server ENV</td>
-<td>Vision model for image analysis</td>
-<td><code>claude-sonnet-4-6-20260217</code>, <code>gpt-4o</code>, <code>Qwen/Qwen2-VL-72B-Instruct</code></td>
+<td>Vision model for image analysis (post-2026-05-01: Anthropic-only)</td>
+<td><code>claude-opus-4-7</code> (default + recommended)</td>
 </tr>
 <tr>
 <td><code>VISION_GUIDED_CONFIDENCE_THRESHOLD</code></td>
@@ -477,15 +531,15 @@
 <td><code>CHANDRA_ENDPOINT_URL</code></td>
 <td>Public</td>
 <td>Server ENV</td>
-<td>Chandra OCR Inference Endpoint URL</td>
-<td><code>https://kgvlceo5zrww8a6m.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+<td>Chandra OCR v2 Inference Endpoint URL (defaults to live v2 endpoint, env override optional)</td>
+<td><code>https://v75ni2jqufw1mtad.us-east-1.aws.endpoints.huggingface.cloud</code></td>
 </tr>
 <tr>
 <td><code>CHANDRA_ENDPOINT_NAME</code></td>
 <td>Public</td>
 <td>Server ENV</td>
-<td>Chandra OCR Inference Endpoint name for pause/resume</td>
-<td><code>mh-chandra</code> (default)</td>
+<td>Chandra OCR v2 Inference Endpoint name for pause/resume</td>
+<td><code>chandra-ocr-2</code> (default)</td>
 </tr>
 <tr>
 <td><code>CHANDRA_NAMESPACE</code></td>
@@ -498,15 +552,15 @@
 <td><code>CHANDRA_ENABLED</code></td>
 <td>Public</td>
 <td>Server ENV</td>
-<td>Enable Chandra OCR fallback when EasyOCR confidence is low</td>
+<td>Enable Chandra v2 OCR (sole OCR engine post-2026-05-01)</td>
 <td><code>true</code> (default), <code>false</code></td>
 </tr>
 <tr>
-<td><code>CHANDRA_CONFIDENCE_THRESHOLD</code></td>
-<td>Public</td>
-<td>Server ENV</td>
-<td>EasyOCR confidence threshold - use Chandra if below this value</td>
-<td><code>0.7</code> (default, range: 0.0-1.0)</td>
+<td><del><code>CHANDRA_CONFIDENCE_THRESHOLD</code></del></td>
+<td>—</td>
+<td><strong>DEPRECATED 2026-05-01</strong></td>
+<td>Was the threshold below which Chandra ran in addition to EasyOCR. EasyOCR + pytesseract were removed entirely 2026-05-01; Chandra v2 is now the sole OCR engine and runs on every page/image.</td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>CHANDRA_AUTO_PAUSE_TIMEOUT</code></td>
@@ -729,17 +783,17 @@
 <td>Pay-per-use</td>
 </tr>
 <tr>
-<td><strong>Later.com</strong></td>
-<td><code>LATE_API_KEY</code></td>
-<td>Edge Functions (<code>late-analytics</code>, <code>late-oauth</code>, <code>late-publish</code>, social background agents)</td>
-<td><a href="https://app.later.com/">https://app.later.com/</a> → Settings → API</td>
+<td><strong>Zernio</strong></td>
+<td><code>ZERNIO_API_KEY</code></td>
+<td>Edge Functions (<code>zernio-api</code>, <code>zernio-webhook-handler</code>, social background agents)</td>
+<td><a href="https://zernio.com/">https://zernio.com/</a> → Settings → API</td>
 <td>Social media scheduling</td>
 </tr>
 <tr>
-<td><strong>Later.com</strong></td>
-<td><code>LATE_WEBHOOK_SECRET</code></td>
-<td>Edge Functions (<code>late-webhook-handler</code>)</td>
-<td>Later.com webhook settings</td>
+<td><strong>Zernio</strong></td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
+<td>Edge Functions (<code>zernio-webhook-handler</code>)</td>
+<td>Zernio webhook settings</td>
 <td>HMAC-SHA256 signature verification</td>
 </tr>
 <tr>
@@ -751,10 +805,10 @@
 </tr>
 <tr>
 <td><strong>HuggingFace</strong></td>
-<td><code>QWEN_ENDPOINT_TOKEN</code>, <code>SLIG_ENDPOINT_TOKEN</code></td>
+<td><code>SLIG_ENDPOINT_TOKEN</code></td>
 <td>Backend</td>
 <td><a href="https://huggingface.co/settings/tokens">https://huggingface.co/settings/tokens</a></td>
-<td>Can be same token as <code>HF_TOKEN</code></td>
+<td>Per-endpoint override; defaults to <code>HUGGING_FACE_ACCESS_TOKEN</code>. YOLO and Chandra v2 read <code>HUGGING_FACE_ACCESS_TOKEN</code> directly — no per-endpoint token vars needed. (Qwen retired 2026-05-01.)</td>
 </tr>
 <tr>
 <td><strong>HuggingFace</strong></td>
@@ -773,21 +827,40 @@
 </tbody></table>
 <h3><strong>HuggingFace Inference Endpoints Configuration</strong></h3>
 <p>The platform uses HuggingFace Inference Endpoints for vision models and visual embeddings:</p>
-<p><strong>Qwen3-VL-32B-Instruct Endpoint:</strong></p>
-<ul>
-<li><strong>URL</strong>: <code>https://gbz6krk3i2is85b0.us-east-1.aws.endpoints.huggingface.cloud</code></li>
-<li><strong>Service Name</strong>: <code>mh-qwen332binstruct</code></li>
-<li><strong>Namespace</strong>: <code>basiliskan</code></li>
-<li><strong>Auto-pause</strong>: Enabled (pauses after 15 minutes of inactivity)</li>
-</ul>
+<p><strong><del>Qwen Vision Endpoint</del> — RETIRED 2026-05-01:</strong></p>
+<p>The Qwen HuggingFace endpoint was deleted from the active platform on 2026-05-01. A 2026-05-01 audit discovered that the configured endpoint had been serving <code>Qwen/Qwen3.6-35B-A3B-FP8</code> (text-only MoE) while every vision call site asked for <code>Qwen/Qwen3-VL-8B-Instruct</code>. Every Qwen vision call had been 404-ing in 0.7s for months and silently falling through to Anthropic Claude. Vision is now Anthropic-only; segmentation, image classification, vision_analysis, and material analysis all run on <code>claude-opus-4-7</code> via Anthropic tool use (<code>VisionAnalysis</code> Pydantic schema + <code>VISION_ANALYSIS_TOOL</code>). The <code>qwen_endpoint_manager.py</code> file, all <code>Settings.qwen_*</code> fields, qwen warmup, qwen pricing entries, and the <code>endpoint_controller.qwen</code> AdaptiveConcurrency gate are all deleted. The HF Qwen endpoint env vars on the systemd unit (<code>QWEN_ENDPOINT_URL</code>, <code>QWEN_ENDPOINT_NAME</code>, <code>QWEN_NAMESPACE</code>, <code>QWEN_MODEL</code>) can be deleted at the next deploy.</p>
 <p><strong>SLIG (SigLIP2) Endpoint:</strong></p>
 <ul>
-<li><strong>URL</strong>: <code>https://xxxxxxxx.us-east-1.aws.endpoints.huggingface.cloud</code></li>
-<li><strong>Service Name</strong>: <code>mh-siglip2</code></li>
+<li><strong>URL</strong>: <code>https://f4kbl5do4tz6svct.us-east-1.aws.endpoints.huggingface.cloud</code></li>
+<li><strong>Service Name</strong>: <code>mh-slig</code></li>
 <li><strong>Namespace</strong>: <code>basiliskan</code></li>
-<li><strong>Auto-pause</strong>: Enabled (pauses after 15 minutes of inactivity)</li>
+<li><strong>Auto-pause</strong>: Enabled</li>
 </ul>
-<p><strong>Required Environment Variables:</strong> Set <code>QWEN_ENDPOINT_URL</code>, <code>QWEN_ENDPOINT_TOKEN</code>, <code>QWEN_ENDPOINT_NAME</code>, <code>QWEN_NAMESPACE</code>, <code>SLIG_ENDPOINT_URL</code>, <code>SLIG_ENDPOINT_TOKEN</code>, <code>SLIG_ENDPOINT_NAME</code>, and <code>SLIG_NAMESPACE</code> in the server environment.</p>
+<p><strong>YOLO Layout Detection Endpoint:</strong></p>
+<ul>
+<li><strong>URL</strong>: <code>https://f763mkb5o68lmwtu.us-east-1.aws.endpoints.huggingface.cloud</code></li>
+<li><strong>Service Name</strong>: <code>mh-yolo</code></li>
+<li><strong>Namespace</strong>: <code>basiliskan</code></li>
+</ul>
+<p><strong>Chandra OCR v2 Endpoint:</strong></p>
+<ul>
+<li><strong>URL</strong>: <code>https://v75ni2jqufw1mtad.us-east-1.aws.endpoints.huggingface.cloud</code></li>
+<li><strong>Service Name</strong>: <code>chandra-ocr-2</code></li>
+<li><strong>Namespace</strong>: <code>basiliskan</code></li>
+</ul>
+<p><strong>Required GitHub Secrets</strong> (the deploy workflow writes them as systemd <code>Environment=</code> lines into <code>mivaa-pdf-extractor.service</code> on every deploy — see <code>.github/workflows/deploy.yml</code> lines 793-823):</p>
+<pre><code>HUGGING_FACE_ACCESS_TOKEN  ← single token used for the active endpoints
+YOLO_ENDPOINT_URL          YOLO_ENDPOINT_NAME      YOLO_NAMESPACE
+CHANDRA_ENDPOINT_URL       CHANDRA_ENDPOINT_NAME   CHANDRA_NAMESPACE
+SLIG_ENDPOINT_URL          SLIG_ENDPOINT_NAME      SLIG_NAMESPACE      SLIG_ENDPOINT_TOKEN
+MAX_CONCURRENT_PRODUCTS    ← `1` on 4 GB droplet, 2-3 on 8 GB+
+</code></pre>
+<blockquote>
+<p><strong>Removed 2026-05-01</strong>: <code>QWEN_ENDPOINT_URL</code>, <code>QWEN_ENDPOINT_NAME</code>, <code>QWEN_NAMESPACE</code>, <code>QWEN_MODEL</code>. The Qwen HF endpoint had been silently 404-ing for months; vision migrated to Anthropic Claude Opus 4.7 via tool use. Delete these GitHub Secrets and the matching systemd <code>Environment=</code> lines at the next deploy, plus the <code>/etc/systemd/system/mivaa-pdf-extractor.service.d/qwen-endpoint.conf</code> drop-in if it still exists.</p>
+</blockquote>
+<blockquote>
+<p>When you rename or replace an active endpoint on HuggingFace (which auto-changes the URL — HF generates a fresh subdomain like <code>lv7trhkha3b5757r…</code>), update the corresponding <code>*_ENDPOINT_URL</code> and <code>*_ENDPOINT_NAME</code> GitHub Secrets, then trigger a deploy. The next push rewrites the systemd unit with the new values. Do NOT rely on <code>/etc/systemd/system/mivaa-pdf-extractor.service.d/*.conf</code> drop-ins — those survive deploys and silently mask the GH Secret values, making config drift hard to debug.</p>
+</blockquote>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>✅ Auto-pause reduces costs during inactivity</li>
@@ -796,14 +869,15 @@
 <li>✅ Full control over model versions</li>
 </ul>
 <hr>
-<h3><strong>Chandra OCR Inference Endpoint Configuration</strong></h3>
-<p><strong>Chandra OCR</strong> is a high-accuracy OCR model deployed as a serverless HuggingFace Inference Endpoint. It provides GPU-accelerated OCR with automatic pause/resume for cost control.</p>
+<h3><strong>Chandra OCR v2 Inference Endpoint Configuration</strong></h3>
+<p><strong>Chandra OCR v2</strong> (model <code>chandra-ocr-2.Q8_0.gguf</code>) is a state-of-the-art OCR model deployed as a serverless HuggingFace Inference Endpoint. It returns structured bbox-JSON: each output entry is <code>{&quot;text&quot;, &quot;x&quot;, &quot;y&quot;, &quot;w&quot;, &quot;h&quot;}</code> with pixel coordinates on the source image. The strict response parser in <code>chandra_endpoint_manager.py</code> raises <code>ChandraResponseError</code> on unparseable output rather than writing empty/garbage text downstream.</p>
 <h4><strong>How It Works:</strong></h4>
 <ol>
-<li><strong>EasyOCR Primary</strong>: Fast, local, free OCR (runs first)</li>
-<li><strong>Chandra Fallback</strong>: If EasyOCR confidence &lt; 0.7, use Chandra endpoint (GPU, high accuracy)</li>
+<li><strong>Chandra v2 Primary</strong>: GPU-accelerated, structured bbox-JSON OCR (runs first)</li>
+<li><strong>EasyOCR Fallback</strong>: Local, CPU-only fallback if Chandra is unreachable or returns unparseable output</li>
+<li><strong>Tesseract Last Resort</strong>: Only used when both Chandra and EasyOCR fail</li>
 <li><strong>Auto Pause/Resume</strong>: Endpoint automatically pauses when idle to prevent billing</li>
-<li><strong>Cost Control</strong>: ~$0.02 per 30-page document, $0/hour when paused</li>
+<li><strong>Cost Control</strong>: ~$0.02 per 30-page document, $0/hour when paused (T4 GPU at $0.50/hr while running)</li>
 </ol>
 <h4><strong>Required Secrets:</strong></h4>
 <table>
@@ -824,13 +898,13 @@
 <tr>
 <td><code>CHANDRA_ENDPOINT_URL</code></td>
 <td>Public</td>
-<td><code>https://kgvlceo5zrww8a6m.us-east-1.aws.endpoints.huggingface.cloud</code></td>
-<td>Chandra OCR Inference Endpoint URL</td>
+<td><code>https://v75ni2jqufw1mtad.us-east-1.aws.endpoints.huggingface.cloud</code></td>
+<td>Chandra OCR v2 Inference Endpoint URL</td>
 </tr>
 <tr>
 <td><code>CHANDRA_ENDPOINT_NAME</code></td>
 <td>Public</td>
-<td><code>mh-chandra</code></td>
+<td><code>chandra-ocr-2</code></td>
 <td>Endpoint name for pause/resume operations</td>
 </tr>
 <tr>
@@ -891,10 +965,10 @@
 <ul>
 <li>Go to: <a href="https://ui.endpoints.huggingface.co/">https://ui.endpoints.huggingface.co/</a></li>
 <li>Click &quot;New endpoint&quot;</li>
-<li>Model: <code>datalab-to/chandra</code></li>
-<li>Instance: GPU (e.g., <code>nvidia-a10g</code>)</li>
+<li>Model: <code>prithivMLmods/chandra-ocr-2-GGUF</code> (community Q8 quant of <code>datalab-to/chandra-ocr-2</code>)</li>
+<li>Instance: GPU (<code>nvidia-t4</code> recommended; v2 is 4B params and runs comfortably on T4)</li>
 <li>Region: <code>us-east-1</code></li>
-<li>Name: <code>mh-chandra</code></li>
+<li>Name: <code>chandra-ocr-2</code></li>
 <li>Click &quot;Create&quot;</li>
 <li>Copy endpoint URL</li>
 </ul>
@@ -949,7 +1023,10 @@
 <li>✅ Fallback to EasyOCR if endpoint fails</li>
 </ul>
 <hr>
-<h3><strong>Messaging Service API Keys (SMS/WhatsApp)</strong></h3>
+<h3><strong>Messaging Service API Keys (WhatsApp via Zernio)</strong></h3>
+<blockquote>
+<p>Twilio (SMS + WhatsApp) was removed 2026-06-08. Messaging now runs on <strong>Zernio</strong> (WhatsApp via Meta Cloud API), sharing keys with the social-media module. SMS is no longer supported. See <a href="api/messaging-api.html">api/messaging-api.md</a>.</p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -961,18 +1038,18 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Twilio</strong></td>
-<td><code>TWILIO_ACCOUNT_SID</code></td>
-<td>Supabase Edge Functions</td>
-<td><a href="https://console.twilio.com/">https://console.twilio.com/</a> → Account SID</td>
-<td>✅ <strong>Required</strong> for messaging</td>
+<td><strong>Zernio</strong></td>
+<td><code>ZERNIO_API_KEY</code></td>
+<td>Supabase Edge Functions (<code>messaging-api</code>, <code>zernio-api</code>)</td>
+<td><a href="https://zernio.com">https://zernio.com</a> → API settings</td>
+<td>✅ <strong>Required</strong> for WhatsApp (needs Inbox add-on for sending)</td>
 </tr>
 <tr>
-<td><strong>Twilio</strong></td>
-<td><code>TWILIO_AUTH_TOKEN</code></td>
-<td>Supabase Edge Functions</td>
-<td><a href="https://console.twilio.com/">https://console.twilio.com/</a> → Auth Token</td>
-<td>✅ <strong>Required</strong> for messaging</td>
+<td><strong>Zernio</strong></td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
+<td><code>zernio-webhook-handler</code></td>
+<td>Zernio dashboard → Webhooks</td>
+<td>✅ <strong>Required</strong> for delivery + reply capture</td>
 </tr>
 </tbody></table>
 <h3><strong>Price Monitoring API Keys</strong></h3>
@@ -993,21 +1070,29 @@
 <td><a href="https://firecrawl.dev">https://firecrawl.dev</a> → Dashboard → API Keys</td>
 <td>✅ <strong>Required</strong></td>
 </tr>
+</tbody></table>
+<h3><strong>myAADE (ΑΑΔΕ — Greek Business Registry)</strong></h3>
+<table>
+<thead>
 <tr>
-<td><strong>Google Shopping</strong></td>
-<td><code>GOOGLE_SHOPPING_API_KEY</code></td>
-<td>Backend</td>
-<td><a href="https://console.cloud.google.com">https://console.cloud.google.com</a> → Enable Custom Search API</td>
-<td>⭕ Optional</td>
+<th>Service</th>
+<th>Setting</th>
+<th>Where Used</th>
+<th>How to Get</th>
+<th>Required?</th>
 </tr>
-<tr>
-<td><strong>Google Shopping</strong></td>
-<td><code>GOOGLE_SHOPPING_CX</code></td>
-<td>Backend</td>
-<td><a href="https://programmablesearchengine.google.com">https://programmablesearchengine.google.com</a> → Create Search Engine</td>
-<td>⭕ Optional</td>
+</thead>
+<tbody><tr>
+<td><strong>myAADE (ΑΑΔΕ)</strong></td>
+<td><code>AADE_USERNAME</code> + <code>AADE_PASSWORD</code> (also <code>AADE_AFM_CALLED_BY</code> optional)</td>
+<td>Edge Function <code>myaade-rgwspublic2</code> (and any future <code>myaade-*</code> function)</td>
+<td><a href="https://www1.gsis.gr/sgsisapps/tokenservices/">https://www1.gsis.gr/sgsisapps/tokenservices/</a> → log in with TAXISnet → create &quot;Ειδικοί Κωδικοί Πρόσβασης ΑΑΔΕ&quot; pair → authorize for <code>RgWsPublic2</code> service</td>
+<td>✅ Required if <code>myaade</code> module enabled (Greek business profile auto-fill)</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p>e-Invoicing transmission to AADE/myDATA is handled by the <strong>Novus connector</strong> (<code>NOVUS_API_KEY</code>), not a per-tenant ERP. (The Oxygen ERP connector was removed 2026-06-07 — see CLAUDE.md.)</p>
+</blockquote>
 <h3><strong>Supabase Edge Functions Secrets</strong></h3>
 <p><strong>Required for PDF Processing Agent and other Edge Functions</strong></p>
 <h4><strong>API Authentication Keys (New System)</strong></h4>
@@ -1175,18 +1260,25 @@
 <td><code>whsec_xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
 </tr>
 <tr>
-<td><code>TWILIO_ACCOUNT_SID</code></td>
+<td><code>ZERNIO_API_KEY</code></td>
 <td><strong>Secret</strong></td>
-<td><code>messaging-processor</code>, <code>messaging-api</code></td>
-<td>Twilio Account SID for SMS/WhatsApp</td>
-<td><code>ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+<td><code>messaging-api</code>, <code>zernio-api</code>, <code>messaging-processor</code></td>
+<td>Zernio API key (WhatsApp + social). Inbox add-on required for sending.</td>
+<td><code>zer_xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
 </tr>
 <tr>
-<td><code>TWILIO_AUTH_TOKEN</code></td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
 <td><strong>Secret</strong></td>
-<td><code>messaging-processor</code>, <code>messaging-api</code></td>
-<td>Twilio Auth Token for authentication</td>
-<td><code>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+<td><code>zernio-webhook-handler</code></td>
+<td>Zernio webhook HMAC secret (<code>X-Zernio-Signature</code>)</td>
+<td><code>xxxxxxxxxxxxxxxxxxxxxxxx</code></td>
+</tr>
+<tr>
+<td><code>NOVUS_API_KEY</code></td>
+<td><strong>Secret</strong></td>
+<td><code>finance-issue-invoice</code> + finance crons</td>
+<td>Novus myDATA provider key (one platform-wide; per-tenant issuer VAT from <code>finance_settings</code>). <code>NOVUS_SANDBOX=true</code> for dev.</td>
+<td>—</td>
 </tr>
 </tbody></table>
 <blockquote>
@@ -1262,7 +1354,7 @@
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Note:</strong> The SEO pipeline also uses <code>ANTHROPIC_API_KEY</code> (already listed under Core Secrets above) for article writing via Claude Sonnet. <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> are auto-provided to all edge functions.</p>
+<p><strong>Note:</strong> The SEO pipeline also uses <code>ANTHROPIC_API_KEY</code> (already listed under Core Secrets above) for article writing via Claude Opus. <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> are auto-provided to all edge functions.</p>
 </blockquote>
 <p><strong>How to get these keys:</strong></p>
 <table>
@@ -1288,7 +1380,7 @@
 <ul>
 <li>Research: 18 credits (DataForSEO: 5 API calls ~$0.117 raw)</li>
 <li>Planning: 2 credits (Gemini 3 Flash: ~3K in/3K out ~$0.01 raw)</li>
-<li>Writing: 20 credits (Claude Sonnet 4.5: ~4K in/8K out ~$0.13 raw)</li>
+<li>Writing: 20 credits (Claude Opus 4.7: ~4K in/8K out ~$0.66 raw)</li>
 <li>Analysis: 2 credits (Gemini 3 Flash: ~6K in/3K out ~$0.01 raw, GEO scoring is regex-free)</li>
 <li>Auto-fix: 5 credits per iteration (Gemini 3 Flash: ~10K in/8K out ~$0.03 raw)</li>
 <li><strong>Total per article: 42 credits (no fix) — 57 credits (max 3 fixes)</strong></li>
@@ -1369,7 +1461,7 @@
 <td><code>wl_xxxxxxxxxxxxxxxx</code></td>
 </tr>
 </tbody></table>
-<h4><strong>Social Media (Later.com)</strong></h4>
+<h4><strong>Social Media (Zernio)</strong></h4>
 <table>
 <thead>
 <tr>
@@ -1381,18 +1473,18 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>LATE_API_KEY</code></td>
+<td><code>ZERNIO_API_KEY</code></td>
 <td><strong>Secret</strong></td>
-<td><code>late-analytics</code>, <code>late-oauth</code>, <code>late-publish</code>, social background agents</td>
-<td>Later.com API key for social media scheduling &amp; analytics</td>
-<td>Obtained from <a href="https://app.later.com/">https://app.later.com/</a> → Settings → API</td>
+<td><code>zernio-api</code>, <code>zernio-webhook-handler</code>, social background agents</td>
+<td>Zernio API key for social media scheduling &amp; analytics</td>
+<td>Obtained from <a href="https://zernio.com/">https://zernio.com/</a> → Settings → API</td>
 </tr>
 <tr>
-<td><code>LATE_WEBHOOK_SECRET</code></td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
 <td><strong>Secret</strong></td>
-<td><code>late-webhook-handler</code></td>
-<td>Later.com webhook signing secret for HMAC-SHA256 verification</td>
-<td>Set in Later.com webhook configuration</td>
+<td><code>zernio-webhook-handler</code></td>
+<td>Zernio webhook signing secret for HMAC-SHA256 verification</td>
+<td>Set in Zernio webhook configuration</td>
 </tr>
 </tbody></table>
 <h4><strong>HuggingFace (Edge Functions)</strong></h4>
@@ -1450,6 +1542,73 @@
 <blockquote>
 <p><strong>Generate VAPID keys</strong>: Run <code>npx web-push generate-vapid-keys</code> to create a new key pair.</p>
 </blockquote>
+<h4><strong>myAADE — Greek Business Registry (ΑΑΔΕ)</strong></h4>
+<p>Used by the <code>myaade</code> module (<code>src/modules/myaade/</code>) — family of <code>myaade-*</code> edge functions wrapping ΑΑΔΕ web services (SOAP 1.2 + WS-Security UsernameToken). Today there is one: <code>myaade-rgwspublic2</code> (RgWsPublic2 — Greek business lookup by ΑΦΜ). All <code>myaade-*</code> functions share helpers in <code>supabase/functions/_shared/aade/soap.ts</code> and reuse the same three secrets below.</p>
+<blockquote>
+<p><strong>Primary configuration is the UI at <code>/admin/modules/myaade</code> → Settings card</strong> (stored in <code>platform_secrets</code> rows with <code>primary_module_slug=&#39;myaade&#39;</code>). Env vars are read first by <code>_shared/secrets.ts → resolveSecret()</code>; the DB row is the fallback an admin can edit without a redeploy.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Secret Name</th>
+<th>Type</th>
+<th>Used By Edge Functions</th>
+<th>Description</th>
+<th>Example/Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AADE_USERNAME</code></td>
+<td><strong>Secret</strong></td>
+<td><code>myaade-rgwspublic2</code> (and any future <code>myaade-*</code>)</td>
+<td>Username from &quot;Ειδικοί Κωδικοί Πρόσβασης ΑΑΔΕ&quot; — NOT your regular TAXISnet login. Create at <a href="https://www1.gsis.gr/sgsisapps/tokenservices/">https://www1.gsis.gr/sgsisapps/tokenservices/</a> and authorize for the <code>RgWsPublic2</code> service.</td>
+<td><code>mhub_aade_user</code></td>
+</tr>
+<tr>
+<td><code>AADE_PASSWORD</code></td>
+<td><strong>Secret</strong></td>
+<td><code>myaade-rgwspublic2</code> (and any future <code>myaade-*</code>)</td>
+<td>Password for the AADE_USERNAME above. Min 6 chars.</td>
+<td>(free-form)</td>
+</tr>
+<tr>
+<td><code>AADE_AFM_CALLED_BY</code></td>
+<td>Public</td>
+<td><code>myaade-rgwspublic2</code> (and any future <code>myaade-*</code>)</td>
+<td>Optional. Platform&#39;s own 9-digit ΑΦΜ; logged by ΑΑΔΕ as the lookup originator. Leave empty if the platform has no own ΑΦΜ.</td>
+<td><code>802349569</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>TAXISnet notification side-effect</strong>: every successful ΑΑΔΕ lookup writes an audit entry to the <strong>looked-up</strong> ΑΦΜ&#39;s TAXISnet inbox (per ΑΑΔΕ policy, cannot be disabled). The module only calls ΑΑΔΕ when a user is verifying their <strong>own</strong> business — so the notification lands in the same person&#39;s inbox who triggered it. Cache TTL on <code>crm_companies.aade_data_at</code> is 90 days; same-ΑΦΜ refreshes within that window skip the SOAP call + the notification.</p>
+</blockquote>
+<blockquote>
+<p><strong>Greenfield deployment</strong>: skip the env vars entirely. Deploy <code>myaade-rgwspublic2</code>, enable the module on <code>/admin/modules</code>, open Settings, paste the two credentials, click &quot;Look up&quot; with any 9-digit ΑΦΜ to verify end-to-end. Done.</p>
+</blockquote>
+<blockquote>
+<p><strong>Adding a new ΑΑΔΕ service</strong>: drop a new <code>supabase/functions/myaade-&lt;service-slug&gt;/</code> folder; reuse the shared SOAP/cred helpers. No new secrets needed — the same three above gate the entire family. See <code>src/modules/myaade/README.md</code> for the recipe.</p>
+</blockquote>
+<h4><strong>VIES — EU VAT Validation</strong></h4>
+<p>Used by the <code>vies-validate</code> edge function (mounted in <code>src/components/core/Profile/BusinessSection.tsx</code> as &quot;Verify via VIES&quot;) and by <code>role-upgrade-requests</code> on submit to snapshot VAT validity at application time. <strong>No secrets required</strong> — VIES is a public EU service at <code>https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number</code>, no auth.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+<th>Secrets</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>vies-validate</code></td>
+<td>EU VAT number validation + legal name + structured address extraction (per-country parser for EL/DE/FR/IT/ES/NL/AT/BE/PT). Caches result on <code>crm_companies.vat_validated*</code>.</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>role-upgrade-requests</code></td>
+<td>Dealer/Factory promotion workflow. Re-validates VAT via VIES on submit; snapshots <code>vat_validated*</code> on the request row. Sends email via <code>email-api</code> to admins on submission and to the user on approve/reject.</td>
+<td>uses <code>RESEND_API_KEY</code> via <code>email-api</code></td>
+</tr>
+</tbody></table>
 <h4><strong>Cron Jobs &amp; Backend URLs</strong></h4>
 <table>
 <thead>
@@ -1735,7 +1894,7 @@
 </ul>
 <h3>📋 Systemd Service Configuration</h3>
 <p><strong>Service File</strong>: <code>/etc/systemd/system/mivaa-pdf-extractor.service</code></p>
-<p>The service is a <code>simple</code> type running as <code>root</code> with <code>WorkingDirectory=/var/www/mivaa-pdf-extractor</code>. It sets all environment variables inline (Supabase URL and keys, JWT secret, OpenAI and Anthropic API keys, Voyage AI key, Qwen and SLIG endpoint URLs, tokens, names, and namespaces). The <code>ExecStart</code> command launches uvicorn from the virtual environment at <code>.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000</code>. The service uses <code>Restart=always</code> with a 3-second restart delay, and logs to the systemd journal.</p>
+<p>The service is a <code>simple</code> type running as <code>root</code> with <code>WorkingDirectory=/var/www/mivaa-pdf-extractor</code>. It sets all environment variables inline (Supabase URL and keys, JWT secret, Anthropic API key, Voyage AI key, SLIG / YOLO / Chandra v2 endpoint URLs, tokens, names, and namespaces; OpenAI key optional). The <code>ExecStart</code> command launches uvicorn from the virtual environment at <code>.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000</code>. The service uses <code>Restart=always</code> with a 3-second restart delay, and logs to the systemd journal. <strong>Note (2026-05-01)</strong>: <code>QWEN_*</code> env lines on the unit can be deleted at the next deploy — they&#39;re no longer read by the app.</p>
 <h3>🚀 Deployment Process</h3>
 <h4><strong>Automated Deployment (GitHub Actions)</strong></h4>
 <p>The deployment is fully automated via GitHub Actions workflow (<code>.github/workflows/deploy.yml</code>):</p>
@@ -1851,8 +2010,9 @@
 <li><strong>Web Framework</strong>: FastAPI with Uvicorn ASGI server</li>
 <li><strong>Database</strong>: Supabase PostgreSQL with vector extensions</li>
 <li><strong>AI Integration</strong>: OpenAI, Anthropic, Voyage AI, HuggingFace Inference Endpoints</li>
-<li><strong>Visual Embeddings</strong>: SLIG (SigLIP2) via HuggingFace Endpoint (768D)</li>
-<li><strong>Vision Models</strong>: Qwen3-VL-32B-Instruct via HuggingFace Endpoint</li>
+<li><strong>Visual Embeddings</strong>: SLIG (SigLIP2) via HuggingFace Endpoint (768D, 5 specialized types)</li>
+<li><strong>Vision Models</strong>: Claude Opus 4.7 via Anthropic tool use (<code>VisionAnalysis</code> Pydantic schema-locked) — Qwen retired 2026-05-01</li>
+<li><strong>OCR</strong>: Chandra v2 via HuggingFace Endpoint (sole OCR engine post-2026-05-01; pytesseract + EasyOCR removed)</li>
 <li><strong>Monitoring</strong>: Sentry error tracking and structured logging</li>
 <li><strong>Security</strong>: JWT authentication and environment-based secrets</li>
 </ul>
@@ -1934,8 +2094,6 @@
 <li>SLIG_ENDPOINT_URL (for visual embeddings)</li>
 <li>SLIG_ENDPOINT_TOKEN (for visual embeddings)</li>
 <li>FIRECRAWL_API_KEY (for price monitoring)</li>
-<li>GOOGLE_SHOPPING_API_KEY (optional)</li>
-<li>GOOGLE_SHOPPING_CX (optional)</li>
 </ul>
 </li>
 </ul>
@@ -2313,22 +2471,16 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>Claude Sonnet 4.6</td>
-<td>$3/M tokens</td>
+<td>Claude Opus 4.7</td>
 <td>$15/M tokens</td>
-<td>KAI agent, SEO writing</td>
+<td>$75/M tokens</td>
+<td>KAI agent, SEO writing, complex reasoning</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
 <td>$0.80/M tokens</td>
 <td>$4/M tokens</td>
 <td>Demo agent, B2B web search</td>
-</tr>
-<tr>
-<td>Claude Opus 4.6</td>
-<td>$15/M tokens</td>
-<td>$75/M tokens</td>
-<td>Complex reasoning (on demand)</td>
 </tr>
 </tbody></table>
 <hr>
@@ -2369,9 +2521,9 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>voyage-3-large</td>
-<td>$0.18/M tokens</td>
-<td>Understanding embeddings (1024D)</td>
+<td>voyage-4</td>
+<td>$0.06/M tokens</td>
+<td>Text + understanding embeddings (1024D) — sole text embedder</td>
 </tr>
 </tbody></table>
 <hr>
@@ -2507,7 +2659,7 @@
 </tbody></table>
 <hr>
 <h3>🤗 HuggingFace Inference Endpoints</h3>
-<p><strong>Role</strong>: GPU-accelerated vision models (Qwen3-VL, SigLIP2) and Chandra OCR.</p>
+<p><strong>Role</strong>: GPU-accelerated visual embeddings (SigLIP2) and OCR (Chandra v2). Vision moved off HF on 2026-05-01 to Anthropic Claude Opus 4.7 via tool use.</p>
 <p><strong>Dashboard</strong>: <a href="https://ui.endpoints.huggingface.co">https://ui.endpoints.huggingface.co</a>
 <strong>Pricing</strong>: <a href="https://huggingface.co/pricing">https://huggingface.co/pricing</a></p>
 <table>
@@ -2520,22 +2672,28 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>Qwen3-VL-32B (Qwen analysis)</td>
-<td>GPU (A100)</td>
-<td>~$3-5/hour</td>
-<td>Yes (15 min idle)</td>
-</tr>
-<tr>
 <td>SigLIP2 (SLIG visual embeddings)</td>
 <td>GPU (A10G)</td>
 <td>~$1-2/hour</td>
 <td>Yes (15 min idle)</td>
 </tr>
 <tr>
-<td>Chandra OCR</td>
-<td>GPU (A10G)</td>
-<td>~$0.60/hour</td>
+<td>Chandra OCR v2 (<code>chandra-ocr-2.Q8_0.gguf</code>)</td>
+<td>GPU (T4)</td>
+<td>~$0.50/hour</td>
 <td>Yes (60 sec idle)</td>
+</tr>
+<tr>
+<td>YOLO DocParser</td>
+<td>GPU (T4)</td>
+<td>~$0.50/hour</td>
+<td>Yes (15 min idle)</td>
+</tr>
+<tr>
+<td><del>Qwen3-VL-32B</del></td>
+<td><del>GPU (A100)</del></td>
+<td>—</td>
+<td><strong>DELETED 2026-05-01</strong> — vision via Anthropic Claude Opus 4.7</td>
 </tr>
 </tbody></table>
 <p><strong>Cost control</strong>: All endpoints use auto-pause — billed only when active. Typical monthly cost: $5–$20 depending on PDF processing volume.</p>
@@ -2545,10 +2703,10 @@
 <p><strong>Dashboard</strong>: <a href="https://app.dataforseo.com">https://app.dataforseo.com</a>
 <strong>Pricing</strong>: Pay-per-task (~$0.05–0.15 per keyword research task)</p>
 <hr>
-<h3>📱 Twilio (SMS/WhatsApp)</h3>
-<p><strong>Role</strong>: SMS and WhatsApp messaging for platform notifications.</p>
-<p><strong>Dashboard</strong>: <a href="https://console.twilio.com">https://console.twilio.com</a>
-<strong>Pricing</strong>: Pay-per-message</p>
+<h3>📱 Zernio (WhatsApp)</h3>
+<p><strong>Role</strong>: WhatsApp messaging (Meta Cloud API wrapper) for platform notifications + campaigns. Replaced Twilio 2026-06-08; SMS no longer supported. Sending requires Zernio&#39;s Inbox add-on.</p>
+<p><strong>Dashboard</strong>: <a href="https://zernio.com">https://zernio.com</a> · <strong>Docs</strong>: <a href="https://docs.zernio.com">https://docs.zernio.com</a>
+<strong>Pricing</strong>: Zernio subscription + per-message (WhatsApp conversation pricing)</p>
 <table>
 <thead>
 <tr>
@@ -2651,9 +2809,14 @@
 <td>Depends on SEO pipeline usage</td>
 </tr>
 <tr>
-<td><strong>Twilio</strong></td>
-<td>$5–$30</td>
-<td>Depends on messaging volume</td>
+<td><strong>Zernio</strong></td>
+<td>Subscription + per-message</td>
+<td>WhatsApp messaging + social publishing</td>
+</tr>
+<tr>
+<td><strong>Novus</strong></td>
+<td>Per-transmission</td>
+<td>Greek AADE/myDATA e-invoicing provider</td>
 </tr>
 <tr>
 <td><strong>WorldLabs</strong></td>
@@ -2735,11 +2898,11 @@
 <hr>
 <h2>🔗 Related Documentation</h2>
 <ul>
-<li><a href="./setup-configuration.md">Setup &amp; Configuration</a> - Environment setup</li>
-<li><a href="./security-authentication.md">Security &amp; Authentication</a> - Security configuration</li>
-<li><a href="./testing-strategy.md">Testing Strategy</a> - Pre-deployment testing</li>
-<li><a href="./troubleshooting.md">Troubleshooting</a> - Issue resolution</li>
-<li><a href="../mivaa-pdf-extractor/docs/JOB-RECOVERY-AND-SIGNAL-HANDLING.md">Job Recovery &amp; Signal Handling</a> - Job persistence</li>
+<li><a href="./setup-configuration.html">Setup &amp; Configuration</a> - Environment setup</li>
+<li><a href="./security-authentication.html">Security &amp; Authentication</a> - Security configuration</li>
+<li><a href="./testing-strategy.html">Testing Strategy</a> - Pre-deployment testing</li>
+<li><a href="./troubleshooting.html">Troubleshooting</a> - Issue resolution</li>
+<li><a href="../mivaa-pdf-extractor/docs/JOB-RECOVERY-AND-SIGNAL-HANDLING.html">Job Recovery &amp; Signal Handling</a> - Job persistence</li>
 </ul>
 
 </div></body></html>
