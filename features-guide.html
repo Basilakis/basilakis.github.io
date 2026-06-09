@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Features Guide</h1>
 <p>Complete reference of all platform features and capabilities.</p>
 <hr>
@@ -72,7 +74,7 @@
 <ul>
 <li>7-vector fusion: text (1024D, Voyage AI), visual (768D, SigLIP2), understanding (1024D, Voyage AI), color, texture, style, material (768D each, SigLIP2)</li>
 <li>All vectors stored as <strong>halfvec</strong> (float16) — 50% storage savings, zero accuracy loss</li>
-<li>Understanding embeddings enable spec-based search (dimensions, finishes, properties) from Qwen3-VL structured analysis</li>
+<li>Understanding embeddings enable spec-based search (dimensions, finishes, properties) from Claude Opus 4.7 vision_analysis JSON via Anthropic tool use → <code>serialize_vision_analysis_to_text</code> → Voyage AI 1024D. Pre-2026-05-01 used Qwen3-VL JSON; migration retired Qwen vision (HF endpoint had been 404-ing for months — was already 100% Claude in practice).</li>
 <li><strong>Query-adaptive weight profiles</strong>: 7 profiles (product_name, color_finish, specification, texture_pattern, style_aesthetic, material_search, balanced) automatically selected based on query intent</li>
 <li>GPT-4o-mini parses query → selects optimal weights → adjusts fusion scoring per search</li>
 <li>Response time: &lt;200ms</li>
@@ -410,10 +412,10 @@
 <h2>🔄 Integration Features</h2>
 <p><strong>External Services</strong>:</p>
 <ul>
-<li>Anthropic (Claude Sonnet/Haiku 4.5 + built-in web search for B2B)</li>
+<li>Anthropic (Claude Opus 4.7 / Haiku 4.5 + built-in web search for B2B)</li>
 <li>OpenAI (GPT-4o, GPT-4o-mini for query parsing)</li>
-<li>Voyage AI (voyage-3.5 text + understanding embeddings)</li>
-<li>HuggingFace Endpoint (Qwen3-VL 32B vision analysis)</li>
+<li>Voyage AI (voyage-4 text + understanding embeddings)</li>
+<li>HuggingFace Endpoint — Chandra v2 OCR (sole engine post-2026-05-01; pytesseract + EasyOCR removed). (Qwen3-VL HF endpoint retired 2026-05-01; vision analysis is now Anthropic-only via Claude Opus 4.7 tool use.)</li>
 <li>SigLIP2 via HuggingFace Endpoint (5 visual embedding types, 768D each)</li>
 <li>Replicate (14 interior design generation models)</li>
 <li>WorldLabs Marble (3D Gaussian Splat VR world generation)</li>
@@ -606,7 +608,7 @@
 <li>Service: <code>vrWorldService.ts</code></li>
 <li>Database: <code>vr_worlds</code> table</li>
 </ul>
-<p><strong>Documentation</strong>: <a href="vr-world-generation.md">vr-world-generation.md</a></p>
+<p><strong>Documentation</strong>: <a href="vr-world-generation.html">vr-world-generation.md</a></p>
 <hr>
 <h2>📱 User Interface Features</h2>
 <p><strong>Frontend Components</strong>:</p>
@@ -638,7 +640,7 @@
 <h3>18. Flow Engine — Workflow Automation</h3>
 <p><strong>Purpose</strong>: Visual drag-and-drop automation builder for multi-step workflows</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="flow-engine.md">flow-engine.md</a></p>
+<p><strong>Documentation</strong>: <a href="flow-engine.html">flow-engine.md</a></p>
 <ul>
 <li>✅ xyflow graph-based visual editor at <code>/admin/flows</code></li>
 <li>✅ 3 node types: trigger, condition, action</li>
@@ -655,14 +657,14 @@
 <h3>19. Background Agents</h3>
 <p><strong>Purpose</strong>: Autonomous scheduled or event-driven agents running workspace tasks</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="background-agents.md">background-agents.md</a></p>
+<p><strong>Documentation</strong>: <a href="background-agents.html">background-agents.md</a></p>
 <p><strong>Agent Types:</strong></p>
 <ul>
 <li>✅ <code>kai-task</code> — Runs arbitrary KAI tool calls autonomously</li>
 <li>✅ <code>product-enrichment</code> — Fills missing product metadata via Claude + web search</li>
 <li>✅ <code>material-tagger</code> — Auto-classifies products with material tags</li>
-<li>✅ <code>social-analytics-sync</code> — Syncs engagement metrics from Late.dev</li>
-<li>✅ <code>social-insights-sync</code> — Syncs account-level insights from Late.dev</li>
+<li>✅ <code>social-analytics-sync</code> — Syncs engagement metrics from Zernio</li>
+<li>✅ <code>social-insights-sync</code> — Syncs account-level insights from Zernio</li>
 <li>✅ <code>factory-enrichment</code> — Enriches factory records via Apollo/Firecrawl/Hunter.io</li>
 </ul>
 <p><strong>Infrastructure:</strong></p>
@@ -679,7 +681,7 @@
 <h3>20. Interior Video Generation</h3>
 <p><strong>Purpose</strong>: AI-generated interior design videos for walkthroughs, product spotlights, and social content</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="interior-video-generation.md">interior-video-generation.md</a></p>
+<p><strong>Documentation</strong>: <a href="interior-video-generation.html">interior-video-generation.md</a></p>
 <table>
 <thead>
 <tr>
@@ -719,7 +721,7 @@
 <h3>21. Virtual Staging</h3>
 <p><strong>Purpose</strong>: Transform empty room photos into furnished interior renders</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="virtual-staging.md">virtual-staging.md</a></p>
+<p><strong>Documentation</strong>: <a href="virtual-staging.html">virtual-staging.md</a></p>
 <ul>
 <li>✅ Replicate <code>proplabs/virtual-staging</code> model (~56s)</li>
 <li>✅ 20 credits per generation</li>
@@ -732,7 +734,7 @@
 <h3>22. Region Editing (Inpainting)</h3>
 <p><strong>Purpose</strong>: Paint a zone on a room image and replace it with AI-generated content</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="segmentation-inpainting.md">segmentation-inpainting.md</a></p>
+<p><strong>Documentation</strong>: <a href="segmentation-inpainting.html">segmentation-inpainting.md</a></p>
 <ul>
 <li>✅ <code>RegionEditCanvas.tsx</code> — brush paint / erase mask tool</li>
 <li>✅ <code>generate-region-edit</code> edge function — Grok Aurora masked inpainting (20cr)</li>
@@ -745,7 +747,7 @@
 <h3>23. Gemini Interior Generation</h3>
 <p><strong>Purpose</strong>: Gemini-powered interior image generation with four distinct modes</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>API Docs</strong>: <a href="api/generate-interior-gemini-api.md">api/generate-interior-gemini-api.md</a></p>
+<p><strong>API Docs</strong>: <a href="api/generate-interior-gemini-api.html">api/generate-interior-gemini-api.md</a></p>
 <table>
 <thead>
 <tr>
@@ -781,20 +783,20 @@
 </ul>
 <hr>
 <h3>24. Social Media Suite</h3>
-<p><strong>Purpose</strong>: Generate, schedule, and publish social media content across 8 platforms via Late.dev</p>
+<p><strong>Purpose</strong>: Generate, schedule, and publish social media content across 8 platforms via Zernio</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="social-media-system.md">social-media-system.md</a> | <strong>API</strong>: <a href="api/late-social-api.md">api/late-social-api.md</a></p>
+<p><strong>Documentation</strong>: <a href="social-media-system.html">social-media-system.md</a> | <strong>API</strong>: <a href="api/zernio-social-api.html">api/zernio-social-api.md</a></p>
 <p><strong>Content Generation:</strong></p>
 <ul>
 <li>✅ Caption generation (3 variants) for Instagram, Facebook, LinkedIn, TikTok, Pinterest, YouTube, Twitter, Threads — 2 credits</li>
 <li>✅ Image generation: xAI Aurora (10cr), Gemini Imagen (5cr), FLUX Dev (6cr) — auto-routed by image type</li>
 <li>✅ Video generation: Kling 1.6 Pro (15cr), Veo-2 (30cr)</li>
 </ul>
-<p><strong>Publishing (Late.dev):</strong></p>
+<p><strong>Publishing (Zernio):</strong></p>
 <ul>
 <li>✅ OAuth account connect/disconnect for all 8 platforms</li>
 <li>✅ Publish immediately or schedule for a future datetime</li>
-<li>✅ No credit cost — uses workspace&#39;s Late.dev subscription</li>
+<li>✅ No credit cost — uses workspace&#39;s Zernio subscription</li>
 <li>✅ Analytics sync: post engagement + account insights</li>
 <li>✅ Best posting time recommendations</li>
 </ul>
@@ -803,7 +805,7 @@
 <h3>25. Billing &amp; Credits System</h3>
 <p><strong>Purpose</strong>: Stripe-powered subscription plans and credit purchases</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="billing-credits-system.md">billing-credits-system.md</a> | <strong>API</strong>: <a href="api/crm-stripe-api.md">api/crm-stripe-api.md</a></p>
+<p><strong>Documentation</strong>: <a href="billing-credits-system.html">billing-credits-system.md</a> | <strong>API</strong>: <a href="api/crm-api.html">api/crm-api.md</a> (stripe resource)</p>
 <ul>
 <li>✅ Subscription plans with monthly/annual billing (<code>subscription_plans</code> table)</li>
 <li>✅ Credit packages for top-up purchases (<code>credit_packages</code> table)</li>
@@ -818,7 +820,7 @@
 <h3>26. CRM System</h3>
 <p><strong>Purpose</strong>: Customer relationship management — contacts, companies, platform users</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="crm-system.md">crm-system.md</a></p>
+<p><strong>Documentation</strong>: <a href="crm-system.html">crm-system.md</a></p>
 <ul>
 <li>✅ Contact management: CRUD, tagging, notes, activity log</li>
 <li>✅ Company management: CRUD, contact associations</li>
@@ -845,7 +847,7 @@
 <h3>28. AR Material Preview</h3>
 <p><strong>Purpose</strong>: View materials applied to real-world surfaces using AR, or preview them as 3D textured swatches with interactive rotation</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="ar-material-preview.md">ar-material-preview.md</a></p>
+<p><strong>Documentation</strong>: <a href="ar-material-preview.html">ar-material-preview.md</a></p>
 <p><strong>Key Features</strong>:</p>
 <ul>
 <li>✅ WebXR AR on Android Chrome (camera-based surface detection)</li>
@@ -861,7 +863,7 @@
 <h3>29. Lighting Simulation</h3>
 <p><strong>Purpose</strong>: Preview how materials look under different lighting conditions with real-time 3D rendering and AI-powered room re-lighting</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="lighting-simulation.md">lighting-simulation.md</a></p>
+<p><strong>Documentation</strong>: <a href="lighting-simulation.html">lighting-simulation.md</a></p>
 <p><strong>Layer 1 (AI Room Re-lighting)</strong>:</p>
 <ul>
 <li>✅ &quot;Lighting Variants&quot; dropdown on ProgressiveImageGrid</li>
@@ -883,7 +885,7 @@
 <h3>30. Pinterest Integration</h3>
 <p><strong>Purpose</strong>: Import Pinterest pins into moodboards with automatic material matching from the catalog</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="pinterest-integration.md">pinterest-integration.md</a></p>
+<p><strong>Documentation</strong>: <a href="pinterest-integration.html">pinterest-integration.md</a></p>
 <p><strong>Phase 1 (No OAuth)</strong>:</p>
 <ul>
 <li>✅ Paste pin URL → oEmbed extraction → import to moodboard</li>
@@ -903,7 +905,7 @@
 <h3>31. Manufacturer Analytics (Enhanced)</h3>
 <p><strong>Purpose</strong>: Comprehensive product interaction tracking and analytics dashboard for manufacturers/factories</p>
 <p><strong>Status:</strong> ✅ Complete (Production Ready)</p>
-<p><strong>Documentation</strong>: <a href="manufacturer-analytics.md">manufacturer-analytics.md</a></p>
+<p><strong>Documentation</strong>: <a href="manufacturer-analytics.html">manufacturer-analytics.md</a></p>
 <p><strong>Event Tracking</strong>:</p>
 <ul>
 <li>✅ Batched fire-and-forget tracking (flush every 5s or 20 events)</li>

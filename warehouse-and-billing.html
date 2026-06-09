@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Warehouse / Inventory, Time-Tracking &amp; Project Billing</h1>
+<p>Three <a href="finance-system.html">Finance module</a> surfaces that feed documents and stock:</p>
+<ol>
+<li><strong>Multi-warehouse inventory (#207)</strong> — per-warehouse stock, transfers, intake from inbound myDATA.</li>
+<li><strong>Time-tracking &amp; billing (#207)</strong> — log billable hours → draft invoice.</li>
+<li><strong>Project → invoice billing (#177)</strong> — full / progress / milestone / final invoices from accepted quotes.</li>
+</ol>
+<hr>
+<h2>1. Warehouse / inventory</h2>
+<p>Workspace-scoped inventory. Each workspace lazily gets one default &quot;Main&quot; warehouse (<code>ensure_default_warehouse(p_workspace_id)</code>, called by <code>WarehousePanel</code> on mount). Stock is tracked per warehouse in <code>warehouse_items</code>; every change is an immutable <code>stock_movements</code> row. <strong>Only the workspace&#39;s own catalog products are stocked</strong> — operator-catalog reference items (<code>products.supply_mode=&#39;reference_only&#39;</code>) are excluded from the add-item search.</p>
+<h3>Tables</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>RLS</th>
+<th>Key columns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>warehouses</code></td>
+<td>read/write <code>is_workspace_member</code></td>
+<td><code>name</code>, <code>code</code>, <code>location</code>, <code>is_default</code></td>
+</tr>
+<tr>
+<td><code>warehouse_items</code></td>
+<td>read <code>is_workspace_member</code>, write <code>is_workspace_finance_manager</code></td>
+<td><code>warehouse_id</code>, <code>product_id</code>, <code>sku</code>, <code>name</code>, <code>unit</code>, <code>qty_on_hand</code>, <code>qty_reserved</code>, <code>reorder_point</code>, <code>location</code></td>
+</tr>
+<tr>
+<td><code>stock_movements</code></td>
+<td>read <code>is_workspace_member</code>; writes via RPC only</td>
+<td><code>item_id</code>, <code>direction</code> (<code>in</code>/<code>out</code>/<code>adjust</code>), <code>quantity</code>, <code>reason</code>, <code>source_type</code>, <code>source_id</code>, <code>occurred_at</code></td>
+</tr>
+<tr>
+<td><code>inbound_documents</code></td>
+<td>read <code>is_workspace_finance_viewer</code>, write <code>is_workspace_finance_manager</code></td>
+<td>see <a href="finance-system.html#4-inbound-document-sync-finance-inbound-sync">finance §4</a></td>
+</tr>
+<tr>
+<td><code>workspace_inbound_credentials</code></td>
+<td><code>is_workspace_finance_manager</code></td>
+<td>AADE myDATA REST creds</td>
+</tr>
+</tbody></table>
+<h3>Operations (<code>src/services/warehouseService.ts</code>)</h3>
+<ul>
+<li><strong>Receive / Issue / Adjust</strong> → <code>record_stock_movement(p_item_id, p_direction, p_quantity, p_reason, p_source_type, p_source_id)</code> (checks <code>is_workspace_finance_manager</code>, updates <code>qty_on_hand</code>, inserts one movement).</li>
+<li><strong>Transfer</strong> → <code>transfer_stock(p_from_item_id, p_to_warehouse_id, p_qty)</code>: validates <code>is_workspace_member</code>, sufficient stock, <strong>same-workspace</strong> target (cross-tenant transfer impossible by construction); debits source (<code>out</code>), find-or-creates the matching item in the target (by <code>product_id</code> else <code>sku</code>), credits target (<code>in</code>). Both movements carry <code>source_type=&#39;transfer&#39;</code>.</li>
+<li><strong>Intake from inbound myDATA</strong> → <code>inbound_doc_receive_to_warehouse(p_doc_id, p_mappings)</code>: iterates <code>{item_id, quantity}</code> mappings (validates each target belongs to the same workspace), records <code>in</code> movements (<code>source_type=&#39;inbound_document&#39;</code>, <code>reason=&#39;myDATA inbound &lt;mark&gt;&#39;</code>), marks the document <code>received</code>. Line→item mapping is <strong>manual</strong> (no auto SKU match).</li>
+<li><strong>Delivery notes</strong> also move stock: <code>issue_delivery_note</code> calls <code>record_stock_movement</code> for every line with a <code>warehouse_item_id</code>.</li>
+</ul>
+<p>Frontend: <code>WarehousePanel.tsx</code> (warehouse selector, item table, receive/issue/transfer/delete, <code>AddItemDialog</code> catalog search + <code>AddDealerProductDialog</code>, <code>AddWarehouseDialog</code>); <code>inboundService.ts</code> + <code>InboundSetupCard.tsx</code> + the Expenses (Inbox) tab in <code>DocumentsPage</code>. Mounted in the Finance &quot;Warehouse&quot; tab (<code>FinancePage.tsx</code>).</p>
+<h3>Gaps</h3>
+<ul>
+<li><code>qty_reserved</code> exists but is never written (no reservation/picklist logic).</li>
+<li>No DB UNIQUE on <code>(workspace_id, warehouse_id, product_id)</code>.</li>
+<li>Transfer target selection uses <code>window.prompt()</code> with &gt;2 warehouses (placeholder UX).</li>
+<li>Inbound→warehouse mapping is fully manual.</li>
+<li><code>warehouses</code> write is <code>is_workspace_member</code> (any member can create a warehouse) while item writes need <code>is_workspace_finance_manager</code>.</li>
+</ul>
+<hr>
+<h2>2. Time-tracking &amp; billing</h2>
+<p>Log time against a CRM customer with a per-entry hourly rate; batch unbilled entries for one customer into a draft invoice (one <code>invoice_items</code> row per entry), which then flows through the normal issue → myDATA path.</p>
+<h3><code>time_entries</code></h3>
+<p><code>user_id</code>, <code>customer_company_id</code> XOR <code>customer_contact_id</code>, <code>work_date</code>, <code>minutes</code> (int; UI enters hours × 60), <code>hourly_rate</code>, <code>description</code>, <code>is_billable</code> (default true), <code>billed_invoice_id</code> (null = unbilled), <code>billed_at</code>. RLS: single <code>time_entries_rw</code> = <code>is_workspace_member</code> for ALL — every member sees all entries (no ownership-scoped read).</p>
+<h3>Logging &amp; billing (<code>src/modules/finance/services/timeTrackingService.ts</code>)</h3>
+<ul>
+<li><code>create(workspaceId, entry)</code> — attaches <code>user_id = auth.uid()</code>, <code>minutes = round(hours × 60)</code>.</li>
+<li><code>billToInvoice(workspaceId, customer, entryIds, vatRate)</code> — filters out already-billed entries, computes per-entry net, mints <code>next_invoice_number</code>, inserts a draft <code>invoices</code> (<code>document_type=&#39;1.1&#39;</code>, <code>notes=&#39;Generated from logged time&#39;</code>) + one <code>invoice_items</code> per entry (<code>&quot;&lt;desc&gt; (Nh @ rate/h)&quot;</code>, qty = hours), stamps <code>billed_invoice_id</code>/<code>billed_at</code>, returns the invoice id → caller navigates to the editor.</li>
+</ul>
+<p>UI: <code>TimeBillingTab.tsx</code> (log form, unbilled table with checkboxes, &quot;Create invoice&quot;, billed history). VAT rate read from <code>finance_settings.default_vat_rate</code>. UI blocks mixing customers in one invoice.</p>
+<h3>Gaps</h3>
+<ul>
+<li><code>billToInvoice</code> is client-side multi-step (no transaction — partial state possible on tab close).</li>
+<li>Rate is plain numeric, currency assumed EUR; no approval workflow; all entries visible to all members.</li>
+</ul>
+<hr>
+<h2>3. Project → invoice billing (#177)</h2>
+<p>From an <code>accepted</code> quote on a project, generate draft invoices in four modes. Invoices carry <code>project_id</code>, <code>invoice_kind</code> (<code>full</code>/<code>progress</code>/<code>milestone</code>/<code>final</code>), <code>progress_pct</code>, and <code>quote_id</code>; items carry <code>source_quote_item_id</code> for provenance.</p>
+<ul>
+<li><strong>Full</strong> — <code>issue_invoice_from_quote(p_quote_id)</code>: idempotent (returns existing non-void invoice for the quote), <code>invoice_kind=&#39;full&#39;</code>, totals + items copied verbatim from the quote.</li>
+<li><strong>Progress / milestone / final</strong> — <code>create_project_progress_invoice(p_quote_id, p_percent, p_kind)</code>: validates percent ∈ (0,100], scales all monetary totals + line amounts by <code>percent/100</code>, appends <code>&quot;(progress N%)&quot;</code> to descriptions. <strong>Quantity is not scaled</strong> (only unit price / line total). Not idempotent — multiple tranches allowed.</li>
+</ul>
+<p>Frontend: <code>BillingTab.tsx</code> on the project detail page (gated <code>can(&#39;finance.manage&#39;)</code>) — lists project invoices, &quot;New invoice&quot; dialog with quote selector + mode picker + percent input; navigates to <code>/finance/invoices/:id</code> (not auto-issued). Service: <code>projectsService.{listProjectInvoices, createFullInvoiceFromQuote, createProgressInvoice}</code>.</p>
+<h3>Gaps</h3>
+<ul>
+<li><strong>No over-billing guard</strong> — sum of <code>progress_pct</code> per quote is unconstrained (multiple 80% invoices possible).</li>
+<li><code>issue_invoice_from_quote</code>&#39;s idempotency check matches any non-void invoice for the <code>quote_id</code>, so calling &quot;full&quot; after a progress invoice returns the progress invoice instead.</li>
+<li>Progress-invoice <code>quantity</code> stays at full count (e.g. &quot;10 chairs @ €50 (50%)&quot;).</li>
+</ul>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09 · Covers #207, #206, #177.</p>
+
+</div></body></html>

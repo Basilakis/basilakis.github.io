@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,20 +19,25 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Social Media System</h1>
 <h2>Overview</h2>
-<p>The Social Media system is built as <strong>KAI agent tools</strong> (same pattern as B2B/SEO tools) using <a href="https://docs.getlate.dev/">Late.dev</a> as the publishing backbone. Each user connects their own social accounts from their profile — accounts are per-user, not per-workspace-admin.</p>
+<p>The Social Media system is built as <strong>KAI agent tools</strong> (same pattern as B2B/SEO tools) using <a href="https://docs.zernio.com/">Zernio</a> as the publishing backbone. Each user connects their own social accounts from their profile — accounts are per-user, not per-workspace-admin.</p>
 <hr>
 <h2>Architecture</h2>
-<pre><code>User Profile → SocialAccountsTab → late-oauth (edge fn) → Late.dev OAuth
-KAI Agent   → Social Tools       → late-publish / late-analytics (edge fns) → Late.dev API
+<pre><code>User Profile → SocialAccountsTab → zernio-api (action=connect) → Zernio authUrl
+            ← Zernio redirects back to the app with ?connected&amp;accountId
+            → zernio-api (action=callback) → upsert social_accounts
+KAI Agent   → Social Tools       → zernio-api (publish/schedule/analytics) → Zernio API
+Zernio      → zernio-webhook-handler → reconcile social_posts / social_accounts
 Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, social_accounts)
 </code></pre>
+<p><code>zernio-api</code> is one edge function; the <code>action</code> field selects the handler (oauth / publish / analytics). Full request/response contract: <a href="api/zernio-social-api.html">api/zernio-social-api.md</a>.</p>
 <hr>
 <h2>Database Tables</h2>
 <table>
@@ -43,11 +49,15 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </thead>
 <tbody><tr>
 <td><code>social_accounts</code></td>
-<td>OAuth tokens per user per platform</td>
+<td>Connected accounts per workspace. Stores <code>zernio_account_id</code> (Zernio holds the OAuth tokens, not us). Unique on <code>(workspace_id, platform, zernio_account_id)</code>.</td>
+</tr>
+<tr>
+<td><code>social_zernio_profiles</code></td>
+<td><code>workspace_id → zernio_profile_id</code> map. One Zernio profile per workspace, lazily find-or-created on first connect (<code>ws:{workspace_id}</code>). Service-role only.</td>
 </tr>
 <tr>
 <td><code>social_posts</code></td>
-<td>Draft / scheduled / published posts</td>
+<td>Draft / scheduled / published posts. <code>zernio_post_id</code> stamped on publish.</td>
 </tr>
 <tr>
 <td><code>social_post_analytics</code></td>
@@ -55,7 +65,7 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </tr>
 <tr>
 <td><code>social_account_insights</code></td>
-<td>Account-level follower/reach snapshots</td>
+<td>Account-level follower / posts snapshots</td>
 </tr>
 </tbody></table>
 <p><strong>RLS policies on <code>social_accounts</code>:</strong></p>
@@ -74,24 +84,14 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </tr>
 </thead>
 <tbody><tr>
-<td><code>late-oauth</code></td>
-<td>Connect / disconnect / list social accounts via Late.dev OAuth</td>
-<td><code>LATE_API_KEY</code></td>
+<td><code>zernio-api</code></td>
+<td>Unified router (<code>action</code> selects handler): <strong>oauth</strong> (connect/callback/disconnect/list), <strong>publish</strong> (publish_now/schedule), <strong>analytics</strong> (get_post_analytics/get_account_insights/get_best_time)</td>
+<td><code>ZERNIO_API_KEY</code></td>
 </tr>
 <tr>
-<td><code>late-publish</code></td>
-<td>Publish or schedule posts via Late.dev</td>
-<td><code>LATE_API_KEY</code></td>
-</tr>
-<tr>
-<td><code>late-analytics</code></td>
-<td>Fetch post analytics + account insights from Late.dev</td>
-<td><code>LATE_API_KEY</code></td>
-</tr>
-<tr>
-<td><code>late-webhook-handler</code></td>
-<td>Receive Late.dev webhooks (post.published, post.failed, etc.)</td>
-<td><code>LATE_WEBHOOK_SECRET</code></td>
+<td><code>zernio-webhook-handler</code></td>
+<td>Receive Zernio webhooks (<code>post.published</code>, <code>post.failed</code>, <code>post.partial</code>, <code>post.cancelled</code>, <code>post.scheduled</code>, <code>account.disconnected</code>)</td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
 </tr>
 <tr>
 <td><code>generate-social-content</code></td>
@@ -116,7 +116,7 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </tbody></table>
 <hr>
 <h2>Required Secrets</h2>
-<p>Add these in <strong>Supabase Dashboard → Project Settings → Edge Functions → Secrets</strong>:</p>
+<p>Resolution is <strong>env-first, then <code>platform_secrets</code> (DB)</strong> — set via edge-function env <strong>or</strong> at <code>/admin/modules/social-media → Settings</code>. The Zernio keys additionally <strong>fall back to the legacy <code>LATE_*</code> names</strong> so an old deployment keeps working until the new key is pasted.</p>
 <table>
 <thead>
 <tr>
@@ -125,12 +125,12 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </tr>
 </thead>
 <tbody><tr>
-<td><code>LATE_API_KEY</code></td>
-<td><a href="https://app.getlate.dev">Late.dev Dashboard</a> → API Keys</td>
+<td><code>ZERNIO_API_KEY</code> <em>(fallback: <code>LATE_API_KEY</code>)</em></td>
+<td><a href="https://zernio.com">Zernio Dashboard</a> → API Keys. The old Late key will <strong>not</strong> authenticate against Zernio — a real Zernio key is required.</td>
 </tr>
 <tr>
-<td><code>LATE_WEBHOOK_SECRET</code></td>
-<td>Late.dev Dashboard → Webhooks → copy the signing secret</td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code> <em>(fallback: <code>LATE_WEBHOOK_SECRET</code>)</em></td>
+<td>Zernio Dashboard → Webhooks → copy the signing secret</td>
 </tr>
 <tr>
 <td><code>XAI_API_KEY</code></td>
@@ -149,13 +149,11 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 <p><strong>Note</strong>: <code>ANTHROPIC_API_KEY</code> and <code>OPENAI_API_KEY</code> are already set if KAI agent is working.</p>
 </blockquote>
 <hr>
-<h2>Late.dev Setup</h2>
+<h2>Zernio Setup</h2>
 <ol>
-<li><strong>Plan</strong>: Accelerate ($49/mo) — required for API access + multi-account + analytics</li>
-<li><strong>OAuth redirect URL</strong> to register in Late.dev:<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/late-oauth?action=callback
-</code></pre>
-</li>
-<li><strong>Webhook URL</strong> to register in Late.dev:<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/late-webhook-handler
+<li><strong>Plan</strong>: a Zernio plan with API access + multi-account + the analytics add-on (analytics endpoints — follower-stats, post analytics — require it; see <a href="https://zernio.com">zernio.com</a> for current pricing/tiers).</li>
+<li><strong>OAuth redirect</strong>: <code>redirect_url</code> is passed <strong>per connect call</strong> (the frontend sends its own profile-page URL, e.g. <code>https://app.example.com/profile</code>). Zernio returns the browser there with <code>?connected&amp;accountId</code>. Whitelist your <strong>app origin</strong> as an allowed redirect domain in the Zernio dashboard if it asks — there is no static edge-function callback URL to register.</li>
+<li><strong>Webhook URL</strong> to register in Zernio:<pre><code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/zernio-webhook-handler
 </code></pre>
 </li>
 <li><strong>Supported platforms</strong>: Instagram, Facebook, LinkedIn, TikTok, Pinterest, YouTube, Twitter/X, Threads</li>
@@ -217,7 +215,7 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </thead>
 <tbody><tr>
 <td><code>connect_social_account</code></td>
-<td>Returns Late.dev OAuth URL for a platform</td>
+<td>Returns Zernio OAuth URL for a platform</td>
 </tr>
 <tr>
 <td><code>list_social_accounts</code></td>
@@ -241,15 +239,15 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </tr>
 <tr>
 <td><code>publish_social_post</code></td>
-<td>Publishes immediately via Late.dev</td>
+<td>Publishes immediately via Zernio</td>
 </tr>
 <tr>
 <td><code>schedule_social_post</code></td>
-<td>Schedules for a future time via Late.dev</td>
+<td>Schedules for a future time via Zernio</td>
 </tr>
 <tr>
 <td><code>get_best_posting_time</code></td>
-<td>Late.dev ML-based best time suggestion</td>
+<td>Zernio ML-based best time suggestion</td>
 </tr>
 <tr>
 <td><code>get_post_analytics</code></td>
@@ -274,7 +272,7 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 <tbody><tr>
 <td><code>social-analytics-sync</code></td>
 <td>Every 2 hours</td>
-<td>Syncs published posts missing analytics from Late.dev</td>
+<td>Syncs published posts missing analytics from Zernio</td>
 </tr>
 <tr>
 <td><code>social-insights-sync</code></td>
@@ -302,11 +300,12 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 </blockquote>
 <h2>Per-User Account Connection</h2>
 <p>Users connect their own accounts from <strong>My Profile → Social Accounts</strong> (<code>/profile?tab=social-accounts</code>).</p>
-<p>The <code>SocialAccountsTab</code> component (<code>src/components/core/Profile/SocialAccountsTab.tsx</code>):</p>
+<p>The <code>SocialAccountsTab</code> component (<code>src/modules/social-media/components/SocialAccountsTab.tsx</code>):</p>
 <ul>
 <li>Shows connected platforms with handle, follower count, last synced</li>
-<li>Connect button → calls <code>late-oauth</code> → opens Late.dev OAuth in new tab</li>
-<li>Disconnect button → marks account inactive in DB + notifies Late.dev</li>
+<li>Connect button → <code>zernio-api action=connect</code> (passes the current page as <code>redirect_url</code>) → opens the Zernio <code>authUrl</code> in a new tab</li>
+<li>On return, the new tab lands back here with <code>?connected&amp;accountId</code>; the component fires <code>zernio-api action=callback</code> (same Supabase session) to persist the account, then strips the params</li>
+<li>Disconnect button → <code>zernio-api action=disconnect</code> → marks account inactive in DB + revokes on Zernio</li>
 </ul>
 <hr>
 <h2>Credit Costs Summary</h2>
@@ -350,16 +349,16 @@ Admin Panel → /admin/social-media/* → Direct DB queries (social_posts, socia
 <td>15 cr</td>
 </tr>
 <tr>
-<td>Publishing via Late.dev</td>
-<td>0 cr (API cost covered by Late.dev plan)</td>
+<td>Publishing via Zernio</td>
+<td>0 cr (API cost covered by Zernio plan)</td>
 </tr>
 </tbody></table>
 <hr>
 <h2>Deployment Checklist</h2>
 <ul>
-<li><input disabled="" type="checkbox"> Add secrets: <code>LATE_API_KEY</code>, <code>LATE_WEBHOOK_SECRET</code>, <code>XAI_API_KEY</code>, <code>GOOGLE_AI_API_KEY</code>, <code>REPLICATE_API_TOKEN</code></li>
-<li><input disabled="" type="checkbox"> Register webhook URL in Late.dev dashboard</li>
-<li><input disabled="" type="checkbox"> Register OAuth redirect URL in Late.dev dashboard</li>
+<li><input disabled="" type="checkbox"> Add secrets: <code>ZERNIO_API_KEY</code>, <code>ZERNIO_WEBHOOK_SECRET</code>, <code>XAI_API_KEY</code>, <code>GOOGLE_AI_API_KEY</code>, <code>REPLICATE_API_TOKEN</code></li>
+<li><input disabled="" type="checkbox"> Register webhook URL in Zernio dashboard</li>
+<li><input disabled="" type="checkbox"> Register OAuth redirect URL in Zernio dashboard</li>
 <li><input disabled="" type="checkbox"> Deploy edge functions (all 8 new functions are in <code>config.toml</code>)</li>
 <li><input disabled="" type="checkbox"> Verify <code>social_accounts</code>, <code>social_posts</code>, <code>social_post_analytics</code>, <code>social_account_insights</code> tables exist</li>
 <li><input disabled="" type="checkbox"> Verify background agents are registered in DB (<code>background_agents</code> table)</li>

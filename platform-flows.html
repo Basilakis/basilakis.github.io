@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Platform Flows &amp; User Workflows</h1>
 <p>Complete guide to all user workflows and feature flows in the Material Kai Vision Platform.</p>
 <hr>
@@ -55,7 +57,7 @@
 <li>Stage 3: Semantic Chunking</li>
 <li>Stage 4: Text Embeddings (Voyage AI 1024D)</li>
 <li>Stage 5: Image Extraction</li>
-<li>Stage 6: Image Analysis (Qwen Vision)</li>
+<li>Stage 6: Image Analysis (Claude Opus 4.7 vision_analysis via Anthropic tool use, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code> — sole vision pass post-2026-05-01; Qwen3-VL retired)</li>
 <li>Stages 7-10: Multi-Vector SLIG 768D Embeddings (5 types) + Voyage 1024D understanding</li>
 <li>Stage 11: Product Creation &amp; Entity Linking</li>
 <li>Stage 12: Entity Relationship Mapping</li>
@@ -70,7 +72,7 @@
 </ol>
 <p><strong>API Endpoint:</strong> <code>POST /api/rag/documents/upload</code>
 <strong>Frontend Component:</strong> <code>EnhancedPDFProcessor.tsx</code>
-<strong>Documentation:</strong> <a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></p>
+<strong>Documentation:</strong> <a href="pdf-processing-pipeline.html">pdf-processing-pipeline.md</a></p>
 <hr>
 <h2>2. Search &amp; Discovery Flow</h2>
 <p><strong>Purpose:</strong> Find materials using text, images, or natural language</p>
@@ -97,7 +99,7 @@
 ↓</li>
 </ul>
 </li>
-<li>Optional AI re-ranking (Claude Sonnet 4.5)
+<li>Optional AI re-ranking (Claude Opus 4.7)
 ↓</li>
 <li>Results displayed with:<ul>
 <li>Product cards</li>
@@ -109,7 +111,7 @@
 </ol>
 <p><strong>API Endpoint:</strong> <code>POST /api/rag/search</code>
 <strong>Frontend Component:</strong> <code>SearchHub.tsx</code>
-<strong>Documentation:</strong> <a href="search-strategies.md">search-strategies.md</a></p>
+<strong>Documentation:</strong> <a href="search-strategies.html">search-strategies.md</a></p>
 <hr>
 <h2>4. Data Import Flow</h2>
 <p><strong>Purpose:</strong> Import materials from XML files or web scraping</p>
@@ -119,7 +121,7 @@
 ↓</li>
 <li>Edge Function parses XML and detects fields
 ↓</li>
-<li>AI suggests field mappings (Claude Sonnet 4.5)
+<li>AI suggests field mappings (Claude Opus 4.7)
 ↓</li>
 <li>User reviews and confirms mappings
 ↓</li>
@@ -140,7 +142,7 @@
 </ol>
 <p><strong>API Endpoint:</strong> <code>POST /api/data-import/xml</code>
 <strong>Frontend Component:</strong> <code>DataImportHub.tsx</code>
-<strong>Documentation:</strong> <a href="data-import-system.md">data-import-system.md</a></p>
+<strong>Documentation:</strong> <a href="data-import-system.html">data-import-system.md</a></p>
 <hr>
 <h2>5. 3D Designer Flow</h2>
 <p><strong>Purpose:</strong> Interactive 3D room designer for material visualization</p>
@@ -204,7 +206,7 @@
 </ol>
 <p><strong>API Endpoint:</strong> <code>POST /api/knowledge-base/documents</code>
 <strong>Frontend Component:</strong> <code>KnowledgeBaseHub.tsx</code>
-<strong>Documentation:</strong> <a href="knowledge-base-implementation.md">knowledge-base-implementation.md</a></p>
+<strong>Documentation:</strong> <a href="knowledge-base-implementation.html">knowledge-base-implementation.md</a></p>
 <hr>
 <h2>7. Agent Chat Flow</h2>
 <p><strong>Purpose:</strong> Interactive AI assistance for various tasks</p>
@@ -236,8 +238,8 @@
 </ol>
 <p><strong>Edge Function:</strong> <code>agent-chat</code>
 <strong>Frontend Component:</strong> <code>AgentHub.tsx</code>
-<strong>AI Model:</strong> Claude Sonnet 4.5
-<strong>Documentation:</strong> <a href="agent-system.md">agent-system.md</a></p>
+<strong>AI Model:</strong> Claude Opus 4.7
+<strong>Documentation:</strong> <a href="agent-system.html">agent-system.md</a></p>
 <hr>
 <h2>8. VR World Generation Flow</h2>
 <p><strong>Purpose:</strong> Generate explorable 3D worlds from interior design images</p>
@@ -279,7 +281,7 @@
 <strong>Frontend Component:</strong> <code>WorldViewer.tsx</code>
 <strong>Service:</strong> <code>vrWorldService.ts</code>
 <strong>External API:</strong> WorldLabs Marble (<code>marble-0.1-mini</code>, <code>marble-0.1-plus</code>)
-<strong>Documentation:</strong> <a href="vr-world-generation.md">vr-world-generation.md</a></p>
+<strong>Documentation:</strong> <a href="vr-world-generation.html">vr-world-generation.md</a></p>
 <hr>
 <h2>📊 Flow Summary</h2>
 <table>
@@ -295,7 +297,7 @@
 <tbody><tr>
 <td>PDF Processing</td>
 <td>Upload PDF</td>
-<td>Claude, GPT-4o, Qwen</td>
+<td>Claude (Opus 4.7 vision_analysis via Anthropic tool use + Sonnet 4.6 chunking), GPT-4o (alternative discovery). Qwen3-VL retired 2026-05-01 — HF endpoint had been 404-ing for months.</td>
 <td>2-10 min</td>
 <td>Products, Images, Metadata</td>
 </tr>
@@ -365,7 +367,7 @@
 <tr>
 <td><strong>Social Publish</strong> ✨</td>
 <td><strong>Post content + account</strong></td>
-<td><strong>Claude + Late.dev</strong></td>
+<td><strong>Claude + Zernio</strong></td>
 <td><strong>&lt;5s</strong></td>
 <td><strong>Published post</strong></td>
 </tr>
@@ -409,7 +411,7 @@
 </ol>
 <p><strong>Edge Functions:</strong> <code>flow-engine</code>, <code>flow-scheduler-cron</code>, <code>flow-webhook</code>
 <strong>Frontend Component:</strong> Flow canvas at <code>/admin/flows</code>
-<strong>Documentation:</strong> <a href="flow-engine.md">flow-engine.md</a></p>
+<strong>Documentation:</strong> <a href="flow-engine.html">flow-engine.md</a></p>
 <hr>
 <h2>10. Social Media Publishing Flow</h2>
 <p><strong>Purpose:</strong> Generate and publish AI content to social platforms</p>
@@ -417,9 +419,9 @@
 <ol>
 <li>User connects social account at <code>/profile</code> (Social Accounts tab)
 ↓</li>
-<li><code>late-oauth</code> redirects to Late.dev OAuth → returns <code>late_account_id</code>
+<li><code>zernio-api action=connect</code> returns a Zernio <code>authUrl</code>; user authorises; Zernio redirects back with <code>?connected&amp;accountId</code>
 ↓</li>
-<li>Account stored in <code>social_accounts</code>
+<li>Frontend calls <code>zernio-api action=callback</code> → account stored in <code>social_accounts</code> (<code>zernio_account_id</code>)
 ↓</li>
 <li>User (or KAI agent) generates content:<ul>
 <li>Caption: <code>generate-social-content</code> (2cr) → 3 variants</li>
@@ -430,15 +432,15 @@
 </li>
 <li>User selects caption variant + media → clicks Publish or Schedule
 ↓</li>
-<li><code>late-publish</code> action: <code>publish_now</code> or <code>schedule</code> with <code>scheduled_at</code>
+<li><code>zernio-api</code> action: <code>publish_now</code> or <code>schedule</code> with <code>scheduled_at</code>
 ↓</li>
-<li>Late.dev publishes to connected platform
+<li>Zernio publishes to connected platform
 ↓</li>
-<li><code>late-analytics</code> syncs engagement metrics back to <code>social_post_analytics</code></li>
+<li><code>zernio-api</code> syncs engagement metrics back to <code>social_post_analytics</code></li>
 </ol>
-<p><strong>Edge Functions:</strong> <code>late-oauth</code>, <code>generate-social-content</code>, <code>generate-social-image</code>, <code>generate-social-video</code>, <code>late-publish</code>, <code>late-analytics</code>
+<p><strong>Edge Functions:</strong> <code>zernio-api</code>, <code>zernio-webhook-handler</code>, <code>generate-social-content</code>, <code>generate-social-image</code>, <code>generate-social-video</code>
 <strong>Admin UI:</strong> <code>/admin/social-media/accounts</code>
-<strong>Documentation:</strong> <a href="social-media-system.md">social-media-system.md</a></p>
+<strong>Documentation:</strong> <a href="social-media-system.html">social-media-system.md</a></p>
 <hr>
 <p><strong>Last Updated:</strong> March 2026
 <strong>Version:</strong> 3.5.0
