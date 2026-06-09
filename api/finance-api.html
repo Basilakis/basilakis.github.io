@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Finance API (edge functions)</h1>
+<p>Per-function reference for the <code>finance-*</code> and related edge functions. Architecture context: <a href="../finance-system.html">finance-system.md</a>, <a href="../pos-retail-system.html">pos-retail-system.md</a>, <a href="../online-storefront.html">online-storefront.md</a>.</p>
+<p>Base URL: <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/</code>. All POST. Standard error shape <code>{ ok:false, error, code? }</code>. Credits debited from the caller&#39;s <code>user_credits</code>; root workspace transmits free.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Auth</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>finance-issue-invoice</code></td>
+<td>JWT <code>admin/super_admin/owner/finance/accountant</code></td>
+<td>2 / myDATA transmission</td>
+</tr>
+<tr>
+<td><code>finance-invoice-pdf</code></td>
+<td>JWT <code>admin/super_admin/owner/finance</code></td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>finance-pay-invoice</code></td>
+<td>admin JWT <strong>or</strong> public <code>pay_token</code></td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>finance-send-invoice-email</code></td>
+<td>JWT <code>admin/super_admin/owner/finance</code></td>
+<td>email via <code>email-api</code> (1)</td>
+</tr>
+<tr>
+<td><code>finance-send-statement</code></td>
+<td>finance JWT / <code>x-cron-secret</code> (batch)</td>
+<td>email via <code>email-api</code> (1)</td>
+</tr>
+<tr>
+<td><code>finance-inbound-sync</code></td>
+<td>finance JWT (manual, free) / <code>x-cron-secret</code> (2)</td>
+<td>2 / automated sync</td>
+</tr>
+<tr>
+<td><code>finance-fiscal-offline-recovery</code></td>
+<td><code>x-cron-secret</code></td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>finance-digest-aggregate</code></td>
+<td>Flows / <code>x-cron-secret</code> / admin <code>mode:&#39;now&#39;</code></td>
+<td>email via <code>email-api</code> (1)</td>
+</tr>
+<tr>
+<td><code>finance-storefront</code></td>
+<td>none (public, slug-keyed)</td>
+<td>0 (transmission billed later at issue)</td>
+</tr>
+</tbody></table>
+<p>Every document-touching path also runs <code>userCanAccessWorkspace(supabase, userId, doc.workspace_id)</code> (post-#208 IDOR guard) and, before any myDATA transmission, <code>is_workspace_entitled(workspace_id, &#39;sales-finance&#39;)</code>.</p>
+<hr>
+<h2><code>finance-issue-invoice</code></h2>
+<p>The central document engine. Request (all optional, composable):</p>
+<pre><code class="language-jsonc">{
+  &quot;quote_id&quot;: &quot;uuid&quot;,          // create invoice from quote (idempotent)
+  &quot;invoice_id&quot;: &quot;uuid&quot;,        // act on an existing invoice
+  &quot;credit_note_id&quot;: &quot;uuid&quot;,    // act on a credit note
+  &quot;delivery_note_id&quot;: &quot;uuid&quot;,  // act on a delivery note
+  &quot;issue_now&quot;: true,           // draft → issued (allocates legal series/AA)
+  &quot;submit_fiscal&quot;: true,       // transmit to AADE via Novus
+  &quot;skip_signature&quot;: false,     // false ⇒ POS Law 5155 card/IRIS flow
+  &quot;fiscal_overrides&quot;: { &quot;series&quot;: &quot;A&quot;, &quot;aa&quot;: 123, &quot;transmissionFailure&quot;: 1 },
+  &quot;pos_payment&quot;: { &quot;type&quot;: 7, &quot;terminalId&quot;: &quot;...&quot;, &quot;amount&quot;: 12.40 },
+  &quot;pos_complete&quot;: { &quot;signatureToken&quot;: &quot;...&quot; }
+}
+</code></pre>
+<p>Response: <code>{ ok, invoice_id, status, fiscal_status, fiscal_mark, fiscal_uid, fiscal_qr_url, credits_used, provider_credits }</code>.</p>
+<p>Behavior: resolve document → optionally <code>mark_invoice_issued</code> (the only place the gapless legal counter advances) → optionally reserve 2 credits + Novus <code>SendInvoices</code> → upsert <code>fiscal_submissions</code> + stamp <code>invoices.fiscal_*</code>. <code>accepted</code> keeps credits; <code>offline</code> waits for the recovery cron; <code>rejected</code>/<code>error</code> refunds. POS: <code>pos_payment</code> (<code>skipSignature=false</code>) holds the doc <code>awaiting_payment</code> + inserts <code>pos_signatures</code> + refunds; <code>pos_complete</code> runs <code>CompletionPosInvoices</code> and debits 2 credits. See <a href="../pos-retail-system.html#3-law-5155-card--iris-signature-flow">POS doc</a>.</p>
+<hr>
+<h2><code>finance-invoice-pdf</code></h2>
+<p><code>{ invoice_id? | credit_note_id? | delivery_note_id?, regenerate? }</code> → <code>{ ok, pdf_url (7-day signed), pdf_storage_path, cached }</code>. Renders A4 (<code>pdf-lib</code> + Noto Sans, <code>doc_language</code> el/en) from the document + <code>finance_settings</code> + customer + branch. Returns the cached signed URL unless <code>regenerate</code>. Uploads to <code>pdf-documents/{invoice|credit-note|delivery-note}-output/{id}/...</code>. QR + MARK printed when <code>fiscal_mark</code> set. <strong>Op risk</strong>: fonts load from CDN at cold start with no fallback.</p>
+<hr>
+<h2><code>finance-pay-invoice</code></h2>
+<p><strong>Admin</strong> <code>{ invoice_id, link_only?, success_url?, cancel_url? }</code>: <code>link_only</code> mints/rotates a 7-day <code>pay_token</code> → <code>{ pay_link, pay_token }</code>; otherwise creates a Stripe Checkout session (routed to the workspace Connect account via <code>get_workspace_payout_account</code>). <strong>Public</strong> <code>{ pay_token, success_url?, cancel_url? }</code>: <code>resolve_invoice_pay_token</code> (service-role) → Checkout session → <code>{ ok, checkout_url, amount, currency, customer_display, already_paid }</code>. Bootstraps <code>STRIPE_SECRET_KEY</code> from <code>platform_secrets</code>. Fulfillment via the <code>stripe-webhooks</code> function (<code>payment_intent.succeeded</code>). See <a href="../online-storefront.html#4-stripe-connect-checkout">storefront §4–5</a>.</p>
+<hr>
+<h2><code>finance-send-invoice-email</code></h2>
+<p><code>{ invoice_id? | credit_note_id?, to? }</code>. Calls <code>finance-invoice-pdf</code> (passing the caller&#39;s <code>Authorization</code> through), resolves the recipient from CRM (overridable by <code>to</code>), and dispatches via <code>email-api</code> with the PDF base64-attached. Body includes MARK, QR URL, and pay link.</p>
+<hr>
+<h2><code>finance-send-statement</code></h2>
+<p>Party ledger (καρτέλα). <strong>Single</strong> <code>{ party_type:&#39;company&#39;|&#39;contact&#39;, party_id, email?, dry_run?, side?:&#39;customer&#39;|&#39;supplier&#39;, from?, to?, lang? }</code> → <code>{ ok, email_sent_to, pdf_url, rows, closing_balance, total_outstanding }</code>. Builds an 8-column running ledger (carry-forward opening balance, red overdue callout) at <code>pdf-documents/statements/...</code>, mints 90-day pay tokens for open invoices, emails via <code>email-api</code>. <strong>Cron</strong> <code>{ mode:&#39;cron_batch&#39; }</code>: iterates <code>finance_settings.auto_statement_enabled</code> parties due per their schedule, honoring <code>crm_companies.finance_statement_opt_out</code>.</p>
+<hr>
+<h2><code>finance-inbound-sync</code></h2>
+<p>Pulls AADE <code>RequestDocs</code> into <code>inbound_documents</code>. <strong>Cron</strong> (<code>x-cron-secret</code>): all enabled workspaces, 2 cr each after success. <strong>Manual</strong> (finance JWT): caller&#39;s workspaces only, free. Per-workspace <code>is_workspace_entitled(&#39;sales-finance&#39;)</code> gate. <code>GET {baseUrl}/RequestDocs?mark={watermark}</code> with <code>aade-user-id</code> + <code>Ocp-Apim-Subscription-Key</code>; advances <code>finance_settings.inbound_last_mark</code>. See <a href="../finance-system.html#4-inbound-document-sync-finance-inbound-sync">finance §4</a>.</p>
+<hr>
+<h2><code>finance-fiscal-offline-recovery</code></h2>
+<p><code>x-cron-secret</code> only. Reads <code>invoices</code>/<code>credit_notes WHERE fiscal_status=&#39;offline&#39;</code> (50/batch, grouped by workspace), calls Novus <code>RequestTransmittedDocs</code> per doc, and stamps <code>fiscal_mark</code> + flips <code>accepted</code> once AADE has processed it. 0 credits. Run at least hourly.</p>
+<hr>
+<h2><code>finance-digest-aggregate</code></h2>
+<p><code>{ mode?:&#39;cron&#39;|&#39;now&#39;|&#39;followups_only&#39;, workspace_id?, recipients_override? }</code>. Per due workspace (schedule from <code>finance_settings.digest_*</code>): reads <code>vw_ar_aging</code>/<code>vw_ap_aging</code>/<code>vw_cash_flow_forecast</code>/<code>vw_monthly_pnl</code> + <code>planned_payments</code> + <code>report_top_customer/supplier_outstanding</code>, renders HTML fragments, emails via <code>email-api</code> (<code>templateSlug=&#39;finance.digest&#39;</code>). The follow-up dispatcher scans <code>vw_quote_followup_queue</code>, fires <code>user_notifications</code>, and writes a <code>quote_activities</code> <code>reminder_dispatched</code> row (24h dedupe).</p>
+<hr>
+<h2><code>finance-storefront</code></h2>
+<p>Public, no auth, <code>{ action, slug, ... }</code>. <code>meta</code> → store config; <code>products</code> → published priced products; <code>checkout</code> <code>{ items, customer:{name,email} }</code> → server-recomputes prices, <code>assertEntitled(&#39;sales-finance&#39;)</code> (402), inserts a draft <code>11.1</code> invoice + items, returns <code>{ invoice_id, pay_token, pay_url, total, currency }</code>. Full detail in <a href="../online-storefront.html#3-finance-storefront-edge-function">online-storefront.md §3</a>.</p>
+<hr>
+<h2>Related functions</h2>
+<ul>
+<li><strong><code>stripe-connect</code></strong> — <code>{ action:&#39;onboard&#39;|&#39;status&#39;, return_url? }</code> (owner/admin JWT). Creates/refreshes the workspace Stripe Express account on <code>workspace_payment_config</code>.</li>
+<li><strong><code>stripe-webhooks</code></strong> — Stripe signature auth. <code>payment_intent.succeeded</code> with <code>metadata.type=&#39;invoice_payment&#39;</code> → <code>payments</code> + <code>payment_allocations</code> → invoice flips paid. Verifies against <code>STRIPE_WEBHOOK_SECRET</code> or <code>STRIPE_BILLING_WEBHOOK_SECRET</code> (#200).</li>
+<li><strong><code>catalog-access</code></strong> — presentation-catalog email gate; see <a href="../sales-and-marketplace.html#3-presentation-catalog-email-gate-catalog-access-edge-function">sales-and-marketplace.md §3</a>.</li>
+<li><strong><code>myaade-rgwspublic2</code></strong> — Greek business registry lookup; see <a href="../../src/modules/myaade/README.html">myAADE README</a>.</li>
+</ul>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09.</p>
+
+</div></body></html>
