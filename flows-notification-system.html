@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Flows — Notification &amp; Automation System</h1>
+<p><em>Last updated: 2026-05-31</em></p>
+<p>This document is the single reference for how platform notifications/emails are
+delivered through the <strong>Flows</strong> engine, how events map to flows, and how the
+governance layer (locking + System Areas) keeps coverage from silently breaking.</p>
+<hr>
+<h2>1. What this is</h2>
+<p>Historically, every &quot;send a notification / email&quot; action was hardcoded at its
+call site (a direct <code>user_notifications</code> insert or an <code>email-api</code> call). That
+made them invisible and uncontrollable — you couldn&#39;t pause, edit, retarget, or
+add a channel without a code change.</p>
+<p>The migration moved each of those sends behind a <strong>flow event</strong>. Now:</p>
+<ul>
+<li>The source code only <strong>emits an event</strong> (<code>flowEventService.emit(...)</code> on the
+frontend, <code>emitFlowEvent(...)</code> in edge functions) carrying a fully-resolved
+notification payload.</li>
+<li>A <strong>flow</strong> with a matching trigger picks up the event and performs the actual
+delivery (Create Notification / Send Email / Send Push / etc.).</li>
+<li>An admin can pause, edit, re-target, or extend any of these from the <strong>Flows</strong>
+admin page — no deploy required.</li>
+</ul>
+<hr>
+<h2>2. Architecture / execution model</h2>
+<pre><code>source (frontend or edge fn)
+   |  emit event: { type, payload }
+   v
+flow-engine  (action: &#39;trigger-event&#39;)
+   |  find all flows where trigger_type = event AND status = &#39;active&#39;
+   v
+for each matching flow -&gt; execute graph (BFS over nodes)
+   trigger -&gt; condition(s) -&gt; action(s)
+</code></pre>
+<ul>
+<li><strong>Frontend emit:</strong> <code>src/services/flows/flowEventService.ts -&gt; emit(eventType, data)</code>
+(fire-and-forget; never throws into the calling feature).</li>
+<li><strong>Edge emit:</strong> <code>supabase/functions/_shared/flow-events.ts -&gt; emitFlowEvent(eventType, data)</code>.</li>
+<li><strong>Engine:</strong> <code>supabase/functions/flow-engine/index.ts</code>.<ul>
+<li><code>trigger-event</code> -&gt; runs every <strong>active</strong> flow whose <code>trigger_type</code> matches.</li>
+<li><code>execute-flow</code> / <code>test-flow</code> -&gt; run a single flow (used by <strong>Run Now</strong> + builder).</li>
+</ul>
+</li>
+<li><strong>Templating:</strong> action configs use <code>{{trigger.data.fieldname}}</code> (and <code>{{item}}</code>
+inside a Loop). Unresolved templates are guarded (see section 6).</li>
+</ul>
+<h3>Tables</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>flows</code></td>
+<td>The flows themselves (<code>graph_definition</code> jsonb, <code>trigger_type</code>, <code>status</code>, <code>is_locked</code>, <code>tags</code>).</td>
+</tr>
+<tr>
+<td><code>flow_runs</code></td>
+<td>One row per execution (status, timing, error).</td>
+</tr>
+<tr>
+<td><code>flow_run_steps</code></td>
+<td>Per-node execution log within a run.</td>
+</tr>
+<tr>
+<td><code>flow_area_registry</code></td>
+<td>Coverage registry — maps each platform <strong>area</strong> to its canonical flow.</td>
+</tr>
+<tr>
+<td><code>user_notifications</code></td>
+<td>Bell notifications (written by the <code>create_notification</code> action).</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2a. Trigger entry points (how a flow actually fires)</h2>
+<p>There are <strong>four</strong> ways a flow runs. All converge on the <code>flow-engine</code> edge function.</p>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>How it fires</th>
+<th>Entry point</th>
+<th>Verified</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Event</strong> (platform actions)</td>
+<td>code calls <code>flowEventService.emit(type, data)</code> / <code>emitFlowEvent(type, data)</code> → runs <strong>all active</strong> flows with matching <code>trigger_type</code></td>
+<td><code>flow-engine</code> <code>trigger-event</code></td>
+<td>✅ live (the 27 notification flows)</td>
+</tr>
+<tr>
+<td><strong>Webhook</strong> (external code/HTTP)</td>
+<td>external system <code>POST</code>s to the flow&#39;s URL</td>
+<td><code>flow-webhook</code> edge fn → <code>flow-engine</code> <code>execute-flow</code></td>
+<td>✅ smoke-tested 2026-05-31</td>
+</tr>
+<tr>
+<td><strong>Scheduled</strong> (cron)</td>
+<td><code>flow-scheduler-cron</code> runs every minute, matches each <code>scheduled</code> flow&#39;s cron + timezone</td>
+<td><code>flow-scheduler-cron</code> → <code>flow-engine</code> <code>execute-flow</code></td>
+<td>✅ running in prod (pg_cron <code>* * * * *</code>)</td>
+</tr>
+<tr>
+<td><strong>Manual</strong> (Run Now)</td>
+<td>the <strong>Run Now</strong> button on the Flows dashboard</td>
+<td><code>flow-engine</code> <code>execute-flow</code></td>
+<td>✅ live</td>
+</tr>
+<tr>
+<td><strong>Test</strong></td>
+<td>dry-run in the builder (resolves templates, doesn&#39;t fire actions)</td>
+<td><code>flow-engine</code> <code>test-flow</code></td>
+<td>✅ live</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Note on the action names: <code>flow-engine</code>&#39;s top-level switch has only
+<code>execute-flow</code> / <code>test-flow</code> / <code>trigger-event</code>. There is <strong>no</strong> <code>webhook</code> or
+<code>scheduled</code> action — those edge functions each call <code>execute-flow</code> after their
+own validation. So &quot;webhook&quot; and &quot;scheduled&quot; are <em>entry points</em>, not engine actions.</p>
+</blockquote>
+<h3>Webhook usage (triggering a flow from outside code)</h3>
+<p>A flow whose trigger is <code>webhook</code> gets a unique URL. External systems call:</p>
+<pre><code>POST https://&lt;project-ref&gt;.supabase.co/functions/v1/flow-webhook?flow_id=&lt;uuid&gt;
+X-Webhook-Secret: &lt;secret from the flow&#39;s trigger_config&gt;   # optional
+Content-Type: application/json
+
+{ &quot;any&quot;: &quot;json&quot;, &quot;you&quot;: &quot;want&quot; }
+</code></pre>
+<ul>
+<li>The request JSON body becomes <code>trigger.data.*</code> in the graph (so an action can
+template <code>{{trigger.data.any}}</code>). Query params land under <code>trigger.data._webhook.query_params</code>.</li>
+<li>The function validates: flow exists, <code>trigger_type = &#39;webhook&#39;</code>, <code>status = &#39;active&#39;</code>,
+the HTTP method matches <code>trigger_config.method</code>, and (if set) the <code>X-Webhook-Secret</code>
+header matches <code>trigger_config.secret</code>.</li>
+<li>On success returns <code>{ success: true, data: { flow_id, run_id, status } }</code>.</li>
+<li>Secret validation is <strong>verified working</strong> (smoke test 2026-05-31: wrong secret →
+<code>401 Invalid webhook secret</code>, correct secret → <code>200</code>). The <code>timingSafeEqual</code>
+double-HMAC (both operands hashed under the same per-call random key, digests
+compared) is a legitimate constant-time compare.</li>
+<li>File: <code>supabase/functions/flow-webhook/index.ts</code>.</li>
+</ul>
+<h3>Scheduled usage</h3>
+<p>Set the flow&#39;s trigger to <code>scheduled</code> with <code>trigger_config = { cron, timezone }</code>.
+<code>flow-scheduler-cron</code> (pg_cron, every minute) finds due flows, stamps <code>last_run_at</code>
+before dispatch (55s double-fire guard), and calls <code>execute-flow</code>. File:
+<code>supabase/functions/flow-scheduler-cron/index.ts</code>.</p>
+<hr>
+<h2>3. Triggers, actions, conditions</h2>
+<h3>Trigger types (event vocabulary)</h3>
+<p>Defined in <code>src/services/flows/types.ts</code> (<code>TriggerType</code>). Beyond the originals
+(the <code>manual</code> <strong>palette node</strong> was removed — use <strong>Run Now</strong> instead — but the
+<code>manual</code> <em>type</em> still exists and is the default; plus <code>scheduled</code>, <code>webhook</code>,
+<code>user_signup</code>, quote/moodboard/profile events, etc.), the migration added:</p>
+<p><code>quote_pdf_generated</code>, <code>factory_approved</code>, <code>factory_rejected</code>,
+<code>appointment_booked/confirmed/cancelled</code>, <code>svbrdf_extraction_complete</code>,
+<code>virtual_staging_completed</code>, <code>vr_world_failed</code>,
+<code>video_generation_completed/failed</code>, <code>background_agent_failed</code>,
+<code>role_upgrade_request_submitted/approved/rejected</code>,
+<code>stripe_payment_succeeded/failed</code>, <code>project_invitation_sent/resent</code>.</p>
+<h3>Action types (engine handlers in <code>flow-engine/index.ts</code>)</h3>
+<ul>
+<li><code>create_notification</code> — insert into <code>user_notifications</code> (bell). Guarded.</li>
+<li><code>send_email</code> — invoke <code>email-api</code>. Guarded.</li>
+<li><code>send_sms</code> — invoke <code>messaging-api</code>.</li>
+<li><code>send_push</code> — resolve the user&#39;s <code>push_subscriptions</code> -&gt; <code>notification-dispatcher</code>.</li>
+<li><code>log_event</code> — insert an audit/dedup-marker row (<code>{table, row}</code>).</li>
+<li><code>run_edge_function</code> — invoke any edge function with a JSON payload.</li>
+<li><code>send_price_alert</code>, <code>send_quote</code>, <code>build_quote</code>, <code>send_agent_message</code>,
+<code>create_moodboard</code>, <code>add_to_moodboard</code>, <code>http_request</code>, plus the enrichment
+actions (<code>web_search</code>, <code>firecrawl_scrape</code>, <code>apollo_enrich</code>,
+<code>hunter_find_contacts</code>, <code>zerobounce_validate</code>).</li>
+</ul>
+<h3>Conditions</h3>
+<ul>
+<li><code>if_else</code>, <code>switch</code>, <code>filter</code>, <code>delay</code> — implemented.</li>
+<li><code>loop</code> — implemented. Config <code>{ collection_field, item_variable, max_iterations }</code>.
+Runs the directly-connected downstream action node(s) once per item in the
+collection, exposing <code>{{item}}</code> and <code>loop_index</code>. Single-level body; hard cap 1000.
+Used by the quote admin fan-out flows.</li>
+<li><code>stop</code> — hard short-circuit of a branch (pair with <code>if_else</code> for dedup).</li>
+</ul>
+<hr>
+<h2>4. Converted events -&gt; default flows</h2>
+<p>All default flows are tagged <code>system-default</code> and seeded <strong>active</strong>. Each source
+emits an enriched payload (<code>user_id</code>/recipient, <code>title</code>, <code>body</code>, <code>action_url</code>,
+<code>type</code>, plus event-specific fields).</p>
+<table>
+<thead>
+<tr>
+<th>Area (trigger)</th>
+<th>Source</th>
+<th>Delivery</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hire_me_received</code></td>
+<td><code>HireMeModal.tsx</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>profile_followed</code></td>
+<td><code>FollowButton.tsx</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>material_reviewed</code></td>
+<td><code>MaterialReviews.tsx</code></td>
+<td>Create Notification (owner)</td>
+</tr>
+<tr>
+<td><code>preferred_factory_added</code></td>
+<td><code>ProfileTab.tsx</code></td>
+<td>Create Notification (factory)</td>
+</tr>
+<tr>
+<td><code>vr_world_created</code> / <code>vr_world_failed</code></td>
+<td><code>generate-vr-world</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>virtual_staging_completed</code></td>
+<td><code>generate-virtual-staging</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>video_generation_completed</code> / <code>_failed</code></td>
+<td><code>generate-interior-video-v2</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>svbrdf_extraction_complete</code></td>
+<td><code>svbrdfExtractionAPI.ts</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>agent_search_completed</code> / <code>background_agent_failed</code></td>
+<td><code>background-agent-runner</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>role_upgrade_request_submitted</code></td>
+<td><code>role-upgrade-requests</code></td>
+<td>Create Notification (per-admin emit)</td>
+</tr>
+<tr>
+<td><code>role_upgrade_approved</code> / <code>_rejected</code></td>
+<td><code>role-upgrade-requests</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>factory_approved</code> / <code>factory_rejected</code></td>
+<td><code>FactoryRegistrationsTab.tsx</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>appointment_booked</code></td>
+<td><code>BookingModal.tsx</code></td>
+<td>Create Notification (professional)</td>
+</tr>
+<tr>
+<td><code>appointment_confirmed</code> / <code>_cancelled</code></td>
+<td><code>AppointmentsPage.tsx</code></td>
+<td>Create Notification (client)</td>
+</tr>
+<tr>
+<td><code>quote_approved</code> / <code>quote_rejected</code></td>
+<td><code>QuotesService.ts</code></td>
+<td><strong>Loop</strong> over <code>admin_ids</code> -&gt; Create Notification</td>
+</tr>
+<tr>
+<td><code>quote_pdf_generated</code></td>
+<td><code>generate-quote-pdf</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>stripe_payment_succeeded</code> / <code>_failed</code></td>
+<td><code>stripe-webhooks</code></td>
+<td>Create Notification</td>
+</tr>
+<tr>
+<td><code>project_invitation_sent</code> / <code>_resent</code></td>
+<td><code>projectsService.ts</code></td>
+<td>Send Email</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>The <strong>credit grant</strong> in <code>stripe-webhooks</code> stays in the webhook; only the
+notification was moved to a flow.</p>
+</blockquote>
+<hr>
+<h2>5. Governance — locking &amp; System Areas</h2>
+<p>Because these flows are wired to real platform functionality, two protections
+exist so a flow can&#39;t be accidentally deleted or an area left without a handler.</p>
+<h3>5a. Lock / unlock (prevent deletion)</h3>
+<ul>
+<li><code>flows.is_locked boolean</code> (default false). All <code>system-default</code> flows are locked.</li>
+<li><strong>UI:</strong> the <strong>My Flows</strong> tab shows a Locked badge; the row&#39;s &quot;...&quot; menu has
+<strong>Lock (prevent delete)</strong> / <strong>Unlock (allow delete)</strong>, and <strong>Delete</strong> is disabled
+while locked.</li>
+<li><strong>DB enforcement:</strong> a <code>BEFORE DELETE</code> trigger (<code>prevent_locked_flow_delete</code>)
+raises an error if <code>is_locked</code> — so even a direct API/SQL delete is blocked
+until the flow is unlocked. The frontend surfaces this as a clear message.</li>
+</ul>
+<h3>5b. System Areas (coverage registry)</h3>
+<ul>
+<li><code>flow_area_registry</code> — one row per platform area that should always have a flow
+pointed at it: <code>{ area_key, title, description, category, trigger_type, required, bound_flow_id, sort_order }</code>.</li>
+<li><strong>UI:</strong> the <strong>System Areas</strong> tab groups areas by category and shows each as
+<strong>Linked</strong> (green) or <strong>Empty</strong> (red). A per-row dropdown lists every flow whose
+<code>trigger_type</code> matches the area; picking one sets <code>bound_flow_id</code>, choosing
+&quot;Empty&quot; clears it. A header badge warns when any <strong>required</strong> area is empty.</li>
+<li>This is the &quot;always something is pointed to that area&quot; guarantee: coverage is
+visible at a glance and one click away from being restored.</li>
+</ul>
+<blockquote>
+<p>Note: <code>bound_flow_id</code> is the <strong>declared canonical handler</strong> for visibility/governance.
+The engine still dispatches by <code>trigger_type</code> to all active matching flows, so
+binding is a coverage/ownership signal, not a routing switch. (A future option is
+to make the engine prefer the bound flow exclusively — deliberately not done yet.)</p>
+</blockquote>
+<hr>
+<h2>6. Deploy-order safety</h2>
+<p>The seeded flows are live in the DB before the emitting code ships. To keep the
+transition clean in <strong>any</strong> order:</p>
+<ul>
+<li><code>create_notification</code> <strong>skips</strong> (no row) if the templated <code>user_id</code> or <code>title</code>
+didn&#39;t resolve (still contains <code>{{</code>).</li>
+<li><code>send_email</code> <strong>skips</strong> if the templated <code>to</code> didn&#39;t resolve.</li>
+<li>Old (pre-migration) clients that emit id-only payloads therefore cause a clean
+skip rather than a broken notification; meanwhile any still-hardcoded insert
+keeps delivering until its source ships. No double-sends, no lost notifications.</li>
+</ul>
+<hr>
+<h2>7. How to operate</h2>
+<ul>
+<li><strong>Run a flow on demand:</strong> My Flows -&gt; <strong>Run Now</strong> (works for any flow regardless
+of trigger; there is no &quot;Manual Trigger&quot; node).</li>
+<li><strong>Pause a notification:</strong> My Flows -&gt; &quot;...&quot; -&gt; <strong>Pause</strong> (the source still emits;
+nothing is delivered until reactivated).</li>
+<li><strong>Edit the message/recipient/channel:</strong> open the flow in the <strong>Flow Builder</strong>,
+edit the action node config (uses <code>{{trigger.data.*}}</code> templates).</li>
+<li><strong>Protect a flow:</strong> &quot;...&quot; -&gt; <strong>Lock</strong>. <strong>Restore coverage:</strong> <strong>System Areas</strong> -&gt; pick
+a flow for the empty area.</li>
+<li><strong>Add a channel</strong> (e.g. also send a push): add a <code>send_push</code> action node to the
+flow alongside <code>create_notification</code>.</li>
+</ul>
+<hr>
+<h2>8. How to add a NEW converted event</h2>
+<ol>
+<li><strong>Add the trigger string to <code>TriggerType</code></strong> in <code>src/services/flows/types.ts</code>
+(the union + a <code>*TriggerConfig</code> interface + a <code>TriggerConfigMap</code> entry), then
+update the <strong>exhaustive <code>Record&lt;TriggerType, …&gt;</code> maps</strong> — TypeScript fails the
+build if you miss one, which is the safety net:<ul>
+<li><code>MyFlowsTab.tsx</code> — <strong>two</strong> maps: <code>triggerIcons</code> AND <code>triggerLabels</code>.</li>
+<li><code>nodes/TriggerNode.tsx</code> — <code>triggerIcons</code>.</li>
+<li><code>utils/paletteItems.ts</code> — add a trigger palette item so it&#39;s draggable in the builder.</li>
+<li><code>panels/configs/TriggerConfigForm.tsx</code> — <strong>only if</strong> the trigger needs a custom
+config form. Payload-only events (the common case) need nothing here; they fall
+through the <code>default</code> and the shared migration-events block. Add a <code>case</code> only
+for filter/config UI.</li>
+</ul>
+</li>
+<li><strong>In the source, replace the hardcoded send with an emit</strong> carrying the full
+payload the action will template — <code>user_id</code> (recipient), <code>title</code>, <code>body</code>,
+<code>action_url</code>, <code>type</code>, plus any event-specific fields.<ul>
+<li>Frontend: <code>flowEventService.emit(&#39;your_event&#39;, {...})</code>.</li>
+<li>Edge function: <code>import { emitFlowEvent } from &#39;../_shared/flow-events.ts&#39;</code>
+then <code>emitFlowEvent(&#39;your_event&#39;, {...})</code> (remember the import!).</li>
+</ul>
+</li>
+<li><strong>Seed an active default flow</strong> (trigger -&gt; <code>create_notification</code> / <code>send_email</code>),
+tag it <code>system-default</code>, and set <code>is_locked = true</code>. Copy the <code>graph_definition</code>
+shape from an existing <code>system-default</code> flow (trigger node + action node + one edge,
+config values as <code>{{trigger.data.*}}</code>). Seed via <code>mcp__supabase__execute_sql</code>.</li>
+<li><strong>Register the area:</strong> insert a <code>flow_area_registry</code> row and set <code>bound_flow_id</code>
+to the seeded flow, so it shows <strong>Linked</strong> in the System Areas tab.</li>
+<li><strong>Verify:</strong> <code>npx tsc -p tsconfig.json --noEmit</code> (0 errors), commit. Edge functions +
+frontend deploy via the <strong>&quot;Deploy FE &amp; Supabase&quot;</strong> GitHub Action on merge to <code>main</code>.</li>
+</ol>
+<p>If the new feature instead needs an <strong>external/webhook</strong> or <strong>scheduled</strong> trigger
+(not a platform event), you don&#39;t add a new <code>TriggerType</code> value — reuse
+<code>webhook</code> / <code>scheduled</code> and configure the flow in the builder (see §2a).</p>
+<hr>
+<h2>9. Known follow-ups (not yet converted)</h2>
+<ul>
+<li><code>stripe</code> <strong>invoice_paid</strong> notification — needs an <code>invoice_paid</code> trigger type.</li>
+<li><strong>Finance statement</strong> email (<code>finance-send-statement</code>) — needs <code>send_email</code>
+attachment support (it sends a PDF).</li>
+<li><strong>Email channel</strong> for role-upgrade / factory — needs <code>send_email</code> to support
+<code>template_slug</code> + <code>variables</code> (the bell channel is already on flows).</li>
+<li><strong>Python monitoring</strong> (price / mention / job alerts) — detection + credit
+metering intentionally stay in Python; only a future emit-to-flow bridge +
+<code>debit_credits</code> action would move channel fan-out into Flows.</li>
+</ul>
+<hr>
+<h2>10. Source map (quick reference)</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Engine (actions, conditions, loop, guards)</td>
+<td><code>supabase/functions/flow-engine/index.ts</code></td>
+</tr>
+<tr>
+<td>Webhook trigger receiver</td>
+<td><code>supabase/functions/flow-webhook/index.ts</code></td>
+</tr>
+<tr>
+<td>Scheduled trigger driver</td>
+<td><code>supabase/functions/flow-scheduler-cron/index.ts</code></td>
+</tr>
+<tr>
+<td>Frontend emit</td>
+<td><code>src/services/flows/flowEventService.ts</code></td>
+</tr>
+<tr>
+<td>Edge emit</td>
+<td><code>supabase/functions/_shared/flow-events.ts</code></td>
+</tr>
+<tr>
+<td>Types (Flow, triggers, area registry)</td>
+<td><code>src/services/flows/types.ts</code></td>
+</tr>
+<tr>
+<td>Service (CRUD, lock, areas)</td>
+<td><code>src/services/flows/flowService.ts</code></td>
+</tr>
+<tr>
+<td>Admin UI shell + tabs</td>
+<td><code>src/components/Admin/FlowsManagement/FlowsManagement.tsx</code></td>
+</tr>
+<tr>
+<td>My Flows (Run Now, lock)</td>
+<td><code>src/components/Admin/FlowsManagement/MyFlowsTab.tsx</code></td>
+</tr>
+<tr>
+<td>System Areas tab</td>
+<td><code>src/components/Admin/FlowsManagement/SystemAreasTab.tsx</code></td>
+</tr>
+</tbody></table>
+
+</div></body></html>

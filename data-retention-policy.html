@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Data Retention Policy</h1>
 <p>Documents which database tables are automatically cleaned, which are kept indefinitely, and the rationale for each decision.</p>
 <p>Cleanup is performed by two mechanisms:</p>
@@ -45,7 +47,7 @@
 <td><code>background_jobs</code></td>
 <td>5 days</td>
 <td>completed or failed</td>
-<td>Short-lived job records; no value after completion</td>
+<td>Short-lived job records; no value after completion. Note: <code>stage_history</code>, <code>recovery_history</code>, and <code>last_checkpoint</code> JSONB columns on this table supersede the dropped <code>job_checkpoints</code> and <code>job_progress</code> tables (both dropped 2026-04-25).</td>
 </tr>
 <tr>
 <td><code>scraping_sessions</code></td>
@@ -58,18 +60,6 @@
 <td>5 days</td>
 <td>completed/failed + non-scheduled</td>
 <td>One-off import runs; scheduled jobs are kept</td>
-</tr>
-<tr>
-<td><code>job_checkpoints</code></td>
-<td>7 days</td>
-<td>age</td>
-<td>Resume checkpoints lose value once the job finishes</td>
-</tr>
-<tr>
-<td><code>job_progress</code></td>
-<td>7 days</td>
-<td>not updated</td>
-<td>Progress rows are only useful while the job runs; orphaned after parent job is deleted</td>
 </tr>
 <tr>
 <td><code>vr_worlds</code> (failed only)</td>
@@ -204,7 +194,7 @@
 <h2>Notes</h2>
 <ul>
 <li><code>ai_call_logs</code> vs <code>ai_usage_logs</code>: These are <strong>different tables</strong>. <code>ai_usage_logs</code> is the billing record (kept forever). <code>ai_call_logs</code> contains raw request/response payloads used for debugging (cleaned after 30 days).</li>
-<li><code>generation_3d</code> storage: When unsaved renders are deleted, the corresponding crop image files are also removed from the <code>product-images</code> Storage bucket before the DB rows are deleted (CASCADE removes <code>generation_3d_segments</code>).</li>
+<li><code>generation_3d</code> storage: When unsaved renders are deleted, the corresponding crop image files are also removed from the <code>generation-images</code> Storage bucket (under the <code>product-crops/</code> prefix, post 2026-05-23 consolidation) before the DB rows are deleted (CASCADE removes <code>generation_3d_segments</code>).</li>
 <li><code>flow_run_steps</code> are always deleted before their parent <code>flow_runs</code> to avoid foreign key conflicts.</li>
 <li><code>data_import_jobs</code> with <code>is_scheduled = true</code> are excluded from cleanup because they represent recurring cron-driven jobs that must persist.</li>
 </ul>
