@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Job Queue System &amp; Async Processing</h1>
 <p><strong>Architecture</strong>: Supabase-Native with Custom Recovery Layer
 <strong>Last Updated</strong>: December 21, 2025</p>
@@ -69,12 +71,11 @@
                  │
 ┌────────────────▼────────────────────────────────────────────────┐
 │  Supabase PostgreSQL                                            │
-│  - background_jobs (unified job tracking)                       │
+│  - background_jobs (unified job tracking — stage_history, recovery_history, last_checkpoint JSONB) │
 │  - scraping_sessions (web scraping jobs)                        │
 │  - scraping_pages (page-level tracking)                         │
 │  - data_import_jobs (XML import jobs)                           │
 │  - webhook_calls (API call tracking)                            │
-│  - job_checkpoints (PDF recovery data)                          │
 │  - ai_analysis_queue (AI analysis jobs)                 │
 └─────────────────────────────────────────────────────────┘</p>
 <hr>
@@ -98,31 +99,23 @@
 <li><code>cancelled</code>: Manually cancelled</li>
 </ul>
 <hr>
-<h3>job_progress</h3>
-<p>Real-time progress tracking for each stage. Key columns: <code>id</code>, <code>job_id</code>, <code>stage</code>, <code>progress_percent</code>, <code>current_step</code>, <code>details</code> JSONB, <code>created_at</code>. A unique constraint exists on <code>(job_id, stage)</code>.</p>
-<p><strong>Stages</strong>:</p>
+<h3>stage_history (JSONB on background_jobs)</h3>
+<blockquote>
+<p><strong>Note (2026-04-25):</strong> The <code>job_progress</code> and <code>job_checkpoints</code> tables were <strong>dropped</strong>. All stage and recovery audit data now lives as JSONB arrays directly on the <code>background_jobs</code> row.</p>
+</blockquote>
+<p><strong><code>background_jobs.stage_history</code> jsonb</strong> — append-only audit log; one entry per stage transition (<code>{stage, status, started_at, completed_at, attempt, data, metadata, source}</code>). Capped at 100 entries by <code>append_stage_history(uuid, jsonb)</code>.</p>
+<p><strong><code>background_jobs.recovery_history</code> jsonb</strong> — append-only log written by auto-recovery-cron whenever it claims a stuck job (<code>{attempted_at, from_stage, reason, attempt_number, succeeded, exhausted}</code>).</p>
+<p><strong><code>background_jobs.last_checkpoint</code> jsonb</strong> — snapshot used by auto-recovery to know which stage to resume from. Updated alongside every <code>append_stage_history</code> call.</p>
+<p><strong>SQL helpers (atomic, race-safe)</strong>:</p>
 <ul>
-<li><code>initialized</code>: Job created</li>
-<li><code>pdf_extracted</code>: PDF text extracted</li>
-<li><code>chunks_created</code>: Text chunks created</li>
-<li><code>text_embeddings_generated</code>: Text embeddings generated</li>
-<li><code>images_extracted</code>: Images extracted from PDF</li>
-<li><code>image_embeddings_generated</code>: Image embeddings generated</li>
-<li><code>products_detected</code>: Products identified</li>
-<li><code>products_created</code>: Product records created</li>
-<li><code>completed</code>: All processing complete</li>
+<li><code>append_stage_history(p_job_id, p_event)</code> — atomic <code>||</code> UPDATE</li>
+<li><code>append_recovery_history(p_job_id, p_event)</code> — atomic <code>||</code> UPDATE</li>
+<li><code>update_checkpoint_and_append_history(job_id, checkpoint, event)</code> — single-UPDATE atomic combined write</li>
+<li><code>detect_stuck_pdf_jobs(stuck_threshold_seconds, max_attempts)</code></li>
+<li><code>mark_pdf_job_for_recovery(job_id, max_attempts)</code></li>
+<li><code>fail_exhausted_pdf_jobs(max_attempts, stuck_threshold_seconds)</code></li>
 </ul>
-<hr>
-<h3>job_checkpoints</h3>
-<p>Checkpoint data for recovery. Key columns: <code>id</code>, <code>job_id</code>, <code>stage</code>, <code>checkpoint_data</code> JSONB, <code>metadata</code> JSONB, <code>created_at</code>. A unique constraint exists on <code>(job_id, stage)</code>.</p>
-<p><strong>Checkpoint Data</strong> stored per stage:</p>
-<ul>
-<li><code>chunk_ids</code>: IDs of created chunks</li>
-<li><code>image_ids</code>: IDs of extracted images</li>
-<li><code>embedding_ids</code>: IDs of generated embeddings</li>
-<li><code>product_ids</code>: IDs of created products</li>
-<li><code>metadata</code>: Stage-specific metadata</li>
-</ul>
+<p><strong>Consolidated read</strong>: <code>GET /api/rag/documents/job/{id}/full-status</code> returns <code>{core, stage_history, recovery_history, products, memory}</code> in a single round trip.</p>
 <hr>
 <h3>image_processing_queue</h3>
 <p>Queue for image processing jobs. Key columns: <code>id</code>, <code>document_id</code>, <code>image_id</code>, <code>status</code>, <code>priority</code> (normal/high/critical), <code>retry_count</code>, <code>max_retries</code>, <code>created_at</code>, <code>updated_at</code>. A unique constraint exists on <code>image_id</code>.</p>
@@ -134,9 +127,9 @@
 <h3>1. Job Creation</h3>
 <p>The frontend uploads a PDF, the backend creates a job record in <code>background_jobs</code> with status <code>pending</code>, and returns the <code>job_id</code> to the frontend for tracking.</p>
 <h3>2. Job Processing</h3>
-<p>The job monitor detects the pending job and starts processing. It updates the status to <code>processing</code>, then executes the 14-stage pipeline (Stage 0: Product Discovery at 0-15%, through Stage 13: Quality Enhancement at 97-100%). At each stage, the system creates a checkpoint, updates <code>job_progress</code>, and updates <code>background_jobs.progress_percent</code>.</p>
-<h3>3. Checkpoint Creation</h3>
-<p>After each successful stage, the checkpoint recovery service stores the stage&#39;s output data (e.g., chunk IDs, total chunks, average chunk size) in the <code>job_checkpoints</code> table. This allows the job to resume from that point if it fails.</p>
+<p>The job monitor detects the pending job and starts processing. It updates the status to <code>processing</code>, then executes the 14-stage pipeline (Stage 0: Product Discovery at 0-15%, through Stage 13: Quality Enhancement at 97-100%). At each stage, the system appends a <code>stage_history</code> entry via <code>append_stage_history()</code> and updates <code>background_jobs.progress_percent</code>.</p>
+<h3>3. Checkpoint / Stage History Creation</h3>
+<p>After each successful stage, the checkpoint recovery service calls <code>update_checkpoint_and_append_history()</code> to atomically update <code>last_checkpoint</code> (the resume snapshot) and append a stage event to <code>stage_history</code>. Both live as JSONB on the <code>background_jobs</code> row — the <code>job_checkpoints</code> table was dropped in the 2026-04-25 single-table migration.</p>
 <h3>4. Stuck Job Detection</h3>
 <p>The job monitor runs every 60 seconds and detects jobs that have been stuck for more than 30 minutes without progress. For each stuck job, it checks whether a valid checkpoint exists, restarts from the checkpoint if available, or marks the job as failed if not.</p>
 <h3>5. Auto-Recovery</h3>
@@ -195,7 +188,7 @@
 <ul>
 <li><strong>Max Concurrent Jobs</strong>: 100+</li>
 <li><strong>Max Queue Size</strong>: 10,000+</li>
-<li><strong>Checkpoint Retention</strong>: 24 hours</li>
+<li><strong>stage_history Retention</strong>: capped at 100 entries per job (JSONB on background_jobs); job rows retained 5 days after completion per data-retention policy</li>
 <li><strong>Job History Retention</strong>: 30 days</li>
 </ul>
 <hr>
@@ -204,17 +197,17 @@
 <p><strong>Symptoms</strong>: Job processing &gt;30 minutes without progress</p>
 <p><strong>Solution</strong>:</p>
 <ol>
-<li>Check job_progress table for last update</li>
-<li>Verify checkpoint exists</li>
-<li>Manual restart: <code>POST /api/v1/admin/jobs/{job_id}/restart</code></li>
+<li>Check <code>background_jobs.stage_history</code> JSONB for the last stage entry</li>
+<li>Check <code>background_jobs.last_checkpoint</code> for the resume snapshot</li>
+<li>Manual restart: <code>POST /api/v1/admin/jobs/{job_id}/restart</code> (or <code>POST /api/rag/documents/job/{id}/resume</code>)</li>
 </ol>
 <h3>Checkpoint Invalid</h3>
 <p><strong>Symptoms</strong>: Job fails to restart from checkpoint</p>
 <p><strong>Solution</strong>:</p>
 <ol>
-<li>Verify checkpoint_data in job_checkpoints table</li>
-<li>Check if referenced chunks/images exist</li>
-<li>Cleanup invalid checkpoints</li>
+<li>Inspect <code>last_checkpoint</code> JSONB on the <code>background_jobs</code> row</li>
+<li>Check if referenced chunks/images still exist in the DB</li>
+<li>Use <code>cleanup_invalid_stage_history(job_id, invalid_stages[])</code> RPC if stage entries are corrupt</li>
 <li>Restart job from beginning</li>
 </ol>
 <h3>High Memory Usage</h3>
@@ -223,18 +216,17 @@
 <ol>
 <li>Reduce check_interval_seconds</li>
 <li>Reduce stuck_job_timeout_minutes</li>
-<li>Cleanup old checkpoints</li>
 <li>Restart job monitor service</li>
 </ol>
 <hr>
 <h2>📚 Related Documentation</h2>
 <ul>
-<li><a href="pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
-<li><a href="database-schema-complete.md">Database Schema</a></li>
-<li><a href="api-endpoints.md">API Endpoints</a></li>
-<li><a href="troubleshooting-guide.md">Troubleshooting Guide</a></li>
-<li><a href="unified-job-tracking.md">Unified Job Tracking</a> ✨ NEW</li>
-<li><a href="monitoring-and-alerting.md">Monitoring &amp; Alerting</a> ✨ NEW</li>
+<li><a href="pdf-processing-pipeline.html">PDF Processing Pipeline</a></li>
+<li><a href="database-schema-complete.html">Database Schema</a></li>
+<li><a href="api-endpoints.html">API Endpoints</a></li>
+<li><a href="troubleshooting-guide.html">Troubleshooting Guide</a></li>
+<li><a href="unified-job-tracking.html">Unified Job Tracking</a> ✨ NEW</li>
+<li><a href="monitoring-and-alerting.html">Monitoring &amp; Alerting</a> ✨ NEW</li>
 </ul>
 <hr>
 <h2>🚨 Monitoring &amp; Alerting</h2>
@@ -264,7 +256,7 @@
 <li>Timestamps and duration</li>
 <li>Unique fingerprints for grouping</li>
 </ul>
-<p>See <a href="monitoring-and-alerting.md">monitoring-and-alerting.md</a> for complete details.</p>
+<p>See <a href="monitoring-and-alerting.html">monitoring-and-alerting.md</a> for complete details.</p>
 <hr>
 <h2>Summary</h2>
 <p>The Material Kai Vision Platform uses a <strong>production-ready, unified job queue system</strong> with:</p>
