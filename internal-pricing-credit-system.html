@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,18 +19,29 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>AI Usage Pricing &amp; Monitoring System</h1>
 <h2>Overview</h2>
 <p>This document explains how the platform tracks and converts AI service costs into platform credits.</p>
 <h2>Platform Credit System</h2>
 <p><strong>1 Platform Credit = $0.01 USD</strong></p>
-<p>All AI service costs are converted to platform credits using the formula: <code>Platform Credits = USD Cost × 100</code>.</p>
-<p>Example: A $0.15 USD API call = <strong>15 platform credits</strong></p>
+<p>Platform billing applies a <strong>50% markup</strong> on top of the raw provider cost before converting to credits:</p>
+<pre><code>billed_cost_usd = raw_cost_usd × 1.50         # MARKUP_MULTIPLIER
+platform_credits = billed_cost_usd × 100      # 1 credit = $0.01
+</code></pre>
+<p>Example: A raw $0.15 Anthropic API call → billed $0.225 → <strong>22.5 platform credits</strong> (rounded up to 23).</p>
+<p>The markup constant is centralized to keep ecosystems aligned:</p>
+<ul>
+<li>Edge functions: <a href="../supabase/functions/_shared/pricing-constants.ts"><code>supabase/functions/_shared/pricing-constants.ts</code></a> → <code>MARKUP_MULTIPLIER</code></li>
+<li>Python backend: <a href="../mivaa-pdf-extractor/app/config/ai_pricing.py"><code>mivaa-pdf-extractor/app/config/ai_pricing.py</code></a> → <code>AIPricingConfig.MARKUP_MULTIPLIER</code></li>
+<li>Frontend admin dashboard: <a href="../src/components/Admin/OperationsDashboard/constants.ts"><code>src/components/Admin/OperationsDashboard/constants.ts</code></a> → <code>MARKUP_MULTIPLIER</code></li>
+</ul>
+<p>All three MUST be updated together.</p>
 <hr>
 <h2>Supported AI Services</h2>
 <h3>1. <strong>OpenAI Models (GPT)</strong></h3>
@@ -47,8 +59,8 @@
 <ul>
 <li><strong>Pricing Unit</strong>: Per million tokens</li>
 <li><strong>Models Tracked</strong>:<ul>
-<li>Claude 3.5 Sonnet (with prompt caching)</li>
-<li>Claude 3 Opus, Sonnet, Haiku</li>
+<li>Claude Opus 4.7 (with prompt caching)</li>
+<li>Claude Haiku 4.5</li>
 </ul>
 </li>
 <li><strong>Special Features</strong>:<ul>
@@ -57,20 +69,29 @@
 </li>
 <li><strong>Cost Calculation</strong>: USD Cost = (input_tokens / 1M × input_price) + (output_tokens / 1M × output_price) + (cached_tokens / 1M × cached_price). Platform Credits = USD Cost × 100.</li>
 </ul>
-<h3>3. <strong>HuggingFace Endpoint Models (Qwen3-VL Vision)</strong></h3>
+<h3>3. <strong><del>HuggingFace Endpoint Vision</del> — RETIRED 2026-05-01</strong></h3>
 <ul>
-<li><strong>Pricing Unit</strong>: Per million tokens</li>
-<li><strong>Models Tracked</strong>:<ul>
-<li>Qwen3-VL-32B, Qwen3-VL-8B (vision models)</li>
+<li><del>Pricing Unit: Per million tokens</del></li>
+<li><del>Models Tracked: Qwen3-VL-32B, Qwen3-VL-8B</del></li>
+<li><strong>Status</strong>: Qwen vision endpoint deleted 2026-05-01 (had been silently 404-ing for months). Vision now runs on Anthropic Claude Opus 4.7 via tool use — billed under section 2 (Anthropic). Qwen pricing entries were removed from <a href="../supabase/functions/_shared/mivaa-pricing.ts"><code>mivaa-pricing.ts</code></a> and the Operations dashboard widgets.</li>
 </ul>
-</li>
-<li><strong>Cost Calculation</strong>: Same formula as OpenAI.</li>
+<h3>3a. <strong>HuggingFace Endpoint OCR (Chandra v2)</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: HuggingFace Inference Endpoint hourly rate (auto-paused when idle)</li>
+<li><strong>Models Tracked</strong>: Chandra v2 (Datalab, sole OCR engine post-2026-05-01)</li>
+<li><strong>Cost Calculation</strong>: Endpoint runtime cost amortized across all OCR&#39;d pages/images. Per-attempt latency tracked in <code>chandra_ocr_metrics</code>.</li>
+</ul>
+<h3>3b. <strong>HuggingFace Endpoint Visual Embeddings (SLIG SigLIP2)</strong></h3>
+<ul>
+<li><strong>Pricing Unit</strong>: HuggingFace Inference Endpoint hourly rate (auto-paused when idle)</li>
+<li><strong>Models Tracked</strong>: SLIG (SigLIP2 ViT-SO400M) — 5 specialized 768D embedding types per image</li>
+<li><strong>Cost Calculation</strong>: Endpoint runtime cost amortized across all images embedded.</li>
 </ul>
 <h3>4. <strong>Embedding Models</strong> (updated 2026-04)</h3>
 <ul>
 <li><strong>Pricing Unit</strong>: Per million tokens</li>
 <li><strong>Models Tracked</strong>:<ul>
-<li>Voyage AI <code>voyage-3.5</code> (1024D) — sole production text embedder</li>
+<li>Voyage AI <code>voyage-4</code> (1024D) — sole production text embedder</li>
 <li>OpenAI <code>text-embedding-3-small</code> — legacy CI changelog workflow only</li>
 </ul>
 </li>
@@ -81,7 +102,7 @@
 <li><strong>Pricing Unit</strong>: Per image</li>
 <li><strong>Models Tracked</strong>:<ul>
 <li>GPT-4o vision</li>
-<li>Claude 3.5 Sonnet vision</li>
+<li>Claude Opus 4.7 vision</li>
 </ul>
 </li>
 <li><strong>Cost Calculation</strong>: USD Cost = image_count × price_per_image. Platform Credits = USD Cost × 100.</li>
@@ -97,23 +118,52 @@
 <li><strong>Cost Calculation</strong>: USD Cost = firecrawl_credits × cost_per_credit. Platform Credits = USD Cost × 100.</li>
 <li><strong>Default Estimate</strong>: $0.001 per Firecrawl credit</li>
 </ul>
+<h3>7. <strong>Perplexity Sonar</strong> (price discovery engine, 2026-04)</h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Tokens + per-search fee</li>
+<li><strong>Model</strong>: <code>sonar-pro</code> — $3/M input, $15/M output, plus $5 per 1K high-context searches.</li>
+<li><strong>Cost Calculation</strong>: USD = (input/1M × $3) + (output/1M × $15) + ($0.005 × search_calls). Platform credits = USD × 100.</li>
+<li><strong>Typical</strong>: ~$0.02/query, ~5-8s latency, 6-10 retailers.</li>
+<li><strong>Logged as</strong>: <code>operation_type=&#39;price_search&#39;</code>, <code>provider=&#39;perplexity&#39;</code> in <code>ai_usage_logs</code>.</li>
+</ul>
+<h3>8. <strong>DataForSEO Merchant</strong> (Google Shopping feed, 2026-04)</h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Flat per task (~$0.002 regardless of depth)</li>
+<li><strong>Endpoint</strong>: async <code>task_post</code> → <code>task_get/advanced</code>. Depth defaults to ≥30 for broad merchant coverage.</li>
+<li><strong>Cost Calculation</strong>: USD = $0.002 × tasks_posted. Platform credits = USD × 100.</li>
+<li><strong>Logged as</strong>: <code>operation_type=&#39;price_search&#39;</code>, <code>provider=&#39;dataforseo&#39;</code>.</li>
+</ul>
+<h3>9. <strong>Claude Haiku 4.5</strong> (identity classifier + query facet extractor, 2026-04-25)</h3>
+<ul>
+<li><strong>Pricing Unit</strong>: Per million tokens</li>
+<li><strong>Model</strong>: <code>claude-haiku-4-5-20251001</code> — cheap, fast, cache-aware</li>
+<li><strong>Two operation types in price monitoring</strong>:<ul>
+<li><code>operation_type=&#39;price_search&#39;</code> (query facet extraction) — ~$0.0005/call. Cached on <code>tracked_queries.query_facets</code> so repeated refreshes don&#39;t re-pay.</li>
+<li><code>operation_type=&#39;product_match_classifier&#39;</code> (batched identity verdict over N hits per discovery) — ~$0.002 per batch.</li>
+</ul>
+</li>
+<li><strong>Cost Calculation</strong>: standard token-based — (input/1M × $0.80) + (output/1M × $4.00). Cache hits reduce input cost by ~90%.</li>
+<li><strong>Logged as</strong>: <code>provider=&#39;anthropic&#39;</code>. Full <code>{query_facets, candidates, verdicts}</code> payload stored in <code>metadata</code> jsonb for auditability.</li>
+</ul>
 <hr>
 <h2>Database Schema</h2>
 <h3><code>ai_usage_logs</code> Table</h3>
-<p>Tracks all AI API calls with detailed cost breakdown. The table stores the following fields: a UUID primary key, <code>user_id</code> referencing <code>auth.users</code>, <code>model_name</code> (e.g., <code>&quot;gpt-4o&quot;</code>, <code>&quot;claude-3-5-sonnet&quot;</code>), <code>provider</code> (e.g., <code>&quot;openai&quot;</code>, <code>&quot;anthropic&quot;</code>, <code>&quot;firecrawl&quot;</code>), <code>operation_type</code> (e.g., <code>&quot;chat&quot;</code>, <code>&quot;embedding&quot;</code>, <code>&quot;scrape&quot;</code>), <code>input_tokens</code>, <code>output_tokens</code>, <code>cached_tokens</code>, <code>total_tokens</code>, <code>firecrawl_credits</code> (Firecrawl-specific), <code>cost_usd</code> (DECIMAL 10,6 — cost in USD), <code>platform_credits</code> (integer — cost in platform credits, i.e., USD × 100), <code>request_metadata</code> (JSONB), <code>response_metadata</code> (JSONB), and <code>created_at</code> timestamp.</p>
+<p>Tracks all AI API calls with detailed cost breakdown. The table stores the following fields: a UUID primary key, <code>user_id</code> referencing <code>auth.users</code>, <code>model_name</code> (e.g., <code>&quot;gpt-4o&quot;</code>, <code>&quot;claude-opus-4-7&quot;</code>), <code>provider</code> (e.g., <code>&quot;openai&quot;</code>, <code>&quot;anthropic&quot;</code>, <code>&quot;firecrawl&quot;</code>), <code>operation_type</code> (e.g., <code>&quot;chat&quot;</code>, <code>&quot;embedding&quot;</code>, <code>&quot;scrape&quot;</code>), <code>input_tokens</code>, <code>output_tokens</code>, <code>cached_tokens</code>, <code>total_tokens</code>, <code>firecrawl_credits</code> (Firecrawl-specific), <code>cost_usd</code> (DECIMAL 10,6 — cost in USD), <code>platform_credits</code> (integer — cost in platform credits, i.e., USD × 100), <code>request_metadata</code> (JSONB), <code>response_metadata</code> (JSONB), and <code>created_at</code> timestamp.</p>
 <hr>
 <h2>Usage Examples</h2>
-<h3>Example 1: GPT-4o API Call</h3>
-<p>For 1,000 input tokens at $2.50/1M and 500 output tokens at $10.00/1M:</p>
+<h3>Example 1: Claude Opus 4.7 API Call (with markup)</h3>
+<p>For 1,000 input tokens at $15.00/1M and 500 output tokens at $75.00/1M:</p>
 <ul>
-<li>USD cost = (1,000/1,000,000 × $2.50) + (500/1,000,000 × $10.00) = $0.0025 + $0.005 = $0.0075</li>
-<li>Platform credits = $0.0075 × 100 = 0.75 credits (rounded up to 1)</li>
+<li>Raw USD cost = (1,000/1,000,000 × $15.00) + (500/1,000,000 × $75.00) = $0.015 + $0.0375 = $0.0525</li>
+<li>Billed USD = $0.0525 × 1.50 (markup) = $0.07875</li>
+<li>Platform credits = $0.07875 × 100 = 7.875 credits (rounded up to <strong>8</strong>)</li>
 </ul>
-<h3>Example 2: Firecrawl Scrape</h3>
+<h3>Example 2: Firecrawl Scrape (with markup)</h3>
 <p>For 5 Firecrawl credits at an estimated $0.001 per credit:</p>
 <ul>
-<li>USD cost = 5 × $0.001 = $0.005</li>
-<li>Platform credits = $0.005 × 100 = 0.5 credits (rounded up to 1)</li>
+<li>Raw USD cost = 5 × $0.001 = $0.005</li>
+<li>Billed USD = $0.005 × 1.50 = $0.0075</li>
+<li>Platform credits = $0.0075 × 100 = 0.75 credits (rounded up to <strong>1</strong>)</li>
 </ul>
 <hr>
 <h2>Monitoring &amp; Reporting</h2>
@@ -123,11 +173,40 @@
 <p>To see which models are consuming the most credits over the last 7 days, query <code>ai_usage_logs</code> grouped by <code>model_name</code> and <code>provider</code>, summing <code>total_tokens</code> and <code>platform_credits</code>, ordered by <code>total_credits</code> descending.</p>
 <hr>
 <h2>Configuration</h2>
-<p>All pricing is centralized in <code>app/config/ai_pricing.py</code>:</p>
+<p>Pricing is split across two layers:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>What it covers</th>
+<th>Storage</th>
+<th>How to update</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>AI model + external service pricing</strong></td>
+<td>Claude (Opus 4.7 / Sonnet 4.6 / Haiku 4.5) / Voyage AI / SLIG SigLIP2 / Chandra v2 / OpenAI (alt) + Zernio WhatsApp, Apollo, Hunter.io, ZeroBounce, Firecrawl, FLUX, Kling, Runway, xAI Aurora, etc. (Qwen pricing entries removed 2026-05-01; Twilio/SMS removed 2026-06-08 — replaced by Zernio WhatsApp at 0.005 cr/msg billed as <code>zernio-whatsapp</code>; Oxygen pricing entries removed when Oxygen connector was retired.)</td>
+<td><code>ai_model_pricing</code> DB table (<code>billing_type</code> ∈ <code>token_based</code> / <code>time_based</code> / <code>per_generation</code> / <code>per_unit</code>; <code>category</code> ∈ <code>llm</code> / <code>embedding</code> / <code>vision</code> / <code>generation</code> / <code>external_service</code>)</td>
+<td>Admin UI at <code>/admin/agent-configs → AI Model Pricing</code> (live edit). Auto-updater cron (Sundays UTC) refreshes AI model rows where <code>auto_update_enabled=true</code>. External services are set to <code>auto_update_enabled=false</code> by default — admins update them by hand when providers change rates.</td>
+</tr>
+<tr>
+<td><strong>MIVAA gateway action pricing</strong></td>
+<td>RAG search, image analysis (flat per-action credits)</td>
+<td>Hardcoded TypeScript in <a href="../supabase/functions/_shared/mivaa-pricing.ts"><code>mivaa-pricing.ts</code></a></td>
+<td>Manual — these are platform-internal action-level prices, not third-party costs</td>
+</tr>
+</tbody></table>
+<h3>Runtime behaviour</h3>
+<p>The edge-function billing path (<a href="../supabase/functions/_shared/credit-utils.ts"><code>credit-utils.ts</code></a>) reads <code>ai_model_pricing</code> rows where <code>billing_type=&#39;per_unit&#39;</code> AND <code>category=&#39;external_service&#39;</code> at runtime, caches the result in memory for <strong>5 minutes</strong>, and falls back to a small embedded constant only if the DB query fails. Admin price edits propagate within 5 minutes (or immediately via <code>invalidatePricingCache()</code>).</p>
+<p>The Python mirror in <a href="../mivaa-pdf-extractor/app/config/ai_pricing.py"><code>ai_pricing.py</code></a> <code>EXTERNAL_SERVICE_PRICING</code> is a <strong>fallback for standalone Python use only</strong> — the DB row is canonical.</p>
+<h3>Per-model metadata</h3>
+<p>Each row in <code>ai_model_pricing</code> carries:</p>
 <ul>
-<li>Prices are stored as <code>Decimal</code> for precision</li>
-<li>Each model includes <code>last_verified</code> date and <code>source</code> URL</li>
-<li>Prices should be updated when providers change rates</li>
+<li><code>cost_per_unit</code> / <code>cost_per_generation</code> / <code>input_price_per_million</code> + <code>output_price_per_million</code> / <code>hourly_rate_usd</code> (depending on <code>billing_type</code>)</li>
+<li><code>unit_label</code> (per-unit rows only — e.g. <code>message</code>, <code>enrichment</code>, <code>image</code>, <code>second</code>)</li>
+<li><code>markup_multiplier</code> (default 1.50)</li>
+<li><code>source_url</code> and <code>last_verified_at</code></li>
+<li><code>auto_update_enabled</code> flag and optional <code>auto_update_source_url</code></li>
 </ul>
 <h2>Credit Purchase Volume Discounts</h2>
 <p>Users can purchase credits for any dollar amount ($1–$500). Larger purchases unlock better rates:</p>
@@ -175,8 +254,11 @@
 <h2>Notes</h2>
 <ul>
 <li>Platform credits are always rounded up to nearest integer</li>
-<li>Firecrawl pricing is estimated and should be adjusted based on actual plan</li>
-<li>All costs are logged in both USD and platform credits for transparency</li>
+<li>All billed amounts include the <strong>50% platform markup</strong> described above</li>
+<li>Firecrawl pricing is an estimate ($0.001/credit) — adjust against the active plan if usage scales (editable from the admin UI)</li>
+<li>External service pricing lives in <code>ai_model_pricing</code> and is editable from the admin UI; edits propagate to live billing within 5 minutes via the edge-function cache</li>
+<li>MIVAA gateway action pricing (RAG search, image analysis) is hardcoded in <code>mivaa-pricing.ts</code> because these are platform-internal action-level credits, not third-party provider costs</li>
+<li>All costs are logged in both raw USD, billed USD, markup multiplier, and platform credits for transparency (<code>ai_usage_logs</code>)</li>
 </ul>
 
 </div></body></html>

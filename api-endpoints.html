@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,24 +19,34 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>MIVAA API Endpoints Reference</h1>
-<p><strong>Last Updated:</strong> 2026-01-21
-<strong>API Version:</strong> v2.6.0
+<p><strong>Last Updated:</strong> 2026-04-25
+<strong>API Version:</strong> v2.7.0
 <strong>Total Endpoints:</strong> 140+</p>
 <p>Complete reference of all consolidated API endpoints with detailed usage information, database operations, and integration points.</p>
-<p><strong>Recent Updates (v2.6.0 - January 2026):</strong></p>
+<p><strong>Recent Updates (v2.7.0 - April 2026):</strong></p>
 <ul>
-<li><strong>MULTI-CHANNEL MESSAGING:</strong> 10+ endpoints for SMS, WhatsApp via Twilio (NEW)<ul>
+<li><strong>MODULAR ARCHITECTURE:</strong> Platform converted to module-based runtime. 7 modules (<code>greek-marketplaces</code>, <code>crm</code>, <code>email</code>, <code>messaging</code>, <code>quotes</code>, <code>notifications</code>, <code>social-media</code>), each gated by a row in <code>public.modules</code>. Module routes auto-mount/unmount based on the toggle.<ul>
+<li><code>POST /api/v1/modules/_invalidate</code> — admin cache-invalidation hook called by <code>/admin/modules</code> toggle UI to drop the in-process enabled-flag cache without waiting for the 5-min TTL. Returns 204.</li>
+<li><code>GET /api/v1/modules/greek-marketplaces/status</code> — admin status of Skroutz / Bestprice / Shopflix adapters + 7-day usage stats (only mounted when module enabled).</li>
+<li><code>POST /api/v1/modules/greek-marketplaces/search</code> — admin one-off test query against all 3 adapters (only mounted when module enabled).</li>
+</ul>
+</li>
+<li><strong>Sentry hygiene:</strong> 4xx codes 401/403/404 are no longer captured to Sentry. Auth-token-expiry noise filtered out of frontend Sentry init too. See <code>.claude/plans/modular-architecture.md</code> for the full module system design.</li>
+</ul>
+<p><strong>Previous Updates (v2.6.0 - January 2026):</strong></p>
+<ul>
+<li><strong>MULTI-CHANNEL MESSAGING:</strong> WhatsApp via Zernio (Meta Cloud API). Twilio + SMS removed 2026-06-08.<ul>
 <li><code>POST /functions/v1/messaging-api</code> - Unified messaging API (action-based routing)</li>
-<li>Send single/bulk messages across SMS, WhatsApp</li>
+<li>WhatsApp sends require Zernio Inbox add-on + Meta-approved template (24h-window rule)</li>
+<li>Channels are connected Zernio WABA accounts, not typed phone strings</li>
 <li>Template management with variable substitution</li>
-<li>Twilio Content API for WhatsApp templates</li>
-<li>WhatsApp pre-approved template support</li>
 <li>Delivery analytics and cost tracking</li>
 <li>Opt-out compliance management</li>
 </ul>
@@ -45,7 +56,7 @@
 <ul>
 <li><strong>IMAGE RE-CLASSIFICATION:</strong> 1 new endpoint for AI-powered image re-classification<ul>
 <li><code>POST /api/images/reclassify/{image_id}</code> - Re-run material vs non-material classification</li>
-<li>Force validation with secondary model (Qwen-32B or Claude)</li>
+<li>Force validation via Claude Opus 4.7 (Anthropic tool use, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>). Pre-2026-05-01 had a Qwen→Claude fallback that was dead code (Qwen endpoint had been 404-ing for months); migration retired the Qwen call entirely.</li>
 <li>Real-time database updates with new classification results</li>
 <li>Confidence scoring and reasoning</li>
 </ul>
@@ -89,7 +100,7 @@
 </ul>
 <p><strong>Total API Endpoints:</strong> 140+ endpoints across 19 categories</p>
 <ul>
-<li><strong>MULTI-CHANNEL MESSAGING:</strong> SMS, WhatsApp messaging via Twilio ✨ NEW</li>
+<li><strong>MULTI-CHANNEL MESSAGING:</strong> WhatsApp via Zernio (Meta Cloud API). Twilio + SMS removed 2026-06-08. ✨</li>
 <li><strong>KNOWLEDGE BASE:</strong> Complete documentation management system with AI embeddings</li>
 <li><strong>FRONTEND UPDATED:</strong> All API clients updated to use new consolidated endpoints</li>
 <li><strong>FEATURES PRESERVED:</strong> Prompt enhancement, category extraction, all processing modes intact</li>
@@ -111,7 +122,7 @@
 <li><a href="#7-products-routes">Products Routes</a> - Product management</li>
 <li><a href="#8-images-routes">Images Routes</a> - Image processing</li>
 <li><a href="#9-embeddings-routes">Embeddings Routes</a> - Embedding generation</li>
-<li><a href="#10-huggingface-qwen-routes">HuggingFace/Qwen Routes</a> - Qwen3-VL integration</li>
+<li>HuggingFace/Qwen Routes — Retired 2026-05-01. Vision (segmentation, classification, vision_analysis, material analysis) consolidated onto Claude Opus 4.7 via Anthropic tool use; Qwen endpoint had been 404-ing for months and silently falling through to Claude.</li>
 <li><a href="#11-anthropic-routes">Anthropic Routes</a> - Anthropic integration</li>
 <li><a href="#12-monitoring-routes">Monitoring Routes</a> - System monitoring</li>
 <li><a href="#13-ai-metrics-routes">AI Metrics Routes</a> - AI performance metrics</li>
@@ -119,14 +130,14 @@
 <li><a href="#15-data-import-routes">Data Import Routes</a> - XML import, web scraping, batch processing</li>
 <li><a href="#16-job-health-routes">Job Health Routes</a> - Job monitoring and health checks</li>
 <li><a href="#17-suggestions-routes">Suggestions Routes</a> - Search suggestions and auto-complete</li>
-<li><a href="#19-messaging-routes-sms-whatsapp--new-v260">Messaging Routes</a> - SMS, WhatsApp via Twilio ✨ NEW v2.6.0</li>
+<li><a href="#19-messaging-routes-whatsapp--new-v260">Messaging Routes</a> - WhatsApp via Zernio ✨ NEW v2.6.0 (Twilio + SMS removed 2026-06-08)</li>
 </ol>
 <hr>
 <h2>1. Core Endpoints</h2>
 <h3>1.1 GET /health</h3>
 <p><strong>Purpose:</strong> Unified health check for all MIVAA services
 <strong>Replaces:</strong> 10+ individual health check endpoints (<code>/api/pdf/health</code>, <code>/api/rag/health</code>, <code>/api/search/health</code>, etc.)</p>
-<p>The response includes <code>status</code>, <code>timestamp</code>, per-service health details with response times (database, storage, AI models including Claude/GPT/QWEN, and RAG), and a <code>version</code> field.</p>
+<p>The response includes <code>status</code>, <code>timestamp</code>, per-service health details with response times (database, storage, AI models including Claude/GPT, and RAG), and a <code>version</code> field.</p>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>✅ Single request instead of 10+ requests</li>
@@ -150,7 +161,7 @@
 <ul>
 <li>INSERT (new) or UPDATE (existing with same title + category) on <code>kb_docs</code></li>
 <li>INSERT into <code>kb_doc_versions</code> (version history)</li>
-<li>Generate 1024D embedding using Voyage AI voyage-3.5 (only on new content)</li>
+<li>Generate 1024D embedding using Voyage AI voyage-4 (only on new content)</li>
 </ul>
 <hr>
 <h3>2.2 GET /api/kb/documents/{doc_id}</h3>
@@ -202,7 +213,7 @@
 <p><strong>Architecture:</strong></p>
 <ol>
 <li>Frontend calls MIVAA API with search query</li>
-<li>MIVAA generates embedding for query using Voyage AI voyage-3.5 (updated 2026-04)</li>
+<li>MIVAA generates embedding for query using Voyage AI voyage-4 (updated 2026-04)</li>
 <li>MIVAA calls Supabase <code>kb_match_docs()</code> RPC function with query embedding</li>
 <li>Supabase performs vector similarity search using pgvector <code>&lt;=&gt;</code> operator</li>
 <li>Returns ranked results with similarity scores</li>
@@ -335,7 +346,7 @@
 <li>Stage 0 (0-15%): Product Discovery - Claude/GPT analyzes entire PDF</li>
 <li>Stage 1 (15-30%): Focused Extraction - Extract only product pages</li>
 <li>Stage 2 (30-50%): Chunking - Create chunks for vector DB</li>
-<li>Stage 3 (50-70%): Image Processing - Qwen3-VL + CLIP embeddings</li>
+<li>Stage 3 (50-70%): Image Processing - Claude Opus 4.7 vision_analysis (Anthropic tool use, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>) + SLIG embeddings. Pre-2026-05-01 routed through Qwen3-VL with Claude fallback; Qwen retired (silent 404s for months → 100% Claude in practice).</li>
 <li>Stage 4 (70-90%): Product Creation - Create product records</li>
 <li>Stage 5 (90-100%): Quality Enhancement - Claude validation (async)</li>
 </ol>
@@ -416,7 +427,7 @@
 <strong>Used In:</strong> Image gallery, Image inspector, Admin dashboard
 <strong>Flow:</strong> User views document → Fetch images → Display gallery</p>
 <p><strong>Request:</strong> <code>GET /api/rag/images?document_id={uuid}&amp;limit=100&amp;offset=0</code></p>
-<p><strong>Response:</strong> <code>images</code> array (id, document_id, image_url, page_number, QWEN_analysis, clip_embedding, quality_score, created_at) and <code>total</code> count</p>
+<p><strong>Response:</strong> <code>images</code> array (id, document_id, image_url, page_number, vision_analysis, vision_provider, quality_score, created_at) and <code>total</code> count. (<code>vision_analysis</code> carries the structured <code>VisionAnalysis</code> payload from Claude Opus 4.7 via Anthropic tool use post-2026-05-01; pre-2026-05-01 rows may carry <code>vision_provider=&#39;qwen&#39;</code> from the retired Qwen3-VL pipeline — the enum value is retained for historical row validation. Legacy 512D <code>clip_embedding</code> was dropped 2026-04 in the SLIG migration.)</p>
 <p><strong>Database Operations:</strong></p>
 <ul>
 <li>SELECT FROM document_images WHERE document_id = ? LIMIT ? OFFSET ?</li>
@@ -982,7 +993,7 @@
 <p><strong>Features:</strong></p>
 <ul>
 <li>Uses same <strong>multi-vector search</strong> as main search endpoint</li>
-<li>Combines 6 specialized CLIP embeddings (text 20%, visual 20%, color 15%, texture 15%, style 15%, material 15%)</li>
+<li>Combines 7 VECS-based embeddings (text 20%, visual/SLIG 20%, understanding 20%, color/texture/style/material 12.5% each — Voyage AI 1024D)</li>
 <li>Searches across products, entities, chunks, and images</li>
 <li>Supports category filtering and entity type filtering</li>
 <li>Returns comprehensive results with all metadata and embeddings</li>
@@ -1008,7 +1019,7 @@
 <li>SELECT FROM products (with multi-vector search)</li>
 <li>SELECT FROM document_entities (with embedding search)</li>
 <li>SELECT FROM document_chunks (with category filtering)</li>
-<li>SELECT FROM document_images (with CLIP embeddings)</li>
+<li>SELECT FROM document_images (with VECS image embeddings)</li>
 </ul>
 <p><strong>Frontend Integration:</strong></p>
 <ul>
@@ -1028,10 +1039,10 @@
 <li>SELECT FROM products with vector similarity (pgvector)</li>
 <li>PostgreSQL full-text search (for hybrid strategy)</li>
 <li>JSONB property filtering (for material strategy)</li>
-<li>CLIP embedding generation (for image strategy)</li>
+<li>VECS embedding lookup (for image strategy — SLIG SigLIP2 768D)</li>
 </ul>
 <p><strong>Frontend Integration:</strong> SearchPage.tsx, KnowledgeBase.tsx, ProductDiscovery.tsx</p>
-<p><strong>Related Documentation:</strong> <a href="./search-strategies.md">Search Strategies Guide</a></p>
+<p><strong>Related Documentation:</strong> <a href="./search-strategies.html">Search Strategies Guide</a></p>
 <hr>
 <h3>3.2 POST /query</h3>
 <p><strong>Purpose:</strong> CONSOLIDATED query endpoint with auto-detecting modality
@@ -1364,7 +1375,7 @@
 <p><strong>Features:</strong></p>
 <ul>
 <li>XML parsing with field detection</li>
-<li>AI-powered field mapping (Claude Sonnet 4.5)</li>
+<li>AI-powered field mapping (Claude Opus 4.7)</li>
 <li>Fallback rule-based mapping (multi-language support)</li>
 <li>Preview mode for field detection only</li>
 <li>Stores products in job metadata for Python API</li>
@@ -1400,148 +1411,85 @@
 <strong>Last Updated</strong>: November 10, 2025</p>
 <p><strong>See Also:</strong></p>
 <ul>
-<li><a href="data-import-system.md">Data Import System Documentation</a> - Complete guide to XML import and web scraping
+<li><a href="data-import-system.html">Data Import System Documentation</a> - Complete guide to XML import and web scraping
 <strong>API Version</strong>: v1</li>
 </ul>
 <hr>
 <hr>
-<h2>19. Messaging Routes (SMS, WhatsApp) ✨ NEW v2.6.0</h2>
+<h2>19. Messaging Routes (WhatsApp) ✨ NEW v2.6.0</h2>
 <p><strong>Base Path:</strong> Supabase Edge Function <code>/functions/v1/messaging-api</code>
-<strong>Purpose:</strong> Multi-channel messaging via Twilio (SMS, WhatsApp)
-<strong>Provider:</strong> Twilio - Single API for all channels
+<strong>Purpose:</strong> WhatsApp messaging via Zernio (Meta Cloud API). SMS and Twilio removed 2026-06-08.
+<strong>Provider:</strong> Zernio (<code>https://zernio.com/api/v1</code>)
 <strong>Philosophy:</strong> Unified messaging API with templates, campaigns, analytics, and compliance</p>
-<h3>Environment Variables (Supabase Secrets)</h3>
-<p>Required secrets: <code>TWILIO_ACCOUNT_SID</code> and <code>TWILIO_AUTH_TOKEN</code></p>
-<h3>19.1 POST /functions/v1/messaging-api (action: send)</h3>
-<p><strong>Purpose:</strong> Send a single message via SMS or WhatsApp
-<strong>Used In:</strong> Test messages, transactional notifications, OTP delivery</p>
-<p><strong>Request fields:</strong> <code>action: &quot;send&quot;</code>, <code>channel</code> (<code>sms</code> | <code>whatsapp</code>), <code>to</code> (phone number), <code>content</code>, <code>from</code> (optional), <code>messageType</code> (<code>transactional</code> | <code>marketing</code> | <code>otp</code> | <code>notification</code>), <code>variables</code> (for template rendering), <code>templateSlug</code> (optional), <code>mediaUrl</code> (optional), <code>tags</code> (optional), <code>whatsappContentSid</code> (optional, for WhatsApp pre-approved templates)</p>
-<p><strong>Response:</strong> <code>success</code>, <code>messageId</code>, <code>logId</code></p>
-<p><strong>Twilio API Endpoints Used:</strong></p>
-<ul>
-<li>SMS: <code>POST /2010-04-01/Accounts/{AccountSid}/Messages.json</code></li>
-<li>WhatsApp: <code>POST /2010-04-01/Accounts/{AccountSid}/Messages.json</code> (with <code>whatsapp:</code> prefix)</li>
-</ul>
-<hr>
-<h3>19.2 POST /functions/v1/messaging-api (action: send-bulk)</h3>
-<p><strong>Purpose:</strong> Send messages to multiple recipients in bulk
-<strong>Used In:</strong> Marketing campaigns, mass notifications</p>
-<p><strong>Request fields:</strong> <code>action: &quot;send-bulk&quot;</code>, <code>channel</code>, <code>recipients</code> (array of {to, variables}), <code>content</code>, <code>templateSlug</code> (optional), <code>messageType</code>, <code>from</code> (optional)</p>
-<p><strong>Response:</strong> <code>success</code>, <code>bulkId</code>, <code>total</code>, <code>sent</code>, <code>failed</code>, <code>optedOut</code>, <code>results</code> array (to, status, messageId or error)</p>
-<hr>
-<h3>19.3 POST /functions/v1/messaging-api (action: channels)</h3>
-<p><strong>Purpose:</strong> List all configured messaging channels
-<strong>Used In:</strong> Channel management UI, channel selection dropdowns</p>
-<p><strong>Request fields:</strong> <code>action: &quot;channels&quot;</code>, <code>channelType</code> (optional filter: <code>sms</code> | <code>whatsapp</code>)</p>
-<p><strong>Response:</strong> <code>success</code>, <code>channels</code> array (id, channel_type, provider, sender_id, display_name, is_active, is_default, daily_quota, max_send_rate, config)</p>
-<p><strong>Database Table:</strong> <code>messaging_channels</code></p>
-<hr>
-<h3>19.4 POST /functions/v1/messaging-api (action: templates)</h3>
-<p><strong>Purpose:</strong> List all messaging templates
-<strong>Used In:</strong> Template management UI, campaign creation</p>
-<p><strong>Request fields:</strong> <code>action: &quot;templates&quot;</code>, <code>channelType</code> (optional filter)</p>
-<p><strong>Response:</strong> <code>success</code>, <code>templates</code> array (id, name, slug, channel_type, content, variables, category, whatsapp_template_name, is_approved, is_active)</p>
-<p><strong>Database Table:</strong> <code>messaging_templates</code></p>
-<hr>
-<h3>19.5 POST /functions/v1/messaging-api (action: logs)</h3>
-<p><strong>Purpose:</strong> Get message delivery logs with filtering
-<strong>Used In:</strong> Message logs tab, delivery tracking, debugging</p>
-<p><strong>Request fields:</strong> <code>action: &quot;logs&quot;</code>, <code>channelType</code> (optional), <code>status</code> (optional: queued | sent | delivered | read | failed | rejected), <code>messageType</code> (optional), <code>limit</code></p>
-<p><strong>Response:</strong> <code>success</code>, <code>logs</code> array (id, channel_type, provider_message_id, from_number, to_number, content, status, sent_at, delivered_at, cost, currency)</p>
-<p><strong>Database Table:</strong> <code>messaging_logs</code></p>
-<hr>
-<h3>19.6 POST /functions/v1/messaging-api (action: analytics)</h3>
-<p><strong>Purpose:</strong> Get aggregated messaging analytics
-<strong>Used In:</strong> Analytics dashboard, reporting</p>
-<p><strong>Request fields:</strong> <code>action: &quot;analytics&quot;</code>, <code>channelType</code> (optional), <code>dateRange</code> (start, end)</p>
-<p><strong>Response:</strong> <code>success</code>, <code>totalSent</code>, <code>totalDelivered</code>, <code>totalRead</code> (WhatsApp only), <code>totalFailed</code>, <code>totalCost</code>, <code>deliveryRate</code>, <code>readRate</code>, <code>failureRate</code>, <code>dailyData</code> array</p>
-<p><strong>Database Table:</strong> <code>messaging_analytics</code></p>
-<hr>
-<h3>19.7 POST /functions/v1/messaging-api (action: balance)</h3>
-<p><strong>Purpose:</strong> Get Twilio account balance
-<strong>Used In:</strong> Header balance display, billing monitoring</p>
-<p><strong>Request fields:</strong> <code>action: &quot;balance&quot;</code></p>
-<p><strong>Response:</strong> <code>success</code>, <code>balance</code>, <code>currency</code></p>
-<p><strong>Twilio API Endpoint:</strong> <code>GET /2010-04-01/Accounts/{AccountSid}/Balance.json</code></p>
-<hr>
-<h3>19.8 POST /functions/v1/messaging-api (action: sync-senders)</h3>
-<p><strong>Purpose:</strong> Sync senders/numbers from Twilio account to local database
-<strong>Used In:</strong> Channel sync button, initial setup</p>
-<p><strong>Request fields:</strong> <code>action: &quot;sync-senders&quot;</code>, <code>autoImport</code> (boolean — set to true to automatically import to database)</p>
-<p><strong>Response:</strong> <code>success</code>, <code>senders</code> (sms and whatsapp arrays with sender_id, display_name, status), <code>total</code>, <code>imported</code></p>
-<p><strong>Twilio API Endpoints Used:</strong></p>
-<ul>
-<li>Phone Numbers: <code>GET /2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers.json</code></li>
-<li>WhatsApp Senders: Configured via Twilio Console</li>
-</ul>
-<hr>
-<h3>19.9 POST /functions/v1/messaging-api (action: whatsapp-templates)</h3>
-<p><strong>Purpose:</strong> Fetch WhatsApp templates from Twilio Content API
-<strong>Used In:</strong> WhatsApp template selection, template sync</p>
-<p><strong>Request fields:</strong> <code>action: &quot;whatsapp-templates&quot;</code></p>
-<p><strong>Response:</strong> <code>success</code>, <code>templates</code> array (sid, friendly_name, language, types with body)</p>
-<p><strong>Twilio API Endpoint:</strong> <code>GET /v1/Content</code> (Twilio Content API)</p>
-<hr>
-<h3>19.10 POST /functions/v1/messaging-api (action: send-test)</h3>
-<p><strong>Purpose:</strong> Send a test message for a campaign
-<strong>Used In:</strong> Campaign testing, preview verification</p>
-<p><strong>Request fields:</strong> <code>action: &quot;send-test&quot;</code>, <code>campaignId</code>, <code>testNumber</code></p>
-<p><strong>Response:</strong> <code>success</code>, <code>messageId</code></p>
-<hr>
-<h3>Twilio API Reference (Internal)</h3>
-<p><strong>Base URL:</strong> <code>https://api.twilio.com</code>
-<strong>Authentication:</strong> HTTP Basic Auth (Account SID + Auth Token)</p>
+<blockquote>
+<p><strong>Provider change 2026-06-08:</strong> Twilio (SMS + WhatsApp) replaced by Zernio WhatsApp. SMS support removed entirely. Channels are now connected Zernio WABA accounts (not typed phone strings). Cold/marketing sends require a Meta-approved template (24h-window rule). Requires Zernio Inbox add-on for <code>/v1/inbox/*</code> endpoints.</p>
+</blockquote>
+<p><strong>Required secrets:</strong> <code>ZERNIO_API_KEY</code>, <code>ZERNIO_WEBHOOK_SECRET</code> (configured at <code>/admin/modules/social-media → Settings</code> or as Supabase Edge Function secrets)</p>
+<p>For the full endpoint inventory, action parameters, database tables, and webhook payload shapes see <strong><a href="./api/messaging-api.html">docs/api/messaging-api.md</a></strong>.</p>
+<h3>Key Actions (POST /functions/v1/messaging-api)</h3>
 <table>
 <thead>
 <tr>
-<th>Endpoint</th>
-<th>Method</th>
+<th>Action</th>
 <th>Purpose</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>/2010-04-01/Accounts/{AccountSid}/Messages.json</code></td>
-<td>POST</td>
-<td>Send SMS/WhatsApp messages</td>
+<td><code>send</code></td>
+<td>Send a single WhatsApp message (requires approved template outside 24h window)</td>
 </tr>
 <tr>
-<td><code>/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers.json</code></td>
-<td>GET</td>
-<td>List phone numbers</td>
+<td><code>send-bulk</code></td>
+<td>Send to multiple recipients (campaign processor)</td>
 </tr>
 <tr>
-<td><code>/2010-04-01/Accounts/{AccountSid}/Balance.json</code></td>
-<td>GET</td>
-<td>Get account balance</td>
+<td><code>channels</code></td>
+<td>List configured Zernio WABA channels</td>
 </tr>
 <tr>
-<td><code>/v1/Content</code></td>
-<td>GET</td>
-<td>List WhatsApp content templates (Content API)</td>
+<td><code>templates</code></td>
+<td>List messaging templates (with <code>whatsapp_template_name</code> + <code>whatsapp_language_code</code>)</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td>Delivery logs with filtering</td>
+</tr>
+<tr>
+<td><code>analytics</code></td>
+<td>Aggregated messaging analytics</td>
+</tr>
+<tr>
+<td><code>connect-whatsapp</code></td>
+<td>Connect a Zernio WhatsApp account (Meta access token + WABA ID + phone number ID)</td>
+</tr>
+<tr>
+<td><code>sync-from-zernio</code></td>
+<td>Sync connected WhatsApp accounts from <code>GET /v1/accounts?platform=whatsapp</code></td>
+</tr>
+<tr>
+<td><code>send-test</code></td>
+<td>Send a test message for a campaign</td>
 </tr>
 </tbody></table>
-<p><strong>Documentation:</strong> <a href="https://www.twilio.com/docs/messaging/api">https://www.twilio.com/docs/messaging/api</a></p>
-<hr>
 <h3>Database Tables</h3>
-<p>The messaging system uses the following tables:</p>
 <ul>
-<li><strong><code>messaging_channels</code></strong> — Stores SMS and WhatsApp sender configurations (channel_type, provider, sender_id, display_name, is_active, is_default, config JSONB, daily_quota, max_send_rate)</li>
-<li><strong><code>messaging_templates</code></strong> — Message templates with variables (name, slug, channel_type, content, variables array, category, whatsapp_content_sid, is_approved, is_active)</li>
-<li><strong><code>messaging_logs</code></strong> — Per-message delivery records (channel_type, provider_message_id, from/to numbers, content, status, timestamps, cost, currency)</li>
-<li><strong><code>messaging_analytics</code></strong> — Daily aggregated analytics per channel (date, channel_type, total_sent, total_delivered, total_read, total_failed, total_cost)</li>
-<li><strong><code>messaging_optouts</code></strong> — Compliance opt-out records (phone_number, channel_type, source, opted_out_at)</li>
+<li><strong><code>messaging_channels</code></strong> — Connected Zernio WABA accounts (<code>zernio_account_id</code>, <code>provider=&#39;zernio&#39;</code>, <code>config.{waba_id, phone_number_id, display_phone_number, profile_id}</code>)</li>
+<li><strong><code>messaging_templates</code></strong> — Templates with <code>whatsapp_template_name</code> + <code>whatsapp_language_code</code> + <code>variables[]</code> (ordered body params)</li>
+<li><strong><code>messaging_logs</code></strong> — Per-message delivery records; <code>provider_message_id</code> = wamid; updated by <code>zernio-webhook-handler</code> on <code>message.delivered|read|failed</code></li>
+<li><strong><code>messaging_campaigns</code></strong> / <strong><code>messaging_campaign_recipients</code></strong> — Campaign rows and per-recipient send state</li>
+<li><strong><code>messaging_conversations</code></strong> / <strong><code>messaging_conversation_messages</code></strong> — Inbound reply threads (unique on <code>channel_id + contact_phone</code>); assigned to campaign owner on first reply</li>
+<li><strong><code>messaging_optouts</code></strong> — STOP/START keyword compliance records</li>
 </ul>
 <hr>
 <h2>Summary</h2>
 <p><strong>Total Endpoints:</strong> 140+
 <strong>Latest Version:</strong> v2.6.0
-<strong>Last Updated:</strong> January 2026</p>
+<strong>Last Updated:</strong> January 2026 (messaging updated 2026-06-08)</p>
 <p><strong>New in v2.6.0:</strong></p>
 <ul>
-<li>✨ Multi-channel Messaging (SMS, WhatsApp) via Twilio</li>
+<li>✨ WhatsApp messaging via Zernio (Meta Cloud API) — Twilio + SMS removed 2026-06-08</li>
 <li>✨ Unified messaging templates with variable substitution</li>
 <li>✨ Bulk messaging with recipient-specific variables</li>
-<li>✨ WhatsApp template support via Twilio Content API</li>
 <li>✨ Delivery analytics and cost tracking</li>
 <li>✨ Opt-out compliance management</li>
 </ul>
@@ -1552,12 +1500,12 @@
 <p><strong>Key Features:</strong></p>
 <ul>
 <li>✅ Consolidated endpoints (no duplicates)</li>
-<li>✅ Comprehensive AI integration (Claude, GPT, QWEN)</li>
+<li>✅ Comprehensive AI integration (Claude, GPT)</li>
 <li>✅ Complete Knowledge Base system</li>
 <li>✅ Advanced duplicate detection</li>
 <li>✅ Data import with AI field mapping</li>
 <li>✅ Spatial analysis with Claude Vision</li>
-<li>✅ Multi-channel messaging via Twilio</li>
+<li>✅ WhatsApp messaging via Zernio</li>
 <li>✅ Full FastAPI documentation at <code>/docs</code> and <code>/redoc</code></li>
 </ul>
 

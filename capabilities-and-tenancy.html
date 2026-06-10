@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Capabilities, Module Entitlements &amp; Workspace Tenancy</h1>
+<p>The authorization backbone of the platform. <strong>Three gates</strong> must all pass for a user to use a feature:</p>
+<ol>
+<li><strong>Authentication</strong> — valid JWT / API key.</li>
+<li><strong>Capability</strong> — the user&#39;s persona has the capability (role-based; §1).</li>
+<li><strong>Entitlement</strong> — the workspace owns or is plan-covered for the module (purchase-based; §2).</li>
+</ol>
+<p>Tenancy (§3) is the substrate: <strong>tenant = workspace</strong>, every business row is <code>workspace_id</code>-scoped, and a small set of <code>SECURITY DEFINER</code> guard RPCs enforce membership.</p>
+<p>Source of truth: <code>src/auth/capabilities.ts</code>, <code>src/hooks/usePermissions.ts</code>, <code>src/hooks/useEntitlements.ts</code>, <code>supabase/functions/_shared/auth.ts</code>, <code>supabase/functions/_shared/entitlement.ts</code>.</p>
+<hr>
+<h2>1. Capability system (#195, #208)</h2>
+<p><code>#208</code> merged two parallel capability systems into one (<code>usePermissions</code>). <code>src/auth/roles.ts</code> survives only for raw role-string constants (<code>ROLES</code>, <code>ADMIN_ROLES</code>) used in RLS-style checks; <strong>all component gating goes through <code>usePermissions()</code></strong>.</p>
+<h3>1.1 Personas (<code>Persona</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Who</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>operator</code></td>
+<td>Owner/admin of the Materials Hub <strong>root</strong> workspace — runs the platform</td>
+</tr>
+<tr>
+<td><code>dealer</code></td>
+<td>Owner/admin of a supplier node (sells catalog downstream)</td>
+</tr>
+<tr>
+<td><code>architect</code></td>
+<td>Owner/admin of an architect node (sells to end-users with margin)</td>
+</tr>
+<tr>
+<td><code>staff</code></td>
+<td>Team member of a business node (<code>member</code> workspace role)</td>
+</tr>
+<tr>
+<td><code>accountant</code></td>
+<td>Invited external accountant — Finance surface only (#202)</td>
+</tr>
+<tr>
+<td><code>sales</code></td>
+<td>Invited sales rep — Sales portal only (#201)</td>
+</tr>
+<tr>
+<td><code>end_user</code></td>
+<td>Project client / referral-joined member — restricted surface</td>
+</tr>
+</tbody></table>
+<h3>1.2 Capabilities (<code>Capability</code>)</h3>
+<p><code>platform.admin</code>, <code>catalog.import</code>, <code>network.manage</code>, <code>pricing.manage</code>, <code>finance.manage</code>, <code>invoice.issue</code>, <code>crm.view</code>, <code>warehouse.manage</code>, <code>downstream.view</code>, <code>marketplace.browse</code>, <code>quotes.use</code>, <code>sales.portal</code>, <code>projects.use</code>, <code>moodboards.use</code>, <code>agent.use</code>.</p>
+<h3>1.3 Persona→capability matrix</h3>
+<p>(exact from <code>PERSONA_CAPABILITIES</code>; <code>ALL_BUSINESS</code> = the 11 capabilities shared by operator/dealer/architect)</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th align="center">operator</th>
+<th align="center">dealer</th>
+<th align="center">architect</th>
+<th align="center">staff</th>
+<th align="center">accountant</th>
+<th align="center">sales</th>
+<th align="center">end_user</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>platform.admin</code></td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>catalog.import</code></td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>downstream.view</code></td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>network.manage</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>pricing.manage</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>finance.manage</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>invoice.issue</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>crm.view</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center">✅</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>warehouse.manage</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>marketplace.browse</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center">✅</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>quotes.use</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td><code>sales.portal</code></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✅</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>projects.use</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td><code>moodboards.use</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td><code>agent.use</code></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center"></td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+</tbody></table>
+<p>Notes: <code>operator</code> differs from <code>dealer</code>/<code>architect</code> only in the three operator-exclusive capabilities (<code>platform.admin</code>, <code>catalog.import</code>, <code>downstream.view</code>); the 11 <code>ALL_BUSINESS</code> capabilities are otherwise shared. <code>staff</code> runs day-to-day (finance, invoicing) but cannot administer the node (no <code>network.manage</code>/<code>pricing.manage</code>). <code>accountant</code> gets only <code>finance.manage</code>.</p>
+<h3>1.4 <code>resolvePersona(inputs)</code> — first match wins</h3>
+<p>Inputs <code>{ isPlatformOperator, rank, workspaceRole }</code>:</p>
+<ol>
+<li><code>isPlatformOperator</code> → <code>operator</code></li>
+<li><code>workspaceRole === &#39;client&#39;</code> → <code>end_user</code></li>
+<li><code>workspaceRole === &#39;accountant&#39;</code> → <code>accountant</code></li>
+<li><code>workspaceRole === &#39;sales&#39;</code> → <code>sales</code> (must precede member/staff fallback)</li>
+<li>owner/admin + rank <code>dealer</code> → <code>dealer</code></li>
+<li>owner/admin + rank <code>architect</code> → <code>architect</code></li>
+<li>owner/admin + unknown rank → <code>dealer</code></li>
+<li>else → <code>staff</code></li>
+</ol>
+<p><code>rank</code> is derived in <code>WorkspaceContext</code> from the active workspace node: <code>isRoot</code> → <code>operator</code>, <code>canSupplyProducts</code> → <code>dealer</code>, else → <code>architect</code>.</p>
+<h3>1.5 <code>usePermissions()</code> API</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Derivation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>loading</code></td>
+<td>mirrors <code>WorkspaceContext.loading</code> — gate on this before trusting <code>can()</code></td>
+</tr>
+<tr>
+<td><code>persona</code></td>
+<td><code>resolvePersona(...)</code></td>
+</tr>
+<tr>
+<td><code>can(cap)</code> / <code>canAny(...caps)</code></td>
+<td><code>personaCan(persona, cap)</code></td>
+</tr>
+<tr>
+<td><code>isOperator</code> / <code>isEndUser</code></td>
+<td><code>persona === &#39;operator&#39;</code> / <code>&#39;end_user&#39;</code> (derived from persona, #208)</td>
+</tr>
+<tr>
+<td><code>isAccountant</code> / <code>isSalesRep</code></td>
+<td><code>workspaceRole === &#39;accountant&#39;</code> / <code>&#39;sales&#39;</code></td>
+</tr>
+<tr>
+<td><code>isWorkspaceManager</code></td>
+<td><code>ADMIN_ROLES.includes(workspaceRole)</code> (<code>admin</code>/<code>super_admin</code>/<code>owner</code>)</td>
+</tr>
+<tr>
+<td><code>canSupplyProducts</code></td>
+<td>rank is <code>operator</code> or <code>dealer</code></td>
+</tr>
+<tr>
+<td><code>canOperateFinance</code></td>
+<td><code>isWorkspaceManager || isAccountant</code> — day-to-day finance without settings</td>
+</tr>
+<tr>
+<td><code>canManageNetwork</code></td>
+<td><code>isWorkspaceManager &amp;&amp; canSupplyProducts</code></td>
+</tr>
+</tbody></table>
+<h3>1.6 <code>CapabilityGuard</code></h3>
+<p><code>src/components/core/CapabilityGuard.tsx</code> — props <code>{ capability, children, fallbackPath=&#39;/&#39; }</code>. Renders <code>null</code> while loading, children when <code>can(capability)</code>, else an &quot;Access Restricted&quot; card showing the persona. Route-level usage in <code>App.tsx</code>: <code>/network</code> (<code>network.manage</code>), <code>/finance</code> + <code>/finance/invoices/:id</code> (<code>finance.manage</code>), <code>/crm*</code> (<code>crm.view</code>), <code>/pos</code> (<code>invoice.issue</code>), <code>/sales</code> (<code>sales.portal</code>), marketplace browse (<code>marketplace.browse</code>).</p>
+<h3>1.7 Edge / persona reconciliation (#195)</h3>
+<p><code>supabase/functions/_shared/auth.ts</code> — <code>validateUserToken</code> with <code>allowedRoles</code> grants access when <strong>either</strong> the global role (<code>user_profiles.role_id → roles.name</code>) <strong>or</strong> the workspace role (<code>workspace_members.role</code>) matches (additive — <code>globalOk || workspaceOk</code>). This is why a dealer (global <code>user</code>, workspace <code>owner</code>) passes a gate requiring <code>[&#39;admin&#39;,&#39;super_admin&#39;,&#39;owner&#39;,&#39;finance&#39;,&#39;accountant&#39;]</code>. <code>userCanAccessWorkspace(adminClient, userId, workspaceId)</code> is the second tier: re-checks active membership of the specific workspace (or global admin) to prevent cross-tenant IDOR.</p>
+<hr>
+<h2>2. Module entitlements (#212)</h2>
+<p>Gates <strong>feature visibility on purchase, not just role</strong>.</p>
+<h3>Tables</h3>
+<ul>
+<li><strong><code>modules</code></strong> (PK <code>slug</code>): <code>name</code>, <code>description</code>, <code>category</code>, <code>price_tier</code> (<code>free</code>/<code>pro</code>/<code>enterprise</code>), <code>icon</code>, <code>version</code>, <code>enabled</code> (platform-level toggle). ~21 rows (e.g. <code>sales-finance</code> pro, <code>crm</code> free, <code>quotes</code> pro). Disabled modules (<code>idealo</code>, <code>mention-monitoring*</code>) aren&#39;t available to anyone.</li>
+<li><strong><code>workspace_module_entitlements</code></strong> (unique <code>(workspace_id, module_slug)</code>): <code>enabled</code>, <code>granted_by</code>, <code>granted_at</code>. (There is <strong>no</strong> <code>workspace_modules</code> table — this is the canonical name.)</li>
+</ul>
+<h3>RPCs</h3>
+<ul>
+<li><strong><code>is_workspace_entitled(p_workspace_id, p_module_slug) → bool</code></strong> — true if <strong>any</strong> of: workspace <code>is_root</code>; an enabled entitlement row exists; or <code>tier_rank(module.price_tier) &lt;= workspace_plan_level(workspace_id)</code>.</li>
+<li><strong><code>get_workspace_module_access(p_workspace_id) → (slug, available, tier)</code></strong> — calls <code>assert_workspace_member</code> first, returns all enabled modules with availability. Backs <code>useEntitlements()</code>.</li>
+<li><strong><code>set_workspace_entitlement(p_workspace_id, p_module_slug, p_enabled)</code></strong> — caller must be owner/admin of an <strong>ancestor</strong> of the workspace (via <code>get_workspace_ancestors</code>); upserts the entitlement.</li>
+<li><strong><code>workspace_plan_level(p_workspace_id) → int</code></strong> — max <code>tier_rank</code> of the workspace owner&#39;s active <code>user_subscriptions → subscription_plans.name</code>. So a &#39;pro&#39; subscription auto-grants all <code>pro</code> modules without explicit rows.</li>
+<li><strong><code>tier_rank(tier) → int</code></strong> — <code>free</code>→0, <code>pro</code>→1, <code>enterprise</code>→2, else NULL.</li>
+</ul>
+<h3>Enforcement</h3>
+<ul>
+<li><strong>Edge (real boundary)</strong>: <code>supabase/functions/_shared/entitlement.ts</code> — <code>isWorkspaceEntitled</code> (<strong>fails closed</strong> on error), <code>notEntitledResponse</code> (HTTP <strong>402</strong> <code>{code:&#39;not_entitled&#39;, module}</code>), <code>assertEntitled</code> wrapper. <code>finance-issue-invoice</code> checks <code>is_workspace_entitled(&#39;sales-finance&#39;)</code> inline before transmitting invoices, credit notes, and delivery notes; <code>finance-inbound-sync</code> and <code>finance-storefront</code> also check.</li>
+<li><strong>Frontend (UX only)</strong>: <code>EntitlementGuard</code> (<code>src/components/core/EntitlementGuard.tsx</code>) → <code>useEntitlements().isModuleAvailable(slug)</code>. <strong>Fails open</strong> while loading / on error (renders children) — never flash a lock screen on a paying tenant. On unavailable, renders an upsell card linking to <code>/billing/subscriptions</code>.</li>
+</ul>
+<h3>Granting</h3>
+<p>Two paths: (1) <strong>subscription</strong> — owner holds an active Stripe plan whose <code>subscription_plans.name</code> maps via <code>tier_rank</code> (the plan <strong>name must literally be</strong> <code>free</code>/<code>pro</code>/<code>enterprise</code>); (2) <strong>explicit grant</strong> — operator/ancestor calls <code>set_workspace_entitlement</code> (<code>workspaceManagementService.setEntitlement</code>).</p>
+<hr>
+<h2>3. Workspace tenancy (#194, #174)</h2>
+<h3>Tables</h3>
+<ul>
+<li><strong><code>workspaces</code></strong>: <code>name</code>, <code>slug</code>, <code>is_root</code> (one row platform-wide), <code>parent_workspace_id</code> (hierarchy, cycle-protected by trigger <code>workspaces_reject_cycle</code>), <code>can_supply_products</code> (dealer flag), <code>catalog_access</code> (<code>operator_catalog</code>/<code>own_products_only</code>), <code>commission_pct</code>, <code>referral_code</code>/<code>referral_enabled</code>, <code>status</code>.</li>
+<li><strong><code>workspace_members</code></strong>: <code>workspace_id</code>, <code>user_id</code>, <code>role</code> (<code>owner</code>/<code>admin</code>/<code>member</code>/<code>client</code>/<code>accountant</code>/<code>sales</code>), <code>permissions</code> jsonb (<strong>unused</strong> by the capability system — dead state), <code>status</code>.</li>
+</ul>
+<h3>Signup → own workspace (#194)</h3>
+<p>Two <code>auth.users</code> INSERT triggers: <code>create_user_profile_on_signup</code> (creates <code>user_profiles</code> + <code>user_credits</code>) and <code>handle_new_user_workspace_assignment</code> (creates a child workspace of root named <code>&lt;email-prefix&gt;&#39;s workspace</code>, slug <code>ws-&lt;uid&gt;</code>, with the new user as <code>owner</code>). Every signup gets their own personal workspace — they are <strong>not</strong> added to root.</p>
+<h3>Settings / branding (#174)</h3>
+<p><code>/settings</code> is <strong>retired</strong> — it redirects to <code>/finance</code> (<code>App.tsx</code>). Branding/members/plan now live inside the Finance module. <strong><code>finance_settings</code> is the canonical branding store</strong> (business identity incl. EN variants, contact/branding lines, banking, invoice numbering, myDATA defaults — see <a href="finance-system.html#7-key-db-tables">finance §7</a>); catalog branding was repointed to it (&quot;Option A cutover&quot;).</p>
+<h3>Tenancy guard RPCs (all <code>SECURITY DEFINER</code>)</h3>
+<ul>
+<li><strong><code>is_workspace_member(workspace_id) → bool</code></strong> — active member where <code>user_id = auth.uid()</code>.</li>
+<li><strong><code>assert_workspace_member(p_workspace_id)</code></strong> — raises <code>42501</code> if <code>auth.uid()</code> is set and not a member; <strong>passes silently when <code>auth.uid()</code> is null</strong> (service-role calls).</li>
+<li><strong><code>is_workspace_admin(p_workspace_id) → bool</code></strong> — active member with role <code>admin</code>/<code>owner</code>.</li>
+<li><strong><code>is_workspace_finance_manager(p_workspace_id) → bool</code></strong> — active member <code>owner</code>/<code>admin</code> <strong>OR</strong> global role <code>admin</code>/<code>super_admin</code>/<code>finance</code>. The finance-write gate.</li>
+<li><strong><code>userCanAccessWorkspace(adminClient, userId, workspaceId)</code></strong> (TS, <code>_shared/auth.ts</code>) — edge equivalent.</li>
+</ul>
+<h3>Hierarchy</h3>
+<p>Exactly one <code>is_root=true</code> workspace; its owner/admins get <code>isPlatformOperator</code> and all modules free. All others are tenants linked by <code>parent_workspace_id</code>. <code>get_workspace_ancestors</code> / <code>get_workspace_descendants</code> walk the tree (cycle-protected). <code>create_child_workspace</code> (via <code>workspaceManagementService.createChild</code>): caller must be parent owner/admin; a child may only set <code>can_supply_products=true</code> if its parent can or is root; creator becomes <code>owner</code>. Invites (<code>workspace_invites</code>, roles <code>member</code>/<code>accountant</code>/<code>sales</code>, one-time, 30-day) vs referrals (always join as <code>member</code>). Active workspace is persisted per-user in localStorage.</p>
+<h3>Gaps</h3>
+<ul>
+<li><code>workspace_members.permissions</code> jsonb is unused.</li>
+<li><code>workspace_plan_level</code> requires plan names to be exactly <code>free</code>/<code>pro</code>/<code>enterprise</code> (a plan named &quot;Professional&quot; → rank 0).</li>
+<li><code>user_subscriptions</code> is user-scoped, not workspace-scoped — multi-owner / transferred workspaces can lose auto-entitlements.</li>
+<li><code>assert_workspace_member</code> no-ops under service-role (intentional).</li>
+<li><code>EntitlementGuard</code> fails open — the edge <code>is_workspace_entitled</code> check is the real boundary.</li>
+</ul>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09 · Covers #195, #208, #212, #174, #194, #202.</p>
+
+</div></body></html>
