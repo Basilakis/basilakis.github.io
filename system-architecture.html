@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>System Architecture</h1>
 <p>Complete technical architecture of Material Kai Vision Platform.</p>
 <hr>
@@ -47,9 +49,10 @@
 │ - 9-stage PDF processing pipeline (optimized)              │
 │ - Memory-safe image processing (10-15MB constant)          │
 │ - Real-time CLIP embedding generation                      │
-│ - RAG system (Claude 4.5 + Direct Vector DB)               │
+│ - RAG system (Claude Opus 4.7 + 7-Vector Direct VECS)      │
 │ - Search APIs (Multi-Vector, Semantic, Hybrid)             │
-│ - AI Services (Claude 4.5, GPT, Qwen3-VL, SigLIP)          │
+│ - AI Services (Claude Opus 4.7 / Sonnet 4.6 / Haiku 4.5,   │
+│   Voyage AI voyage-4, SLIG/SigLIP2, Chandra v2 OCR, GPT-5) │
 │ - Product Management + Metadata Management                 │
 │ - Duplicate Detection &amp; Merging (factory-based)            │
 │ - Admin &amp; Monitoring                                        │
@@ -76,9 +79,10 @@
     └─→ MIVAA API (v1api.materialshub.gr)
             ↓
             ├─→ Supabase (Data)
-            ├─→ OpenAI (Embeddings)
-            ├─→ Anthropic (Claude)
-            ├─→ HuggingFace Endpoint (Qwen3-VL)
+            ├─→ Voyage AI (Text + Understanding Embeddings, sole text embedder)
+            ├─→ Anthropic (Claude Opus 4.7 vision tool use, Sonnet 4.6 chunking, Haiku 4.5 classifiers)
+            ├─→ HuggingFace Endpoints (SLIG SigLIP2 visual + Chandra v2 OCR)
+            ├─→ OpenAI (optional alternative — GPT-4o/GPT-5; not vision)
             └─→ Supabase Storage (Images)</p>
 <p><strong>Benefits</strong>:</p>
 <ul>
@@ -141,17 +145,11 @@
 </ul>
 <p><strong>background_jobs</strong></p>
 <ul>
-<li>Async job tracking</li>
-<li>Status monitoring</li>
-<li>Progress tracking</li>
-<li>Error handling</li>
-</ul>
-<p><strong>job_progress</strong></p>
-<ul>
-<li>Real-time progress updates</li>
-<li>Stage tracking</li>
-<li>Checkpoint data</li>
-<li>Performance metrics</li>
+<li>Async job tracking (single-table design post-2026-04-25)</li>
+<li><code>stage_history jsonb</code> — append-only audit log per stage transition (capped at 100 entries)</li>
+<li><code>recovery_history jsonb</code> — append-only auto-recovery audit log</li>
+<li><code>last_checkpoint jsonb</code> — resume snapshot used by auto-recovery cron</li>
+<li>Note: <code>job_progress</code> and <code>job_checkpoints</code> tables were dropped 2026-04-25; all stage and recovery data now lives as JSONB arrays on the job row.</li>
 </ul>
 <hr>
 <h2>🔐 Authentication &amp; Security</h2>
@@ -255,14 +253,14 @@
 </li>
 <li><p><strong>Anthropic APIs</strong> (3 endpoints)</p>
 <ul>
-<li>Claude integration</li>
-<li>Vision analysis</li>
+<li>Claude integration (Opus 4.7 vision via tool use, Sonnet 4.6 chunking, Haiku 4.5 classifiers)</li>
+<li>Vision analysis (schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>)</li>
 </ul>
 </li>
-<li><p><strong>HuggingFace Endpoint APIs</strong> (3 endpoints)</p>
+<li><p><strong>HuggingFace Endpoint APIs</strong> (2 endpoints — Qwen retired 2026-05-01)</p>
 <ul>
-<li>Qwen3-VL integration</li>
-<li>Vision analysis</li>
+<li>SLIG (SigLIP2) — visual embeddings (768D, 5 specialized types)</li>
+<li>Chandra v2 — OCR (sole OCR engine, with retry-with-jitter)</li>
 </ul>
 </li>
 <li><p><strong>Monitoring Routes</strong> (3 endpoints)</p>
@@ -287,35 +285,37 @@
 </ul>
 <hr>
 <h2>🤖 AI Integration</h2>
-<h3>12 AI Models</h3>
-<p><strong>Anthropic</strong>:</p>
+<h3>Production AI Stack (post-2026-05-01)</h3>
+<p><strong>Anthropic</strong> (vision + chunking + agents, post-Qwen-removal):</p>
 <ul>
-<li>Claude Sonnet 4.5 (Product discovery, enrichment)</li>
-<li>Claude Haiku 4.5 (Fast validation)</li>
-<li>Semantic Chunking (Text segmentation)</li>
+<li><strong>Claude Opus 4.7</strong> — vision analysis (PRIMARY, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>); product discovery; KAI agent default</li>
+<li><strong>Claude Sonnet 4.6</strong> — chunking (PRIMARY, was Qwen pre-2026-05-01 but Qwen had been silently 404-ing for months)</li>
+<li><strong>Claude Haiku 4.5</strong> — fast classification, demo agent, price-monitoring identity classifier</li>
 </ul>
-<p><strong>OpenAI</strong>:</p>
+<p><strong>Voyage AI</strong> (sole text embedder):</p>
 <ul>
-<li>GPT-4o (Alternative discovery)</li>
-<li>(text-embedding-3-small retired 2026-04 — Voyage AI is the sole text embedder)</li>
+<li>voyage-4 (1024D) — text chunks + product text + understanding embeddings (from Claude vision_analysis JSON via <code>serialize_vision_analysis_to_text</code>)</li>
+<li>Provenance fields persisted (<code>embedding_model</code>, <code>schema_version</code>) for drift detection</li>
+<li>OpenAI fallback DISABLED for understanding path (prevents VECS collection drift)</li>
 </ul>
-<p><strong>Voyage AI</strong>:</p>
+<p><strong>HuggingFace Endpoints</strong>:</p>
 <ul>
-<li>voyage-3.5 (Text + understanding embeddings, 1024D)</li>
+<li><strong>SLIG (SigLIP2)</strong> — visual embeddings (768D, 5 specialized types: visual / color / texture / style / material)</li>
+<li><strong>Chandra v2</strong> — OCR (sole OCR engine; pytesseract + EasyOCR removed 2026-05-01); retry-with-jitter (3 attempts at temps 0.0/0.4/0.8 — wider spread breaks sticky-prose state; &gt;90% cumulative success)</li>
 </ul>
-<p><strong>SigLIP2 (SLIG)</strong>:</p>
+<p><strong>OpenAI</strong> (optional, not vision):</p>
 <ul>
-<li>Visual embeddings (768D) via HuggingFace Cloud Endpoint</li>
-<li>5 collections: visual, color, texture, style, material</li>
+<li>GPT-4o / GPT-5 — alternative product discovery / agents</li>
+<li>text-embedding-3-small retired 2026-04 (Voyage is sole text embedder)</li>
 </ul>
-<p><strong>HuggingFace Endpoint</strong>:</p>
+<p><strong>7-Vector RAG</strong>:</p>
 <ul>
-<li>Qwen3-VL 32B Vision (Image analysis, OCR → feeds understanding embeddings via Voyage AI)</li>
+<li>Text (Voyage 1024D) + 5× SLIG specialized (768D each) + Understanding (Voyage 1024D)</li>
+<li>Synthesis: Claude Opus 4.7 (200K context)</li>
 </ul>
-<p><strong>Direct Vector DB RAG</strong>:</p>
-<ul>
-<li>Claude 4.5 + Multi-Vector Search (Document retrieval, synthesis)</li>
-</ul>
+<blockquote>
+<p><strong>Qwen retirement</strong>: All <code>qwen_endpoint_manager.py</code> code, <code>Settings.qwen_*</code> fields, qwen warmup task, qwen pricing entries, qwen Operations dashboard widgets, and the <code>endpoint_controller.qwen</code> AdaptiveConcurrency gate were deleted on 2026-05-01. Only the <code>VisionProvider.QWEN</code> enum value remains so historical pre-2026-05-01 rows still validate.</p>
+</blockquote>
 <hr>
 <h2>📈 Scalability</h2>
 <h3>Horizontal Scaling</h3>
@@ -431,10 +431,10 @@
 </ul>
 <p><strong>AI Services</strong>:</p>
 <ul>
-<li>OpenAI API</li>
-<li>Anthropic API (Claude 4.5)</li>
-<li>HuggingFace Endpoint API (Qwen3-VL 32B)</li>
-<li>Voyage AI (Embeddings)</li>
+<li>Anthropic API (Claude Opus 4.7 / Sonnet 4.6 / Haiku 4.5 — primary)</li>
+<li>Voyage AI (text + understanding embeddings, sole text embedder)</li>
+<li>HuggingFace Endpoints (SLIG SigLIP2 visual + Chandra v2 OCR)</li>
+<li>OpenAI API (optional alternative — GPT-4o/GPT-5; not vision)</li>
 </ul>
 <p><strong>Infrastructure</strong>:</p>
 <ul>
@@ -479,6 +479,18 @@
 ✅ CORS configuration
 ✅ Audit logging</p>
 <hr>
+<h2>🏦 Finance &amp; Business Suite</h2>
+<p>The platform includes a multi-tenant finance and business operations stack layered on top of the core AI catalog. Key modules:</p>
+<ul>
+<li><strong>Greek e-invoicing</strong> — AADE/myDATA direct transmission via Novus connector (per-tenant issuer VAT + TaxisNet authorization). See <code>docs/finance-system.md</code>.</li>
+<li><strong>POS</strong> — Oxygen-style two-panel cash register (<code>docs/pos-retail-system.md</code>)</li>
+<li><strong>Online Storefront</strong> (<code>docs/online-storefront.md</code>)</li>
+<li><strong>Warehouse &amp; Billing</strong> (<code>docs/warehouse-and-billing.md</code>)</li>
+<li><strong>Sales Portal &amp; Marketplace</strong> (<code>docs/sales-and-marketplace.md</code>)</li>
+<li><strong>Multi-tenant Capabilities &amp; Tenancy</strong> (<code>docs/capabilities-and-tenancy.md</code>)</li>
+</ul>
+<p>Note: The Oxygen ERP connector (platform-wide <code>OXYGEN_API_KEY</code>) was removed 2026-06-07 — replaced by the per-tenant Novus/AADE direct transmission path.</p>
+<hr>
 <h2>📈 Production Metrics</h2>
 <ul>
 <li><strong>Uptime</strong>: 99.5%+</li>
@@ -489,8 +501,8 @@
 <li><strong>Data Volume</strong>: 100,000+ products indexed</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: November 3, 2025
-<strong>Version</strong>: 1.0.0
+<p><strong>Last Updated</strong>: June 2026
+<strong>Version</strong>: 3.7.0
 <strong>Status</strong>: Production</p>
 
 </div></body></html>

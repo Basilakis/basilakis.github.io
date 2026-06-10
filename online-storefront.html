@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Online Storefront (<code>/store/:slug</code>)</h1>
+<p>Part of the <a href="finance-system.html">Finance module</a>. A public mini-store that lets any workspace publish a subset of its priced catalog to a public URL, where anonymous visitors browse, build a cart, and check out via Stripe — handing off to the same <code>/pay/:token</code> flow used for invoice payment links. Parity with Oxygen/pelatologio.gr&#39;s &quot;Open Link&quot; feature (#207).</p>
+<p>Edge function: <code>supabase/functions/finance-storefront/index.ts</code>. Public page: <code>src/pages/PublicStorefrontPage.tsx</code>. Route <code>/store/:slug</code> is registered <strong>outside</strong> <code>&lt;AuthGuard&gt;</code> in <code>src/App.tsx</code> (same pattern as <code>/board/:id</code>, <code>/c/:slug</code>).</p>
+<p>Related: <a href="finance-system.html">Finance system</a> · <a href="api/finance-api.html">Finance API</a>.</p>
+<hr>
+<h2>1. Configuration</h2>
+<p>A workspace enables and brands its store through <code>StorefrontCard</code> (<code>src/modules/finance/components/StorefrontCard.tsx</code>) in <code>SettingsTab</code>, writing <code>workspace_storefront</code> (one row per workspace, write-gated to <code>is_workspace_finance_manager</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>enabled</code> (default false)</td>
+<td>master switch — when off, <code>meta</code> returns <code>{enabled:false}</code> and <code>products</code>/<code>checkout</code> 403</td>
+</tr>
+<tr>
+<td><code>headline</code>, <code>subheadline</code></td>
+<td>store-page copy</td>
+</tr>
+<tr>
+<td><code>accent</code></td>
+<td>brand colour (stored + returned, <strong>not yet applied</strong> by the page)</td>
+</tr>
+</tbody></table>
+<p>The public URL is <code>{origin}/store/{workspaces.slug}</code> — requires <code>workspaces.slug</code> to be set.</p>
+<p><strong>Product selection / pricing</strong>: products appear only when <code>product_prices.storefront_published=true AND list_price IS NOT NULL</code>. Per-product toggle via <code>storefrontService.setPublished()</code>. The displayed price is the workspace&#39;s own <code>product_prices.list_price</code> (gross, VAT-inclusive), with currency from <code>product_prices.currency</code>. Image is best-effort from <code>products.metadata</code>.</p>
+<hr>
+<h2>2. Public page flow</h2>
+<p><code>/store/:slug</code> → <code>PublicStorefrontPage</code> (single component, no auth):</p>
+<ol>
+<li><code>storefrontService.getMeta(slug)</code> → <code>meta</code> — renders &quot;store not open&quot; if disabled.</li>
+<li><code>storefrontService.getProducts(slug)</code> → <code>products</code> — two-column grid + sticky cart.</li>
+<li>Cart is plain React state (no persistence). Checkout requires <code>name</code> + <code>email</code> only (no address/shipping).</li>
+<li><code>storefrontService.checkout(slug, items, {name, email})</code> → <code>checkout</code> → <code>window.location.href = res.pay_url</code> (<code>{PUBLIC_APP_URL}/pay/{token}</code>).</li>
+<li><code>/pay/:token</code> (<code>PayInvoicePage</code>) auto-creates a Stripe Checkout session via <code>finance-pay-invoice</code> and redirects to Stripe.</li>
+</ol>
+<hr>
+<h2>3. <code>finance-storefront</code> edge function</h2>
+<p>POST-only, <strong>no auth</strong>, always service-role, discriminated by <code>action</code>:</p>
+<ul>
+<li><strong><code>meta</code></strong> <code>{slug}</code> → <code>{enabled, workspace_name, headline, subheadline, accent}</code>. Browse always open (no entitlement check).</li>
+<li><strong><code>products</code></strong> <code>{slug}</code> → array of <code>{product_id, name, description, unit, item_type, price, currency, image_url}</code>. 403 if disabled.</li>
+<li><strong><code>checkout</code></strong> <code>{slug, items:[{product_id, qty}], customer:{name, email}}</code>:<ol>
+<li><code>assertEntitled(ws.id, &#39;sales-finance&#39;)</code> → 402 if not entitled (#212).</li>
+<li><strong>Server-side price recompute</strong> — re-fetches <code>product_prices</code> for every cart item (client amounts never trusted); 409 if any product no longer published.</li>
+<li>VAT from <code>finance_settings.default_vat_rate</code>; prices treated VAT-inclusive.</li>
+<li><code>next_invoice_number(workspace_id)</code> → draft <code>INV-YYYY-NNNN</code> (does <strong>not</strong> advance the legal counter).</li>
+<li>Inserts <code>invoices</code> (<code>status=&#39;draft&#39;</code>, <code>document_type=&#39;11.1&#39;</code>, <code>payment_method_code=7</code>, <code>prices_include_vat=true</code>, <code>pay_token</code> + 7-day expiry) + <code>invoice_items</code> (with myDATA classification from the product).</li>
+<li>→ <code>{invoice_id, pay_token, pay_url, total, currency}</code>.</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h2>4. Stripe Connect checkout</h2>
+<p><strong>Onboarding</strong> (<code>stripe-connect</code> edge function, owner/admin JWT): <code>onboard</code> creates a Stripe Express account, stores it on <code>workspace_payment_config.stripe_connect_account_id</code> with <code>payout_mode=&#39;connect&#39;</code>, returns an account-onboarding link; <code>status</code> refreshes <code>charges_enabled</code> / <code>details_submitted</code> live from Stripe.</p>
+<p><strong>Checkout session</strong> (<code>finance-pay-invoice</code>): resolves the Connect account via <code>get_workspace_payout_account(workspace_id)</code> (returns the account only when <code>payout_mode=&#39;connect&#39; AND charges_enabled</code>), then <code>stripe.checkout.sessions.create({ mode:&#39;payment&#39;, payment_intent_data:{ transfer_data:{ destination: accountId }, metadata:{ type:&#39;invoice_payment&#39;, invoice_id, workspace_id, internal_number } } })</code>.</p>
+<p><strong>Fulfillment</strong> (<code>stripe-webhooks</code> → <code>handleInvoicePaymentSucceeded</code>): on <code>payment_intent.succeeded</code> with <code>metadata.type=&#39;invoice_payment&#39;</code>, inserts a <code>payments</code> row (<code>direction:&#39;in&#39;</code>, <code>method:&#39;card&#39;</code>) + <code>payment_allocations</code> row — the allocation&#39;s status-keeper trigger flips the invoice to <code>paid</code>/<code>partially_paid</code>.</p>
+<p><code>workspace_payment_config</code>: <code>workspace_id</code> PK, <code>payout_mode</code> (<code>&#39;platform&#39;</code>|<code>&#39;connect&#39;</code>), <code>stripe_connect_account_id</code>, <code>charges_enabled</code>, <code>details_submitted</code> (read <code>is_workspace_member</code>, write <code>is_workspace_finance_manager</code>).</p>
+<hr>
+<h2>5. Platform revenue model (#200)</h2>
+<p>There is <strong>no application fee</strong> on storefront/invoice payments today — the checkout uses a <strong>destination charge</strong> (<code>transfer_data.destination</code>), so the full amount goes to the tenant&#39;s Connect account; the platform takes 0%. Platform SaaS revenue (credits, subscriptions) is architecturally isolated on a <strong>separate dedicated Stripe account</strong> via <code>STRIPE_BILLING_SECRET_KEY</code> (<code>_shared/stripe-clients.ts → getPlatformBillingStripe()</code>, falls back to <code>STRIPE_SECRET_KEY</code>). To take a cut of storefront sales, add <code>application_fee_amount</code> to the checkout session — the architecture supports it; the storefront path doesn&#39;t implement it.</p>
+<p>If a workspace has no Connect account configured, <code>get_workspace_payout_account</code> returns null, <code>transfer_data</code> is omitted, and payment goes to the platform&#39;s default Stripe account (the &quot;platform collects&quot; fallback) — silently, with no warning.</p>
+<hr>
+<h2>6. Order → finance document → myDATA</h2>
+<p>Storefront checkout creates a <strong>draft</strong> (<code>status=&#39;draft&#39;</code>, <code>issued_at=NULL</code>, <code>legal_number=NULL</code>, <code>fiscal_status=NULL</code>). On payment, the webhook flips it to <code>paid</code> but does <strong>not</strong> issue or transmit it. A finance admin must manually:</p>
+<ol>
+<li>Find the paid draft in Finance → Invoices.</li>
+<li><code>finance-issue-invoice { invoice_id, issue_now:true }</code> → allocates <code>legal_number</code>/<code>series_number</code>.</li>
+<li><code>finance-issue-invoice { invoice_id, submit_fiscal:true }</code> → transmits the <code>11.1</code> receipt to AADE (2 cr, entitlement-gated).</li>
+</ol>
+<hr>
+<h2>7. Known gaps / follow-ups</h2>
+<ul>
+<li><strong>Paid orders are never auto-issued / auto-transmitted</strong> to myDATA (manual step above).</li>
+<li><strong>No buyer notification</strong> — storefront invoices have <code>created_by=NULL</code>, so the webhook&#39;s bell-notification insert is skipped; no email receipt either. An admin must poll Finance → Invoices.</li>
+<li><strong>No platform fee</strong> on storefront sales (§5).</li>
+<li><strong>Mixed-currency carts</strong> are silently broken — <code>currency</code> is overwritten per loop iteration; the invoice takes the last product&#39;s currency.</li>
+<li><strong>Anonymous buyer not persisted as a CRM contact</strong> — <code>customer_contact_id</code>/<code>customer_company_id</code> NULL; name/email only in <code>invoices.notes</code>.</li>
+<li><strong><code>accent</code></strong> stored but unused by the page.</li>
+<li><strong>Draft <code>internal_number</code> counter advances on every checkout</strong> (incl. abandoned carts) — cosmetic gaps in the non-legal draft sequence only.</li>
+<li><strong>No pagination / search</strong> on the public product list.</li>
+</ul>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09 · Covers #207, #200.</p>
+
+</div></body></html>

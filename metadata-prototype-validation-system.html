@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Metadata Prototype Validation System</h1>
 <h2>Overview</h2>
 <p>The Metadata Prototype Validation System is a semantic validation system that standardizes AI-extracted material metadata using CLIP text embeddings. It eliminates inconsistent naming, enables fuzzy search, validates AI outputs, and improves search accuracy by comparing extracted values to prototype embeddings and standardizing them to canonical values.</p>
@@ -44,7 +46,7 @@
 </ul>
 <hr>
 <h2>🎯 Overview</h2>
-<p>The <strong>Metadata Prototype Validation System</strong> enhances MIVAA&#39;s existing dynamic metadata extraction by adding <strong>semantic validation</strong> using CLIP text embeddings. This ensures that Qwen Vision&#39;s free-text metadata extractions are standardized to consistent, validated property values.</p>
+<p>The <strong>Metadata Prototype Validation System</strong> enhances MIVAA&#39;s existing dynamic metadata extraction by adding <strong>semantic validation</strong> using text embeddings. This ensures that the vision model&#39;s free-text metadata extractions (Claude Opus 4.7 vision_analysis via Anthropic tool use, sole vision pass post-2026-05-01 — schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>; pre-2026-05-01 was Qwen3-VL with Claude fallback, retired because the Qwen HF endpoint had been 404-ing for months) are standardized to consistent, validated property values. Note: with Anthropic tool use the schema is hard-enforced at the model boundary, so this validator now mainly catches lexical drift on enum-like fields rather than malformed JSON.</p>
 <hr>
 <h2>🔄 Dynamic Custom Metadata Integration</h2>
 <h3>How Current System Works (Preserved)</h3>
@@ -142,10 +144,10 @@
 │ └──────────────────────────────────────────────────────────┘   │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘</p>
-<p>The API endpoint <code>GET /api/admin/metadata-prototypes/suggestions</code> queries unvalidated values with frequency &gt;= a threshold, calculates CLIP embedding similarity against existing prototypes for each suggestion, and returns enriched suggestions ordered by frequency.</p>
+<p>The API endpoint <code>GET /api/admin/metadata-prototypes/suggestions</code> queries unvalidated values with frequency &gt;= a threshold, calculates embedding similarity against existing prototypes for each suggestion, and returns enriched suggestions ordered by frequency.</p>
 <h4>Phase 3: Admin Actions</h4>
-<p><strong>Action 1: Add as New Prototype</strong> — <code>POST /api/admin/metadata-prototypes/add</code> updates the <code>prototype_descriptions</code> JSONB on the <code>material_properties</code> row, regenerates the CLIP embedding for the property, marks the value as validated in the frequency table, and queues a re-validation job for all affected products.</p>
-<p><strong>Action 2: Merge with Existing</strong> — <code>POST /api/admin/metadata-prototypes/merge</code> adds the extracted value as a variation of an existing prototype, regenerates the embedding, updates all products that had the extracted value to use the target prototype, and marks the value as validated.</p>
+<p><strong>Action 1: Add as New Prototype</strong> — <code>POST /api/admin/metadata-prototypes/add</code> updates the <code>prototype_descriptions</code> JSONB on the <code>material_properties</code> row, regenerates the prototype embedding for the property, marks the value as validated in the frequency table, and queues a re-validation job for all affected products.</p>
+<p><strong>Action 2: Merge with Existing</strong> — <code>POST /api/admin/metadata-prototypes/merge</code> adds the extracted value as a variation of an existing prototype, regenerates the prototype embedding, updates all products that had the extracted value to use the target prototype, and marks the value as validated.</p>
 <p><strong>Action 3: Ignore</strong> — <code>POST /api/admin/metadata-prototypes/ignore</code> marks the suggestion as rejected so it won&#39;t appear in the dashboard again.</p>
 <hr>
 <h2>🎯 ANSWERS TO KEY QUESTIONS</h2>
@@ -283,7 +285,7 @@
 │   &quot;standard&quot;: [&quot;2 hours&quot;, &quot;2-3 hours&quot;, &quot;normal&quot;]            │
 │   &quot;extended&quot;: [&quot;3-4 hours&quot;, &quot;4+ hours&quot;, &quot;complex&quot;]          │
 │                                                              │
-│ System generates 512D CLIP embeddings                       │
+│ System generates 512D prototype embeddings (validator-local) │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
                           ↓
@@ -445,22 +447,22 @@
 <p><strong>NEW Columns</strong> (ADDED):</p>
 <ul>
 <li><code>prototype_descriptions</code> — JSONB mapping value names to arrays of 3-5 prototype descriptions. For example, the &quot;finish&quot; property maps &quot;glossy&quot; to descriptions like &quot;High gloss reflective surface, Polished shiny appearance, Mirror-like finish&quot;.</li>
-<li><code>text_embedding_512</code> — VECTOR(512) containing the averaged CLIP embedding for all prototypes of that property</li>
+<li><code>text_embedding_512</code> — VECTOR(512) containing the averaged prototype embedding for all prototypes of that property. (Note: this is a validator-specific column for property-level prototype embeddings — distinct from the VECS image/text embedding collections which use 768D SLIG and 1024D Voyage.)</li>
 <li><code>prototype_updated_at</code> — TIMESTAMP of last update</li>
 </ul>
 <p>A vector index using <code>ivfflat</code> with <code>vector_cosine_ops</code> is created on <code>text_embedding_512</code> for fast similarity search.</p>
 <hr>
 <h2>🔄 How Prototype Validation Works</h2>
 <h3>Step-by-Step Process</h3>
-<p><strong>1. Qwen Extracts Free Text</strong>: The vision model produces structured property values such as <code>finish: &quot;glossy&quot;</code> and <code>pattern: &quot;marble-like veining&quot;</code>.</p>
+<p><strong>1. Vision Model Extracts Structured Values</strong>: The vision model (Claude Opus 4.7 via Anthropic tool use, sole vision pass post-2026-05-01; pre-2026-05-01 was Qwen3-VL, retired) produces structured property values such as <code>finish: &quot;glossy&quot;</code> and <code>pattern: &quot;marble-like veining&quot;</code>. With tool use the JSON shape is hard-enforced — the validator below mainly normalizes free-text values to a known prototype.</p>
 <p><strong>2. Prototype Validator Processes Each Field</strong>: The <code>MetadataPrototypeValidator.validate_property(property_key, extracted_value)</code> method is called for each field. It returns the best-matching prototype value, a <code>validated</code> boolean, a <code>confidence</code> score, and the similarity scores against all prototypes.</p>
-<p><strong>3. Validation Algorithm</strong>: A CLIP embedding is generated for the extracted value. The property&#39;s prototypes are retrieved from the database. Cosine similarity is computed between the extracted embedding and each prototype embedding. The best match is selected; if its similarity exceeds 0.80, the prototype value is returned as validated, otherwise the original value is kept.</p>
+<p><strong>3. Validation Algorithm</strong>: A prototype embedding is generated for the extracted value. The property&#39;s prototypes are retrieved from the database. Cosine similarity is computed between the extracted embedding and each prototype embedding. The best match is selected; if its similarity exceeds 0.80, the prototype value is returned as validated, otherwise the original value is kept.</p>
 <p><strong>4. Store Validated Metadata</strong>: The product metadata is saved with both validated values and a <code>_validation_metadata</code> dictionary tracking which properties were validated and at what confidence.</p>
 <hr>
 <h2>🔍 Integration with Search</h2>
 <h3>Enhanced Search Capabilities</h3>
 <p><strong>1. Exact Metadata Filtering (EXISTING - UNCHANGED)</strong>: Search products by exact metadata values using <code>POST /api/search/products</code> with a <code>filters</code> object (e.g., <code>{&quot;metadata.finish&quot;: &quot;glossy&quot;, &quot;metadata.slip_resistance&quot;: &quot;R11&quot;}</code>).</p>
-<p><strong>2. Semantic Metadata Search (NEW - ADDED)</strong>: Search using natural language via <code>POST /api/search/products/semantic</code> with <code>use_metadata_prototypes: true</code>. The system generates CLIP embeddings for query terms (e.g., &quot;shiny&quot; → matches &quot;glossy&quot; prototype at 0.89), then boosts products whose validated metadata matches the inferred prototypes.</p>
+<p><strong>2. Semantic Metadata Search (NEW - ADDED)</strong>: Search using natural language via <code>POST /api/search/products/semantic</code> with <code>use_metadata_prototypes: true</code>. The system generates prototype embeddings for query terms (e.g., &quot;shiny&quot; → matches &quot;glossy&quot; prototype at 0.89), then boosts products whose validated metadata matches the inferred prototypes.</p>
 <p><strong>3. Metadata Similarity Scoring (NEW - ADDED)</strong>: The combined score formula now includes a 20% weight for <code>metadata_prototype_match</code> alongside text similarity (40%), visual similarity (30%), and confidence score (10%).</p>
 <h3>Search Enhancement Benefits</h3>
 <p><strong>Better Fuzzy Matching</strong>: &quot;shiny&quot; → &quot;glossy&quot;, &quot;non-slip&quot; → &quot;R11&quot;
@@ -476,7 +478,7 @@
 <hr>
 <h2>Technical Implementation</h2>
 <h3>Database Schema</h3>
-<p>Three new columns are added to <code>material_properties</code>: <code>prototype_descriptions</code> (JSONB, default <code>{}</code>), <code>text_embedding_512</code> (VECTOR(512)), and <code>prototype_updated_at</code> (TIMESTAMP). A vector index using <code>ivfflat</code> with <code>vector_cosine_ops</code> is created on <code>text_embedding_512</code>.</p>
+<p>Three new columns are added to <code>material_properties</code>: <code>prototype_descriptions</code> (JSONB, default <code>{}</code>), <code>text_embedding_512</code> (VECTOR(512) — validator-specific prototype embeddings, not the VECS image/text embedding collections), and <code>prototype_updated_at</code> (TIMESTAMP). A vector index using <code>ivfflat</code> with <code>vector_cosine_ops</code> is created on <code>text_embedding_512</code>.</p>
 <h3>Property Population</h3>
 <p>The <code>material_properties</code> table is populated with 50+ meta fields organized into categories: Material Properties, Dimensions, Appearance, Performance, Application, Compliance, Design, Manufacturing, and Commercial.</p>
 <h3>Prototype Definitions</h3>
@@ -484,7 +486,7 @@
 <h3>Embedding Generation</h3>
 <p>For each property/value combination, embeddings are generated for all descriptions and then averaged to produce a single representative embedding that is stored in the database.</p>
 <h3>Validation Service</h3>
-<p>The <code>MetadataPrototypeValidator</code> class provides three main methods: <code>validate_property(property_key, extracted_value)</code> for single-field validation, <code>validate_metadata(metadata)</code> for batch validation, and <code>get_property_prototypes(property_key)</code> for inspection. The validator generates CLIP embeddings for extracted values, compares them against all prototype embeddings for the property, returns the best match with confidence, uses a 0.80 confidence threshold, and falls back to the original value if confidence is below threshold.</p>
+<p>The <code>MetadataPrototypeValidator</code> class provides three main methods: <code>validate_property(property_key, extracted_value)</code> for single-field validation, <code>validate_metadata(metadata)</code> for batch validation, and <code>get_property_prototypes(property_key)</code> for inspection. The validator generates embeddings for extracted values, compares them against all prototype embeddings for the property, returns the best match with confidence, uses a 0.80 confidence threshold, and falls back to the original value if confidence is below threshold.</p>
 <h3>Pipeline Integration</h3>
 <p>After metadata extraction, the <code>MetadataPrototypeValidator</code> is called to validate the extracted values. The validated results are merged with validation tracking metadata before being stored in the database.</p>
 <h3>Search Integration</h3>
@@ -501,7 +503,7 @@
 <h2>Benefits</h2>
 <h3>For Metadata Extraction</h3>
 <ul>
-<li><strong>Standardization</strong>: Qwen&#39;s free text → validated property values</li>
+<li><strong>Standardization</strong>: Vision model&#39;s free text (Claude Opus 4.7 via Anthropic tool use post-2026-05-01; Qwen3-VL retired) → validated property values</li>
 <li><strong>Consistency</strong>: Same material gets same label across PDFs</li>
 <li><strong>Validation</strong>: Prevents hallucinations and invalid values</li>
 <li><strong>Confidence</strong>: Semantic similarity scores for each validation</li>
