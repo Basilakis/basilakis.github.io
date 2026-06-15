@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Multi-Source Meta Extraction Strategy</h1>
 <h2>Overview</h2>
 <p>This plan outlines a comprehensive strategy for extracting metadata from <strong>multiple sources</strong> to ensure the highest quality and completeness of product metadata. The system will leverage:</p>
@@ -36,17 +38,18 @@
 <h2>Current System Architecture</h2>
 <h3>Embedding Types (7 Total, updated 2026-04)</h3>
 <ol>
-<li><strong>text_1024</strong> - Voyage AI voyage-3.5 text embedding (1024D) — sole text embedder (was <code>text_1536</code> OpenAI)</li>
+<li><strong>text_1024</strong> - Voyage AI voyage-4 text embedding (1024D) — sole text embedder (was <code>text_1536</code> OpenAI)</li>
 <li><strong>visual_768</strong> - SigLIP2 SLIG primary visual embedding (768D, cloud endpoint) → <code>image_slig_embeddings</code></li>
-<li><strong>color_slig_768</strong> - Text-guided color embedding (768D) → <code>image_color_embeddings</code></li>
-<li><strong>texture_slig_768</strong> - Text-guided texture embedding (768D) → <code>image_texture_embeddings</code></li>
-<li><strong>material_slig_768</strong> - Text-guided material embedding (768D) → <code>image_material_embeddings</code></li>
-<li><strong>style_slig_768</strong> - Text-guided style embedding (768D) → <code>image_style_embeddings</code></li>
-<li><strong>understanding_1024</strong> - Voyage AI embedding of Qwen3-VL vision_analysis JSON (1024D) → <code>image_understanding_embeddings</code></li>
+<li><strong>color_aspect_1024</strong> - Voyage <code>voyage-4</code> of <code>VisionAnalysis.colors[]</code> (1024D, post-2026-05-04) → <code>image_color_embeddings</code> (was <code>color_slig_768</code> 768D SLIG-blend pre-v2)</li>
+<li><strong>texture_aspect_1024</strong> - Voyage <code>voyage-4</code> of <code>VisionAnalysis.textures[] + finish</code> (1024D, post-v2) → <code>image_texture_embeddings</code> (was <code>texture_slig_768</code> 768D pre-v2)</li>
+<li><strong>material_aspect_1024</strong> - Voyage <code>voyage-4</code> of <code>VisionAnalysis.material_type + category + subcategory</code> (1024D, post-v2) → <code>image_material_embeddings</code> (was <code>material_slig_768</code> 768D pre-v2)</li>
+<li><strong>style_aspect_1024</strong> - Voyage <code>voyage-4</code> of <code>VisionAnalysis.style + surface_pattern + applications</code> (1024D, post-v2) → <code>image_style_embeddings</code> (was <code>style_slig_768</code> 768D pre-v2)</li>
+<li><strong>understanding_1024</strong> - Voyage AI embedding (1024D) of Claude Opus 4.7 vision_analysis JSON via Anthropic tool use → <code>serialize_vision_analysis_to_text</code> → Voyage. Pre-2026-05-01 used Qwen3-VL JSON; the migration retired Qwen vision (HF endpoint had been 404-ing for months — was already 100% Claude in practice). Provenance fields <code>embedding_model</code> + <code>schema_version</code> persisted on every row. → <code>image_understanding_embeddings</code></li>
 </ol>
 <p>Legacy 1152D SigLIP-SO400M and 512D CLIP collections, as well as the fused <code>multimodal_2048</code> vector, were dropped in 2026-04.</p>
-<h3>Text-Guided Prompts</h3>
-<p>The specialized embeddings are generated using text prompts that focus the model&#39;s attention: color embeddings focus on &quot;color palette and color relationships&quot;, texture embeddings on &quot;surface patterns and texture details&quot;, material embeddings on &quot;material type and physical properties&quot;, and style embeddings on &quot;design style and aesthetic elements&quot;.</p>
+<h3>Per-aspect text generation (v2, 2026-05-04)</h3>
+<p>Pre-v2: the 4 aspect collections held SLIG-blend vectors built from a global fixed text prompt per aspect (&quot;focus on color palette and color relationships&quot; etc.) blended at 10-30% into the base SLIG visual embedding. The fixed prompts produced the same nudge direction for every image regardless of content — so every &quot;color&quot; vector ended up ~80% identical to the visual vector, carrying near-zero independent signal.</p>
+<p>Post-v2: each aspect string is a deterministic Python serialization of the per-image <code>VisionAnalysis</code> fields produced by Claude Opus 4.7 (Anthropic tool use, schema-locked). See <code>app.models.vision_analysis.serialize_aspect_*</code>.</p>
 <h2>Problem Statement</h2>
 <p><strong>Current Issue</strong>: Specialized embeddings (color, texture, material, style) are generated but <strong>NOT converted to text metadata</strong>. This means:</p>
 <ul>
@@ -67,11 +70,11 @@
 │     ├─ Dynamic Metadata Extractor (Stage 4)                 │
 │     └─ Confidence: 0.85-0.95                                │
 │                                                             │
-│  2. Visual Embedding Analysis (SigLIP)                      │
-│     ├─ Color Embedding → Color Text                         │
-│     ├─ Texture Embedding → Finish/Texture Text              │
-│     ├─ Material Embedding → Material Type Text              │
-│     ├─ Style Embedding → Design Style Text                  │
+│  2. Visual Embedding Analysis (SigLIP2 + Voyage AI)          │
+│     ├─ Color Embedding (Voyage 1024D) → Color Text          │
+│     ├─ Texture Embedding (Voyage 1024D) → Finish/Texture    │
+│     ├─ Material Embedding (Voyage 1024D) → Material Type    │
+│     ├─ Style Embedding (Voyage 1024D) → Design Style        │
 │     └─ Confidence: 0.75-0.90                                │
 │                                                             │
 │  3. Pattern Matching (Chunks)                               │
@@ -219,7 +222,7 @@
 </ul>
 <h2>Database Schema Changes</h2>
 <h3>New Table: <code>metadata_vocabulary</code></h3>
-<p>A new <code>metadata_vocabulary</code> table stores: <code>id</code> (UUID), <code>field_name</code> (e.g., &#39;color&#39;, &#39;texture&#39;, &#39;material&#39;, &#39;style&#39;), <code>value</code> (e.g., &#39;beige&#39;, &#39;matte&#39;, &#39;ceramic&#39;, &#39;modern&#39;), <code>embedding</code> (HALFVEC(768) — pre-computed SLIG / SigLIP2 embedding, updated 2026-04), <code>category</code> (e.g., &#39;warm_colors&#39;, &#39;neutral_colors&#39;), and <code>synonyms</code> (TEXT array). Indexes are created on <code>field_name</code> and on the embedding column using <code>ivfflat</code> with <code>halfvec_cosine_ops</code>.</p>
+<p>A new <code>metadata_vocabulary</code> table stores: <code>id</code> (UUID), <code>field_name</code> (e.g., &#39;color&#39;, &#39;texture&#39;, &#39;material&#39;, &#39;style&#39;), <code>value</code> (e.g., &#39;beige&#39;, &#39;matte&#39;, &#39;ceramic&#39;, &#39;modern&#39;), <code>embedding</code> (HALFVEC(1024) — pre-computed Voyage <code>voyage-4</code> embedding, post-2026-05-04; was HALFVEC(768) SLIG/SigLIP2 pre-v2), <code>category</code> (e.g., &#39;warm_colors&#39;, &#39;neutral_colors&#39;), and <code>synonyms</code> (TEXT array). Indexes are created on <code>field_name</code> and on the embedding column using <code>ivfflat</code> with <code>halfvec_cosine_ops</code>.</p>
 <h3>Enhanced <code>products.metadata</code> Structure</h3>
 <p>The enriched metadata includes the core fields (color, finish, material, style, slip_resistance, fire_rating), plus an <code>_extraction_metadata</code> dictionary tracking source, confidence, alternatives, and extraction timestamp for each field, plus <code>_sources_used</code> (array of source names used) and <code>_overall_confidence</code> (float).</p>
 <h2>Implementation Steps</h2>
@@ -244,7 +247,7 @@
 <p><strong>How It Works</strong>:</p>
 <ol>
 <li>Load prompt from <code>prompts</code> table (category: embedding_to_text)</li>
-<li>Pass embedding data to Claude Sonnet 4.5</li>
+<li>Pass embedding data to Claude Opus 4.7</li>
 <li>AI interprets embeddings using vocabulary guidelines in prompt</li>
 <li>Returns structured JSON with primary/secondary values and confidence scores</li>
 </ol>
@@ -261,7 +264,7 @@
 <ol>
 <li>Load prompt from <code>prompts</code> table (category: metadata_consolidation)</li>
 <li>Collect metadata from all 5 sources (manual, AI text, visual, pattern, factory)</li>
-<li>Pass all sources to Claude Sonnet 4.5</li>
+<li>Pass all sources to Claude Opus 4.7</li>
 <li>AI intelligently merges with conflict resolution</li>
 <li>Returns consolidated metadata with extraction tracking</li>
 </ol>
@@ -334,7 +337,7 @@
 </li>
 <li><p><strong>Monitor Performance</strong></p>
 <ul>
-<li>AI call costs (Claude Sonnet 4.5)</li>
+<li>AI call costs (Claude Opus 4.7)</li>
 <li>Processing time impact</li>
 <li>Memory usage</li>
 </ul>
