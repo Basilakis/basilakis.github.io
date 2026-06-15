@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>CRM API</h1>
+<p><strong>Edge Function:</strong> <code>crm-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/crm-api</code></p>
+<p>Routes by the first path segment to the matching resource handler:</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>companies</code></td>
+<td>Company records (create, list, get, update, delete, link contacts)</td>
+</tr>
+<tr>
+<td><code>contacts</code></td>
+<td>Contact records (create, list, get, update, delete, link/unlink users, potential-matches, bulk-link, by-user)</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>Platform user admin (list, get, update, create, AI usage report)</td>
+</tr>
+<tr>
+<td><code>stripe</code></td>
+<td>Stripe customer state, subscriptions, credits, checkout sessions</td>
+</tr>
+</tbody></table>
+<h2>Authentication</h2>
+<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<p>Or with the platform API secret key (admin access):</p>
+<pre><code class="language-typescript">apikey: sb_secret_...
+</code></pre>
+<p>Roles required: <code>admin</code> / <code>factory</code> (depends on resource).</p>
+<h2>Examples</h2>
+<h3>Companies</h3>
+<pre><code class="language-http">POST /functions/v1/crm-api/companies
+Content-Type: application/json
+
+{ &quot;name&quot;: &quot;ACME Co&quot;, &quot;industry&quot;: &quot;construction&quot;, ... }
+</code></pre>
+<pre><code class="language-http">GET    /functions/v1/crm-api/companies?limit=50&amp;offset=0
+GET    /functions/v1/crm-api/companies/{id}
+PUT    /functions/v1/crm-api/companies/{id}
+DELETE /functions/v1/crm-api/companies/{id}
+GET    /functions/v1/crm-api/companies/{id}/contacts
+</code></pre>
+<h3>Contacts</h3>
+<pre><code class="language-http">POST   /functions/v1/crm-api/contacts
+GET    /functions/v1/crm-api/contacts?limit=50
+GET    /functions/v1/crm-api/contacts/{id}
+PUT    /functions/v1/crm-api/contacts/{id}
+DELETE /functions/v1/crm-api/contacts/{id}
+
+POST /functions/v1/crm-api/contacts/{id}/link-user
+POST /functions/v1/crm-api/contacts/{id}/unlink-user
+GET  /functions/v1/crm-api/contacts/potential-matches
+POST /functions/v1/crm-api/contacts/bulk-link
+GET  /functions/v1/crm-api/contacts/by-user/{userId}
+</code></pre>
+<h3>Users</h3>
+<pre><code class="language-http">GET  /functions/v1/crm-api/users?role=admin
+GET  /functions/v1/crm-api/users/{id}
+PUT  /functions/v1/crm-api/users/{id}
+POST /functions/v1/crm-api/users
+GET  /functions/v1/crm-api/users/{id}/ai-usage
+</code></pre>
+<h3>Stripe</h3>
+<pre><code class="language-http">POST /functions/v1/crm-api/stripe/subscriptions
+POST /functions/v1/crm-api/stripe/subscriptions/create-checkout
+POST /functions/v1/crm-api/stripe/credits
+POST /functions/v1/crm-api/stripe/credits/purchase
+GET  /functions/v1/crm-api/stripe/subscriptions
+GET  /functions/v1/crm-api/stripe/credits
+</code></pre>
+<h2>Schemas</h2>
+<p>Request/response schemas mirror the handler implementations in:</p>
+<ul>
+<li><code>supabase/functions/crm-api/handlers/companies-api-handler.ts</code></li>
+<li><code>supabase/functions/crm-api/handlers/contacts-api-handler.ts</code></li>
+<li><code>supabase/functions/crm-api/handlers/users-api-handler.ts</code></li>
+<li><code>supabase/functions/crm-api/handlers/stripe-api-handler.ts</code></li>
+</ul>
+<h2>Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td>Invalid resource segment, malformed body</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Unauthorized</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Forbidden (role mismatch)</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Resource not found</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Server error</td>
+</tr>
+</tbody></table>
+<pre><code class="language-json">{ &quot;error&quot;: &quot;human-readable message&quot; }
+</code></pre>
+
+</div></body></html>
