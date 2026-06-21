@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,710 +19,171 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
-<h1>Messaging API</h1>
-<h2>Overview</h2>
-<p>The Messaging API is a Supabase Edge Function that handles multi-channel messaging (SMS, WhatsApp) using <strong>Twilio</strong> as the unified provider.</p>
-<p><strong>Edge Function:</strong> <code>messaging-api</code>
-<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/messaging-api</code>
-<strong>Twilio Docs:</strong> <a href="https://www.twilio.com/docs/messaging/api">https://www.twilio.com/docs/messaging/api</a></p>
-<h2>Authentication</h2>
-<p>All requests require authentication via Supabase Auth:</p>
-<pre><code class="language-typescript">Authorization: Bearer &lt;supabase_access_token&gt;
-</code></pre>
-<h2>Provider: Twilio</h2>
-<p>The messaging service uses <a href="https://www.twilio.com/docs/messaging/api">Twilio</a> for all channels:</p>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Messaging API (WhatsApp via Zernio)</h1>
+<p>The Messaging API is a Supabase Edge Function that handles <strong>WhatsApp</strong> messaging using <strong>Zernio</strong> (the official WhatsApp Cloud API wrapper). SMS and the former Twilio integration were removed on 2026-06-08.</p>
+<p><strong>Zernio Docs:</strong> <a href="https://docs.zernio.com">https://docs.zernio.com</a></p>
+<hr>
+<h2>Model</h2>
+<p>Unlike a &quot;from-number → to-number&quot; SMS provider, Zernio WhatsApp follows Meta&#39;s Cloud API model:</p>
 <ul>
-<li><strong>SMS</strong>: Send SMS with sender ID support - <a href="https://www.twilio.com/docs/messaging/services/api">Docs</a></li>
-<li><strong>WhatsApp</strong>: Text, template, and media messages - <a href="https://www.twilio.com/docs/whatsapp/api">Docs</a></li>
+<li>A <strong>channel</strong> is a connected Zernio WhatsApp <strong>account</strong> (a WABA phone number). <code>messaging_channels.zernio_account_id</code> holds the Zernio accountId; <code>config</code> holds <code>waba_id</code> / <code>phone_number_id</code> / <code>display_phone_number</code> / <code>profile_id</code>. <code>provider = &#39;zernio&#39;</code>.</li>
+<li><strong>Cold / marketing sends require a Meta-approved template.</strong> Freeform text only works inside the 24-hour customer-service window (i.e. after the contact messaged you). Campaigns map a <code>messaging_templates</code> row to a Meta template via <code>whatsapp_template_name</code> + <code>whatsapp_language_code</code>, with ordered body params derived from the template&#39;s <code>variables[]</code>.</li>
+<li><strong>Multi-tenancy</strong> mirrors the social integration: one Zernio profile per workspace (<code>resolveWorkspaceProfile</code>), each connected WABA = an account under that profile.</li>
 </ul>
-<h3>Twilio Authentication</h3>
-<p>Twilio uses Basic authentication with Account SID and Auth Token.</p>
-<h2>Actions</h2>
-<p>The API uses an action-based routing system. All requests are POST with an <code>action</code> parameter.</p>
-<h3>1. Send Message</h3>
-<p>Send a single message via SMS or WhatsApp.</p>
-<p><strong>Action:</strong> <code>send</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;send&#39;,
-  channel: &#39;sms&#39; | &#39;whatsapp&#39;,           // Channel type (required)
-  to: string,                             // Recipient phone number (E.164 format)
-  from?: string,                          // Sender ID (uses default if not provided)
-  content?: string,                       // Message content (required if no template)
-  templateSlug?: string,                  // Template slug from messaging_templates
-  variables?: Record&lt;string, string&gt;,     // Variables for template rendering
-  mediaUrl?: string,                      // Media URL for MMS/rich messages
-  messageType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;otp&#39;,
-  tags?: Record&lt;string, string&gt;,          // Custom tags for tracking
-  // WhatsApp template specific
-  whatsappContentSid?: string,            // Twilio Content SID for approved templates
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  messageId: string,    // Twilio message SID
-  logId: string         // messaging_logs record ID
-}
-</code></pre>
-<p><strong>Example:</strong></p>
-<pre><code class="language-typescript">const { data, error } = await supabase.functions.invoke(&#39;messaging-api&#39;, {
-  body: {
-    action: &#39;send&#39;,
-    channel: &#39;sms&#39;,
-    to: &#39;+306912345678&#39;,
-    content: &#39;Your order #12345 has been shipped!&#39;,
-    messageType: &#39;transactional&#39;
-  }
-});
-</code></pre>
-<h3>2. Send Bulk Messages</h3>
-<p>Send messages to multiple recipients.</p>
-<p><strong>Action:</strong> <code>send-bulk</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;send-bulk&#39;,
-  channel: &#39;sms&#39; | &#39;whatsapp&#39;,
-  recipients: Array&lt;{
-    to: string,
-    variables?: Record&lt;string, string&gt;
-  }&gt;,
-  from?: string,
-  content?: string,
-  templateSlug?: string,
-  variables?: Record&lt;string, string&gt;,       // Applied to all messages
-  messageType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;otp&#39;,
-  tags?: Record&lt;string, string&gt;
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  bulkId: string,
-  total: number,
-  sent: number,
-  failed: number,
-  optedOut: number,
-  results: Array&lt;{
-    to: string,
-    status: &#39;sent&#39; | &#39;failed&#39; | &#39;opted_out&#39;,
-    messageId?: string,
-    error?: string
-  }&gt;
-}
-</code></pre>
-<h3>3. Get Channels</h3>
-<p>Retrieve configured messaging channels.</p>
-<p><strong>Action:</strong> <code>channels</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;channels&#39;,
-  channelType?: &#39;sms&#39; | &#39;whatsapp&#39;  // Filter by type
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  channels: Array&lt;{
-    id: string,
-    channel_type: &#39;sms&#39; | &#39;whatsapp&#39;,
-    provider: &#39;twilio&#39;,
-    sender_id: string,
-    display_name: string,
-    is_active: boolean,
-    is_default: boolean,
-    config: {
-      messaging_service_sid?: string    // For WhatsApp
-    },
-    daily_quota: number,
-    max_send_rate: number
-  }&gt;
-}
-</code></pre>
-<h3>4. Get Templates</h3>
-<p>Retrieve messaging templates.</p>
-<p><strong>Action:</strong> <code>templates</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;templates&#39;,
-  channelType?: &#39;sms&#39; | &#39;whatsapp&#39;
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  templates: Array&lt;{
-    id: string,
-    name: string,
-    slug: string,
-    channel_type: string,
-    content: string,
-    variables: string[],
-    category: string,
-    is_approved: boolean,        // For WhatsApp templates
-    is_active: boolean,
-    created_at: string,
-    updated_at: string
-  }&gt;
-}
-</code></pre>
-<h3>5. Get Message Logs</h3>
-<p>Retrieve message delivery logs.</p>
-<p><strong>Action:</strong> <code>logs</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;logs&#39;,
-  channelType?: &#39;sms&#39; | &#39;whatsapp&#39;,
-  status?: &#39;queued&#39; | &#39;sent&#39; | &#39;delivered&#39; | &#39;read&#39; | &#39;failed&#39;,
-  messageType?: &#39;transactional&#39; | &#39;marketing&#39; | &#39;otp&#39;,
-  limit?: number               // Default: 50
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  logs: Array&lt;{
-    id: string,
-    channel_type: string,
-    from_number: string,
-    to_number: string,
-    content: string,
-    status: string,
-    sent_at: string | null,
-    delivered_at: string | null,
-    read_at: string | null,
-    failed_at: string | null,
-    error_code: string | null,
-    error_message: string | null,
-    cost: number | null,
-    currency: string,
-    segment_count: number | null,
-    created_at: string
-  }&gt;
-}
-</code></pre>
-<h3>6. Get Analytics</h3>
-<p>Retrieve messaging analytics and statistics.</p>
-<p><strong>Action:</strong> <code>analytics</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;analytics&#39;,
-  channelType?: &#39;sms&#39; | &#39;whatsapp&#39;,
-  dateRange?: {
-    start: string,    // ISO date string
-    end: string       // ISO date string
-  }
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  totalSent: number,
-  totalDelivered: number,
-  totalRead: number,
-  totalFailed: number,
-  totalCost: number,
-  deliveryRate: number,      // Percentage
-  readRate: number,          // Percentage
-  failureRate: number,       // Percentage
-  dailyData: Array&lt;{
-    date: string,
-    channel_type: string,
-    total_sent: number,
-    total_delivered: number,
-    total_read: number,
-    total_failed: number,
-    total_cost: number
-  }&gt;
-}
-</code></pre>
-<h3>7. Get Account Balance</h3>
-<p>Check Twilio account balance.</p>
-<p><strong>Action:</strong> <code>balance</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;balance&#39;
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  balance: number,
-  currency: string,
-  raw: object           // Full Twilio response
-}
-</code></pre>
-<h3>8. Send Test Message</h3>
-<p>Send a test message for campaign preview.</p>
-<p><strong>Action:</strong> <code>send-test</code></p>
-<p><strong>Request:</strong></p>
-<pre><code class="language-typescript">{
-  action: &#39;send-test&#39;,
-  campaignId: string,     // Campaign ID
-  testNumber: string      // Test phone number
-}
-</code></pre>
-<p><strong>Response:</strong></p>
-<pre><code class="language-typescript">{
-  success: true,
-  messageId: string
-}
-</code></pre>
-<h2>Webhook Endpoint</h2>
-<p>The <code>messaging-webhook</code> edge function handles delivery reports and status callbacks from Twilio.</p>
-<p><strong>Edge Function:</strong> <code>messaging-webhook</code>
-<strong>URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/messaging-webhook</code></p>
-<h3>Webhook Types</h3>
-<p>Use query parameter <code>?type=</code> to specify webhook type:</p>
+<h3>Sending requires Zernio&#39;s <strong>Inbox add-on</strong></h3>
+<p>The per-recipient send path uses <code>/v1/inbox/conversations</code> (cold start with template) — these endpoints <code>403</code> without Zernio&#39;s Inbox add-on. The add-on is also what makes <strong>two-way</strong> (reply capture + agent reply) possible.</p>
+<hr>
+<h2>Provider: Zernio</h2>
+<ul>
+<li>Base URL: <code>https://zernio.com/api/v1</code>, Bearer auth with <code>ZERNIO_API_KEY</code> (env-first, <code>platform_secrets</code> fallback; legacy <code>LATE_API_KEY</code> honored).</li>
+<li>Shared client: <a href="../../supabase/functions/_shared/zernio.ts"><code>supabase/functions/_shared/zernio.ts</code></a> — <code>zernioApi</code>, <code>sendWhatsAppMessage</code>, <code>sendWhatsAppReply</code>, <code>resolveWorkspaceProfile</code>, <code>verifyZernioSignature</code>.</li>
+</ul>
+<hr>
+<h2>Actions (<code>messaging-api</code>)</h2>
+<p><code>POST</code> with <code>{ action, ... }</code>:</p>
 <table>
 <thead>
 <tr>
-<th>Type</th>
-<th>Description</th>
+<th>Action</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>status</code> (default)</td>
-<td>Delivery reports (SMS, WhatsApp)</td>
+<td><code>send</code></td>
+<td>Send to one/many recipients. Uses the channel&#39;s template (cold) or freeform <code>content</code> (in-window). Logs to <code>messaging_logs</code>, debits <code>zernio-whatsapp</code> credits.</td>
 </tr>
 <tr>
-<td><code>incoming</code></td>
-<td>Incoming messages (SMS, WhatsApp)</td>
+<td><code>send-bulk</code></td>
+<td>Same, for a <code>recipients[]</code> list with per-recipient <code>variables</code>.</td>
+</tr>
+<tr>
+<td><code>connect-whatsapp</code></td>
+<td>Connect a Meta WABA: <code>{ accessToken, wabaId, phoneNumberId, displayName? }</code> → <code>POST /v1/connect/whatsapp/credentials</code> → upserts a channel with <code>zernio_account_id</code>.</td>
+</tr>
+<tr>
+<td><code>sync-channels</code></td>
+<td>Pull connected WhatsApp accounts from Zernio (<code>GET /v1/accounts?platform=whatsapp</code>) into <code>messaging_channels</code>.</td>
+</tr>
+<tr>
+<td><code>whatsapp-templates</code></td>
+<td>List the WABA&#39;s Meta templates (<code>GET /v1/whatsapp/templates?accountId=</code>).</td>
+</tr>
+<tr>
+<td><code>channels</code> / <code>templates</code> / <code>logs</code> / <code>analytics</code></td>
+<td>DB reads (all filtered to <code>channel_type=&#39;whatsapp&#39;</code>).</td>
+</tr>
+<tr>
+<td><code>account-info</code></td>
+<td>WhatsApp number health (quality rating + messaging tier) — replaces the old Twilio balance.</td>
+</tr>
+<tr>
+<td><code>get-settings</code> / <code>update-settings</code></td>
+<td><code>messaging_settings</code> (provider pinned to <code>zernio</code>).</td>
 </tr>
 </tbody></table>
-<h3>Twilio Status Callback Payload</h3>
-<p>Twilio sends status callbacks as form-urlencoded POST data:</p>
-<pre><code class="language-typescript">{
-  MessageSid: string,
-  MessageStatus: &#39;accepted&#39; | &#39;queued&#39; | &#39;sending&#39; | &#39;sent&#39; | &#39;delivered&#39; | &#39;undelivered&#39; | &#39;failed&#39; | &#39;read&#39;,
-  To: string,
-  From: string,
-  ErrorCode?: string,
-  ErrorMessage?: string,
-  Price?: string,
-  PriceUnit?: string
-}
-</code></pre>
-<h3>Supported Events</h3>
+<p>Not configured → <code>503</code> with code <code>provider_not_configured</code> and settings path <code>/admin/modules/messaging/settings → Keys</code>.</p>
+<hr>
+<h2>Campaign processor (<code>messaging-processor</code>)</h2>
+<p>Cron (every minute). Starts due scheduled WhatsApp campaigns, then sends each pending recipient via <code>sendWhatsAppMessage</code> (template + ordered params). Outbound sends are logged to <code>messaging_logs</code> only — they <strong>do not</strong> create an inbox conversation. Delivery status flows in later via the webhook.</p>
+<hr>
+<h2>Webhooks (<code>zernio-webhook-handler</code>)</h2>
+<p>There is <strong>one</strong> Zernio webhook endpoint for both social posts and WhatsApp messaging (the former Twilio <code>messaging-webhook</code> was deleted). Register it in Zernio subscribed to <code>post.*</code>, <code>account.*</code>, and <code>message.*</code>. Signed with <code>X-Zernio-Signature</code> (HMAC-SHA256 over the raw body, secret <code>ZERNIO_WEBHOOK_SECRET</code>).</p>
 <table>
 <thead>
 <tr>
 <th>Event</th>
-<th>Action</th>
+<th>Handling</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>delivered</code></td>
-<td>Updates message status to &#39;delivered&#39;</td>
+<td><code>message.received</code></td>
+<td>Capture the WhatsApp reply into <code>messaging_conversations</code> + <code>messaging_conversation_messages</code>. <strong>Assign on first reply</strong> to the originating campaign owner. STOP/START keywords update <code>messaging_optouts</code>. Emits the <code>whatsapp.reply_received</code> flow event for notification.</td>
 </tr>
 <tr>
-<td><code>read</code></td>
-<td>Updates message status to &#39;read&#39;</td>
-</tr>
-<tr>
-<td><code>undelivered</code> / <code>failed</code></td>
-<td>Updates message status to &#39;failed&#39;</td>
-</tr>
-<tr>
-<td>Incoming STOP keyword</td>
-<td>Adds to opt-out list</td>
+<td><code>message.delivered</code> / <code>message.read</code> / <code>message.failed</code></td>
+<td>Update <code>messaging_logs</code> (by <code>provider_message_id</code> = wamid) + the campaign recipient + any agent-reply message.</td>
 </tr>
 </tbody></table>
-<h2>Database Schema</h2>
-<h3>messaging_channels</h3>
+<p><strong>Noise model:</strong> only inbound replies surface a conversation; campaign sends never do.</p>
+<hr>
+<h2>Tables</h2>
 <table>
 <thead>
 <tr>
-<th>Column</th>
-<th>Type</th>
-<th>Description</th>
+<th>Table</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>id</td>
-<td>UUID</td>
-<td>Primary key</td>
+<td><code>messaging_channels</code></td>
+<td><code>provider=&#39;zernio&#39;</code>, <code>zernio_account_id</code>, <code>config.{waba_id,phone_number_id,display_phone_number,profile_id}</code></td>
 </tr>
 <tr>
-<td>channel_type</td>
-<td>TEXT</td>
-<td>&#39;sms&#39; or &#39;whatsapp&#39;</td>
+<td><code>messaging_templates</code></td>
+<td><code>whatsapp_template_name</code> + <code>whatsapp_language_code</code> bind to a Meta template; <code>variables[]</code> = ordered body params</td>
 </tr>
 <tr>
-<td>provider</td>
-<td>TEXT</td>
-<td>&#39;twilio&#39;</td>
+<td><code>messaging_logs</code></td>
+<td>Outbound send/delivery log; <code>provider_message_id</code> = wamid</td>
 </tr>
 <tr>
-<td>sender_id</td>
-<td>TEXT</td>
-<td>Phone number in E.164 format</td>
+<td><code>messaging_conversations</code></td>
+<td><strong>New.</strong> Inbound-reply threads (assign-on-reply). Unique <code>(channel_id, contact_phone)</code></td>
 </tr>
 <tr>
-<td>display_name</td>
-<td>TEXT</td>
-<td>Friendly name</td>
+<td><code>messaging_conversation_messages</code></td>
+<td><strong>New.</strong> Per-message rows in a conversation (incoming + agent outgoing)</td>
 </tr>
 <tr>
-<td>is_active</td>
-<td>BOOLEAN</td>
-<td>Whether channel is active</td>
+<td><code>messaging_optouts</code></td>
+<td>STOP/START compliance (<code>channel_type</code> ∈ <code>whatsapp</code> / <code>all</code>)</td>
 </tr>
 <tr>
-<td>is_default</td>
-<td>BOOLEAN</td>
-<td>Default channel for type</td>
-</tr>
-<tr>
-<td>config</td>
-<td>JSONB</td>
-<td>Twilio-specific config (messaging_service_sid for WhatsApp)</td>
-</tr>
-<tr>
-<td>daily_quota</td>
-<td>INTEGER</td>
-<td>Daily sending limit</td>
-</tr>
-<tr>
-<td>max_send_rate</td>
-<td>INTEGER</td>
-<td>Messages per minute</td>
+<td><code>campaigns</code> / <code>messaging_campaign_recipients</code></td>
+<td>Campaign + per-recipient send state</td>
 </tr>
 </tbody></table>
-<h3>messaging_templates</h3>
+<p><code>messaging_conversations</code> + <code>messaging_conversation_messages</code> are in the <code>supabase_realtime</code> publication for the (fast-follow) live inbox UI.</p>
+<hr>
+<h2>Secrets</h2>
 <table>
 <thead>
 <tr>
-<th>Column</th>
-<th>Type</th>
-<th>Description</th>
+<th>Key</th>
+<th>Where</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>id</td>
-<td>UUID</td>
-<td>Primary key</td>
+<td><code>ZERNIO_API_KEY</code></td>
+<td><code>platform_secrets</code> (modules: <code>social-media</code> + <code>messaging</code>); env wins</td>
 </tr>
 <tr>
-<td>name</td>
-<td>TEXT</td>
-<td>Template name</td>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
+<td>same; verifies <code>X-Zernio-Signature</code></td>
 </tr>
 <tr>
-<td>slug</td>
-<td>TEXT</td>
-<td>Unique slug</td>
-</tr>
-<tr>
-<td>channel_type</td>
-<td>TEXT</td>
-<td>Channel type</td>
-</tr>
-<tr>
-<td>content</td>
-<td>TEXT</td>
-<td>Message body with {{variables}}</td>
-</tr>
-<tr>
-<td>media_url</td>
-<td>TEXT</td>
-<td>Media URL for rich messages</td>
-</tr>
-<tr>
-<td>buttons</td>
-<td>JSONB</td>
-<td>Interactive buttons</td>
-</tr>
-<tr>
-<td>variables</td>
-<td>TEXT[]</td>
-<td>List of variable names</td>
-</tr>
-<tr>
-<td>category</td>
-<td>TEXT</td>
-<td>&#39;transactional&#39;, &#39;marketing&#39;, &#39;otp&#39;</td>
-</tr>
-<tr>
-<td>whatsapp_content_sid</td>
-<td>TEXT</td>
-<td>Twilio Content SID for approved templates</td>
-</tr>
-<tr>
-<td>is_approved</td>
-<td>BOOLEAN</td>
-<td>WhatsApp approval status</td>
-</tr>
-<tr>
-<td>is_active</td>
-<td>BOOLEAN</td>
-<td>Whether template is active</td>
+<td><code>CRON_SECRET</code></td>
+<td>guards <code>messaging-processor</code></td>
 </tr>
 </tbody></table>
-<h3>messaging_logs</h3>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>id</td>
-<td>UUID</td>
-<td>Primary key</td>
-</tr>
-<tr>
-<td>channel_type</td>
-<td>TEXT</td>
-<td>Channel used</td>
-</tr>
-<tr>
-<td>template_id</td>
-<td>UUID</td>
-<td>FK to messaging_templates</td>
-</tr>
-<tr>
-<td>channel_id</td>
-<td>UUID</td>
-<td>FK to messaging_channels</td>
-</tr>
-<tr>
-<td>provider_message_id</td>
-<td>TEXT</td>
-<td>Twilio message SID</td>
-</tr>
-<tr>
-<td>from_number</td>
-<td>TEXT</td>
-<td>Sender</td>
-</tr>
-<tr>
-<td>to_number</td>
-<td>TEXT</td>
-<td>Recipient</td>
-</tr>
-<tr>
-<td>content</td>
-<td>TEXT</td>
-<td>Message content</td>
-</tr>
-<tr>
-<td>status</td>
-<td>TEXT</td>
-<td>Delivery status</td>
-</tr>
-<tr>
-<td>sent_at</td>
-<td>TIMESTAMPTZ</td>
-<td>When sent</td>
-</tr>
-<tr>
-<td>delivered_at</td>
-<td>TIMESTAMPTZ</td>
-<td>When delivered</td>
-</tr>
-<tr>
-<td>read_at</td>
-<td>TIMESTAMPTZ</td>
-<td>When read</td>
-</tr>
-<tr>
-<td>failed_at</td>
-<td>TIMESTAMPTZ</td>
-<td>When failed</td>
-</tr>
-<tr>
-<td>error_code</td>
-<td>TEXT</td>
-<td>Error code</td>
-</tr>
-<tr>
-<td>error_message</td>
-<td>TEXT</td>
-<td>Error description</td>
-</tr>
-<tr>
-<td>cost</td>
-<td>DECIMAL</td>
-<td>Message cost</td>
-</tr>
-<tr>
-<td>currency</td>
-<td>TEXT</td>
-<td>Cost currency (USD)</td>
-</tr>
-<tr>
-<td>segment_count</td>
-<td>INTEGER</td>
-<td>SMS segment count</td>
-</tr>
-<tr>
-<td>variables</td>
-<td>JSONB</td>
-<td>Variables used</td>
-</tr>
-<tr>
-<td>tags</td>
-<td>JSONB</td>
-<td>Custom tags</td>
-</tr>
-</tbody></table>
-<h3>messaging_optouts</h3>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>id</td>
-<td>UUID</td>
-<td>Primary key</td>
-</tr>
-<tr>
-<td>phone_number</td>
-<td>TEXT</td>
-<td>Opted-out number</td>
-</tr>
-<tr>
-<td>channel_type</td>
-<td>TEXT</td>
-<td>Channel type or &#39;all&#39;</td>
-</tr>
-<tr>
-<td>opted_out_at</td>
-<td>TIMESTAMPTZ</td>
-<td>When opted out</td>
-</tr>
-<tr>
-<td>reason</td>
-<td>TEXT</td>
-<td>Opt-out reason</td>
-</tr>
-<tr>
-<td>source</td>
-<td>TEXT</td>
-<td>&#39;keyword&#39;, &#39;manual&#39;, &#39;api&#39;, &#39;complaint&#39;</td>
-</tr>
-</tbody></table>
-<h2>Error Handling</h2>
-<p>All errors return a standard format:</p>
-<pre><code class="language-typescript">{
-  success: false,
-  error: string       // Error message
-}
-</code></pre>
-<h3>Common Error Messages</h3>
-<table>
-<thead>
-<tr>
-<th>Error</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>Twilio credentials not configured</code></td>
-<td>Missing TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN</td>
-</tr>
-<tr>
-<td><code>No default {channel} channel configured</code></td>
-<td>No default channel for the specified type</td>
-</tr>
-<tr>
-<td><code>All recipients have opted out</code></td>
-<td>All recipients are in the opt-out list</td>
-</tr>
-<tr>
-<td><code>Template not found</code></td>
-<td>Template slug doesn&#39;t exist</td>
-</tr>
-<tr>
-<td><code>Twilio API error</code></td>
-<td>API error from Twilio</td>
-</tr>
-</tbody></table>
-<h2>Twilio API Reference</h2>
-<p>The API wraps the following Twilio endpoints:</p>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Twilio Endpoint</th>
-<th>Docs</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>SMS</td>
-<td><code>POST /Messages.json</code></td>
-<td><a href="https://www.twilio.com/docs/messaging/api/message-resource#create-a-message-resource">Link</a></td>
-</tr>
-<tr>
-<td>WhatsApp Text</td>
-<td><code>POST /Messages.json</code></td>
-<td><a href="https://www.twilio.com/docs/whatsapp/api#sending-a-freeform-whatsapp-message">Link</a></td>
-</tr>
-<tr>
-<td>WhatsApp Template</td>
-<td><code>POST /Messages.json</code> with ContentSid</td>
-<td><a href="https://www.twilio.com/docs/content-api/send-a-content-api-resource">Link</a></td>
-</tr>
-<tr>
-<td>Balance</td>
-<td><code>GET /Balance.json</code></td>
-<td><a href="https://www.twilio.com/docs/usage/api/balance">Link</a></td>
-</tr>
-</tbody></table>
-<h2>Channel Configuration</h2>
-<h3>SMS Channel</h3>
-<pre><code class="language-json">{
-  &quot;channel_type&quot;: &quot;sms&quot;,
-  &quot;provider&quot;: &quot;twilio&quot;,
-  &quot;sender_id&quot;: &quot;+1234567890&quot;,
-  &quot;config&quot;: {}
-}
-</code></pre>
-<h3>WhatsApp Channel</h3>
-<pre><code class="language-json">{
-  &quot;channel_type&quot;: &quot;whatsapp&quot;,
-  &quot;provider&quot;: &quot;twilio&quot;,
-  &quot;sender_id&quot;: &quot;+1234567890&quot;,
-  &quot;config&quot;: {
-    &quot;messaging_service_sid&quot;: &quot;MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;
-  }
-}
-</code></pre>
-<h2>Environment Variables</h2>
-<p>Required secrets in Supabase:</p>
-<pre><code>TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_auth_token
-</code></pre>
-<p>Get your credentials from the <a href="https://console.twilio.com/">Twilio Console</a>.</p>
-<h2>Webhook Setup in Twilio</h2>
+<p>Manage at <code>/admin/modules/messaging/settings → Keys</code> or <code>/admin/modules/social-media → Settings</code>.</p>
+<hr>
+<h2>Activate after deploy</h2>
 <ol>
-<li>Go to Twilio Console &gt; Phone Numbers &gt; Manage &gt; Active Numbers</li>
-<li>Select your phone number</li>
-<li>Configure webhooks:<ul>
-<li><strong>SMS Status Callback</strong>: <code>https://your-project.supabase.co/functions/v1/messaging-webhook?type=status</code></li>
-<li><strong>WhatsApp Status Callback</strong>: <code>https://your-project.supabase.co/functions/v1/messaging-webhook?type=status</code></li>
-<li><strong>Incoming Messages</strong>: <code>https://your-project.supabase.co/functions/v1/messaging-webhook?type=incoming</code></li>
-</ul>
-</li>
+<li><code>supabase functions deploy messaging-api messaging-processor zernio-webhook-handler</code></li>
+<li>Paste <code>ZERNIO_API_KEY</code> (+ <code>ZERNIO_WEBHOOK_SECRET</code>) if not already set for social.</li>
+<li>Connect a WhatsApp number: Messaging → Channels → <strong>Connect WhatsApp</strong> (Meta access token + WABA ID + phone number ID), or <strong>Sync from Zernio</strong> if connected in the Zernio dashboard.</li>
+<li>Register the webhook in Zernio (<code>.../functions/v1/zernio-webhook-handler</code>) with <code>message.*</code> events.</li>
+<li>Create templates mapped to Meta-approved template names.</li>
 </ol>
-<h2>Related Documentation</h2>
-<ul>
-<li><a href="./email-api.md">Email API</a> - Similar pattern for email</li>
-<li><a href="../campaign-system.md">Campaign System</a> - Multi-channel campaigns</li>
-<li><a href="../api-endpoints.md">API Endpoints</a> - Complete API reference</li>
-<li><a href="https://www.twilio.com/docs/messaging/api">Twilio API Docs</a> - Official Twilio documentation</li>
-</ul>
+<blockquote>
+<p><strong>Requires Zernio&#39;s Inbox add-on</strong> for per-recipient sends and reply capture.</p>
+</blockquote>
 
 </div></body></html>

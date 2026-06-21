@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Zernio Social Media API</h1>
+<p><strong>Functions:</strong> <code>zernio-api</code> (router) + <code>zernio-webhook-handler</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/</code>
+<strong>Auth:</strong> Authenticated users (Supabase JWT in <code>Authorization: Bearer &lt;token&gt;</code>)
+<strong>Upstream:</strong> <a href="https://zernio.com">Zernio</a> — <code>https://zernio.com/api/v1</code>, Bearer-auth with <code>ZERNIO_API_KEY</code> (falls back to the legacy <code>LATE_API_KEY</code>).</p>
+<p>Full documentation: <a href="../social-media-system.html">social-media-system.md</a></p>
+<blockquote>
+<p><code>zernio-api</code> is a single edge function; the <code>action</code> field in the POST body selects the handler. A bare <code>GET</code> maps to the account-listing path.</p>
+</blockquote>
+<hr>
+<h2>Concepts</h2>
+<ul>
+<li><strong>Profile</strong> — Zernio groups connected accounts under a <em>profile</em> (a brand/project container that holds many accounts). We lazily <strong>find-or-create exactly one Zernio profile per workspace</strong> (named <code>ws:{workspace_id}</code>) and cache its id in <code>social_zernio_profiles</code>. Connecting still supports unlimited accounts per workspace.</li>
+<li><strong>Account</strong> — a connected social account. Stored in <code>social_accounts</code> with <code>zernio_account_id</code> (the Zernio-side id).</li>
+<li><strong>Post</strong> — a <code>social_posts</code> row. Publishing sends its caption/hashtags/media to Zernio and stamps <code>zernio_post_id</code>.</li>
+</ul>
+<hr>
+<h2>OAuth — Connect / Disconnect Accounts</h2>
+<h3>1. Start a connection</h3>
+<pre><code>POST /functions/v1/zernio-api
+{
+  &quot;action&quot;: &quot;connect&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;redirect_url&quot;: &quot;https://app.example.com/profile&quot;   // optional; where Zernio returns the browser
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;oauth_url&quot;: &quot;https://...zernio authUrl...&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;profile_id&quot;: &quot;zernio-profile-id&quot;
+}
+</code></pre>
+<p>Open <code>oauth_url</code> in a new tab. Internally this resolves the workspace&#39;s Zernio profile, then calls Zernio <code>GET /v1/connect/{platform}?profileId=&amp;redirect_url=</code> and returns its <code>authUrl</code>.</p>
+<h3>2. Zernio redirects back, then call the callback</h3>
+<p>After the user authorises, Zernio redirects the browser to your <code>redirect_url</code> with query params:</p>
+<pre><code>{redirect_url}?connected=instagram&amp;accountId=&lt;zernio_account_id&gt;&amp;username=&lt;handle&gt;&amp;profileId=&lt;id&gt;
+</code></pre>
+<p>The frontend (same Supabase session) reads <code>connected</code> + <code>accountId</code> and persists the account:</p>
+<pre><code>POST /functions/v1/zernio-api
+{
+  &quot;action&quot;: &quot;callback&quot;,
+  &quot;zernio_account_id&quot;: &quot;&lt;accountId from the redirect&gt;&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>This fetches <code>GET /v1/accounts/{accountId}</code> from Zernio (<code>username</code> → <code>handle</code>, <code>displayName</code> → <code>display_name</code>, <code>profilePicture</code> → <code>avatar_url</code>, <code>followersCount</code> → <code>followers_count</code>) and upserts <code>social_accounts</code>.</p>
+<p><strong>Response:</strong> <code>{ &quot;success&quot;: true, &quot;account&quot;: { ...social_accounts row } }</code></p>
+<h3>Disconnect an account</h3>
+<pre><code>POST /functions/v1/zernio-api
+{
+  &quot;action&quot;: &quot;disconnect&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;   // social_accounts.id (NOT the zernio id)
+}
+</code></pre>
+<p>Calls Zernio <code>DELETE /v1/accounts/{zernio_account_id}</code> (best-effort) and sets <code>is_active = false</code>.
+<strong>Response:</strong> <code>{ &quot;success&quot;: true, &quot;disconnected&quot;: true }</code></p>
+<h3>List connected accounts</h3>
+<pre><code>GET /functions/v1/zernio-api?action=list&amp;workspace_id=&lt;uuid&gt;&amp;include_inactive=false
+</code></pre>
+<p>Reads <code>social_accounts</code> directly (no Zernio call). <strong>Response:</strong> <code>{ &quot;success&quot;: true, &quot;accounts&quot;: [...] }</code></p>
+<p><strong>Supported platforms:</strong> <code>instagram</code> · <code>facebook</code> · <code>linkedin</code> · <code>tiktok</code> · <code>pinterest</code> · <code>youtube</code> · <code>twitter</code> · <code>threads</code></p>
+<hr>
+<h2>Publishing</h2>
+<p>Publishing operates on an existing <code>social_posts</code> <strong>draft</strong> — the caption, hashtags, <code>image_urls[]</code>, and <code>video_url</code> are read from that row (you pass <code>post_id</code>, <strong>not</strong> the content inline).</p>
+<h3>Publish immediately</h3>
+<pre><code>POST /functions/v1/zernio-api
+{
+  &quot;action&quot;: &quot;publish_now&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;,            // social_posts.id of the draft
+  &quot;social_account_id&quot;: &quot;uuid&quot;,  // social_accounts.id to publish to
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<h3>Schedule a post</h3>
+<pre><code>POST /functions/v1/zernio-api
+{
+  &quot;action&quot;: &quot;schedule&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;,
+  &quot;social_account_id&quot;: &quot;uuid&quot;,
+  &quot;scheduled_at&quot;: &quot;2026-04-01T14:00:00Z&quot;,  // ISO 8601, required for schedule
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Both build a Zernio <code>POST /v1/posts</code> call: <code>{ content, platforms: [{ platform, accountId }], mediaItems: [{ type:&quot;image&quot;|&quot;video&quot;, url }], publishNow:true | scheduledFor }</code>.</p>
+<p><strong>No credit cost</strong> — uses the workspace&#39;s Zernio subscription.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;action&quot;: &quot;publish_now&quot;,
+  &quot;post_id&quot;: &quot;uuid&quot;,
+  &quot;zernio_post_id&quot;: &quot;zernio-post-id&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;handle&quot;: &quot;acme&quot;,
+  &quot;published_url&quot;: &quot;https://www.instagram.com/p/...&quot;,   // when Zernio returns one
+  &quot;published_at&quot;: &quot;2026-04-01T14:00:00Z&quot;,               // publish_now
+  &quot;scheduled_at&quot;: &quot;2026-04-01T14:00:00Z&quot;                // schedule
+}
+</code></pre>
+<p>Final status is reconciled by <code>zernio-webhook-handler</code> (<code>post.published</code> / <code>post.failed</code> / <code>post.partial</code> / <code>post.cancelled</code>).</p>
+<hr>
+<h2>Analytics</h2>
+<h3>Sync post analytics</h3>
+<pre><code>POST /functions/v1/zernio-api
+{ &quot;action&quot;: &quot;get_post_analytics&quot;, &quot;post_ids&quot;: [&quot;uuid-1&quot;, &quot;uuid-2&quot;], &quot;workspace_id&quot;: &quot;uuid&quot; }
+</code></pre>
+<p>For each published post with a <code>zernio_post_id</code>, calls Zernio <code>GET /v1/analytics?postId=</code> and upserts <code>social_post_analytics</code> (<code>engagementRate</code> → <code>engagement_rate</code>, plus <code>impressions/reach/likes/comments/shares/saves/clicks</code>). <strong>Response:</strong> <code>{ &quot;success&quot;: true, &quot;synced&quot;: 2 }</code></p>
+<h3>Sync account insights</h3>
+<pre><code>POST /functions/v1/zernio-api
+{ &quot;action&quot;: &quot;get_account_insights&quot;, &quot;social_account_id&quot;: &quot;uuid&quot; }   // or &quot;workspace_id&quot;
+</code></pre>
+<p>Calls Zernio <code>GET /v1/accounts/follower-stats?accountIds=</code> and writes a daily <code>social_account_insights</code> snapshot: <code>followers_count</code> (← <code>currentFollowers</code>), <code>following_count</code>, <code>posts_count</code> (← <code>accountStats.mediaCount</code>/<code>videoCount</code>/<code>postsCount</code>/…). <strong>Note:</strong> <code>avg_engagement</code>, <code>reach_7d</code>, <code>impressions_7d</code> are <strong>stored as <code>0</code></strong> — Zernio&#39;s follower-stats endpoint does not expose them. <strong>Response:</strong> <code>{ &quot;success&quot;: true, &quot;synced&quot;: N }</code></p>
+<h3>Get best posting times</h3>
+<pre><code>POST /functions/v1/zernio-api
+{ &quot;action&quot;: &quot;get_best_time&quot;, &quot;social_account_id&quot;: &quot;uuid&quot;, &quot;platform&quot;: &quot;instagram&quot; }
+</code></pre>
+<p>Calls Zernio <code>GET /v1/analytics/best-time?accountId=</code>. <strong>Response</strong> (Zernio <code>slots</code>, passed through):</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;best_times&quot;: [
+    { &quot;day_of_week&quot;: 0, &quot;hour&quot;: 18, &quot;avg_engagement&quot;: 510.3, &quot;post_count&quot;: 15 }
+  ]
+}
+</code></pre>
+<p><code>day_of_week</code>: <code>0 = Monday … 6 = Sunday</code>. <code>hour</code> is UTC.</p>
+<hr>
+<h2>Webhooks (<code>zernio-webhook-handler</code>)</h2>
+<p>Register <code>…/functions/v1/zernio-webhook-handler</code> in the Zernio dashboard. Payloads are HMAC-SHA256 signed via the <code>X-Zernio-Signature</code> header, verified with <code>ZERNIO_WEBHOOK_SECRET</code> (falls back to <code>LATE_WEBHOOK_SECRET</code>). Payload shape is <code>{ event, post | account, timestamp }</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>post.published</code></td>
+<td><code>social_posts.status = &#39;published&#39;</code>, <code>published_at</code> set (matched on <code>post.id = zernio_post_id</code>)</td>
+</tr>
+<tr>
+<td><code>post.partial</code></td>
+<td><code>status = &#39;published&#39;</code> + <code>metadata.partial = true</code></td>
+</tr>
+<tr>
+<td><code>post.failed</code></td>
+<td><code>status = &#39;failed&#39;</code> + first per-platform error stored</td>
+</tr>
+<tr>
+<td><code>post.cancelled</code></td>
+<td><code>status = &#39;cancelled&#39;</code></td>
+</tr>
+<tr>
+<td><code>post.scheduled</code></td>
+<td><code>status = &#39;scheduled&#39;</code>, <code>scheduled_at</code> ← <code>post.scheduledFor</code></td>
+</tr>
+<tr>
+<td><code>account.disconnected</code></td>
+<td><code>social_accounts.is_active = false</code> (matched on <code>account.accountId</code>)</td>
+</tr>
+</tbody></table>
+<p>Always returns <code>200</code> to prevent Zernio retry loops.</p>
+<hr>
+<h2>Social Content Generation</h2>
+<p><strong>Function:</strong> <code>generate-social-content</code> · <strong>Credits:</strong> 2 per generation</p>
+<pre><code>POST /functions/v1/generate-social-content
+{
+  &quot;topic&quot;: &quot;Marble bathroom renovation&quot;,
+  &quot;platform&quot;: &quot;instagram&quot;,
+  &quot;tone&quot;: &quot;professional&quot;,
+  &quot;product_info&quot;: { &quot;name&quot;: &quot;Calacatta Gold Marble&quot;, &quot;category&quot;: &quot;stone&quot; },
+  &quot;include_hashtags&quot;: true,
+  &quot;hashtag_count&quot;: 10,
+  &quot;workspace_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<p>Returns 3 caption variants tailored to platform character limits, tone, and hashtag conventions.</p>
+<hr>
+<h2>Social Image Generation</h2>
+<p><strong>Function:</strong> <code>generate-social-image</code></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Image Type</th>
+<th>Credits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>xAI Aurora</td>
+<td><code>lifestyle</code> / <code>people</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td>Gemini Imagen</td>
+<td><code>product</code> / <code>interior</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td>FLUX Dev</td>
+<td><code>artistic</code> / <code>textured</code></td>
+<td>6</td>
+</tr>
+</tbody></table>
+<pre><code>POST /functions/v1/generate-social-image
+{ &quot;prompt&quot;: &quot;Luxury marble bathroom, natural light, editorial photography&quot;, &quot;image_type&quot;: &quot;interior&quot;, &quot;aspect_ratio&quot;: &quot;4:5&quot;, &quot;workspace_id&quot;: &quot;uuid&quot; }
+</code></pre>
+<p>Pass <code>model</code> to override auto-selection. Aspect ratios: <code>1:1</code> · <code>4:5</code> · <code>9:16</code> · <code>16:9</code>.</p>
+<hr>
+<h2>Database Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>social_accounts</code></td>
+<td>Connected accounts per workspace. Key column: <code>zernio_account_id</code> (Zernio-side id). Unique on <code>(workspace_id, platform, zernio_account_id)</code>.</td>
+</tr>
+<tr>
+<td><code>social_zernio_profiles</code></td>
+<td><code>workspace_id → zernio_profile_id</code> map (one Zernio profile per workspace; service-role only).</td>
+</tr>
+<tr>
+<td><code>social_posts</code></td>
+<td>Draft / scheduled / published posts. <code>zernio_post_id</code> stamped on publish. <code>status ∈ draft·scheduled·published·failed·partial·cancelled</code>.</td>
+</tr>
+<tr>
+<td><code>social_post_analytics</code></td>
+<td>Per-post engagement metrics.</td>
+</tr>
+<tr>
+<td><code>social_account_insights</code></td>
+<td>Daily account-level follower/posts snapshots.</td>
+</tr>
+</tbody></table>
+<h2>Secrets (module <code>social-media</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZERNIO_API_KEY</code></td>
+<td>Bearer token for all Zernio REST calls. Resolved env-first, then <code>platform_secrets</code>. Falls back to legacy <code>LATE_API_KEY</code>.</td>
+</tr>
+<tr>
+<td><code>ZERNIO_WEBHOOK_SECRET</code></td>
+<td>HMAC-SHA256 verification of inbound <code>X-Zernio-Signature</code>. Falls back to <code>LATE_WEBHOOK_SECRET</code>.</td>
+</tr>
+</tbody></table>
+<p>Set at <code>/admin/modules/social-media → Settings</code>. The old Late key will <strong>not</strong> authenticate against Zernio — a real Zernio key is required.</p>
+
+</div></body></html>
