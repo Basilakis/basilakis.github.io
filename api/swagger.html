@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Material KAI Vision Platform — Complete API Reference</h1>
 <blockquote>
 <p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co</code>
@@ -74,7 +76,7 @@
 <li><a href="#9-stripe-checkout">Stripe Checkout</a></li>
 <li><a href="#10-stripe-customer-portal">Stripe Customer Portal</a></li>
 <li><a href="#11-email-api">Email API</a></li>
-<li><a href="#12-messaging-api-sms-whatsapp">Messaging API SMS WhatsApp</a></li>
+<li><a href="#12-messaging-api-whatsapp-via-zernio">Messaging API (WhatsApp via Zernio)</a></li>
 <li><a href="#13-recommendations-api">Recommendations API</a></li>
 <li><a href="#14-generate-vr-world">Generate VR World</a></li>
 <li><a href="#15-generate-quote-pdf">Generate Quote PDF</a></li>
@@ -102,7 +104,7 @@
 <li><a href="#37-social-content-generation">Social Content Generation</a></li>
 <li><a href="#38-social-image-generation">Social Image Generation</a></li>
 <li><a href="#39-social-video-generation">Social Video Generation</a></li>
-<li><a href="#40-social-publishing-latedev">Social Publishing (Late.dev)</a></li>
+<li><a href="#40-social-publishing-zernio">Social Publishing (Zernio)</a></li>
 <li><a href="#41-pinterest-integration">Pinterest Integration</a></li>
 <li><a href="#42-webhook-receivers">Webhook Receivers</a></li>
 <li><a href="#43-internal-utilities">Internal Utilities</a></li>
@@ -167,7 +169,7 @@
 </thead>
 <tbody><tr>
 <td><code>kai</code></td>
-<td>Default general-purpose KAI agent (Claude Sonnet)</td>
+<td>Default general-purpose KAI agent (Claude Opus)</td>
 <td>Any authenticated user</td>
 </tr>
 <tr>
@@ -200,7 +202,7 @@
 <p>Sub-agent tools, B2B manufacturer search, SEO tools, and the <code>price_lookup</code> tool are gated to <code>admin</code> or <code>owner</code> roles.</p>
 </blockquote>
 <h3>Admin-Only Tool: price_lookup (2026-04)</h3>
-<p>Searches the &quot;Pricing&quot; KB category and composes a price with a reasoning chain. Only available to admin/owner. See <a href="./pricing-api.md">pricing-api.md</a> for the full contract.</p>
+<p>Searches the &quot;Pricing&quot; KB category and composes a price with a reasoning chain. Only available to admin/owner. See <a href="./pricing-api.html">pricing-api.md</a> for the full contract.</p>
 <table>
 <thead>
 <tr>
@@ -297,7 +299,13 @@
 }
 </code></pre>
 <h3>File Upload (multipart)</h3>
-<p>Send <code>multipart/form-data</code> directly — auto-routed to <code>POST /api/rag/documents/upload-async</code>.</p>
+<p>Send <code>multipart/form-data</code> directly — auto-routed to <code>POST /api/rag/documents/upload</code>.</p>
+<p>Auth: requires a valid JWT in the <code>Authorization: Bearer &lt;token&gt;</code> header. The
+gateway forwards the caller&#39;s JWT (not the service key) so MIVAA&#39;s
+<code>get_workspace_context</code> resolves to the real user. The form-supplied
+<code>workspace_id</code> is validated against the JWT&#39;s workspace and rejected on
+mismatch (HTTP 403).</p>
+<p>Max file size: 100MB.</p>
 <h3>Job Status Check (URL path)</h3>
 <p><code>GET /functions/v1/mivaa-gateway/job-status/{job_id}</code></p>
 <hr>
@@ -600,11 +608,6 @@
 <td>Export data</td>
 </tr>
 <tr>
-<td><code>admin_packages_status</code></td>
-<td>GET</td>
-<td>Package status</td>
-</tr>
-<tr>
 <td><code>admin_job_progress</code></td>
 <td>GET</td>
 <td>Job progress (<code>job_id</code>)</td>
@@ -765,13 +768,13 @@
 <tbody><tr>
 <td><code>embeddings_clip_image</code></td>
 <td>POST</td>
-<td>Generate CLIP image embedding</td>
+<td>Generate image embedding (SLIG SigLIP2 768D / Voyage 1024D)</td>
 <td>Yes</td>
 </tr>
 <tr>
 <td><code>embeddings_clip_text</code></td>
 <td>POST</td>
-<td>Generate CLIP text embedding</td>
+<td>Generate text embedding (Voyage voyage-4 1024D)</td>
 <td>Yes</td>
 </tr>
 <tr>
@@ -1069,7 +1072,7 @@
 <td>1</td>
 </tr>
 <tr>
-<td>CLIP embedding</td>
+<td>Embedding generation (SLIG/Voyage)</td>
 <td>0.25</td>
 </tr>
 <tr>
@@ -1114,7 +1117,7 @@
   ],
   &quot;maxResults&quot;: 10,
   &quot;includeExplanations&quot;: false,
-  &quot;model&quot;: &quot;claude-sonnet-4-5&quot;
+  &quot;model&quot;: &quot;claude-opus-4-7&quot;
 }
 </code></pre>
 <table>
@@ -1154,16 +1157,16 @@
 <td><code>model</code></td>
 <td><code>string</code></td>
 <td>No</td>
-<td><code>&quot;claude-sonnet-4-5&quot;</code></td>
+<td><code>&quot;claude-opus-4-7&quot;</code></td>
 </tr>
 </tbody></table>
-<p>Valid models: <code>&quot;claude-sonnet-4-5&quot;</code> or <code>&quot;claude-haiku-4-5&quot;</code></p>
+<p>Valid models: <code>&quot;claude-opus-4-7&quot;</code> or <code>&quot;claude-haiku-4-5&quot;</code></p>
 <h3>Response</h3>
 <pre><code class="language-json">{
   &quot;rerankedResults&quot;: [...],
   &quot;explanations&quot;: { &quot;product-uuid&quot;: &quot;Ranked #1 because...&quot; },
   &quot;processingTimeMs&quot;: 420,
-  &quot;model&quot;: &quot;claude-sonnet-4-5&quot;,
+  &quot;model&quot;: &quot;claude-opus-4-7&quot;,
   &quot;cost&quot;: 0.0012,
   &quot;usage&quot;: { &quot;inputTokens&quot;: 1200, &quot;outputTokens&quot;: 150 }
 }
@@ -1173,7 +1176,7 @@
 <p><strong>Endpoint Base</strong>: <code>/functions/v1/quotes-api</code>
 <strong>Auth</strong>: User JWT or Service Role Key</p>
 <blockquote>
-<p><strong>Pricing audit fields (2026-04):</strong> <code>quote_items</code> rows now carry <code>price_source</code> (provenance tag: <code>manual | catalog | kb:ai:&lt;log_id&gt; | kb:quick:&lt;doc_id&gt; | product_price:&lt;id&gt;</code>) and <code>price_lookup_call_id</code> (FK → <code>agent_tool_call_logs.id</code>). Admin can update these via <code>PATCH /rest/v1/quote_items</code> directly or through the <code>QuotesService.updateItem()</code> frontend method. See <a href="./pricing-api.md">pricing-api.md</a> for full contract.</p>
+<p><strong>Pricing audit fields (2026-04):</strong> <code>quote_items</code> rows now carry <code>price_source</code> (provenance tag: <code>manual | catalog | kb:ai:&lt;log_id&gt; | kb:quick:&lt;doc_id&gt; | product_price:&lt;id&gt;</code>) and <code>price_lookup_call_id</code> (FK → <code>agent_tool_call_logs.id</code>). Admin can update these via <code>PATCH /rest/v1/quote_items</code> directly or through the <code>QuotesService.updateItem()</code> frontend method. See <a href="./pricing-api.html">pricing-api.md</a> for full contract.</p>
 </blockquote>
 <h3>POST /functions/v1/quotes-api/quote-requests</h3>
 <p>Create a quote request.</p>
@@ -1467,7 +1470,7 @@
       &quot;total_credits_debited&quot;: 367.0
     },
     &quot;byModel&quot;: [
-      { &quot;model&quot;: &quot;claude-sonnet-4-6&quot;, &quot;calls&quot;: 80, &quot;cost&quot;: 2.10, &quot;credits&quot;: 210 }
+      { &quot;model&quot;: &quot;claude-opus-4-7&quot;, &quot;calls&quot;: 80, &quot;cost&quot;: 2.10, &quot;credits&quot;: 210 }
     ]
   }
 }
@@ -1791,131 +1794,51 @@ Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quo
 </tr>
 </tbody></table>
 <hr>
-<h2>12. Messaging API SMS WhatsApp</h2>
+<h2>12. Messaging API (WhatsApp via Zernio)</h2>
 <p><strong>Endpoint</strong>: <code>POST /functions/v1/messaging-api</code>
 <strong>Auth</strong>: User JWT or Service Role Key
-<strong>Description</strong>: Action-based provider-agnostic messaging via Twilio. Supports SMS and WhatsApp.</p>
-<p>All requests use <code>POST</code> with <code>{ &quot;action&quot;: &quot;&lt;action&gt;&quot;, ...params }</code>.</p>
-<h3>Action: send</h3>
-<p>Send a message to one or more recipients.</p>
-<pre><code class="language-json">{
-  &quot;action&quot;: &quot;send&quot;,
-  &quot;channel&quot;: &quot;sms&quot;,
-  &quot;to&quot;: &quot;+1234567890&quot;,
-  &quot;content&quot;: &quot;Hello from Material KAI!&quot;,
-  &quot;from&quot;: &quot;+0987654321&quot;,
-  &quot;templateId&quot;: &quot;template-uuid&quot;,
-  &quot;templateVariables&quot;: { &quot;name&quot;: &quot;John&quot; },
-  &quot;mediaUrl&quot;: &quot;https://example.com/image.jpg&quot;,
-  &quot;messageType&quot;: &quot;transactional&quot;
-}
-</code></pre>
+<strong>Description</strong>: WhatsApp messaging via <strong>Zernio</strong> (Meta Cloud API). <strong>Twilio + SMS were removed 2026-06-08.</strong> Sending requires Zernio&#39;s Inbox add-on. A channel is a connected Zernio WhatsApp account (a WABA number), not a typed phone string.</p>
+<blockquote>
+<p>📖 <strong>Authoritative reference</strong>: <a href="messaging-api.html">messaging-api.md</a> — full action surface, conversation/reply model, webhook shape. This section is a summary.</p>
+</blockquote>
+<p>All requests use <code>POST</code> with <code>{ &quot;action&quot;: &quot;&lt;action&gt;&quot;, ...params }</code>. Key actions:</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Type</th>
-<th>Values</th>
+<th>Action</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>channel</code></td>
-<td>string</td>
-<td><code>&quot;sms&quot;</code> or <code>&quot;whatsapp&quot;</code></td>
+<td><code>send</code></td>
+<td>Send a WhatsApp message (template + ordered params for cold/marketing sends, per Meta&#39;s 24h-window rule)</td>
 </tr>
 <tr>
-<td><code>to</code></td>
-<td>string or string[]</td>
-<td>Phone number(s) in E.164 format</td>
+<td><code>create-campaign</code></td>
+<td>Create a WhatsApp campaign (per-recipient send via <code>messaging-processor</code> cron)</td>
 </tr>
 <tr>
-<td><code>messageType</code></td>
-<td>string</td>
-<td><code>&quot;transactional&quot;</code>, <code>&quot;marketing&quot;</code>, <code>&quot;otp&quot;</code>, <code>&quot;notification&quot;</code></td>
+<td><code>connect-whatsapp</code></td>
+<td>Connect a WABA via Meta access token + WABA ID + phone number ID</td>
+</tr>
+<tr>
+<td><code>sync-channels</code></td>
+<td>Pull connected WhatsApp accounts from Zernio (<code>GET /v1/accounts?platform=whatsapp</code>) into <code>messaging_channels</code></td>
+</tr>
+<tr>
+<td><code>account-info</code></td>
+<td>WhatsApp number health (quality rating + messaging tier)</td>
+</tr>
+<tr>
+<td><code>templates</code> / <code>logs</code> / <code>analytics</code></td>
+<td>Templates, send logs, delivery analytics</td>
+</tr>
+<tr>
+<td>conversation/reply ops</td>
+<td>List conversations, get messages, assign, reply (<code>sendWhatsAppReply</code>) — requires Inbox add-on</td>
 </tr>
 </tbody></table>
-<p><strong>Response</strong>:</p>
-<pre><code class="language-json">{
-  &quot;success&quot;: true,
-  &quot;sent&quot;: 1,
-  &quot;failed&quot;: 0,
-  &quot;results&quot;: [{ &quot;success&quot;: true, &quot;messageId&quot;: &quot;SM...&quot;, &quot;status&quot;: &quot;queued&quot;, &quot;to&quot;: &quot;+1234567890&quot; }]
-}
-</code></pre>
-<hr>
-<h3>Action: send-bulk</h3>
-<p>Send to multiple recipients with per-recipient variable substitution.</p>
-<pre><code class="language-json">{
-  &quot;action&quot;: &quot;send-bulk&quot;,
-  &quot;channel&quot;: &quot;sms&quot;,
-  &quot;recipients&quot;: [
-    { &quot;to&quot;: &quot;+1234567890&quot;, &quot;variables&quot;: { &quot;name&quot;: &quot;John&quot; } },
-    { &quot;to&quot;: &quot;+0987654321&quot;, &quot;variables&quot;: { &quot;name&quot;: &quot;Jane&quot; } }
-  ],
-  &quot;content&quot;: &quot;Hi {{name}}, your order is ready!&quot;,
-  &quot;messageType&quot;: &quot;notification&quot;
-}
-</code></pre>
-<hr>
-<h3>Action: channels</h3>
-<p>List configured messaging channels.</p>
-<hr>
-<h3>Action: templates</h3>
-<p>List message templates.</p>
-<hr>
-<h3>Action: logs</h3>
-<p>Get message send logs.</p>
-<pre><code class="language-json">{
-  &quot;action&quot;: &quot;logs&quot;,
-  &quot;limit&quot;: 50,
-  &quot;offset&quot;: 0,
-  &quot;channel&quot;: &quot;sms&quot;,
-  &quot;status&quot;: &quot;delivered&quot;
-}
-</code></pre>
-<hr>
-<h3>Action: analytics</h3>
-<p>Get messaging analytics for a date range.</p>
-<pre><code class="language-json">{
-  &quot;action&quot;: &quot;analytics&quot;,
-  &quot;startDate&quot;: &quot;2026-01-01T00:00:00Z&quot;,
-  &quot;endDate&quot;: &quot;2026-01-31T00:00:00Z&quot;
-}
-</code></pre>
-<p><strong>Response</strong>:</p>
-<pre><code class="language-json">{
-  &quot;total&quot;: 500,
-  &quot;byStatus&quot;: { &quot;delivered&quot;: 480, &quot;failed&quot;: 20 },
-  &quot;byChannel&quot;: { &quot;sms&quot;: 400, &quot;whatsapp&quot;: 100 }
-}
-</code></pre>
-<hr>
-<h3>Action: balance</h3>
-<p>Get Twilio account balance.</p>
-<hr>
-<h3>Action: sync-channels</h3>
-<p>Sync phone numbers from Twilio account as messaging channels.</p>
-<hr>
-<h3>Action: send-test</h3>
-<p>Send a test message.</p>
-<pre><code class="language-json">{
-  &quot;action&quot;: &quot;send-test&quot;,
-  &quot;channel&quot;: &quot;sms&quot;,
-  &quot;testNumber&quot;: &quot;+1234567890&quot;,
-  &quot;content&quot;: &quot;Test message&quot;
-}
-</code></pre>
-<hr>
-<h3>Action: get-settings</h3>
-<p>Get messaging provider settings.</p>
-<hr>
-<h3>Action: update-settings</h3>
-<p>Update messaging settings.</p>
-<pre><code class="language-json">{
-  &quot;action&quot;: &quot;update-settings&quot;,
-  &quot;settings&quot;: { &quot;provider&quot;: &quot;twilio&quot; }
-}
-</code></pre>
+<p>Outbound sends create <strong>no</strong> inbox thread; replies are captured by <code>zernio-webhook-handler</code> (<code>message.received</code> → <code>messaging_conversations</code> + assign-on-reply). Delivery status (<code>message.delivered|read|failed</code>) updates <code>messaging_logs</code> by <code>provider_message_id</code> (=wamid).</p>
 <hr>
 <h2>13. Recommendations API</h2>
 <p><strong>Endpoint Base</strong>: <code>/functions/v1/recommendations-api</code>
@@ -2042,7 +1965,7 @@ Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quo
   &quot;prompt&quot;: &quot;Modern living room with marble floors and warm lighting&quot;,
   &quot;room_type&quot;: &quot;living_room&quot;,
   &quot;style&quot;: &quot;modern&quot;,
-  &quot;model&quot;: &quot;marble-0.1-mini&quot;
+  &quot;model&quot;: &quot;marble-1.0-draft&quot;
 }
 </code></pre>
 <table>
@@ -2082,7 +2005,7 @@ Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quo
 <td><code>model</code></td>
 <td><code>string</code></td>
 <td>No</td>
-<td><code>&quot;marble-0.1-mini&quot;</code> or <code>&quot;marble-0.1-plus&quot;</code></td>
+<td><code>&quot;marble-1.0-draft&quot;</code> (fast preview) or <code>&quot;marble-1.1&quot;</code> (quality)</td>
 </tr>
 </tbody></table>
 <h3>Credit Costs</h3>
@@ -2095,13 +2018,13 @@ Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quo
 </tr>
 </thead>
 <tbody><tr>
-<td><code>marble-0.1-mini</code></td>
-<td>75</td>
-<td>30-45 seconds</td>
+<td><code>marble-1.0-draft</code></td>
+<td>18</td>
+<td>~30-45 seconds</td>
 </tr>
 <tr>
-<td><code>marble-0.1-plus</code></td>
-<td>300</td>
+<td><code>marble-1.1</code></td>
+<td>190</td>
 <td>~5 minutes</td>
 </tr>
 </tbody></table>
@@ -2353,9 +2276,19 @@ Valid subscription tiers: <code>&quot;free&quot;</code>, <code>&quot;starter&quo
 <p>Cancel a queued or processing batch job.</p>
 <hr>
 <h2>21. Price Monitoring</h2>
+<blockquote>
+<p><strong>Heads-up</strong>: this section only covers the lightweight Supabase <em>edge function</em>
+shim. The actual price monitoring pipeline (Perplexity Sonar + DataForSEO
+Merchant discovery → Firecrawl verification → Haiku identity classification)
+runs on the MIVAA backend and is documented in full at
+<a href="price-monitoring-api.html">docs/api/price-monitoring-api.md</a>. Every row returned
+now carries <code>match_kind</code>, <code>match_score</code>, <code>match_note</code>, <code>product_title</code>,
+<code>original_price</code>, <code>verified</code>, and <code>source</code> — see that doc for the response
+schema.</p>
+</blockquote>
 <p><strong>Endpoint</strong>: <code>POST /functions/v1/price-monitoring</code>
 <strong>Auth</strong>: User JWT or Service Role Key
-<strong>Description</strong>: Monitor competitor prices for products using Firecrawl web scraping.</p>
+<strong>Description</strong>: Entry point for Factory/Store users to toggle monitoring for a product. Delegates the actual scraping + identity verification to the MIVAA backend.</p>
 <h3>Request Body</h3>
 <pre><code class="language-json">{
   &quot;action&quot;: &quot;start_monitoring&quot;,
@@ -2799,7 +2732,7 @@ Content-Type: application/json
 </tr>
 <tr>
 <td><code>messaging_channels</code></td>
-<td>Twilio messaging channels</td>
+<td>Connected Zernio WhatsApp channels (WABA accounts)</td>
 </tr>
 <tr>
 <td><code>messaging_templates</code></td>
@@ -2814,16 +2747,12 @@ Content-Type: application/json
 <td>WorldLabs VR world records</td>
 </tr>
 <tr>
-<td><code>price_monitoring_products</code></td>
-<td>Price monitoring configuration</td>
+<td><code>tracked_queries</code></td>
+<td>Price monitoring subject table (consolidated 2026-05-01 — replaces dropped <code>price_monitoring_products</code> + <code>competitor_sources</code>). Rows keyed by <code>api_key_id</code> (external API) or <code>product_id</code> (internal product flow).</td>
 </tr>
 <tr>
-<td><code>price_history</code></td>
-<td>Historical competitor price records</td>
-</tr>
-<tr>
-<td><code>competitor_sources</code></td>
-<td>Competitor URLs for price monitoring</td>
+<td><code>tracked_query_price_history</code></td>
+<td>Historical price rows per tracked subject (replaces dropped <code>price_history</code>)</td>
 </tr>
 <tr>
 <td><code>product_prices</code></td>
@@ -2925,7 +2854,7 @@ Body: { &quot;email&quot;: &quot;user@example.com&quot; }
 <hr>
 <h2>31. Supabase Storage API</h2>
 <p><strong>Base URL</strong>: <code>https://bgbavxtjlbvgplozizxu.supabase.co/storage/v1</code></p>
-<h3>Storage Buckets</h3>
+<h3>Storage Buckets (post-consolidation 2026-05-23)</h3>
 <table>
 <thead>
 <tr>
@@ -2934,24 +2863,28 @@ Body: { &quot;email&quot;: &quot;user@example.com&quot; }
 </tr>
 </thead>
 <tbody><tr>
-<td><code>product-images</code></td>
-<td>Product and material images</td>
+<td><code>pdf-documents</code></td>
+<td>All PDF binaries: KB raw uploads (<code>{user_id}/</code>), catalog sources (<code>catalog-source/</code>), generated catalog PDFs (<code>catalog-output/</code>), quote PDFs (<code>quote-output/</code>), moodboard sheet PDFs (<code>moodboard-output/</code>). Private — readers use signed URLs.</td>
 </tr>
 <tr>
-<td><code>workspace-assets</code></td>
-<td>Workspace logos and banners</td>
+<td><code>pdf-tiles</code></td>
+<td>KB extracted page images (<code>extracted/</code>) + catalog page renders (<code>catalog-extracted/</code>). Public, RLS-gated writes.</td>
 </tr>
 <tr>
-<td><code>quote-documents</code></td>
-<td>Generated quote PDFs</td>
+<td><code>generation-images</code></td>
+<td>All AI-generated and chat-uploaded media: virtual staging, region edit, video, PBR maps, SAM crops (<code>product-crops/</code>), agent chat uploads (<code>agent/</code>), 3D models (<code>3d/</code>), designer assets (<code>designer/</code>). Public, 100 MB cap.</td>
 </tr>
 <tr>
 <td><code>quote-templates</code></td>
-<td>PDF template images (cover, background, back cover)</td>
+<td>Quote template PNGs at root + catalog template PNGs under <code>catalog/</code>. Private, admin-only RW.</td>
 </tr>
 <tr>
-<td><code>knowledge-base</code></td>
-<td>KB document files</td>
+<td><code>moodboard-sheet-references</code></td>
+<td>Static admin-curated illustrations for the sheet-type picker.</td>
+</tr>
+<tr>
+<td><code>profile-avatars</code></td>
+<td>User avatars (<code>{user_id}/avatar.ext</code>). Public, 2 MB cap.</td>
 </tr>
 </tbody></table>
 <h3>Upload File</h3>
@@ -3668,18 +3601,19 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 </code></pre>
 <p>When <code>status: &quot;processing&quot;</code>, poll using <code>prediction_id</code>.</p>
 <hr>
-<h2>40. Social Publishing (Late.dev)</h2>
-<h3>POST /functions/v1/late-oauth</h3>
+<h2>40. Social Publishing (Zernio)</h2>
+<h3>POST /functions/v1/zernio-api</h3>
 <p><strong>Auth</strong>: User JWT
-<strong>Description</strong>: Manage social account connections via Late.dev OAuth.</p>
+<strong>Description</strong>: Manage social account connections via Zernio OAuth.</p>
 <p><strong>GET</strong> — List connected accounts:</p>
-<pre><code>GET /functions/v1/late-oauth?workspace_id=uuid&amp;include_inactive=false
+<pre><code>GET /functions/v1/zernio-api?workspace_id=uuid&amp;include_inactive=false
 </code></pre>
 <p><strong>POST</strong> — Connect/disconnect:</p>
 <pre><code class="language-json">{
   &quot;action&quot;: &quot;connect&quot;,
   &quot;platform&quot;: &quot;instagram&quot;,
-  &quot;workspace_id&quot;: &quot;uuid&quot;
+  &quot;workspace_id&quot;: &quot;uuid&quot;,
+  &quot;redirect_url&quot;: &quot;https://app.example.com/profile&quot;
 }
 </code></pre>
 <table>
@@ -3691,22 +3625,22 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 </thead>
 <tbody><tr>
 <td><code>connect</code></td>
-<td>Returns <code>oauth_url</code> to redirect user to</td>
+<td>Returns <code>oauth_url</code> (Zernio <code>authUrl</code>). Optional <code>redirect_url</code> = where Zernio returns the browser (defaults to the app profile page).</td>
 </tr>
 <tr>
 <td><code>callback</code></td>
-<td>Complete OAuth (pass <code>code</code>, <code>state</code>)</td>
+<td>Persist the account after OAuth. Pass <code>zernio_account_id</code> (the <code>accountId</code> from the redirect query), <code>platform</code>, <code>workspace_id</code>.</td>
 </tr>
 <tr>
 <td><code>disconnect</code></td>
-<td>Disconnect account (<code>late_account_id</code>)</td>
+<td>Disconnect account (<code>social_account_id</code>)</td>
 </tr>
 </tbody></table>
 <p>Supported platforms: <code>instagram</code>, <code>facebook</code>, <code>linkedin</code>, <code>tiktok</code>, <code>pinterest</code>, <code>youtube</code>, <code>twitter</code>, <code>threads</code></p>
 <hr>
-<h3>POST /functions/v1/late-publish</h3>
+<h3>POST /functions/v1/zernio-api</h3>
 <p><strong>Auth</strong>: User JWT
-<strong>Description</strong>: Publish or schedule social posts via Late.dev.</p>
+<strong>Description</strong>: Publish or schedule social posts via Zernio.</p>
 <pre><code class="language-json">{
   &quot;post_id&quot;: &quot;uuid&quot;,
   &quot;social_account_id&quot;: &quot;uuid&quot;,
@@ -3754,15 +3688,15 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
   &quot;success&quot;: true,
   &quot;action&quot;: &quot;publish_now&quot;,
   &quot;post_id&quot;: &quot;uuid&quot;,
-  &quot;late_post_id&quot;: &quot;late-uuid&quot;,
+  &quot;zernio_post_id&quot;: &quot;zernio-uuid&quot;,
   &quot;platform&quot;: &quot;instagram&quot;,
   &quot;handle&quot;: &quot;@materialkai&quot;
 }
 </code></pre>
 <hr>
-<h3>POST /functions/v1/late-analytics</h3>
+<h3>POST /functions/v1/zernio-api</h3>
 <p><strong>Auth</strong>: User JWT
-<strong>Description</strong>: Fetch and sync analytics from Late.dev.</p>
+<strong>Description</strong>: Fetch and sync analytics from Zernio.</p>
 <pre><code class="language-json">{
   &quot;action&quot;: &quot;get_post_analytics&quot;,
   &quot;post_ids&quot;: [&quot;uuid&quot;],
@@ -3790,10 +3724,10 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 </tr>
 </tbody></table>
 <hr>
-<h3>POST /functions/v1/late-webhook-handler</h3>
-<p><strong>Auth</strong>: None (validates <code>X-Late-Signature</code> HMAC-SHA256)
-<strong>Description</strong>: Webhook receiver from Late.dev. Updates social_posts status on publish/fail/schedule events.</p>
-<p>Event types: <code>post.published</code>, <code>post.failed</code>, <code>account.disconnected</code>, <code>post.scheduled</code></p>
+<h3>POST /functions/v1/zernio-webhook-handler</h3>
+<p><strong>Auth</strong>: None (validates <code>X-Zernio-Signature</code> HMAC-SHA256)
+<strong>Description</strong>: Webhook receiver from Zernio. Updates social_posts status on publish/fail/schedule events.</p>
+<p>Event types: <code>post.published</code>, <code>post.partial</code>, <code>post.failed</code>, <code>post.cancelled</code>, <code>post.scheduled</code>, <code>account.disconnected</code>. Payload shape: <code>{ event, post | account, timestamp }</code>.</p>
 <hr>
 <h2>41. Pinterest Integration</h2>
 <h3>POST /functions/v1/pinterest-import</h3>
@@ -3893,17 +3827,19 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 <strong>Auth</strong>: None (validates <code>session_id</code> + <code>crawl_id</code> query params)
 <strong>Description</strong>: Receives crawled pages during web scraping sessions. Events: <code>crawl.page</code> (stores pages), <code>crawl.completed</code> (triggers product creation via MIVAA), <code>crawl.failed</code>.</p>
 <hr>
-<h3>POST /functions/v1/messaging-webhook</h3>
-<p><strong>Source</strong>: Twilio
-<strong>Auth</strong>: None (Twilio callback validation)
-<strong>Description</strong>: Handles SMS/WhatsApp delivery status updates and incoming messages. Responds with TwiML. Auto-processes opt-out/opt-in keywords (STOP, START, HELP).</p>
-<p>Query param <code>type</code>: <code>status</code> | <code>delivery</code> | <code>incoming</code></p>
+<h3>POST /functions/v1/zernio-webhook-handler</h3>
+<p><strong>Source</strong>: Zernio (one webhook for social <code>post.*</code> + WhatsApp <code>message.*</code>)
+<strong>Auth</strong>: HMAC signature (<code>X-Zernio-Signature</code>, secret <code>ZERNIO_WEBHOOK_SECRET</code>)
+<strong>Description</strong>: WhatsApp delivery + reply capture. <code>message.received</code> → upsert <code>messaging_conversations</code> + <code>messaging_conversation_messages</code>, <strong>assign-on-first-reply</strong> to the campaign owner, STOP/START opt-out handling, emits <code>whatsapp.reply_received</code> flow event. <code>message.delivered|read|failed</code> update <code>messaging_logs</code> by wamid.</p>
+<blockquote>
+<p>The former Twilio <code>messaging-webhook</code> (SMS/WhatsApp + TwiML) was <strong>deleted 2026-06-08</strong>.</p>
+</blockquote>
 <hr>
 <h2>43. Internal Utilities</h2>
 <p>These functions are callable but intended for internal/admin use. Not part of the standard 3rd-party API surface.</p>
 <h3>POST /functions/v1/ai-pricing-updater</h3>
 <p><strong>Auth</strong>: None (internal cron or manual trigger)
-<strong>Description</strong>: Updates AI model pricing table (<code>ai_model_pricing</code>) from hardcoded reference prices for Anthropic, OpenAI, Voyage, Qwen, Google, and Firecrawl.</p>
+<strong>Description</strong>: Updates AI model pricing table (<code>ai_model_pricing</code>) from hardcoded reference prices for Anthropic, OpenAI, Voyage, Google, and Firecrawl. (Qwen pricing entries retired 2026-05-01 alongside the Qwen-removal migration; vision is now Anthropic-only and chunking moved to Claude Sonnet 4.6.)</p>
 <pre><code class="language-json">{ &quot;force_update&quot;: false, &quot;provider&quot;: &quot;anthropic&quot; }
 </code></pre>
 <p><strong>Response:</strong></p>
@@ -3937,7 +3873,7 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 <hr>
 <h3>POST /functions/v1/messaging-processor</h3>
 <p><strong>Auth</strong>: None (cron-triggered)
-<strong>Description</strong>: Processes scheduled messaging campaigns. Sends SMS/WhatsApp batches via Twilio with opt-out handling and retries.</p>
+<strong>Description</strong>: Processes scheduled WhatsApp campaigns. Sends per-recipient WhatsApp messages via Zernio (<code>sendWhatsAppMessage</code>, template + ordered params) with opt-out handling and retries.</p>
 <p><strong>Response:</strong></p>
 <pre><code class="language-json">{
   &quot;success&quot;: true,
@@ -4070,12 +4006,12 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 <td>Receives Resend delivery event webhooks (bounce, complaint, delivery, open, click)</td>
 </tr>
 <tr>
-<td><code>messaging-webhook</code></td>
-<td>Receives Twilio status callbacks</td>
+<td><code>zernio-webhook-handler</code></td>
+<td>Receives Zernio WhatsApp + social webhooks (delivery + reply capture)</td>
 </tr>
 <tr>
 <td><code>messaging-processor</code></td>
-<td>Processes inbound messages</td>
+<td>WhatsApp campaign batch sender (cron)</td>
 </tr>
 <tr>
 <td><code>ai-pricing-updater</code></td>
@@ -4102,7 +4038,7 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 </tr>
 </thead>
 <tbody><tr>
-<td>KAI agent message (Sonnet)</td>
+<td>KAI agent message (Opus)</td>
 <td>0.5-5 credits depending on length</td>
 </tr>
 <tr>
@@ -4110,12 +4046,12 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 <td>0.1-1 credit</td>
 </tr>
 <tr>
-<td>VR World generation (mini)</td>
-<td>75 credits</td>
+<td>VR World generation (marble-1.0-draft)</td>
+<td>18 credits</td>
 </tr>
 <tr>
-<td>VR World generation (plus)</td>
-<td>300 credits</td>
+<td>VR World generation (marble-1.1)</td>
+<td>190 credits</td>
 </tr>
 <tr>
 <td>RAG text search</td>
@@ -4130,7 +4066,7 @@ Body: { &quot;prefixes&quot;: [&quot;path/to/file.jpg&quot;] }
 <td>1 credit</td>
 </tr>
 <tr>
-<td>CLIP embedding generation</td>
+<td>Embedding generation (SLIG / Voyage)</td>
 <td>0.25 credits</td>
 </tr>
 <tr>

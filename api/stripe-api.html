@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Stripe API</h1>
+<p><strong>Edge Function:</strong> <code>stripe-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/stripe-api</code></p>
+<p>Customer-facing actions only. <code>stripe-webhooks</code> stays a separate function — Stripe&#39;s webhook URL points there.
+CRM stripe (subscriptions/credits admin) lives under <code>crm-api/stripe/*</code> — see <a href="./crm-api.html">crm-api.md</a>.</p>
+<h2>Actions</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Body</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>checkout</code></td>
+<td><code>{ type: &#39;credit_purchase&#39; | &#39;subscription&#39;, priceId?, credits?, price?, successUrl, cancelUrl }</code></td>
+<td><code>{ url }</code> — redirect target</td>
+</tr>
+<tr>
+<td><code>customer_portal</code></td>
+<td><code>{ returnUrl }</code></td>
+<td><code>{ url }</code> — Stripe Customer Portal session URL</td>
+</tr>
+</tbody></table>
+<h2>Authentication</h2>
+<p>Bearer JWT or admin secret key.</p>
+<h2>Request</h2>
+<pre><code class="language-http">POST /functions/v1/stripe-api
+Content-Type: application/json
+Authorization: Bearer &lt;supabase_access_token&gt;
+
+{ &quot;action&quot;: &quot;checkout&quot;, &quot;type&quot;: &quot;credit_purchase&quot;, &quot;credits&quot;: 1000, &quot;price&quot;: 9.99, &quot;successUrl&quot;: &quot;...&quot;, &quot;cancelUrl&quot;: &quot;...&quot; }
+</code></pre>
+
+</div></body></html>

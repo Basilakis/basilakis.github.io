@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Quotes API</h1>
 <h2>Overview</h2>
 <p>The Quotes API manages quote requests and proposals in the system.</p>
@@ -384,6 +386,12 @@ return the cached row instantly instead of re-running the agent.</p>
 </tbody></table>
 <p><strong>RLS:</strong> all policies require <code>admin</code> or <code>owner</code> role in the workspace.
 Regular users cannot read this table.</p>
+<h2>Public sharing &amp; email (white-label, #177)</h2>
+<p>Two companion edge functions power the public quote page and email delivery.</p>
+<h3><code>send-quote-email</code></h3>
+<p><code>{ quote_id, to?, message? }</code> (JWT — quote owner or admin). Recipient cascade: explicit <code>to</code> → <code>crm_companies.email</code> → <code>crm_contacts.email</code> → owner&#39;s <code>user_profiles.email</code> (422 if none). <strong>Auto-enables</strong> the public share link (mints <code>public_share_token</code> + sets <code>public_share_enabled=true</code> if not already), builds inline HTML (no template), dispatches via <code>email-api</code> (<code>emailType:&#39;transactional&#39;</code>). Returns <code>{ success, sent_to, view_url }</code> where <code>view_url = {PUBLIC_APP_URL}/q/{token}</code>. 0 credits.</p>
+<h3><code>quote-public-share</code></h3>
+<p>Anonymous (anon key), service-role internally. <code>{ token (≥32 chars), event?:&#39;download&#39;, session_id? }</code> → resolves <code>quotes.public_share_token</code> (must have <code>public_share_enabled=true</code>) → <code>{ quote{…items}, seller{name,logo_url,website,phone,email}|null, pdf_url (1h signed), not_found }</code>. <strong>White-label seller identity</strong> is read from <code>finance_settings</code> for the quote&#39;s workspace (<code>null</code> → frontend falls back to platform branding). Re-signs <code>pdf_storage_path</code> to a fresh 1h URL every call. Each lookup writes a <code>quote_analytics_events</code> row (<code>view_context=&#39;public&#39;</code>, <code>event_type=&#39;viewed&#39;</code>/<code>&#39;downloaded&#39;</code>). Powers the public route <code>/q/:token</code>. 0 credits.</p>
 <h2>Error Handling</h2>
 <p>All errors return a standard format:</p>
 <pre><code class="language-typescript">{
