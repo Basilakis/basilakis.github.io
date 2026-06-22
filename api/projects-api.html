@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Project Workspace API</h1>
+<p>External Project Workspace API — create projects, attach rooms, manage tasks (with subtasks), invite read-only collaborators by email, and read the timeline. Mirror of the price / mention / job tracking patterns: <code>Authorization: Bearer kai_*</code> API key auth, per-call partner credit metering for the few writes that incur platform cost.</p>
+<p>For the module overview (architecture, RLS model, triggers, frontend), see <a href="../projects.html">docs/projects.md</a>.</p>
+<p><strong>Host</strong>: <code>https://v1api.materialshub.gr</code>
+<strong>OpenAPI tag</strong>: <code>Project Workspace (Public API)</code>
+<strong>Interactive docs (Swagger UI)</strong>: <code>GET https://v1api.materialshub.gr/docs</code> — filter by tag
+<strong>Machine-readable spec</strong>: <code>GET https://v1api.materialshub.gr/openapi.json</code> — auto-generated from FastAPI route signatures, always in sync with what&#39;s deployed.</p>
+<hr>
+<h2>Changelog</h2>
+<h3>v0.1.0 — 2026-05-24 — Initial release</h3>
+<ul>
+<li>16 endpoints across project CRUD, rooms, tasks (with subtasks), collaborator invitations, and the read-only event timeline.</li>
+<li>Auth: <code>Authorization: Bearer kai_*</code> (same <code>api_keys</code> table as price / mention / job tracking).</li>
+<li>Credits: writes are 0 cr except <code>invite_collaborator</code> (1 cr — covers the transactional email).</li>
+<li>Reads are 0 cr.</li>
+<li>Soft-delete semantics on projects (archive, never hard delete).</li>
+<li>Subtasks via <code>parent_task_id</code> — max 1 level of nesting, enforced by trigger.</li>
+<li>Read-only timeline of the last 500 events per project.</li>
+<li>Collaborator invitations send a branded HTML email via the platform&#39;s <code>email-api</code>; invitees sign in passwordlessly via Supabase OTP.</li>
+</ul>
+<hr>
+<h2>Authentication</h2>
+<p>All endpoints require an API key issued to a platform user. Send it as:</p>
+<pre><code>Authorization: Bearer kai_&lt;your_api_key&gt;
+</code></pre>
+<p>Get a key from <code>/profile</code> → API Keys (admin role can issue keys for any user via <code>/admin/api-keys</code>). Keys are scoped to one platform user (<code>api_keys.user_id</code>); every project created via the API is owned by that user with the standard Supabase RLS guarantees (no other user / no other api_key can read or write it).</p>
+<p>Missing or malformed key → <code>401</code>. Key revoked or expired → <code>401</code>. Key valid but referencing a deleted user → <code>403</code>. Key valid but you&#39;re trying to operate on a project owned by a different user → <code>404</code> (we don&#39;t leak existence by returning <code>403</code>).</p>
+<p>Internal flow (browser session JWT) is <strong>not</strong> exposed via this API — it talks to Supabase directly. The TypeScript SDK in <code>src/modules/projects/services/projectsService.ts</code> is the canonical client for that path.</p>
+<hr>
+<h2>Pricing</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Credits</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reads (list, get, list rooms / tasks / collaborators / events)</td>
+<td>0</td>
+<td>No upstream cost.</td>
+</tr>
+<tr>
+<td>Project create / update / archive</td>
+<td>0</td>
+<td>Pure DB write.</td>
+</tr>
+<tr>
+<td>Room create / delete</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>Task create / update / delete</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td><code>invite_collaborator</code></td>
+<td><strong>1</strong></td>
+<td>Covers the transactional email via <code>email-api</code>. Refunded on hard failure (the row is still created so you can <code>copy_link</code> manually).</td>
+</tr>
+<tr>
+<td><code>revoke_collaborator</code></td>
+<td>0</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><code>402 Insufficient credits</code> returned when balance won&#39;t cover the requested op. Top up at <code>/profile</code> → Credits.</p>
+<p>Standard MIVAA rate limit applies (<code>60 req/min</code> default per key, configurable per-key by an admin). <code>429 Too Many Requests</code> with <code>Retry-After</code> header.</p>
+<hr>
+<h2>Endpoint inventory</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Method</th>
+<th>Path</th>
+<th>Auth</th>
+<th>Cr</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>POST</td>
+<td><code>/api/v1/projects</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Create a project (+ optional inline rooms)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>GET</td>
+<td><code>/api/v1/projects</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>List the API key user&#39;s projects</td>
+</tr>
+<tr>
+<td>3</td>
+<td>GET</td>
+<td><code>/api/v1/projects/{id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Get one project</td>
+</tr>
+<tr>
+<td>4</td>
+<td>PUT</td>
+<td><code>/api/v1/projects/{id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Update project fields</td>
+</tr>
+<tr>
+<td>5</td>
+<td>DELETE</td>
+<td><code>/api/v1/projects/{id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Archive project (soft delete)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>GET</td>
+<td><code>/api/v1/projects/{id}/rooms</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>List rooms</td>
+</tr>
+<tr>
+<td>7</td>
+<td>POST</td>
+<td><code>/api/v1/projects/{id}/rooms</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Add a room</td>
+</tr>
+<tr>
+<td>8</td>
+<td>DELETE</td>
+<td><code>/api/v1/projects/rooms/{room_id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Delete a room</td>
+</tr>
+<tr>
+<td>9</td>
+<td>GET</td>
+<td><code>/api/v1/projects/{id}/tasks</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>List tasks (subtasks nested)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>POST</td>
+<td><code>/api/v1/projects/{id}/tasks</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Add a task or subtask</td>
+</tr>
+<tr>
+<td>11</td>
+<td>PUT</td>
+<td><code>/api/v1/projects/tasks/{task_id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Update a task</td>
+</tr>
+<tr>
+<td>12</td>
+<td>DELETE</td>
+<td><code>/api/v1/projects/tasks/{task_id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Delete a task (CASCADEs subtasks)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>GET</td>
+<td><code>/api/v1/projects/{id}/collaborators</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>List collaborator invitations</td>
+</tr>
+<tr>
+<td>14</td>
+<td>POST</td>
+<td><code>/api/v1/projects/{id}/collaborators</code></td>
+<td>kai_*</td>
+<td>1</td>
+<td>Invite a collaborator (sends email)</td>
+</tr>
+<tr>
+<td>15</td>
+<td>DELETE</td>
+<td><code>/api/v1/projects/collaborators/{id}</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Revoke access immediately</td>
+</tr>
+<tr>
+<td>16</td>
+<td>GET</td>
+<td><code>/api/v1/projects/{id}/events</code></td>
+<td>kai_*</td>
+<td>0</td>
+<td>Read the event timeline (newest first)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Quickstart</h2>
+<pre><code class="language-bash"># 0. Set your key
+KEY=&quot;kai_...&quot;
+HOST=&quot;https://v1api.materialshub.gr&quot;
+
+# 1. Create a project with inline rooms
+curl -X POST &quot;$HOST/api/v1/projects&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;name&quot;: &quot;Kavouri Villa Renovation&quot;,
+    &quot;description&quot;: &quot;Full refit — coastal palette, beige + ivory tones&quot;,
+    &quot;deadline&quot;: &quot;2026-09-30&quot;,
+    &quot;budget_amount&quot;: 50000,
+    &quot;budget_currency&quot;: &quot;EUR&quot;,
+    &quot;rooms&quot;: [
+      { &quot;name&quot;: &quot;Master Bath&quot;, &quot;room_type&quot;: &quot;bathroom&quot; },
+      { &quot;name&quot;: &quot;Kitchen&quot;, &quot;room_type&quot;: &quot;kitchen&quot; },
+      { &quot;name&quot;: &quot;Living&quot;, &quot;room_type&quot;: &quot;living&quot; }
+    ]
+  }&#39;
+# → { &quot;success&quot;: true, &quot;data&quot;: { &quot;project&quot;: { &quot;id&quot;: &quot;...&quot;, ... }, &quot;rooms&quot;: [ ... ] } }
+
+PROJECT_ID=&quot;&lt;id from above&gt;&quot;
+
+# 2. Add a task with a subtask
+curl -X POST &quot;$HOST/api/v1/projects/$PROJECT_ID/tasks&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{ &quot;title&quot;: &quot;Order marble samples&quot;, &quot;visibility&quot;: &quot;client_visible&quot; }&#39;
+# → { &quot;success&quot;: true, &quot;data&quot;: { &quot;id&quot;: &quot;PARENT_TASK_ID&quot;, ... } }
+
+curl -X POST &quot;$HOST/api/v1/projects/$PROJECT_ID/tasks&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{ &quot;title&quot;: &quot;Chase invoice from supplier&quot;, &quot;parent_task_id&quot;: &quot;PARENT_TASK_ID&quot; }&#39;
+
+# 3. Invite a client (sends magic-link email, no password)
+curl -X POST &quot;$HOST/api/v1/projects/$PROJECT_ID/collaborators&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;email&quot;: &quot;client@example.com&quot;,
+    &quot;message&quot;: &quot;Take a look when you have a moment.&quot;,
+    &quot;expires_in_days&quot;: 90
+  }&#39;
+# → 1 credit debited; row contains share_token + invite URL is /projects/invite/&lt;share_token&gt;
+
+# 4. Read the timeline
+curl -X GET &quot;$HOST/api/v1/projects/$PROJECT_ID/events?limit=50&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot;
+
+# 5. Archive when done
+curl -X DELETE &quot;$HOST/api/v1/projects/$PROJECT_ID&quot; \
+  -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<hr>
+<h2>Endpoint reference</h2>
+<h3>1. <code>POST /api/v1/projects</code> — Create project</h3>
+<p>Insert one <code>projects</code> row owned by the API key&#39;s user, optionally with inline rooms.</p>
+<p><strong>Request body:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>✅</td>
+<td>—</td>
+<td>1-200 chars.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string | null</td>
+<td></td>
+<td>null</td>
+<td>Up to 4000 chars.</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>enum</td>
+<td></td>
+<td><code>planning</code></td>
+<td><code>planning</code> / <code>in_progress</code> / <code>on_hold</code> / <code>completed</code> / <code>archived</code>.</td>
+</tr>
+<tr>
+<td><code>client_company_id</code></td>
+<td>uuid | null</td>
+<td></td>
+<td>null</td>
+<td>XOR with <code>client_contact_id</code> (400 if both set). Must reference an existing <code>crm_companies</code> row.</td>
+</tr>
+<tr>
+<td><code>client_contact_id</code></td>
+<td>uuid | null</td>
+<td></td>
+<td>null</td>
+<td>XOR with <code>client_company_id</code>.</td>
+</tr>
+<tr>
+<td><code>deadline</code></td>
+<td>date (YYYY-MM-DD) | null</td>
+<td></td>
+<td>null</td>
+<td></td>
+</tr>
+<tr>
+<td><code>budget_amount</code></td>
+<td>number | null</td>
+<td></td>
+<td>null</td>
+<td>≥ 0.</td>
+</tr>
+<tr>
+<td><code>budget_currency</code></td>
+<td>string(3)</td>
+<td></td>
+<td><code>EUR</code></td>
+<td>ISO 4217.</td>
+</tr>
+<tr>
+<td><code>cover_image_url</code></td>
+<td>string | null</td>
+<td></td>
+<td>null</td>
+<td>Optional.</td>
+</tr>
+<tr>
+<td><code>rooms</code></td>
+<td><code>Array&lt;{ name, room_type? }&gt;</code> | null</td>
+<td></td>
+<td>null</td>
+<td>When set, rooms are inserted in the same call. <code>room_type</code> must be <code>bedroom</code>/<code>bathroom</code>/<code>kitchen</code>/<code>living</code>/<code>dining</code>/<code>office</code>/<code>outdoor</code>/<code>hallway</code>/<code>other</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Response 200:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;project&quot;: {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;user_id&quot;: &quot;uuid&quot;,
+      &quot;workspace_id&quot;: &quot;uuid | null&quot;,
+      &quot;name&quot;: &quot;Kavouri Villa Renovation&quot;,
+      &quot;description&quot;: &quot;Full refit ...&quot;,
+      &quot;status&quot;: &quot;planning&quot;,
+      &quot;client_company_id&quot;: null,
+      &quot;client_contact_id&quot;: null,
+      &quot;deadline&quot;: &quot;2026-09-30&quot;,
+      &quot;budget_amount&quot;: &quot;50000.00&quot;,
+      &quot;budget_currency&quot;: &quot;EUR&quot;,
+      &quot;cover_image_url&quot;: null,
+      &quot;actual_amount&quot;: &quot;0.00&quot;,
+      &quot;accepted_quote_count&quot;: 0,
+      &quot;moodboard_count&quot;: 0,
+      &quot;last_activity_at&quot;: &quot;2026-05-24T10:15:00Z&quot;,
+      &quot;created_at&quot;: &quot;2026-05-24T10:15:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-05-24T10:15:00Z&quot;
+    },
+    &quot;rooms&quot;: [
+      { &quot;id&quot;: &quot;uuid&quot;, &quot;project_id&quot;: &quot;uuid&quot;, &quot;name&quot;: &quot;Master Bath&quot;, &quot;room_type&quot;: &quot;bathroom&quot;, &quot;sort_order&quot;: 0, ... }
+    ]
+  }
+}
+</code></pre>
+<p><strong>Errors:</strong> <code>400</code> (XOR violation), <code>401</code>, <code>403</code> (API key has no associated user), <code>500</code>.</p>
+<h3>2. <code>GET /api/v1/projects</code> — List projects</h3>
+<p><strong>Query params:</strong> <code>include_archived</code> (bool, default <code>false</code>), <code>limit</code> (1-500, default 100).</p>
+<p><strong>Response 200:</strong> <code>{ success, data: Project[], count }</code>.</p>
+<h3>3. <code>GET /api/v1/projects/{project_id}</code> — Get one project</h3>
+<p>Returns the project row with all denormalised counters. <code>404</code> if not owned.</p>
+<h3>4. <code>PUT /api/v1/projects/{project_id}</code> — Update fields</h3>
+<p>PATCH-like semantics: only the fields you send are touched. Same XOR check on the two client FKs as create.</p>
+<h3>5. <code>DELETE /api/v1/projects/{project_id}</code> — Archive (soft delete)</h3>
+<p>Sets <code>status = &#39;archived&#39;</code>. Hard-delete is intentionally not exposed through the API — the audit log, financial history, and collaborator records are load-bearing. To delete a project, log into the Supabase dashboard as the data owner.</p>
+<h3>6. <code>GET /api/v1/projects/{project_id}/rooms</code> — List rooms</h3>
+<p>Sorted by <code>sort_order</code> ascending.</p>
+<h3>7. <code>POST /api/v1/projects/{project_id}/rooms</code> — Add a room</h3>
+<p><strong>Body:</strong> <code>{ name, room_type?, budget_amount?, deadline?, notes?, sort_order? }</code>.</p>
+<h3>8. <code>DELETE /api/v1/projects/rooms/{room_id}</code> — Delete a room</h3>
+<p>Cascades: <code>moodboards.room_id</code> becomes <code>NULL</code> for any moodboards that referenced this room (FK ON DELETE SET NULL). Quote items that used the structured <code>quote_items.room_id</code> likewise drop the link.</p>
+<h3>9. <code>GET /api/v1/projects/{project_id}/tasks</code> — List tasks</h3>
+<p>Returns a flat array of parent tasks, each with a <code>subtasks: []</code> field plus computed <code>subtask_total_count</code> and <code>subtask_done_count</code>. Sorted by <code>sort_order</code> then <code>created_at</code>.</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;project_id&quot;: &quot;uuid&quot;,
+      &quot;parent_task_id&quot;: null,
+      &quot;room_id&quot;: &quot;uuid | null&quot;,
+      &quot;title&quot;: &quot;Order marble samples&quot;,
+      &quot;status&quot;: &quot;todo&quot;,
+      &quot;visibility&quot;: &quot;client_visible&quot;,
+      &quot;due_date&quot;: &quot;2026-06-01&quot;,
+      &quot;subtasks&quot;: [
+        { &quot;id&quot;: &quot;uuid&quot;, &quot;parent_task_id&quot;: &quot;uuid&quot;, &quot;title&quot;: &quot;Chase invoice from supplier&quot;, &quot;status&quot;: &quot;in_progress&quot;, &quot;visibility&quot;: &quot;internal&quot;, ... }
+      ],
+      &quot;subtask_total_count&quot;: 1,
+      &quot;subtask_done_count&quot;: 0,
+      ...
+    }
+  ]
+}
+</code></pre>
+<h3>10. <code>POST /api/v1/projects/{project_id}/tasks</code> — Add task (or subtask)</h3>
+<p><strong>Body:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>title</code></td>
+<td>string</td>
+<td>✅</td>
+<td>—</td>
+<td>1-500 chars.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td></td>
+<td>null</td>
+<td>Up to 4000 chars.</td>
+</tr>
+<tr>
+<td><code>parent_task_id</code></td>
+<td>uuid</td>
+<td></td>
+<td>null</td>
+<td>When set, this becomes a subtask. Max nesting depth = 1 (enforced by trigger). The parent must be in the same project.</td>
+</tr>
+<tr>
+<td><code>room_id</code></td>
+<td>uuid</td>
+<td></td>
+<td>null</td>
+<td>Ignored when <code>parent_task_id</code> is set — subtasks inherit room from parent.</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>enum</td>
+<td></td>
+<td><code>todo</code></td>
+<td><code>todo</code> / <code>in_progress</code> / <code>done</code> / <code>blocked</code>.</td>
+</tr>
+<tr>
+<td><code>due_date</code></td>
+<td>date</td>
+<td></td>
+<td>null</td>
+<td></td>
+</tr>
+<tr>
+<td><code>visibility</code></td>
+<td>enum</td>
+<td></td>
+<td><code>internal</code></td>
+<td><code>internal</code> (only owner sees it) or <code>client_visible</code> (collaborators see it).</td>
+</tr>
+<tr>
+<td><code>sort_order</code></td>
+<td>int</td>
+<td></td>
+<td>0</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Notes on subtasks:</strong></p>
+<ul>
+<li>A task with a <code>parent_task_id</code> cannot itself have children.</li>
+<li>A task that already has children cannot become a subtask.</li>
+<li>Cross-project parenting is rejected.</li>
+<li>Deleting a parent CASCADEs to all subtasks.</li>
+<li>Status <code>done</code> auto-stamps <code>completed_at</code> (and reverts to NULL on un-done).</li>
+</ul>
+<p>Trigger violations return <code>500</code> with the Postgres exception message in <code>detail</code>. The frontend treats those as &quot;the model is correct, retry without parent_task_id&quot;.</p>
+<h3>11. <code>PUT /api/v1/projects/tasks/{task_id}</code> — Update task fields</h3>
+<p>Partial update. Status flips to <code>done</code> stamp <code>completed_at</code>; flips away from <code>done</code> clear it.</p>
+<h3>12. <code>DELETE /api/v1/projects/tasks/{task_id}</code> — Delete task</h3>
+<p>CASCADEs subtasks. Emits a <code>task.deleted</code> (or <code>subtask.deleted</code>) event in the timeline.</p>
+<h3>13. <code>GET /api/v1/projects/{project_id}/collaborators</code> — List invitations</h3>
+<p>Returns ALL rows (active / pending / revoked / expired). Filter client-side by:</p>
+<pre><code>active   = revoked_at IS NULL AND accepted_at IS NOT NULL AND expires_at &gt; now()
+pending  = revoked_at IS NULL AND accepted_at IS NULL AND expires_at &gt; now()
+revoked  = revoked_at IS NOT NULL
+expired  = expires_at &lt; now()
+</code></pre>
+<h3>14. <code>POST /api/v1/projects/{project_id}/collaborators</code> — Invite</h3>
+<p>Inserts a <code>project_collaborators</code> row + sends a branded HTML email via the platform&#39;s <code>email-api</code>. The invitee opens the link, enters their email, signs in via Supabase OTP, and the <code>accept_project_invitation</code> RPC verifies their email matches the invitation before stamping <code>user_id</code>.</p>
+<p><strong>Body:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>email</code></td>
+<td>string</td>
+<td>✅</td>
+<td>—</td>
+<td>The invitee&#39;s email. Forced to lowercase + trimmed on insert.</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td>string | null</td>
+<td></td>
+<td>null</td>
+<td>Up to 1000 chars. Shown in the invite email and stored on the row.</td>
+</tr>
+<tr>
+<td><code>expires_in_days</code></td>
+<td>int</td>
+<td></td>
+<td>90</td>
+<td>1-365. Drives <code>expires_at</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Response 200:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;project_id&quot;: &quot;uuid&quot;,
+    &quot;email&quot;: &quot;client@example.com&quot;,
+    &quot;user_id&quot;: null,
+    &quot;share_token&quot;: &quot;uuid&quot;,
+    &quot;role&quot;: &quot;client&quot;,
+    &quot;invited_by&quot;: &quot;uuid&quot;,
+    &quot;invited_at&quot;: &quot;2026-05-24T10:15:00Z&quot;,
+    &quot;accepted_at&quot;: null,
+    &quot;revoked_at&quot;: null,
+    &quot;expires_at&quot;: &quot;2026-08-22T10:15:00Z&quot;,
+    &quot;message&quot;: &quot;Take a look when you have a moment.&quot;,
+    &quot;created_at&quot;: &quot;2026-05-24T10:15:00Z&quot;
+  },
+  &quot;partner_credits_debited&quot;: 1
+}
+</code></pre>
+<p><strong>The invite URL the invitee receives:</strong> <code>https://app.materialshub.gr/projects/invite/&lt;share_token&gt;</code> (or whatever <code>PUBLIC_APP_URL</code> is set to on the MIVAA host).</p>
+<p><strong>Errors:</strong> <code>400</code> (invalid email), <code>402</code> (insufficient credits), <code>404</code> (project not owned by your API key), <code>409</code> (active invitation already exists for this email — revoke first to re-invite). Email-send failures are logged but do NOT cause the call to fail — the row + share_token are returned so you can <code>copy_link</code> manually.</p>
+<h3>15. <code>DELETE /api/v1/projects/collaborators/{collaborator_id}</code> — Revoke</h3>
+<p>Sets <code>revoked_at = now()</code>. Effect is <strong>immediate</strong> — RLS policies on every protected resource check <code>revoked_at IS NULL</code>, so the collaborator&#39;s next request returns the project as not-found.</p>
+<h3>16. <code>GET /api/v1/projects/{project_id}/events</code> — Read timeline</h3>
+<p>Newest events first, capped at the requested <code>limit</code> (default 100, max 500). The platform itself caps the per-project timeline at 500 entries (oldest pruned by the <code>append_project_event</code> RPC).</p>
+<p><strong>Emitted event types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Payload fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>project.created</code></td>
+<td><code>{ name, budget_amount, budget_currency, deadline }</code></td>
+</tr>
+<tr>
+<td><code>project.status_changed</code></td>
+<td><code>{ from, to }</code></td>
+</tr>
+<tr>
+<td><code>project.budget_changed</code></td>
+<td><code>{ from, to, currency }</code></td>
+</tr>
+<tr>
+<td><code>project.deadline_changed</code></td>
+<td><code>{ from, to }</code></td>
+</tr>
+<tr>
+<td><code>room.added</code></td>
+<td><code>{ room_id, name, room_type }</code></td>
+</tr>
+<tr>
+<td><code>room.removed</code></td>
+<td><code>{ room_id, name, room_type }</code></td>
+</tr>
+<tr>
+<td><code>moodboard.attached</code></td>
+<td><code>{ moodboard_id, title, room_id }</code></td>
+</tr>
+<tr>
+<td><code>moodboard.detached</code></td>
+<td><code>{ moodboard_id, title }</code></td>
+</tr>
+<tr>
+<td><code>quote.attached</code></td>
+<td><code>{ quote_id, name, status }</code></td>
+</tr>
+<tr>
+<td><code>quote.detached</code></td>
+<td><code>{ quote_id, name }</code></td>
+</tr>
+<tr>
+<td><code>quote.status_changed</code></td>
+<td><code>{ quote_id, name, from, to, grand_total, currency }</code></td>
+</tr>
+<tr>
+<td><code>quote.revised</code></td>
+<td><code>{ quote_id, parent_quote_id, revision_number, name }</code></td>
+</tr>
+<tr>
+<td><code>task.created</code> / <code>subtask.created</code></td>
+<td><code>{ task_id, title, parent_task_id, visibility }</code></td>
+</tr>
+<tr>
+<td><code>task.completed</code> / <code>subtask.completed</code></td>
+<td><code>{ task_id, title, parent_task_id }</code></td>
+</tr>
+<tr>
+<td><code>task.deleted</code> / <code>subtask.deleted</code></td>
+<td><code>{ task_id, title, parent_task_id }</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Schemas</h2>
+<h3>Project</h3>
+<pre><code class="language-typescript">interface Project {
+  id: string;                       // uuid
+  user_id: string;                  // owner
+  workspace_id: string | null;
+  name: string;
+  description: string | null;
+  status: &#39;planning&#39; | &#39;in_progress&#39; | &#39;on_hold&#39; | &#39;completed&#39; | &#39;archived&#39;;
+  client_company_id: string | null; // XOR with client_contact_id
+  client_contact_id: string | null;
+  deadline: string | null;          // ISO date
+  budget_amount: string | null;     // numeric — returned as string by PostgREST
+  budget_currency: string;          // ISO 4217, default &#39;EUR&#39;
+  cover_image_url: string | null;
+  // Denormalised cache (read-only, maintained by triggers)
+  actual_amount: string;            // SUM(grand_total) of accepted quotes
+  accepted_quote_count: number;
+  moodboard_count: number;
+  last_activity_at: string;         // ISO timestamp
+  created_at: string;
+  updated_at: string;
+}
+</code></pre>
+<h3>Room</h3>
+<pre><code class="language-typescript">interface ProjectRoom {
+  id: string;
+  project_id: string;
+  name: string;
+  room_type: &#39;bedroom&#39; | &#39;bathroom&#39; | &#39;kitchen&#39; | &#39;living&#39; | &#39;dining&#39; | &#39;office&#39; | &#39;outdoor&#39; | &#39;hallway&#39; | &#39;other&#39; | null;
+  sort_order: number;
+  budget_amount: string | null;
+  deadline: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+</code></pre>
+<h3>Task</h3>
+<pre><code class="language-typescript">interface ProjectTask {
+  id: string;
+  project_id: string;
+  parent_task_id: string | null;    // when set → subtask (max nesting = 1)
+  room_id: string | null;           // subtasks inherit from parent
+  title: string;
+  description: string | null;
+  status: &#39;todo&#39; | &#39;in_progress&#39; | &#39;done&#39; | &#39;blocked&#39;;
+  assignee_id: string | null;
+  due_date: string | null;          // ISO date
+  visibility: &#39;internal&#39; | &#39;client_visible&#39;;
+  sort_order: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;      // auto-stamped on status=&#39;done&#39;
+}
+
+interface ProjectTaskWithSubtasks extends ProjectTask {
+  subtasks: ProjectTask[];          // sorted by sort_order then created_at
+  subtask_total_count: number;
+  subtask_done_count: number;
+}
+</code></pre>
+<h3>Collaborator</h3>
+<pre><code class="language-typescript">interface ProjectCollaborator {
+  id: string;
+  project_id: string;
+  email: string;                    // lowercase + trimmed
+  user_id: string | null;           // NULL until accept
+  share_token: string;              // bearer token in the invite URL
+  role: &#39;client&#39; | &#39;editor&#39;;        // &#39;editor&#39; reserved for future use
+  invited_by: string;
+  invited_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;        // setting this revokes access immediately
+  expires_at: string;               // default invited_at + 90 days
+  message: string | null;
+  created_at: string;
+}
+</code></pre>
+<h3>Event</h3>
+<pre><code class="language-typescript">interface ProjectEvent {
+  id: string;
+  project_id: string;
+  event_type: string;               // see table above
+  actor_id: string | null;
+  payload: Record&lt;string, any&gt;;     // varies by event_type
+  occurred_at: string;
+}
+</code></pre>
+<hr>
+<h2>Error format</h2>
+<p>All errors return JSON with at least a <code>detail</code> string:</p>
+<pre><code class="language-json">{ &quot;detail&quot;: &quot;project not found&quot; }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code></td>
+<td>Validation failure (mutually exclusive fields both set; bad enum value; invalid email).</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Missing / malformed / revoked API key.</td>
+</tr>
+<tr>
+<td><code>402</code></td>
+<td>Insufficient credits for the requested op.</td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>API key has no associated user.</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Resource not found OR not owned by your API key (we don&#39;t leak existence).</td>
+</tr>
+<tr>
+<td><code>409</code></td>
+<td>Duplicate active collaborator invitation for this email.</td>
+</tr>
+<tr>
+<td><code>429</code></td>
+<td>Rate limit exceeded (60 req/min default). <code>Retry-After</code> header included.</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Postgres trigger violation (e.g. subtask depth cap) or service error. <code>detail</code> carries the upstream message.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Idempotency</h2>
+<ul>
+<li><strong>Collaborators</strong>: re-inviting the same email while an unrevoked invitation already exists returns <code>409</code>. Revoke first, then re-invite. No silent dedup — partner systems should treat each successful POST as a discrete invitation event.</li>
+<li><strong>Tasks / rooms</strong>: no natural dedup key. Sending the same body twice creates two rows.</li>
+<li><strong>Project create</strong>: no natural dedup key. Use the returned <code>id</code> for any follow-up calls.</li>
+</ul>
+<hr>
+<h2>Webhooks</h2>
+<p>This API does not push webhooks on project events. To consume the event timeline:</p>
+<ol>
+<li><strong>Poll</strong>: <code>GET /api/v1/projects/{id}/events</code> periodically (events are capped at 500 per project so a daily poll is sufficient for most use cases).</li>
+<li><strong>Internal flow only — Supabase realtime</strong>: the frontend uses <code>supabase.channel(...).on(&#39;postgres_changes&#39;, { table: &#39;project_events&#39;, filter: &#39;project_id=eq.&lt;id&gt;&#39; })</code> for live updates. External integrations would need their own listener.</li>
+</ol>
+<p>Webhook push is on the roadmap once enough partners ask for it.</p>
+<hr>
+<h2>Required environment variables (MIVAA host)</h2>
+<table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Required</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SUPABASE_URL</code></td>
+<td>✅</td>
+<td>—</td>
+<td>Used to call email-api edge function from the invite path.</td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>✅</td>
+<td>—</td>
+<td>Same.</td>
+</tr>
+<tr>
+<td><code>PUBLIC_APP_URL</code></td>
+<td></td>
+<td><code>https://app.materialshub.gr</code></td>
+<td>Used to build the absolute invite URL in the email. Set this in production so the link points at your customer-facing host.</td>
+</tr>
+<tr>
+<td><code>RESEND_API_KEY</code></td>
+<td>✅ (on the edge function)</td>
+<td>—</td>
+<td>Set on the <code>email-api</code> edge function, not on MIVAA. The invite email goes out via Resend.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Future / not yet shipped</h2>
+<ul>
+<li>Webhook push on <code>project.*</code> / <code>task.*</code> / <code>quote.attached</code> / <code>quote.status_changed</code> events.</li>
+<li>Bulk write endpoints (<code>POST /api/v1/projects/{id}/tasks/bulk</code>).</li>
+<li>Editor-role collaborators (<code>role: &#39;editor&#39;</code>) — schema supports it but RLS treats every collaborator as read-only today.</li>
+<li>Per-quote line-item access for collaborators (today they see quote summary only).</li>
+<li>Pre-signed download URLs for presentation sheets attached to project moodboards. Today the sheet PDF storage paths are returned in <code>GET /projects/{id}/events</code> (<code>moodboard.attached</code> payload) but you have to mint your own signed URL via Supabase storage.</li>
+<li>Acceptance-on-behalf-of-invitee — today the invitee MUST go through Supabase OTP. A future endpoint could let a partner confirm the email out-of-band and skip the OTP.</li>
+</ul>
+<hr>
+<h2>See also</h2>
+<ul>
+<li><a href="../projects.html">docs/projects.md</a> — full module architecture.</li>
+<li><a href="README.html">docs/api/README.md</a> — full API index.</li>
+<li><a href="mention-monitoring-api.html">docs/api/mention-monitoring-api.md</a> — sister Public API with the same auth + credit pattern.</li>
+<li><a href="job-research-api.html">docs/api/job-research-api.md</a> — same.</li>
+<li><a href="price-monitoring-api.html">docs/api/price-monitoring-api.md</a> — same.</li>
+<li><a href="../../mivaa-pdf-extractor/app/api/project_tracking_routes.py">mivaa-pdf-extractor/app/api/project_tracking_routes.py</a> — source.</li>
+</ul>
+
+</div></body></html>
