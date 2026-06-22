@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Metafield Extraction &amp; Processing - Complete Guide</h1>
 <p>Comprehensive guide on how the Material Kai Vision Platform identifies, extracts, and processes metafields (structured metadata) from PDF catalogs using AI-powered multi-stage processing.</p>
 <hr>
@@ -60,7 +62,7 @@
     ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 0: Product Discovery &amp; Metafield Identification (0-15%)   │
-│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ AI Model: Claude Opus 4.7 / GPT-4o                           │
 │ Purpose: Identify products and metafield types                 │
 │ Output: Product catalog with metafield types                   │
 └─────────────────────────────────────────────────────────────────┘
@@ -80,14 +82,14 @@
     ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 3: Image Processing &amp; Visual Metafield Extraction (50-70%)│
-│ AI: Qwen Vision 4 Scout 17B + CLIP                            │
+│ AI: Claude Opus 4.7 vision_analysis (Anthropic tool use) + SLIG│
 │ Purpose: Extract images, analyze for visual metafields         │
 │ Output: Images with detected colors, texture, finish           │
 └─────────────────────────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 4: Product Creation &amp; Metafield Consolidation (70-90%)   │
-│ AI: Claude Haiku 4.5 → Claude Sonnet 4.5                       │
+│ AI: Claude Haiku 4.5 → Claude Opus 4.7                         │
 │ Purpose: Create products, consolidate all metafields           │
 │ Output: Product records with consolidated metafields           │
 └─────────────────────────────────────────────────────────────────┘
@@ -103,7 +105,7 @@
 <hr>
 <h2>🔍 Stage 0: Product Discovery - Initial Metafield Identification</h2>
 <h3>AI Model &amp; Process</h3>
-<p><strong>Claude Sonnet 4.5 / GPT-4o</strong></p>
+<p><strong>Claude Opus 4.7 / GPT-4o</strong></p>
 <p>The AI analyzes the entire PDF to:</p>
 <ol>
 <li><strong>Identify product boundaries</strong> - Detect where each product starts/ends</li>
@@ -181,8 +183,8 @@
 <h2>🖼️ Stage 3: Image Processing &amp; Visual Metafield Extraction</h2>
 <h3>AI Models &amp; Process</h3>
 <ul>
-<li><strong>Qwen Vision 4 Scout 17B</strong>: Advanced image analysis</li>
-<li><strong>CLIP</strong>: Image embeddings (512D) for visual similarity</li>
+<li><strong>Claude Opus 4.7 vision_analysis</strong>: Sole vision pass post-2026-05-01, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code> (Anthropic tool use). Pre-2026-05-01 routed through Qwen3-VL on HuggingFace with Claude fallback; the Qwen endpoint had been 404-ing for months → retired.</li>
+<li><strong>SLIG (SigLIP2)</strong>: Image embeddings (768D) for visual similarity. Note: pre-2026 docs referenced 512D CLIP; the platform migrated to 768D SLIG and dropped legacy CLIP columns in 2026-04.</li>
 </ul>
 <p>The AI extracts images and analyzes them for visual metafields:</p>
 <ol>
@@ -197,7 +199,7 @@
 </ul>
 </li>
 <li><strong>Perform OCR</strong> on images to extract text</li>
-<li><strong>Generate CLIP embeddings</strong> (512D) for visual search</li>
+<li><strong>Generate SLIG embeddings</strong> (768D halfvec) for visual search — the legacy 512D CLIP columns were dropped 2026-04</li>
 </ol>
 <h3>How AI Identifies Visual Metafields</h3>
 <p><strong>Color Detection</strong>:</p>
@@ -240,7 +242,7 @@
 <h3>AI Models &amp; Process</h3>
 <ul>
 <li><strong>Claude Haiku 4.5</strong>: Initial product creation from chunks</li>
-<li><strong>Claude Sonnet 4.5</strong>: Validation, enrichment, and consolidation</li>
+<li><strong>Claude Opus 4.7</strong>: Validation, enrichment, and consolidation</li>
 </ul>
 <p>The AI creates product records and consolidates metafields from all sources:</p>
 <ol>
@@ -465,7 +467,7 @@
 </thead>
 <tbody><tr>
 <td><strong>0</strong></td>
-<td>Claude Sonnet 4.5 / GPT-4o</td>
+<td>Claude Opus 4.7 / GPT-4o</td>
 <td>Full PDF</td>
 <td>Identify products &amp; metafield types</td>
 <td>Product catalog with metafield types</td>
@@ -481,7 +483,7 @@
 </tr>
 <tr>
 <td><strong>3</strong></td>
-<td>Qwen Vision + CLIP</td>
+<td>Claude Opus 4.7 vision_analysis (Anthropic tool use) + SLIG (SigLIP2)</td>
 <td>Images</td>
 <td>Analyze for visual metafields</td>
 <td>Images with colors, texture, finish</td>
@@ -489,7 +491,7 @@
 </tr>
 <tr>
 <td><strong>4</strong></td>
-<td>Claude Haiku 4.5 → Sonnet 4.5</td>
+<td>Claude Haiku 4.5 → Opus 4.7</td>
 <td>Chunks + Images</td>
 <td>Consolidate metafields</td>
 <td>Product records with consolidated metafields</td>
@@ -542,7 +544,7 @@
 <ol>
 <li><strong>Stage 0</strong>: Claude identifies material types from PDF (e.g., &quot;White Body Tile&quot;, &quot;Ceramic&quot;)</li>
 <li><strong>Stage 2</strong>: Chunks preserve material information in metadata</li>
-<li><strong>Stage 3</strong>: Qwen Vision analyzes material appearance (texture, finish, gloss)</li>
+<li><strong>Stage 3</strong>: Claude Opus 4.7 vision_analysis (Anthropic tool use, sole vision pass post-2026-05-01) analyzes material appearance (texture, finish, gloss)</li>
 <li><strong>Stage 4</strong>: Claude consolidates material data from all sources</li>
 <li><strong>Stage 12</strong>: Material metafield linked to product, chunks, and images</li>
 </ol>

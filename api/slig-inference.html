@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,17 +19,19 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>SigLIP2-base-patch16-512 API Specification</h1>
 <h2>Endpoint</h2>
-<pre><code>POST https://&lt;your-endpoint&gt;.endpoints.huggingface.cloud
+<p>SLIG runs on <strong>Modal</strong> (moved off HuggingFace 2026-06-14):</p>
+<pre><code>POST https://basilakis--slig-sligservice-web.modal.run/infer
 </code></pre>
 <h2>Authentication</h2>
-<pre><code>Authorization: Bearer &lt;HF_TOKEN&gt;
+<pre><code>Authorization: Bearer &lt;SLIG_MODAL_API_KEY&gt;
 Content-Type: application/json
 </code></pre>
 <hr>
@@ -449,8 +452,8 @@ Content-Type: application/json
 <hr>
 <h2>Complete Examples</h2>
 <h3>Example 1: Classify Product Image</h3>
-<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
-  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+<pre><code class="language-bash">curl -X POST &quot;https://basilakis--slig-sligservice-web.modal.run/infer&quot; \
+  -H &quot;Authorization: Bearer $SLIG_MODAL_API_KEY&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;inputs&quot;: &quot;https://catalog.example.com/products/tile-001.jpg&quot;,
@@ -471,8 +474,8 @@ Content-Type: application/json
   }&#39;
 </code></pre>
 <h3>Example 2: Build Product Search Index</h3>
-<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
-  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+<pre><code class="language-bash">curl -X POST &quot;https://basilakis--slig-sligservice-web.modal.run/infer&quot; \
+  -H &quot;Authorization: Bearer $SLIG_MODAL_API_KEY&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;inputs&quot;: [
@@ -486,8 +489,8 @@ Content-Type: application/json
   }&#39;
 </code></pre>
 <h3>Example 3: Embed Product Descriptions</h3>
-<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
-  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+<pre><code class="language-bash">curl -X POST &quot;https://basilakis--slig-sligservice-web.modal.run/infer&quot; \
+  -H &quot;Authorization: Bearer $SLIG_MODAL_API_KEY&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;inputs&quot;: [
@@ -502,8 +505,8 @@ Content-Type: application/json
   }&#39;
 </code></pre>
 <h3>Example 4: Match Image to Descriptions</h3>
-<pre><code class="language-bash">curl -X POST &quot;https://your-endpoint.endpoints.huggingface.cloud&quot; \
-  -H &quot;Authorization: Bearer hf_xxxxx&quot; \
+<pre><code class="language-bash">curl -X POST &quot;https://basilakis--slig-sligservice-web.modal.run/infer&quot; \
+  -H &quot;Authorization: Bearer $SLIG_MODAL_API_KEY&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;inputs&quot;: {
@@ -524,8 +527,8 @@ Content-Type: application/json
 <pre><code class="language-python">import requests
 import base64
 
-API_URL = &quot;https://your-endpoint.endpoints.huggingface.cloud&quot;
-HEADERS = {&quot;Authorization&quot;: &quot;Bearer hf_xxxxx&quot;}
+API_URL = &quot;https://basilakis--slig-sligservice-web.modal.run/infer&quot;
+HEADERS = {&quot;Authorization&quot;: &quot;Bearer &lt;SLIG_MODAL_API_KEY&gt;&quot;}
 
 # Zero-shot classification
 def classify_product(image_url: str, labels: list[str]) -&gt; list[dict]:
