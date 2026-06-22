@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Project Purchase Items (Doors / Windows)</h1>
+<p>Per-project line items for <strong>made-to-order purchases</strong> — primarily doors and windows — with a structured spec payload and a PDF generator that renders both a combined purchase <strong>schedule</strong> and per-item <strong>specification sheets</strong> (with door-swing / window glyph drawings).</p>
+<blockquote>
+<p><strong>Status (2026-06-12):</strong> backend complete (table + <code>generate-purchase-sheet-pdf</code> edge function); <strong>frontend UI and a KAI agent tool are not yet wired</strong> (see <a href="#pending">Pending</a>). The migration name <code>project_purchase_items_quote_not_po</code> records the design decision: a purchase item references a <strong>quote</strong>, not a formal purchase order.</p>
+</blockquote>
+<hr>
+<h2>Data model — <code>project_purchase_items</code></h2>
+<p>One row per purchasable item on a project.</p>
+<ul>
+<li>Identity: <code>id</code>, <code>project_id</code> (FK → <code>projects</code>), <code>workspace_id</code>, <code>sort_order</code>.</li>
+<li>Type &amp; naming: <code>item_type</code> (<code>&#39;door&#39; | &#39;window&#39; | …</code>), <code>name</code>, <code>category</code>.</li>
+<li>Quantity / cost: <code>quantity</code>, <code>unit_cost</code>, <code>currency</code>.</li>
+<li>Lifecycle: <code>status</code> (not enum-constrained at the DB level).</li>
+<li>Links: <code>room_id</code> (FK → <code>project_rooms</code>), <code>quote_id</code> (FK → <code>quotes</code>), <code>supplier_company_id</code>.</li>
+<li>Design image: <code>design_image_url</code>, <code>design_image_path</code> (manually attached — see <a href="#image-source">Image source</a>).</li>
+<li><code>details</code> (jsonb) — the structured spec. Door keys include <code>width_mm</code>, <code>height_mm</code>, <code>thickness_mm</code>, <code>finish</code>, <code>opening</code> (<code>inward</code>/<code>outward</code>), <code>handing</code> (<code>left</code>/<code>right</code>), <code>hinge_side</code>, <code>frame</code>, <code>hardware</code>. Window keys include <code>width_mm</code>, <code>height_mm</code>, <code>frame_type</code>, <code>glazing</code>, <code>opening_type</code> (<code>tilt-turn</code>/<code>casement</code>/<code>sliding</code>), <code>finish</code>.</li>
+<li><code>notes</code>, <code>created_by</code>, <code>created_at</code>, <code>updated_at</code>.</li>
+</ul>
+<h2>Edge function — <code>generate-purchase-sheet-pdf</code></h2>
+<p>POST. Auth: <code>Authorization: Bearer &lt;token&gt;</code>. Items are read under the <strong>caller&#39;s RLS</strong> by <code>project_id</code> (optionally narrowed by <code>item_ids</code>); passing inline <code>items</code> requires the <strong>service-role</strong> key.</p>
+<p><strong>Body</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>project_id</code></td>
+<td>Required unless inline <code>items</code> are supplied.</td>
+</tr>
+<tr>
+<td><code>item_ids</code></td>
+<td>Optional subset of the project&#39;s purchase items.</td>
+</tr>
+<tr>
+<td><code>items</code></td>
+<td>Inline items (service-role only).</td>
+</tr>
+<tr>
+<td><code>project_name</code></td>
+<td>Overrides the rendered project name.</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>&#39;schedule&#39; | &#39;per_item&#39; | &#39;both&#39;</code> (default <code>&#39;both&#39;</code>).</td>
+</tr>
+</tbody></table>
+<p><strong>Modes</strong></p>
+<ul>
+<li><code>schedule</code> — A4 <strong>landscape</strong> combined table (<code># / TYPE / ITEM / ROOM / KEY SPEC / QTY / UNIT / TOTAL</code>), zebra-striped, grand-total row.</li>
+<li><code>per_item</code> — A4 <strong>portrait</strong>, one page per item: title block (&quot;PRODUCT PURCHASE SPECIFICATION&quot; + <code>item_type</code> + project), the <code>design_image_url</code> (or placeholder) on the left, spec rows on the right, a finish/frame/hardware swatch strip, a sequential <code>PUR-NNN</code> drawing number, and a <strong>drawing</strong>:<ul>
+<li><strong>door</strong> → swing symbol (wall stubs + leaf + quarter-circle arc) labelled from <code>details.handing</code> + <code>details.opening</code>.</li>
+<li><strong>window</strong> → glyph whose internal lines follow <code>details.opening_type</code>.</li>
+</ul>
+</li>
+<li><code>both</code> — schedule page(s) first, then the per-item pages.</li>
+</ul>
+<p><strong>Output</strong> — uploads to <code>pdf-documents/project-purchase/{project_id}/purchase-{ts}.pdf</code> (private bucket) and returns <code>{ success, pdf_url (7-day signed), pdf_storage_path, page_count, item_count, mode }</code>.</p>
+<h2>Finance integration</h2>
+<p>Purchase items are <strong>quote-referenced, not converted to purchase orders</strong> (hence <code>quote_not_po</code>). <code>project_purchase_items.quote_id</code> links an item to the quote that priced it, so a project&#39;s purchase specifications live alongside its accepted quotes rather than spawning a separate PO document. Project-level finance rollups are surfaced by the <code>get_project_finance_summary(p_project_id)</code> RPC (<code>projectsService.getProjectFinanceSummary</code>). The unrelated <code>purchase_order_items</code> table (formal POs) is a separate concern.</p>
+<h2>Image source</h2>
+<p><code>design_image_url</code> is <strong>manually attached</strong> to an item; there is no automatic link from the interior-render pipeline. <code>generate-purchase-sheet-pdf</code> only <strong>reads</strong> the image to embed it — it does not author one. A render produced by <code>generate-interior-gemini</code> can be saved onto an item, but nothing wires that automatically today.</p>
+<h2>Pending</h2>
+<p>To make the feature usable end-to-end, the remaining work is purely frontend/agent:</p>
+<ul>
+<li>A <strong>Purchase Items tab</strong> on the project detail page (<a href="../src/modules/projects/pages/ProjectDetailPage.tsx">ProjectDetailPage.tsx</a>) to CRUD items and trigger the PDF.</li>
+<li>A <strong>service method</strong> to invoke <code>generate-purchase-sheet-pdf</code> and download the result.</li>
+<li>(Optional) a KAI tool (e.g. <code>_shared/tools/purchase-tools.ts</code>) for <code>create_purchase_item</code> / <code>list_purchase_items</code> / <code>generate_purchase_sheet</code> — none exists yet.</li>
+</ul>
+<h2>Files</h2>
+<ul>
+<li>Edge function: <a href="../supabase/functions/generate-purchase-sheet-pdf/index.ts">supabase/functions/generate-purchase-sheet-pdf/index.ts</a></li>
+<li>Table + RPC types: <code>src/integrations/supabase/types.ts</code> (<code>project_purchase_items</code>, <code>get_project_finance_summary</code>)</li>
+<li>Project service: <a href="../src/modules/projects/services/projectsService.ts">src/modules/projects/services/projectsService.ts</a></li>
+</ul>
+<p>The table and edge function are deployed via MCP migrations / <code>supabase functions deploy generate-purchase-sheet-pdf</code>.</p>
+
+</div></body></html>

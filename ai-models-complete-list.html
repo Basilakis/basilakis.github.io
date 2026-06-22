@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,251 +19,227 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Complete AI Models Inventory</h1>
-<p><strong>Last Updated</strong>: January 18, 2026
-<strong>Version</strong>: 3.0.0
-<strong>Total Models</strong>: 30+ across 5 providers</p>
+<p><strong>Last Updated</strong>: 2026-06-13
+<strong>Version</strong>: 4.2.0
+<strong>Status</strong>: Production (post-PaddleOCR-VL structural backbone)</p>
 <hr>
 <h2>📊 AI Models by Provider</h2>
-<h3>1. Anthropic (Claude)</h3>
-<h4>Claude Sonnet 4.5</h4>
+<h3>1. Anthropic (Claude) — PRIMARY VISION + CHUNKING + AGENTS</h3>
+<h4>Claude Opus 4.7</h4>
 <ul>
 <li><strong>Use Cases</strong>:<ul>
-<li>Product discovery from PDFs (Stage 0A)</li>
+<li><strong>Vision analysis (PRIMARY)</strong> — segmentation, image classification, material analysis, vision_analysis JSON via Anthropic tool use</li>
+<li>Product discovery from PDFs (Stage 0)</li>
 <li>Deep metadata extraction</li>
 <li>Quality validation</li>
 <li>Web scraping product discovery</li>
 <li>XML field mapping</li>
-<li>Search deduplication analysis</li>
+<li>KAI agent (default)</li>
 </ul>
 </li>
-<li><strong>Context</strong>: 200,000 tokens</li>
-<li><strong>Cost</strong>: ~$0.015 per 1K tokens</li>
-<li><strong>Performance</strong>: Highest accuracy for complex reasoning</li>
+<li><strong>Schema enforcement</strong>: <code>VisionAnalysis</code> Pydantic model + <code>VISION_ANALYSIS_TOOL</code> (<code>app/models/vision_analysis.py</code>)</li>
+<li><strong>Context</strong>: 200,000 tokens (1M with extended context)</li>
+<li><strong>Cost</strong>: $5 input / $25 output per 1M tokens</li>
+<li><strong>Performance</strong>: Highest accuracy for complex reasoning + vision</li>
+</ul>
+<h4>Claude Sonnet 4.6</h4>
+<ul>
+<li><strong>Use Cases</strong>:<ul>
+<li><strong>Chunking (PRIMARY)</strong> — <code>Settings.chunking_primary_model</code> default since 2026-05-01</li>
+<li>Mid-tier reasoning where Opus is overkill</li>
+</ul>
+</li>
+<li><strong>Context</strong>: 200,000 tokens (1M with extended context)</li>
+<li><strong>Cost</strong>: $3 input / $15 output per 1M tokens</li>
+<li><strong>Why for chunking</strong>: chunking is a text task at the quality ceiling — Sonnet matches Opus output quality on chunking work, so Opus spend buys nothing extra</li>
 </ul>
 <h4>Claude Haiku 4.5</h4>
 <ul>
 <li><strong>Use Cases</strong>:<ul>
-<li>Fast content classification</li>
-<li>Product boundary detection</li>
-<li>Saved search similarity analysis</li>
+<li>Demo agent (fast responses)</li>
+<li>Price-monitoring product-identity classifier (with few-shot from <code>match_corrections</code>)</li>
+<li>Saved-search semantic dedupe</li>
+<li>Vision validation pass when configured (FAST_CONFIG / COST_OPTIMIZED_CONFIG profiles)</li>
 <li>Quick validation tasks</li>
 </ul>
 </li>
 <li><strong>Context</strong>: 200,000 tokens</li>
-<li><strong>Cost</strong>: ~$0.0025 per 1K tokens</li>
-<li><strong>Performance</strong>: 3× faster than Sonnet, 90%+ accuracy</li>
+<li><strong>Cost</strong>: $1 input / $5 output per 1M tokens</li>
+<li><strong>Performance</strong>: 3× faster than Opus, 90%+ accuracy</li>
 </ul>
 <hr>
-<h3>2. OpenAI</h3>
-<h4>GPT-4o</h4>
+<h3>2. Voyage AI — SOLE TEXT EMBEDDER + UNDERSTANDING EMBEDDINGS</h3>
+<h4>voyage-4</h4>
 <ul>
 <li><strong>Use Cases</strong>:<ul>
-<li>Product discovery (alternative to Claude)</li>
-<li>Conversational AI agents</li>
-<li>Complex reasoning tasks</li>
-<li>Document analysis</li>
+<li>Text chunk embeddings (<code>text_embedding_1024</code>)</li>
+<li>Product text embeddings (name + description + metadata)</li>
+<li>Semantic search query embeddings</li>
+<li><strong>Understanding embeddings</strong> — embeds <code>serialize_vision_analysis_to_text(VisionAnalysis)</code> from Claude Opus 4.7 vision pass</li>
 </ul>
 </li>
-<li><strong>Context</strong>: 128,000 tokens</li>
-<li><strong>Cost</strong>: ~$0.01 per 1K tokens</li>
-</ul>
-<h4>GPT-5</h4>
-<ul>
-<li><strong>Use Cases</strong>:<ul>
-<li>Advanced conversational AI</li>
-<li>Complex multi-step reasoning</li>
-<li>Future model support</li>
-</ul>
-</li>
-<li><strong>Context</strong>: TBD</li>
-<li><strong>Cost</strong>: TBD</li>
-</ul>
-<h4>text-embedding-3-small (retired from production 2026-04)</h4>
-<ul>
-<li><strong>Status</strong>: Retired in 2026-04 from the production path. Still used only for the legacy CI changelog workflow.</li>
-<li><strong>Replacement</strong>: Voyage AI <code>voyage-3.5</code> (1024D) is now the sole production text embedder. See below.</li>
-<li><strong>Dimensions</strong>: 1536D (historical)</li>
-<li><strong>Cost</strong>: $0.02 per 1M tokens</li>
-</ul>
-<h4>Voyage AI voyage-3.5 (production text embedder, updated 2026-04)</h4>
-<ul>
-<li><strong>Use Cases</strong>:<ul>
-<li>Text chunk embeddings</li>
-<li>Semantic search</li>
-<li>Understanding embeddings (from Qwen3-VL vision_analysis JSON)</li>
-</ul>
-</li>
-<li><strong>Dimensions</strong>: 1024D (stored as halfvec in VECS)</li>
+<li><strong>Dimensions</strong>: 1024D (stored as halfvec in VECS — gives storage parity across every embedding column in the platform)</li>
 <li><strong>Dict key</strong>: <code>text_1024</code></li>
 <li><strong>Cost</strong>: $0.06 per 1M tokens</li>
+<li><strong>Provenance</strong>: <code>embedding_model</code> + <code>schema_version</code> persisted on every row for drift detection</li>
+<li><strong>OpenAI fallback</strong>: DISABLED for understanding path (would produce mixed-vector VECS collections)</li>
 </ul>
 <hr>
-<h3>3. HuggingFace Endpoint</h3>
-<h4>Qwen3-VL 32B Vision</h4>
+<h3>3. Hosted Inference Endpoints (Modal)</h3>
+<p>Two active endpoints, both on <strong>Modal</strong>: <strong>SLIG</strong> (visual embeddings) and <strong>PaddleOCR-VL</strong> (the structural pass — layout + OCR + figure boxes). HuggingFace now hosts nothing in this platform.</p>
+<h4>SLIG (SigLIP2 base, 768D) — VISUAL EMBEDDINGS (Modal)</h4>
 <ul>
 <li><strong>Use Cases</strong>:<ul>
-<li>Material image analysis</li>
-<li>Product classification</li>
-<li>OCR and text extraction from images</li>
-<li>Image quality scoring</li>
-<li>Generating structured analysis for understanding embeddings</li>
-</ul>
-</li>
-<li><strong>Parameters</strong>: 32 billion</li>
-<li><strong>Modality</strong>: Vision + Text</li>
-<li><strong>Deployment</strong>: HuggingFace Dedicated Endpoint (auto-pause enabled)</li>
-<li><strong>Performance</strong>:<ul>
-<li>69.4% MMMU score</li>
-<li>#1 ranked for OCR tasks</li>
-<li>85%+ material recognition accuracy</li>
-</ul>
-</li>
-<li><strong>Cost</strong>: $0.30 per 1M tokens</li>
-<li><strong>Pipeline Stages</strong>: Image Analysis (Stage 6, 8)</li>
-</ul>
-<hr>
-<h3>4. Google</h3>
-<h4>SLIG (SigLIP2 via HuggingFace Cloud Endpoint) — Primary visual embedder, updated 2026-04</h4>
-<ul>
-<li><strong>Use Cases</strong>:<ul>
-<li>Visual embeddings (5 types per image)</li>
+<li>5 specialized 768D visual embeddings per image (visual, color, texture, style, material)</li>
 <li>Image-text similarity via similarity mode</li>
 <li>Visual search</li>
 <li>Multi-vector search</li>
 </ul>
 </li>
-<li><strong>Dimensions</strong>: 768D per embedding type (halfvec in VECS)</li>
-<li><strong>Performance</strong>: Superior to legacy CLIP 512D and SigLIP-SO400M 1152D (both retired 2026-04)</li>
-<li><strong>Cost</strong>: Cloud endpoint (auto-pause enabled)</li>
-<li><strong>Pipeline Stages</strong>: Image Embedding Generation (Stage 7)</li>
+<li><strong>Dimensions</strong>: 768D per type (halfvec in VECS)</li>
+<li><strong>Modes</strong>: <code>zero_shot</code>, <code>image_embedding</code>, <code>text_embedding</code>, <code>similarity</code></li>
+<li><strong>Endpoint</strong>: Modal endpoint (app <code>slig</code>, URL <code>https://basilakis--slig-sligservice-web.modal.run</code>), serving the custom model <code>basiliskan/slig</code> which duplicates <code>google/siglip2-base-patch16-512</code> — stock SigLIP2 base, native 768D, no projection head (<code>SLIG_EMBEDDING_DIMENSION=768</code>).</li>
+<li><strong>Cost</strong>: Modal endpoint, scale-to-zero ($0 idle)</li>
+<li><strong>Performance</strong>: 768D output is dimensionally aligned with all VECS visual collections; the previous direct-1152D SigLIP-SO400M collections (without projection) were retired 2026-04 as 100% orphans</li>
 </ul>
-<p><strong>5 Embedding Types Generated</strong> (all 768D → VECS):</p>
+<p><strong>Environment variables</strong>: <code>SLIG_MODAL_URL</code>, <code>SLIG_MODAL_API_KEY</code> (the SLIG visual-embedding endpoint on Modal; the bearer is shared with PaddleOCR — the <code>paddleocr-api-key</code> Modal secret). The structural pass (PaddleOCR-VL) runs on Modal — its only required runtime var is <code>PADDLEOCR_MODAL_API_KEY</code> (the URL is baked as a config default; see the PaddleOCR-VL section below).</p>
+<p><strong>Embeddings generated by SLIG</strong>:</p>
 <ol>
-<li><strong>Visual</strong> → <code>image_slig_embeddings</code> (producer key <code>visual_768</code>)</li>
-<li><strong>Color</strong> → <code>image_color_embeddings</code> (producer key <code>color_slig_768</code>)</li>
-<li><strong>Texture</strong> → <code>image_texture_embeddings</code> (producer key <code>texture_slig_768</code>)</li>
-<li><strong>Style</strong> → <code>image_style_embeddings</code> (producer key <code>style_slig_768</code>)</li>
-<li><strong>Material</strong> → <code>image_material_embeddings</code> (producer key <code>material_slig_768</code>)</li>
+<li><strong>Visual</strong> (768D, halfvec) → <code>image_slig_embeddings</code> (producer key <code>visual_768</code>) — the only collection produced by SLIG.</li>
 </ol>
-<p>Plus an <strong>Understanding Embedding</strong> (1024D Voyage AI from Qwen3-VL vision_analysis JSON) → <code>image_understanding_embeddings</code> for spec-based semantic search.</p>
+<p>The four aspect collections (color/texture/style/material) are Voyage <code>voyage-4</code> 1024D text embeddings of deterministic strings derived from <code>VisionAnalysis</code>:</p>
+<ol start="2">
+<li><strong>Color</strong> (1024D Voyage) → <code>image_color_embeddings</code> (producer key <code>color_aspect_1024</code>) — <code>VisionAnalysis.colors[]</code></li>
+<li><strong>Texture</strong> (1024D Voyage) → <code>image_texture_embeddings</code> (producer key <code>texture_aspect_1024</code>) — <code>VisionAnalysis.textures[] + finish</code></li>
+<li><strong>Style</strong> (1024D Voyage) → <code>image_style_embeddings</code> (producer key <code>style_aspect_1024</code>) — <code>VisionAnalysis.style + surface_pattern + applications</code></li>
+<li><strong>Material</strong> (1024D Voyage) → <code>image_material_embeddings</code> (producer key <code>material_aspect_1024</code>) — <code>VisionAnalysis.material_type + category + subcategory</code></li>
+</ol>
+<p>Plus an <strong>Understanding Embedding</strong> (1024D Voyage AI from Claude Opus 4.7 <code>vision_analysis</code> JSON) → <code>image_understanding_embeddings</code> for spec-based semantic search.</p>
+<h4>PaddleOCR-VL (<code>PaddlePaddle/PaddleOCR-VL-1.6</code>, 0.9B) — STRUCTURAL-PASS BACKBONE (layout + OCR + figure boxes)</h4>
+<p>A <strong>two-stage</strong> document parser run in-process on <strong>Modal</strong>: PP-DocLayoutV2 (RT-DETR detector + pointer network) gives per-region bboxes + labels + reading order; the 0.9B VLM recognizes content (text, tables→markdown, formulas→LaTeX, charts). <strong>Replaced Surya-2 (2026-06-13)</strong> — tighter RT-DETR crop boxes + dedicated reading order; validated ~1-3s/page warm, near-perfect Greek, figure boxes within ~8px. (Surya-2 had earlier replaced YOLO + Chandra + <code>merge_layout</code>.)</p>
+<ul>
+<li><strong>Use Cases</strong>:<ul>
+<li>Stage 1 document-level structural pass (runs before discovery — structure-first), persisted to <code>document_layout_analysis</code> (<code>processing_version=&#39;paddleocr-vl&#39;</code>)</li>
+<li>Phase 3 per-image OCR + icon-metadata + admin re-OCR (via <code>ocr_service</code> → <code>run_structural_pass</code> on the crop)</li>
+</ul>
+</li>
+<li><strong>Contract</strong> (custom, NOT OpenAI/vLLM): <code>POST /parse {image_b64, mode}</code> → <code>{&quot;regions&quot;:[{bbox:[x0,y0,x1,y1] px, label, content, order}], width, height}</code>; <code>GET /health</code> (unauth warmup probe). Pixel bboxes parsed to 0..1 in <code>paddleocr_pipeline.py</code>. PP-DocLayout labels map onto the existing <code>region_type</code> vocab via <code>PADDLE_LABEL_TO_REGION_TYPE</code>; <code>IMAGE</code>/<code>FIGURE</code>/<code>chart</code> are the product-crop sources. Table content (markdown) preserved in <code>metadata.html</code>.</li>
+<li><strong>Failure marker</strong>: <code>OCRResult.method=&#39;paddleocr_failed&#39;</code> — consumers must check <code>method</code>, not emptiness</li>
+<li><strong>Per-call metrics</strong>: <code>paddleocr_metrics</code> table</li>
+<li><strong>Host — Modal only</strong> (the in-process <code>paddleocr[doc-parser]</code> pipeline on <code>paddlepaddle-gpu</code>, NOT vLLM): <code>mivaa-pdf-extractor/modal_app/paddleocr_vl.py</code>; GPU L4, <code>min_containers=0</code> + <code>scaledown_window=120</code> (=$0 idle), <code>max_containers=4</code>, forces <code>device=&quot;gpu&quot;</code>. Cold start ~90s (model load + JIT), paid once per job at warmup. Deployed at <code>https://basilakis--paddleocr-vl-paddleservice-web.modal.run</code>. Only required runtime var: <strong><code>PADDLEOCR_MODAL_API_KEY</code></strong> (URL baked as config default). Redeploy: <code>modal deploy modal_app/paddleocr_vl.py</code> (see <code>modal_app/README.md</code>).</li>
+<li><strong>Replaced</strong>: Surya-2 (2026-06-13); earlier YOLO + Chandra; earlier pytesseract + EasyOCR.</li>
+<li><strong>Known residual</strong>: <code>Image</code>/<code>Figure</code>/<code>chart</code> regions are crop sources but not OCR&#39;d (text baked inside a photo is not read) — a <code>voyage-multimodal-3</code> page embedding is the planned follow-up.</li>
+</ul>
+<hr>
+<h3>4. OpenAI — OPTIONAL ALTERNATIVES (NOT VISION)</h3>
+<h4>GPT-5</h4>
+<ul>
+<li><strong>Use Cases</strong>:<ul>
+<li>Product discovery (alternative to Claude Opus 4.7)</li>
+<li>Conversational AI agents (optional)</li>
+</ul>
+</li>
+<li><strong>Cost</strong>: TBD</li>
+</ul>
+<h4>GPT-4o</h4>
+<ul>
+<li><strong>Use Cases</strong>:<ul>
+<li>Product discovery (alternative)</li>
+</ul>
+</li>
+<li><strong>Context</strong>: 128,000 tokens</li>
+<li><strong>Cost</strong>: $2.50 input / $10.00 output per 1M tokens</li>
+</ul>
+<h4>text-embedding-3-small (LEGACY — retired from production 2026-04)</h4>
+<ul>
+<li><strong>Status</strong>: Retired. Voyage AI <code>voyage-4</code> is the sole production text embedder.</li>
+<li><strong>Used only by</strong>: legacy CI changelog workflow + a code-pinned 1024D fallback that is not invoked on the understanding path</li>
+<li><strong>Dimensions</strong>: 1536D (historical) — the in-code fallback is pinned to 1024D so legacy callers can&#39;t silently store wrong-dim text embeddings</li>
+</ul>
 <hr>
 <h3>5. Replicate (14 Models for Interior Design)</h3>
 <h4>Text-to-Image Models (7 models)</h4>
 <ol>
-<li><p><strong>FLUX.1-dev</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Model: <code>black-forest-labs/flux-dev</code></li>
-<li>Cost: $0.025 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>FLUX.1-schnell</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Cost: $0.015 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>SDXL (Stable Diffusion XL)</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Cost: $0.020 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>Playground v2.5</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Model: <code>playgroundai/playground-v2.5-1024px-aesthetic</code></li>
-<li>Cost: $0.010 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>Stable Diffusion 3</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Model: <code>stability-ai/stable-diffusion-3</code></li>
-<li>Cost: $0.055 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>Kandinsky 2.2</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Cost: $0.015 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>Proteus v0.2</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Cost: $0.018 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
+<li><strong>FLUX.1-dev</strong> — <code>black-forest-labs/flux-dev</code>, $0.025/gen, ✅</li>
+<li><strong>FLUX.1-schnell</strong> — $0.015/gen, ✅</li>
+<li><strong>SDXL (Stable Diffusion XL)</strong> — $0.020/gen, ✅</li>
+<li><strong>Playground v2.5</strong> — <code>playgroundai/playground-v2.5-1024px-aesthetic</code>, $0.010/gen, ✅</li>
+<li><strong>Stable Diffusion 3</strong> — <code>stability-ai/stable-diffusion-3</code>, $0.055/gen, ✅</li>
+<li><strong>Kandinsky 2.2</strong> — $0.015/gen, ✅</li>
+<li><strong>Proteus v0.2</strong> — $0.018/gen, ✅</li>
 </ol>
 <h4>Image-to-Image Models (7 models)</h4>
-<p><strong>Production-Ready (3 models)</strong>:</p>
+<p><strong>Production-Ready</strong>:</p>
 <ol>
-<li><p><strong>ComfyUI Interior Remodel</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Model: <code>jschoormans/comfyui-interior-remodel</code></li>
-<li>Cost: $0.020 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>Interiorly Gen1 Dev</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Model: <code>julian-at/interiorly-gen1-dev</code></li>
-<li>Cost: $0.015 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
-<li><p><strong>Designer Architecture</strong></p>
-<ul>
-<li>Provider: Replicate</li>
-<li>Model: <code>davisbrown/designer-architecture</code></li>
-<li>Cost: $0.018 per generation</li>
-<li>Status: ✅ Working</li>
-</ul>
-</li>
+<li><strong>ComfyUI Interior Remodel</strong> — <code>jschoormans/comfyui-interior-remodel</code>, $0.020/gen, ✅</li>
+<li><strong>Interiorly Gen1 Dev</strong> — <code>julian-at/interiorly-gen1-dev</code>, $0.015/gen, ✅</li>
+<li><strong>Designer Architecture</strong> — <code>davisbrown/designer-architecture</code>, $0.018/gen, ✅</li>
 </ol>
-<p><strong>Experimental (4 models)</strong>:</p>
-<ol start="4">
-<li><strong>Interior AI</strong> - Status: ⚠️ Experimental</li>
-<li><strong>Interior V2</strong> - Status: ⚠️ Experimental</li>
-<li><strong>Adirik Interior Design</strong> - Status: ⚠️ Experimental</li>
-<li><strong>Interior Design SDXL</strong> - Status: ⚠️ Experimental</li>
-</ol>
+<p><strong>Experimental</strong>: Interior AI, Interior V2, Adirik Interior Design, Interior Design SDXL</p>
+<hr>
+<h3>6. Other API-Backed Vision / Search Tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Provider</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Perplexity Sonar / Sonar-Pro</td>
+<td>Perplexity</td>
+<td>Price discovery (web search with deep page reading)</td>
+</tr>
+<tr>
+<td>DataForSEO Merchant</td>
+<td>DataForSEO</td>
+<td>Google Shopping merchant discovery</td>
+</tr>
+<tr>
+<td>Firecrawl</td>
+<td>Firecrawl</td>
+<td>URL scrape + Pydantic-extracted price verification</td>
+</tr>
+<tr>
+<td>WorldLabs Marble</td>
+<td>WorldLabs</td>
+<td>3D Gaussian Splat world generation from images</td>
+</tr>
+<tr>
+<td>Anthropic <code>web_search_20250305</code></td>
+<td>Anthropic</td>
+<td>B2B manufacturer search (claude-haiku-4-5 + web-search beta)</td>
+</tr>
+</tbody></table>
 <hr>
 <h2>📈 Model Usage by Feature</h2>
-<h3>PDF Processing Pipeline</h3>
+<h3>PDF Processing Pipeline (named stages — numbers retired)</h3>
 <ul>
-<li><strong>Stage 0A (Product Discovery)</strong>: Claude Sonnet 4.5 or GPT-4o</li>
-<li><strong>Stage 0B (Entity Discovery)</strong>: Claude Sonnet 4.5 or GPT-4o</li>
-<li><strong>Stage 2 (Text Embeddings)</strong>: Voyage AI voyage-3.5 (1024D, updated 2026-04)</li>
-<li><strong>Stage 6 (Image Classification)</strong>: Qwen3-VL 17B Vision</li>
-<li><strong>Stage 7 (SLIG Embeddings)</strong>: SigLIP2 via HuggingFace cloud endpoint (768D, 5 types + understanding 1024D)</li>
-<li><strong>Stage 8 (Image Analysis)</strong>: Qwen3-VL 17B Vision</li>
+<li><strong>Layout + Page OCR + figure boxes (Stage 1, structure-first)</strong>: <strong>PaddleOCR-VL</strong> structural pass — one call per page, runs BEFORE discovery</li>
+<li><strong>Discovery</strong>: Claude Opus 4.7 or GPT-5 — reads PaddleOCR&#39;s reading-order text from the cache (not raw <code>get_text</code>)</li>
+<li><strong>Chunking</strong>: <strong>Claude Sonnet 4.6</strong> (was Qwen pre-2026-05-01)</li>
+<li><strong>Vision (primary)</strong>: <strong>Claude Opus 4.7 via tool use</strong> (was Qwen pre-2026-05-01 — but Qwen had been 404-ing for months)</li>
+<li><strong>Vision (validation pass)</strong>: triggered when primary confidence &lt; threshold OR primary fails. DEFAULT/HIGH_ACCURACY profiles use Claude Opus 4.7; FAST/COST_OPTIMIZED profiles use Claude Haiku 4.5. Driven by <code>classification_validation_model</code> in <code>ai_config</code>.</li>
+<li><strong>Phase 3 OCR (per-image)</strong>: <strong>PaddleOCR-VL</strong> block OCR, runs AFTER vision. Consumed by icon-metadata extraction + image-search labels (NOT by chunker, NOT a vision_analysis prompt input).</li>
+<li><strong>Visual Embeddings</strong>: SLIG (SigLIP2 base 768D, 5×768D)</li>
+<li><strong>Understanding Embedding</strong>: Voyage AI voyage-4 (1024D, parallel with Visual Embeddings)</li>
+<li><strong>Text Embeddings</strong>: Voyage AI voyage-4 (1024D, sole embedder)</li>
 </ul>
 <h3>Web Scraping Integration</h3>
 <ul>
-<li><strong>Product Discovery</strong>: Claude Sonnet 4.5 (default), GPT-5, or Claude Haiku 4.5</li>
-<li><strong>Content Analysis</strong>: Same models as PDF Stage 0A</li>
+<li><strong>Product Discovery</strong>: Claude Opus 4.7 (default), GPT-5, or Claude Haiku 4.5</li>
 </ul>
 <h3>XML Import</h3>
 <ul>
-<li><strong>Field Mapping</strong>: Claude Sonnet 4.5</li>
-<li><strong>Dynamic mapping with AI reasoning</strong></li>
+<li><strong>Field Mapping</strong>: Claude Opus 4.7</li>
 </ul>
 <h3>Interior Design Generation</h3>
 <ul>
@@ -273,70 +250,69 @@
 <h3>Saved Searches Deduplication</h3>
 <ul>
 <li><strong>Similarity Analysis</strong>: Claude Haiku 4.5</li>
-<li><strong>Semantic fingerprinting and merging</strong></li>
 </ul>
 <h3>Price Monitoring</h3>
 <ul>
-<li><strong>Web Content Analysis</strong>: Firecrawl + Claude for price extraction</li>
+<li><strong>Discovery (Stage A)</strong>: Perplexity Sonar-Pro + DataForSEO Merchant (parallel) — Greek marketplaces (Skroutz/Bestprice/Shopflix) + Idealo (DACH/IT/UK/ES/FR)</li>
+<li><strong>Verification (Stage B)</strong>: Firecrawl + Pydantic <code>PriceExtraction</code> schema</li>
+<li><strong>Identity classifier</strong>: Claude Haiku 4.5 with few-shot from <code>match_corrections</code></li>
+</ul>
+<h3>B2B Manufacturer Search</h3>
+<ul>
+<li><strong>Tool</strong>: Anthropic <code>web_search_20250305</code> (claude-haiku-4-5 + beta header)</li>
 </ul>
 <hr>
 <h2>💰 Cost Optimization Strategy</h2>
 <h3>High-Volume Operations (Use Cheaper Models)</h3>
 <ul>
-<li><strong>Quick Classification</strong>: Claude Haiku 4.5 ($0.0025/1K tokens)</li>
-<li><strong>Text Embeddings</strong>: Voyage AI voyage-3.5 ($0.06/1M tokens, updated 2026-04)</li>
-<li><strong>Visual Embeddings</strong>: SLIG SigLIP2 cloud endpoint (auto-pause enabled)</li>
+<li><strong>Quick classification</strong>: Claude Haiku 4.5 ($1/1M input, $5/1M output)</li>
+<li><strong>Chunking</strong>: Claude Sonnet 4.6 ($3/1M input, $15/1M output)</li>
+<li><strong>Text embeddings</strong>: Voyage AI voyage-4 ($0.06/1M tokens)</li>
+<li><strong>Visual embeddings</strong>: SLIG Modal endpoint (scale-to-zero)</li>
 </ul>
 <h3>High-Accuracy Operations (Use Premium Models)</h3>
 <ul>
-<li><strong>Product Discovery</strong>: Claude Sonnet 4.5 ($0.015/1K tokens)</li>
-<li><strong>Metadata Extraction</strong>: Claude Sonnet 4.5</li>
-<li><strong>Spatial Analysis</strong>: Claude Sonnet 4.5 Vision</li>
+<li><strong>Vision analysis</strong>: Claude Opus 4.7 (tool-use schema-locked)</li>
+<li><strong>Product discovery</strong>: Claude Opus 4.7</li>
+<li><strong>Metadata extraction</strong>: Claude Opus 4.7</li>
 </ul>
 <h3>Parallel Processing</h3>
 <ul>
-<li><strong>Interior Design</strong>: Process 3 models concurrently</li>
-<li><strong>CLIP Embeddings</strong>: Batch process 20 images at a time</li>
-<li><strong>Image Downloads</strong>: 5 concurrent downloads</li>
+<li><strong>Interior Design</strong>: 3 models concurrently</li>
+<li><strong>SLIG embeddings</strong>: batch 20 images at a time</li>
+<li><strong>Image downloads</strong>: 5 concurrent</li>
 </ul>
 <hr>
 <h2>🎯 Model Selection Guidelines</h2>
-<h3>When to Use Claude Sonnet 4.5</h3>
+<h3>When to Use Claude Opus 4.7</h3>
 <ul>
-<li>Complex reasoning required</li>
-<li>High accuracy needed</li>
+<li>Vision analysis (tool-use schema enforcement)</li>
+<li>Complex reasoning, high accuracy</li>
 <li>Detailed metadata extraction</li>
-<li>Multi-step analysis</li>
-<li><strong>Cost</strong>: Higher but worth it for quality</li>
+<li>KAI agent default</li>
+</ul>
+<h3>When to Use Claude Sonnet 4.6</h3>
+<ul>
+<li>Chunking (default since 2026-05-01)</li>
+<li>Mid-tier reasoning where Opus is overkill</li>
 </ul>
 <h3>When to Use Claude Haiku 4.5</h3>
 <ul>
-<li>Simple classification tasks</li>
+<li>Simple classification (price-monitoring identity classifier)</li>
 <li>Quick validation</li>
 <li>High-volume operations</li>
-<li>Real-time analysis</li>
-<li><strong>Cost</strong>: 6× cheaper than Sonnet</li>
+<li>Demo agent</li>
 </ul>
 <h3>When to Use GPT-4o/GPT-5</h3>
 <ul>
-<li>Conversational AI</li>
-<li>Alternative to Claude (load balancing)</li>
-<li>Multimodal capabilities needed</li>
-<li><strong>Cost</strong>: Competitive with Claude</li>
+<li>Alternative product discovery (load balancing)</li>
+<li>Optional agent fallback</li>
+<li><strong>Not used for vision</strong> (Anthropic-only post-2026-05-01)</li>
 </ul>
-<h3>When to Use Qwen3-VL</h3>
+<h3>When to Use SLIG (SigLIP2 base, 768D)</h3>
 <ul>
-<li>Image analysis and OCR</li>
-<li>Material recognition</li>
-<li>Visual quality scoring</li>
-<li><strong>Cost</strong>: Moderate, excellent value</li>
-</ul>
-<h3>When to Use SigLIP CLIP</h3>
-<ul>
-<li>Visual similarity search</li>
-<li>Multi-vector embeddings</li>
+<li>Visual similarity search (5 specialized 768D types)</li>
 <li>High-volume image processing</li>
-<li><strong>Cost</strong>: Free (self-hosted)</li>
 </ul>
 <hr>
 <h2>📊 Performance Benchmarks</h2>
@@ -351,18 +327,32 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>Claude Sonnet 4.5</td>
-<td>Product Discovery</td>
+<td>Claude Opus 4.7</td>
+<td>Vision analysis (tool use)</td>
+<td>3-8s</td>
+<td>schema-locked</td>
+<td>$0.02-0.05</td>
+</tr>
+<tr>
+<td>Claude Opus 4.7</td>
+<td>Product discovery</td>
 <td>3-5s</td>
 <td>95%+</td>
-<td>$0.05-0.15</td>
+<td>$0.02-0.05</td>
+</tr>
+<tr>
+<td>Claude Sonnet 4.6</td>
+<td>Chunking</td>
+<td>2-4s</td>
+<td>quality ceiling</td>
+<td>$0.01-0.04</td>
 </tr>
 <tr>
 <td>Claude Haiku 4.5</td>
 <td>Classification</td>
 <td>0.5-1s</td>
 <td>90%+</td>
-<td>$0.01-0.03</td>
+<td>$0.001-0.006</td>
 </tr>
 <tr>
 <td>GPT-4o</td>
@@ -372,81 +362,108 @@
 <td>$0.04-0.12</td>
 </tr>
 <tr>
-<td>Qwen3-VL</td>
-<td>Image Analysis</td>
-<td>2-3s</td>
-<td>90%+</td>
-<td>$0.02-0.05</td>
+<td>PaddleOCR-VL</td>
+<td>Structural pass: layout + OCR + figure boxes (per page)</td>
+<td>1-3s</td>
+<td>&gt;90%</td>
+<td>endpoint</td>
 </tr>
 <tr>
-<td>SigLIP CLIP</td>
-<td>Embeddings</td>
+<td>SLIG (SigLIP2 base, 768D)</td>
+<td>Embeddings (5 types)</td>
+<td>0.15-0.4s</td>
+<td>89-94%</td>
+<td>endpoint</td>
+</tr>
+<tr>
+<td>Voyage voyage-4</td>
+<td>Text/understanding embedding</td>
 <td>0.1-0.3s</td>
-<td>95%+</td>
-<td>$0.00</td>
+<td>superior to OAI</td>
+<td>$0.06/1M</td>
 </tr>
 <tr>
 <td>FLUX Dev</td>
-<td>Interior Design</td>
+<td>Interior design</td>
 <td>5-13s</td>
 <td>92%+</td>
 <td>$0.025</td>
 </tr>
-<tr>
-<td>ComfyUI</td>
-<td>Room Transform</td>
-<td>8-15s</td>
-<td>88%+</td>
-<td>$0.020</td>
-</tr>
 </tbody></table>
 <hr>
 <h2>🔄 Model Fallback Strategy</h2>
-<h3>Primary → Secondary → Tertiary</h3>
-<p><strong>Product Discovery</strong>:</p>
+<h3>Vision Analysis</h3>
 <ol>
-<li>Claude Sonnet 4.5 (primary)</li>
-<li>GPT-4o (secondary)</li>
+<li><strong>Claude Opus 4.7 via tool use</strong> (PRIMARY — schema-locked)</li>
+<li>No fallback — Anthropic-only post-2026-05-01</li>
+</ol>
+<h3>Product Discovery</h3>
+<ol>
+<li>Claude Opus 4.7 (primary)</li>
+<li>GPT-5 / GPT-4o (alternative)</li>
 <li>Claude Haiku 4.5 (tertiary, lower accuracy)</li>
 </ol>
-<p><strong>Image Analysis</strong>:</p>
+<h3>Layout + OCR (structural pass)</h3>
 <ol>
-<li>Qwen3-VL 17B (primary)</li>
-<li>Claude Vision (secondary, more expensive)</li>
-<li>GPT-4 Vision (tertiary)</li>
+<li><strong>PaddleOCR-VL 1.6 structural pass on Modal</strong> (PRIMARY, sole) — PP-DocLayoutV2 RT-DETR + 0.9B VLM, runs before discovery</li>
+<li>No fallback — <code>OCRResult.method=&#39;paddleocr_failed&#39;</code> set on inference failure</li>
 </ol>
-<p><strong>Visual Embeddings</strong>:</p>
+<h3>Visual Embeddings</h3>
 <ol>
-<li>SigLIP ViT-SO400M (primary)</li>
-<li>CLIP ViT-B/32 (secondary)</li>
-<li>Skip if both fail (graceful degradation)</li>
+<li>SLIG SigLIP2 cloud endpoint (primary)</li>
+<li>3-attempt retry on dim-mismatch</li>
+<li>Skip if all attempts fail (graceful degradation, image flagged)</li>
+</ol>
+<h3>Text Embeddings</h3>
+<ol>
+<li>Voyage AI voyage-4 (primary, sole) — 1024D</li>
+<li>OpenAI text-embedding-3-small (legacy CI changelog only — pinned to 1024D in code if ever called, so wrong-dim writes are impossible)</li>
+<li>Understanding path has <strong>no</strong> fallback — disabled to prevent VECS collection drift</li>
 </ol>
 <hr>
-<h2>🆕 Recently Added Models</h2>
-<p><strong>January 2026</strong>:</p>
+<h2>🆕 Recent Model Changes</h2>
+<p><strong>2026-05-01 — Qwen removal migration</strong>:</p>
 <ul>
-<li>✨ Added 14 Replicate models for interior design</li>
-<li>✨ Expanded SigLIP to generate 5 embedding types (was 1)</li>
-<li>✨ Added GPT-5 support (future-proofing)</li>
+<li>❌ Qwen vision models retired (HF endpoint had been 404-ing for months, falling through to Claude)</li>
+<li>❌ <code>qwen_endpoint_manager.py</code> deleted; all <code>Settings.qwen_*</code> removed; qwen warmup, dashboard widgets, pricing entries gone</li>
+<li>✅ Vision moved to <strong>Claude Opus 4.7 via Anthropic tool use</strong> (<code>VisionAnalysis</code> Pydantic schema)</li>
+<li>✅ Chunking moved from Qwen to <strong>Claude Sonnet 4.6</strong></li>
+<li>✅ Voyage drift detection: <code>embedding_model</code> + <code>schema_version</code> on every understanding-embedding row; OpenAI fallback disabled for understanding path</li>
+<li>✅ <code>VisionProvider.QWEN</code> enum value retained for historical row validation</li>
 </ul>
-<p><strong>December 2025</strong>:</p>
+<p><strong>2026-06-13 — PaddleOCR-VL structural backbone</strong> (replaced Surya-2, which had replaced YOLO + Chandra earlier the same day):</p>
 <ul>
-<li>✨ Upgraded to Claude Sonnet 4.5 (from 3.5)</li>
-<li>✨ Upgraded to Claude Haiku 4.5 (from 3.5)</li>
-<li>✨ Added Google SigLIP as primary CLIP model</li>
+<li>✅ <strong>PaddleOCR-VL</strong> (two-stage: PP-DocLayoutV2 RT-DETR + 0.9B VLM) is the sole layout+OCR engine, hosted in-process on Modal; structure-first (runs before discovery)</li>
+<li>✅ <code>paddleocr_metrics</code> table for per-call telemetry; <code>surya_ocr_metrics</code> dropped</li>
+<li>✅ Phase 3 per-image OCR (icons + text-bearing images) runs on PaddleOCR block OCR</li>
+<li>❌ <code>surya_endpoint_manager.py</code>, <code>surya_blocks.py</code>, <code>modal_app/surya_vllm.py</code> + all <code>surya_*</code> config deleted</li>
+</ul>
+<p><strong>2026-05-01 — earlier OCR consolidation</strong> (superseded above): pytesseract + EasyOCR removed; Chandra v2 was the sole OCR engine until 2026-06-13.</p>
+<p><strong>2026-04 — Embedding consolidation</strong>:</p>
+<ul>
+<li>✅ All vector columns migrated from <code>vector</code> → <code>halfvec</code> (50% storage savings)</li>
+<li>✅ Legacy 1152D SigLIP-SO400M and 512D CLIP collections dropped (100% orphans). Current visual embedder is SigLIP2 base (native 768D) via the SLIG cloud endpoint.</li>
+<li>✅ Voyage <code>voyage-4</code> replaced OpenAI <code>text-embedding-3-small</code> (1536D → 1024D)</li>
+</ul>
+<p><strong>Earlier (2025-12)</strong>:</p>
+<ul>
+<li>✅ Upgraded to Claude Opus 4.7</li>
+<li>✅ Upgraded to Claude Haiku 4.5</li>
+<li>✅ SigLIP added as primary visual embedder</li>
 </ul>
 <hr>
 <h2>📚 Related Documentation</h2>
 <ul>
-<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a> - Detailed pipeline with model usage</li>
-<li><a href="./interior-design-models.md">Interior Design Models</a> - 14 Replicate models</li>
-<li><a href="./web-scraping-integration.md">Web Scraping Integration</a> - AI-powered product discovery</li>
-<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits per model</li>
+<li><a href="./pdf-processing-pipeline.html">PDF Processing Pipeline</a> — Detailed pipeline with model usage</li>
+<li><a href="./ai-models-architecture.html">AI Models Architecture</a> — Architecture flow + provider table</li>
+<li><a href="./embedding-generation-improvements.html">Embedding Generation Improvements</a> — Voyage understanding pipeline</li>
+<li><a href="./interior-design-models.html">Interior Design Models</a> — 14 Replicate models</li>
+<li><a href="./web-scraping-integration.html">Web Scraping Integration</a> — AI-powered product discovery</li>
 </ul>
 <hr>
-<p><strong>Total Investment</strong>: 30+ AI models across 5 providers
-<strong>Total Cost Range</strong>: $0.00 - $0.055 per operation (varies by model and task)
-<strong>Success Rate</strong>: 95%+ across all models
+<p><strong>Total Investment</strong>: 20+ deployed model surfaces across 5 providers (the 5 SLIG specialized embeddings are five prompt-driven uses of one Modal endpoint, not five distinct models)
+<strong>Total Cost Range</strong>: $0.001 - $0.15 per operation (varies by model and task)
+<strong>Vision integrity</strong>: schema-locked via Anthropic tool use (post-2026-05-01)
 <strong>Uptime</strong>: 99.5%+ (production environment)</p>
 
 </div></body></html>

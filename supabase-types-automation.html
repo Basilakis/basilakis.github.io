@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,177 +19,57 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
-<h1>Supabase Types Automation</h1>
-<h2>Overview</h2>
-<p>Automated TypeScript type generation from Supabase database schema to ensure type safety across the platform.</p>
-<h2>🎯 Features</h2>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Supabase Type Generation</h1>
+<p>Generated TypeScript types from the Supabase database schema, used across the frontend for type-safe queries.</p>
+<p>Generated file: <code>src/integrations/supabase/types.ts</code> — a <code>Database</code> type with <code>public.Tables</code> (each with <code>Row</code> / <code>Insert</code> / <code>Update</code>), <code>Views</code>, <code>Functions</code>, and <code>Enums</code>, plus the <code>Tables&lt;T&gt;</code> / <code>TablesInsert&lt;T&gt;</code> / <code>TablesUpdate&lt;T&gt;</code> helper exports.</p>
+<hr>
+<h2>How to regenerate</h2>
+<pre><code class="language-bash"># From the production database (requires a Supabase access token)
+SUPABASE_ACCESS_TOKEN=&lt;token&gt; npm run types:generate
+
+# From a local Supabase stack
+npm run types:generate:local
+</code></pre>
+<p>Both scripts write to <code>src/integrations/supabase/types.ts</code>. Get a token from the Supabase dashboard (<strong>Account → Access Tokens</strong>) or <code>supabase login</code>. Project ref: <code>bgbavxtjlbvgplozizxu</code>.</p>
+<blockquote>
+<p>An MCP-connected agent can also produce the current types with <code>mcp__supabase__generate_typescript_types</code> without a token, and write the result to the file.</p>
+</blockquote>
+<hr>
+<h2>⚠️ Regeneration is MANUAL — there is no CI automation</h2>
+<p>This is important because it is easy to assume otherwise:</p>
 <ul>
-<li><strong>Automated Type Generation</strong>: Generate TypeScript types from Supabase database schema</li>
-<li><strong>GitHub Actions Integration</strong>: Automatic updates on database migrations</li>
-<li><strong>Scheduled Updates</strong>: Weekly type regeneration to catch manual schema changes</li>
-<li><strong>Type Validation</strong>: Script to verify types are up-to-date</li>
-<li><strong>Manual Triggers</strong>: Generate types on-demand when needed</li>
+<li><strong>There is no <code>update-supabase-types.yml</code> GitHub Actions workflow.</strong> Types are <strong>not</strong> regenerated on a schedule or automatically.</li>
+<li><strong>There is no <code>npm run types:check</code> script.</strong> The only type scripts are <code>types:generate</code> and <code>types:generate:local</code>.</li>
+<li><strong>A &quot;regenerate on migration push&quot; trigger could not work here even if it existed.</strong> Per the project workflow rule, all DDL is applied directly via <code>mcp__supabase__apply_migration</code> / <code>mcp__supabase__execute_sql</code> — <strong>no <code>supabase/migrations/*.sql</code> files are ever committed/pushed</strong>, so there is nothing for a push-triggered workflow to react to.</li>
 </ul>
+<p><strong>Consequence:</strong> after any schema change (new/dropped table or column, a column&#39;s nullability flip, a new foreign key, an enum change), <code>types.ts</code> is stale until someone runs <code>npm run types:generate</code> manually. Make the regen part of the same change set as the migration.</p>
 <hr>
-<h2>📋 Available Commands</h2>
-<h3>Generate Types from Remote Database</h3>
-<p>Run <code>npm run types:generate</code> to generate TypeScript types from the production Supabase database.</p>
-<p><strong>Requirements:</strong></p>
+<h2>When a regen is actually required</h2>
+<p>A regen changes <code>types.ts</code> only when the <strong>table/view/enum/function shape</strong> changes — for example:</p>
 <ul>
-<li><code>SUPABASE_ACCESS_TOKEN</code> environment variable set</li>
-<li>Supabase CLI installed (<code>npm install</code>)</li>
+<li>a table or column added/dropped/renamed,</li>
+<li>a column&#39;s nullability changed (<code>NOT NULL</code> ↔ nullable → <code>Row</code> field gains/loses <code>| null</code>, <code>Insert</code>/<code>Update</code> optionality changes),</li>
+<li>a foreign key added/removed (changes the <code>Relationships</code> metadata),</li>
+<li>an enum value added,</li>
+<li>a SQL function signature changed.</li>
 </ul>
-<h3>Generate Types from Local Database</h3>
-<p>Run <code>npm run types:generate:local</code> to generate TypeScript types from local Supabase instance.</p>
-<p><strong>Requirements:</strong></p>
+<p>Pure RLS-policy changes and <code>GRANT</code>/<code>REVOKE</code> changes do <strong>not</strong> affect generated types.</p>
+<hr>
+<h2>Suggested follow-up (not yet wired)</h2>
+<p>If automated regen is wanted, add a GitHub Actions workflow with:</p>
 <ul>
-<li>Local Supabase running (<code>supabase start</code>)</li>
-<li>Supabase CLI installed</li>
+<li>a <code>workflow_dispatch</code> trigger (manual run from the Actions tab), and</li>
+<li>a weekly <code>schedule</code> trigger,</li>
 </ul>
-<h3>Check Types Status</h3>
-<p>Run <code>npm run types:check</code> to verify that Supabase types file exists and contains expected type definitions.</p>
-<p><strong>Checks:</strong></p>
-<ul>
-<li>File exists and is readable</li>
-<li>File age (warns if &gt;7 days old)</li>
-<li>Required type definitions present</li>
-<li>Table count statistics</li>
-</ul>
+<p>that runs <code>npm run types:generate</code> with repo secrets <code>SUPABASE_ACCESS_TOKEN</code> + <code>SUPABASE_PROJECT_ID</code> and opens a PR if <code>types.ts</code> changed. A push trigger on <code>supabase/migrations/**</code> is pointless here (see above) — the weekly/dispatch run is what keeps types from drifting given MCP-applied DDL.</p>
 <hr>
-<h2>🤖 Automated Updates</h2>
-<h3>GitHub Actions Workflow</h3>
-<p>The <code>.github/workflows/update-supabase-types.yml</code> workflow automatically updates types:</p>
-<h4>Triggers</h4>
-<ol>
-<li><strong>Manual Trigger</strong>: Run workflow manually from GitHub Actions tab</li>
-<li><strong>Database Migrations</strong>: Automatically runs when migrations are pushed</li>
-<li><strong>Weekly Schedule</strong>: Runs every Monday at 9 AM UTC</li>
-</ol>
-<h4>Workflow Steps</h4>
-<ol>
-<li>Checkout repository</li>
-<li>Install dependencies</li>
-<li>Setup Supabase CLI</li>
-<li>Generate types from remote database</li>
-<li>Check for changes</li>
-<li>Commit and push if changed</li>
-<li>Create PR (for scheduled runs)</li>
-</ol>
-<h4>Required Secrets</h4>
-<p>Configure these in GitHub repository settings:</p>
-<ul>
-<li><code>SUPABASE_PROJECT_ID</code>: Your Supabase project ID (e.g., <code>bgbavxtjlbvgplozizxu</code>)</li>
-<li><code>SUPABASE_ACCESS_TOKEN</code>: Supabase access token with read permissions</li>
-</ul>
-<hr>
-<h2>🔧 Setup Instructions</h2>
-<h3>1. Install Supabase CLI</h3>
-<p>The Supabase CLI is included as a dev dependency. Run <code>npm install</code>.</p>
-<h3>2. Configure Environment Variables</h3>
-<h4>Local Development</h4>
-<p>Create <code>.env.local</code> file with <code>SUPABASE_ACCESS_TOKEN=your-access-token-here</code>.</p>
-<h4>GitHub Actions</h4>
-<p>Add secrets to repository:</p>
-<ol>
-<li>Go to repository <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong></li>
-<li>Add <code>SUPABASE_PROJECT_ID</code></li>
-<li>Add <code>SUPABASE_ACCESS_TOKEN</code></li>
-</ol>
-<h3>3. Generate Access Token</h3>
-<ol>
-<li>Go to <a href="https://supabase.com/dashboard">Supabase Dashboard</a></li>
-<li>Navigate to <strong>Settings</strong> → <strong>API</strong></li>
-<li>Copy <strong>Project API keys</strong> → <strong>service_role</strong> key</li>
-<li>Or create a new access token in <strong>Account</strong> → <strong>Access Tokens</strong></li>
-</ol>
-<hr>
-<h2>📝 Usage Examples</h2>
-<h3>Manual Type Generation</h3>
-<p>Run <code>npm run types:generate</code> to generate from remote database, <code>npm run types:generate:local</code> for local, and <code>npm run types:check</code> to verify they are up-to-date.</p>
-<h3>Verify Types After Generation</h3>
-<p>Run <code>npm run types:check</code>. Expected output shows: file path and size, file age (recent), presence of Database/Tables/TablesInsert/TablesUpdate/Json types, and total tables count.</p>
-<h3>Trigger GitHub Actions Workflow</h3>
-<ol>
-<li>Go to <strong>Actions</strong> tab in GitHub</li>
-<li>Select <strong>Update Supabase Types</strong> workflow</li>
-<li>Click <strong>Run workflow</strong></li>
-<li>Select branch (usually <code>main</code>)</li>
-<li>Click <strong>Run workflow</strong> button</li>
-</ol>
-<hr>
-<h2>🔄 Workflow Integration</h2>
-<h3>Pre-commit Hook (Optional)</h3>
-<p>Add to <code>.husky/pre-commit</code> to run <code>npm run types:check</code> before each commit.</p>
-<h3>CI/CD Integration</h3>
-<p>Add a step to <code>.github/workflows/deploy.yml</code> that runs <code>npm run types:check</code>.</p>
-<hr>
-<h2>📊 Type File Structure</h2>
-<p>The generated <code>src/integrations/supabase/types.ts</code> file contains a <code>Database</code> type with a <code>public</code> schema holding <code>Tables</code> (each with <code>Row</code>, <code>Insert</code>, <code>Update</code> subtypes), <code>Views</code>, <code>Functions</code>, and <code>Enums</code>. Helper types <code>Tables&lt;T&gt;</code>, <code>TablesInsert&lt;T&gt;</code>, and <code>TablesUpdate&lt;T&gt;</code> are also exported for convenient usage.</p>
-<hr>
-<h2>🛠️ Troubleshooting</h2>
-<h3>Types Not Generating</h3>
-<p><strong>Problem</strong>: <code>npm run types:generate</code> fails</p>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li>Check <code>SUPABASE_ACCESS_TOKEN</code> is set</li>
-<li>Verify Supabase CLI is installed: <code>npx supabase --version</code></li>
-<li>Check project ID is correct: <code>bgbavxtjlbvgplozizxu</code></li>
-<li>Verify network connection to Supabase</li>
-</ol>
-<h3>Types Out of Date</h3>
-<p><strong>Problem</strong>: Types don&#39;t match database schema</p>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li>Run <code>npm run types:generate</code> manually</li>
-<li>Check GitHub Actions workflow ran successfully</li>
-<li>Verify database migrations were applied</li>
-<li>Check for manual schema changes in Supabase dashboard</li>
-</ol>
-<h3>GitHub Actions Failing</h3>
-<p><strong>Problem</strong>: Workflow fails to update types</p>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li>Check secrets are configured correctly</li>
-<li>Verify <code>SUPABASE_ACCESS_TOKEN</code> has read permissions</li>
-<li>Check workflow logs for specific errors</li>
-<li>Ensure repository has write permissions for GitHub Actions</li>
-</ol>
-<hr>
-<h2>📚 Best Practices</h2>
-<ol>
-<li><p><strong>Always regenerate types after schema changes</strong> — run <code>npm run types:generate</code></p>
-</li>
-<li><p><strong>Check types before committing</strong> — run <code>npm run types:check</code></p>
-</li>
-<li><p><strong>Review automated PRs carefully</strong></p>
-<ul>
-<li>Check for breaking changes</li>
-<li>Verify table/column additions/removals</li>
-<li>Test locally if needed</li>
-</ul>
-</li>
-<li><p><strong>Keep types in sync</strong></p>
-<ul>
-<li>Run weekly automated updates</li>
-<li>Regenerate after migrations</li>
-<li>Monitor GitHub Actions workflow</li>
-</ul>
-</li>
-<li><p><strong>Use generated types in code</strong> — import <code>Tables</code> and <code>TablesInsert</code> from <code>@/integrations/supabase/types</code> for type-safe queries</p>
-</li>
-</ol>
-<hr>
-<h2>🔗 Related Documentation</h2>
-<ul>
-<li><a href="https://supabase.com/docs/reference/cli">Supabase CLI Documentation</a></li>
-<li><a href="https://supabase.com/docs/guides/api/rest/generating-types">Supabase TypeScript Support</a></li>
-<li><a href="https://docs.github.com/en/actions">GitHub Actions Documentation</a></li>
-</ul>
-<hr>
+<h2>Related companion: Edge Function OpenAPI</h2>
+<p>The frontend types cover the database. The <strong>Supabase Edge Functions</strong> API surface (Deno) has no auto-generated schema; it is hand-maintained in <code>scripts/edge-endpoints.json</code> and built to <code>docs/api/openapi-edge.json</code> + <code>public/api/openapi-edge.json</code> via <code>node scripts/build-openapi-edge.mjs</code>. Add an entry there whenever you add/change an edge function. The <strong>MIVAA Python backend</strong> API is auto-generated by FastAPI and served live at <code>https://v1api.materialshub.gr/openapi.json</code>.</p>
 
 </div></body></html>
