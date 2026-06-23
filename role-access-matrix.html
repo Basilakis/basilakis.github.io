@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Role &amp; Access Matrix</h1>
+<p>Single source of truth for <strong>who can see/do what</strong> on the platform. Reflects the
+code as of this writing — where the model is <em>not</em> enforced, it says so explicitly.</p>
+<blockquote>
+<p>TL;DR — there are <strong>two different &quot;role&quot; concepts</strong>, and day-to-day access is driven
+by the <strong>persona</strong> (derived from workspace membership), not by the global account role.</p>
+</blockquote>
+<hr>
+<h2>1. The two &quot;role&quot; concepts</h2>
+<h3>a) Account role — <code>roles</code> table (<code>user_profiles.role_id</code>)</h3>
+<p>A global, per-user value — <strong>the access tier</strong>. Set: <code>user</code>(1) · <code>sales</code>(2) · <code>supplier</code>(3) · <code>architect</code>(4) · <code>finance</code>(5) · <code>admin</code>(6). (Dealer+Factory merged into <strong>supplier</strong>; Super Admin merged into <strong>admin</strong>, 2026-06.)</p>
+<p>This is now the <strong>primary driver of the persona</strong> (see §2) — <code>resolvePersona()</code> maps the account role to a persona, falling back to the workspace-derived persona only for <code>user</code>/unset. So setting the Role under <strong>Admin → CRM → Users</strong> is what actually grants a user&#39;s capabilities.</p>
+<p>Reserved-tier rule: <strong><code>admin</code> is granted operator (see-all) ONLY via root-workspace ownership</strong> (<code>isPlatformOperator</code>), never by the account role alone — a tenant can&#39;t self-escalate to platform operator. <code>is_admin_user()</code> RLS still keys on the <code>admin</code> role name.</p>
+<p>Managed in <strong>Admin → CRM → Users</strong> (inline Role dropdown).</p>
+<h3>b) Workspace membership role — <code>workspace_members.role</code></h3>
+<p>Per workspace: <code>owner</code> · <code>admin</code> · <code>member</code> · <code>client</code> · <code>accountant</code> · <code>sales</code>. Combined with the workspace&#39;s <strong>marketplace rank</strong> (<code>operator</code> / <code>dealer</code> / <code>architect</code>) and the platform-operator flag, this resolves to a single <strong>persona</strong>, which is what gates features.</p>
+<p>Source of truth: <a href="../src/auth/capabilities.ts"><code>src/auth/capabilities.ts</code></a>.</p>
+<hr>
+<h2>2. Personas (the real access tiers)</h2>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Account role that grants it</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>operator</strong></td>
+<td>(root-workspace ownership only)</td>
+<td><code>admin</code> of the <strong>root</strong> workspace. NOT granted by account role alone.</td>
+</tr>
+<tr>
+<td><strong>dealer</strong> (= Supplier tier)</td>
+<td><code>supplier</code> (or legacy <code>dealer</code>/<code>factory</code>)</td>
+<td>Full business node + downstream.</td>
+</tr>
+<tr>
+<td><strong>architect</strong></td>
+<td><code>architect</code></td>
+<td>Sells to end clients; own downstream.</td>
+</tr>
+<tr>
+<td><strong>accountant</strong> (Finance surface)</td>
+<td><code>finance</code></td>
+<td>Finance module; the <code>finance</code> role keeps <strong>expense-approval</strong> rights (it is NOT the restricted external accountant).</td>
+</tr>
+<tr>
+<td><strong>sales</strong></td>
+<td><code>sales</code></td>
+<td>Sales portal + own customers.</td>
+</tr>
+<tr>
+<td><strong>staff</strong> / <strong>end_user</strong></td>
+<td><code>user</code> / unset → workspace fallback</td>
+<td>Team member / project client, resolved from the workspace role.</td>
+</tr>
+</tbody></table>
+<p>Resolution (<code>resolvePersona()</code>): <code>isPlatformOperator</code> → operator; else <strong>account role</strong> maps the tenant tier; else the legacy workspace-derived persona (<code>client</code>→end_user, <code>accountant</code>→accountant, <code>sales</code>→sales, owner/admin by rank, member→staff).</p>
+<p>The <strong>invited external accountant</strong> (workspace role <code>accountant</code>, #202) still resolves to the accountant persona but is flagged <code>isAccountant</code> to <em>restrict</em> it (no expense approval / no settings) — distinct from the internal <code>finance</code> account role.</p>
+<hr>
+<h2>3. Capability matrix (persona → what they can do)</h2>
+<p>✓ = granted. From <code>PERSONA_CAPABILITIES</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th align="center">operator</th>
+<th align="center">dealer</th>
+<th align="center">architect</th>
+<th align="center">staff</th>
+<th align="center">accountant</th>
+<th align="center">sales</th>
+<th align="center">end_user</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>platform.admin</code> (/admin shell)</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>catalog.import</code></td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>downstream.view</code></td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>network.manage</code> (/network)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>pricing.manage</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>finance.manage</code> (/finance)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>invoice.issue</code> (/pos)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>crm.view</code> (/crm)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>warehouse.manage</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>marketplace.browse</code> (/discover)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>quotes.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>sales.portal</code> (/sales)</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>projects.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>moodboards.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>agent.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>inbox.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+</tr>
+</tbody></table>
+<p>Notes:</p>
+<ul>
+<li><strong>operator</strong> = everything <strong>except</strong> <code>sales.portal</code> (the Sales portal is the rep&#39;s surface only).</li>
+<li><strong>dealer</strong> and <strong>architect</strong> are identical today (full business set); they differ only in marketplace position (dealer sells downstream, architect sells to end users).</li>
+<li><strong>accountant</strong> is intentionally narrow — Finance surface only; within Finance, write-ops are further gated by <code>isWorkspaceManager</code> / <code>canOperateFinance</code>.</li>
+<li><strong>sales</strong> sees only their <strong>own</strong> quotes (RLS on <code>user_id</code>); customer financials are workspace-scoped reads.</li>
+</ul>
+<hr>
+<h2>4. Enforcement layers (where it&#39;s actually checked)</h2>
+<ol>
+<li><strong><code>AuthGuard</code></strong> — authenticated or not. Wraps the user-facing app.</li>
+<li><strong><code>CapabilityGuard</code> / <code>usePermissions().can(cap)</code></strong> — per-route/per-feature persona capability check (the table above). e.g. <code>/finance</code> needs <code>finance.manage</code>, <code>/network</code> needs <code>network.manage</code>.</li>
+<li><strong><code>AdminGuard</code></strong> — wraps all <code>/admin/*</code>. Passes only for <strong>Platform Operator</strong> (<code>owner</code>/<code>admin</code>/<code>super_admin</code> of the <strong>root</strong> workspace). A dealer/architect who owns their own workspace does <strong>not</strong> pass.</li>
+<li><strong>Edge-function <code>allowedRoles</code></strong> (server, <code>_shared/auth.ts</code> — additive: global account role <strong>or</strong> any workspace role):<ul>
+<li><code>admin</code> / <code>super_admin</code> / <code>owner</code> → all admin/CRM/email/messaging functions.</li>
+<li><code>crm-api</code> also allows <code>factory</code>.</li>
+<li>Finance functions allow <code>finance</code>; issuing also allows <code>accountant</code>.</li>
+<li>Agents: KAI / Interior Designer → <code>viewer/member/admin/owner</code>; Demo + <code>insights</code>/<code>seo</code> aliases → <code>admin/owner</code> only.</li>
+</ul>
+</li>
+<li><strong>Postgres RLS</strong> — <code>is_admin_user()</code> (account role = <strong><code>admin</code></strong> only — note: not <code>super_admin</code>), <code>is_workspace_member(workspace_id)</code> (row belongs to a workspace you&#39;re in). Used by CRM/activity/notes/finance tables.</li>
+</ol>
+<hr>
+<h2>5. Public (no auth) surfaces</h2>
+<p><code>/tools</code> (IP-quota), <code>/knowledge-base</code>, <code>/brand/:slug</code>, <code>/u/:userId</code>, <code>/ar/:productId</code>, and token-gated links (<code>/board/:id</code>, <code>/q/:token</code>, <code>/c/:slug</code>, <code>/cv/:token</code>, <code>/pay/:token</code>).</p>
+<hr>
+<h2>6. Known gaps / notes (be honest)</h2>
+<ul>
+<li>The role set is not a numeric <em>ladder</em> — <code>level</code> is informational. Access = persona-capability + operator(root) + edge <code>allowedRoles</code>.</li>
+<li><strong>Account role drives the persona for the frontend</strong> (2026-06 rewire). The marketplace <strong>#227 pyramid still keys on the workspace tree</strong> (a supplier/architect <em>node</em> with parent/rank/commission). So the Role grants the <em>surface</em>; the workspace node provides the <em>downstream data</em> (<code>/network</code> shows only the caller&#39;s own subtree via <code>get_manageable_workspaces</code>). A user tagged <code>supplier</code> with no workspace node sees the surface but an empty network until a node exists.</li>
+<li><code>super_admin</code> was merged into <code>admin</code>; leftover <code>&#39;super_admin&#39;</code> strings in edge <code>allowedRoles</code> are harmless dead entries.</li>
+<li>Agent <strong>sub-agent orchestration</strong> is documented as admin/owner-only, but tool-list filtering by role at injection time should be re-verified.</li>
+</ul>
+<hr>
+<p><em>Last verified against <code>src/auth/capabilities.ts</code>, <code>src/components/core/{AuthGuard,AdminGuard,CapabilityGuard}.tsx</code>, <code>supabase/functions/_shared/auth.ts</code>, and the live <code>roles</code> table. Update this file when <code>PERSONA_CAPABILITIES</code> or the guards change.</em></p>
+
+</div></body></html>

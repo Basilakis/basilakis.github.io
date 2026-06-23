@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,19 +19,41 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>PDF Processing Pipeline - Complete Technical Guide</h1>
+<blockquote>
+<p><strong>⚠️ ARCHITECTURE UPDATED 2026-06-13 — PaddleOCR-VL structural backbone (structure-first).</strong>
+The layout + OCR front-end is now a single <strong>PaddleOCR-VL</strong> two-stage document parser
+(<code>PaddlePaddle/PaddleOCR-VL-1.6</code>, 0.9B) hosted on <strong>Modal</strong>: <strong>PP-DocLayoutV2</strong> (RT-DETR
+detector + pointer network) localizes regions, labels them, and predicts reading order; the
+<strong>0.9B VLM</strong> recognizes the content inside each region (text, tables→markdown, formulas→LaTeX,
+charts). It runs as <strong>Stage 1, BEFORE discovery</strong>, persisting <code>document_layout_analysis</code> rows
+with <code>processing_version=&#39;paddleocr-vl&#39;</code>; discovery (via <code>build_page_text_from_layout_cache</code>),
+Stage 2 chunking, and Stage 3 image crops all read that cache. It <strong>replaced Surya-2 on
+2026-06-13</strong>; Surya-2 had earlier replaced <strong>YOLO + Chandra + <code>merge_layout</code></strong> — so YOLO,
+Chandra, Surya, and <code>merge_layout</code> (and their managers) are all <strong>deleted with no consumer</strong>.
+OCR is also PaddleOCR (<code>ocr_service._call_paddleocr</code>). Both GPU endpoints — <strong>SLIG</strong>
+(visual embeddings) and PaddleOCR-VL (the structural pass) — run on <strong>Modal</strong>; HuggingFace
+hosts nothing (SLIG migrated off HuggingFace 2026-06-14).
+See the <strong>&quot;PDF Pipeline — PaddleOCR-VL structural backbone&quot;</strong> section in <code>CLAUDE.md</code> and
+<a href="./ai-models-complete-list.html">ai-models-complete-list.md</a> for the current model map.
+<strong>Reading note:</strong> older sub-sections below still carry YOLO/Chandra wording inline — wherever
+this doc says &quot;YOLO detects regions&quot; or &quot;Chandra OCRs the page&quot;, that is the <strong>retired</strong> design;
+read &quot;PaddleOCR-VL does both in one structural pass on Modal&quot;. The remaining stages (vision
+analysis = Claude Opus 4.7, embeddings, chunking = Sonnet 4.6, products) are unchanged.</p>
+</blockquote>
 <p>14-stage intelligent pipeline for transforming material catalogs into searchable knowledge.</p>
 <blockquote>
 <p><strong>📚 Related Documentation:</strong></p>
 <ul>
-<li><a href="./async-processing-and-limits.md">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
-<li><a href="./product-discovery-architecture.md">Product Discovery Architecture</a> - AI-powered product extraction</li>
-<li><a href="./system-architecture.md">System Architecture</a> - Overall platform architecture</li>
+<li><a href="./async-processing-and-limits.html">Async Processing &amp; Limits</a> - Concurrency limits and async architecture</li>
+<li><a href="./product-discovery-architecture.html">Product Discovery Architecture</a> - AI-powered product extraction</li>
+<li><a href="./system-architecture.html">System Architecture</a> - Overall platform architecture</li>
 </ul>
 </blockquote>
 <hr>
@@ -38,14 +61,14 @@
 <p><strong>Key Concept</strong>: After Stage 0 discovers products, Stages 1-5 process EACH product individually, extracting and linking all related data (chunks, images, tables) before moving to the next product.</p>
 <p>┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 0A: Product Discovery (0-10%)                             │
-│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ AI Model: Claude Opus 4.7 / GPT-4o                           │
 │ Purpose: Extract products with ALL metadata (inseparable)      │
 │ Output: Products with metadata JSONB (factory, specs, etc.)    │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 0B: Document Entity Discovery (10-15%) - OPTIONAL         │
-│ AI Model: Claude Sonnet 4.5 / GPT-4o                           │
+│ AI Model: Claude Opus 4.7 / GPT-4o                           │
 │ Purpose: Extract certificates, logos, specifications           │
 │ Output: Document entities stored separately with relationships │
 └─────────────────────────────────────────────────────────────────┘
@@ -171,27 +194,29 @@
 </code></pre>
 <p>┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 6: AI Classification (70-75%) - URL-BASED PROCESSING      │
-│ Model: Qwen3-VL 17B Vision                                │
+│ Model: Claude Opus 4.7 (Anthropic tool use)                    │
+│ Schema: VisionAnalysis Pydantic + VISION_ANALYSIS_TOOL          │
 │ Process: Download from Supabase URLs → Classify → Delete       │
 │ Output: Material vs non-material classification                │
 │                                                                 │
 │ 🚀 URL-BASED ARCHITECTURE:                                     │
 │   1. Download image from Supabase URL to RAM                  │
 │   2. Convert to base64 on-the-fly                             │
-│   3. Classify with Qwen Vision (material/non-material)       │
+│   3. Classify with Claude Opus 4.7 (schema-locked tool call)  │
 │   4. Delete from RAM immediately                               │
 │   5. Delete non-material images from Supabase                 │
 │                                                                 │
 │ Memory: ~1-2MB per image (temporary download)                  │
-│ Time: ~2-3 seconds per image                                   │
+│ Time: ~3-8 seconds per image                                   │
 │ Disk: 0 images (everything in RAM)                            │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 7: SLIG Embeddings (75-85%) - URL-BASED PROCESSING        │
-│ Models: SigLIP2 via SLIG cloud endpoint (768D, 5 types)       │
+│ STAGE 7: SLIG + Voyage Embeddings (75-85%) - URL-BASED          │
+│ Models: SigLIP2/SLIG (768D, 1 visual) + Voyage voyage-4        │
+│         (1024D, 4 aspect: color/texture/style/material)        │
 │ Process: Use Supabase URLs directly (NO download!)            │
-│ Output: 5 SLIG 768D embeddings per material image              │
+│ Output: 1×768D visual + 4×1024D aspect + 1×1024D understanding │
 │                                                                 │
 │ 🚀 ZERO-DOWNLOAD ARCHITECTURE:                                │
 │   1. Pass Supabase URL to SLIG cloud endpoint                 │
@@ -206,26 +231,27 @@
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STAGE 8: Qwen Vision Analysis (85-90%) - URL-BASED PROCESSING  │
-│ Model: Qwen3-VL 17B Vision                                │
+│ STAGE 8: Vision Analysis (85-90%) - URL-BASED PROCESSING       │
+│ Model: Claude Opus 4.7 (Anthropic tool use)                    │
+│ Schema: VisionAnalysis Pydantic + VISION_ANALYSIS_TOOL          │
 │ Process: Download from Supabase URLs → Analyze → Delete       │
 │ Output: Quality scores, material properties, confidence        │
 │                                                                 │
 │ 🚀 ON-DEMAND DOWNLOAD ARCHITECTURE:                           │
 │   1. Download image from Supabase URL to RAM                  │
 │   2. Convert to base64 on-the-fly                             │
-│   3. Analyze with Qwen Vision (quality, properties)          │
+│   3. Analyze with Claude Opus 4.7 (schema-locked tool call)   │
 │   4. Delete from RAM immediately                               │
 │   5. Batch cleanup after every 10 images                       │
 │                                                                 │
 │ Memory: ~1-2MB per image (temporary download)                  │
-│ Time: ~3-5 seconds per image                                   │
+│ Time: ~3-8 seconds per image                                   │
 │ Disk: 0 images (everything in RAM)                            │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 9: Product Creation (90-95%)                              │
-│ Models: Claude Haiku 4.5 → Claude Sonnet 4.5                   │
+│ Models: Claude Haiku 4.5 → Claude Opus 4.7                     │
 │ Output: Product records with relationships                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -273,7 +299,7 @@
 <h3>Data Flow Example</h3>
 <p><strong>Product: &quot;NOVA&quot; (Pages 12-14)</strong></p>
 <p>Stage 0 discovers: <code>name=&quot;NOVA&quot;</code>, <code>page_range=[12,13,14]</code></p>
-<p>Stage 1 (Layout + Tables, FOR NOVA ONLY): YOLO detects 15 regions on pages 12-14; Camelot extracts 3 tables from page 13; tables stored with product_id = NOVA&#39;s ID.</p>
+<p>Stage 1 (Layout + Tables, FOR NOVA ONLY): the PaddleOCR-VL structural pass detects 15 regions on pages 12-14 and recognizes their content (table regions → markdown/HTML preserved in <code>metadata.html</code>); Camelot extracts 3 tables from page 13; tables stored with product_id = NOVA&#39;s ID. (Note: the structural pass actually runs once per document as Stage 1 BEFORE discovery; this per-product framing reflects how each product reads its slice of the shared <code>document_layout_analysis</code> cache.)</p>
 <p>Stage 2 (Text Chunking, FOR NOVA ONLY): Extracts text from pages 12-14 only, creates 45 chunks, each with product_id = NOVA&#39;s ID.</p>
 <p>Stage 3 (Image Extraction, FOR NOVA ONLY): Extracts images from pages 12-14 only, uploads 12 images to Supabase, each with product_id = NOVA&#39;s ID.</p>
 <p>Stage 4 (Product Creation): Creates product record for NOVA with metadata stored in JSONB.</p>
@@ -305,7 +331,7 @@
 <h2>📋 Detailed Stage Breakdown</h2>
 <h3>Stage 0A: Product Discovery (0-10%)</h3>
 <p><strong>Purpose</strong>: Extract products with ALL metadata (Products + Metadata = Inseparable)</p>
-<p><strong>AI Model</strong>: Claude Sonnet 4.5 or GPT-4o</p>
+<p><strong>AI Model</strong>: Claude Opus 4.7 or GPT-4o</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li>Extract full PDF text</li>
@@ -330,7 +356,7 @@
 <hr>
 <h3>Stage 0B: Document Entity Discovery (10-15%) - OPTIONAL</h3>
 <p><strong>Purpose</strong>: Extract certificates, logos, specifications as separate knowledge base</p>
-<p><strong>AI Model</strong>: Claude Sonnet 4.5 or GPT-4o</p>
+<p><strong>AI Model</strong>: Claude Opus 4.7 or GPT-4o</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li>Analyze PDF for document entities</li>
@@ -354,21 +380,29 @@
 <li>&quot;Get specifications for product NOVA&quot;</li>
 </ul>
 <hr>
-<h3>Stage 1: Focused Extraction + YOLO Layout Detection (15-30%)</h3>
-<p><strong>File</strong>: <code>app/api/pdf_processing/stage_1_focused_extraction.py</code></p>
-<p><strong>Purpose</strong>: Extract product pages, detect layout regions, and extract tables</p>
+<h3>Stage 1: Structure-First Layout + OCR (PaddleOCR-VL) — runs BEFORE discovery</h3>
+<p><strong>File</strong>: <code>app/api/pdf_processing/stage_1_layout_precompute.py</code> (structural pass) + <code>app/api/pdf_processing/stage_1_focused_extraction.py</code> (per-product slice + tables)</p>
+<blockquote>
+<p><strong>Architecture (2026-06-13)</strong>: This stage is now a single <strong>PaddleOCR-VL</strong> structural pass run
+<strong>once per document, BEFORE discovery</strong> — not a per-product YOLO step. The text below has been
+rewritten to the current design. The retired YOLO + Chandra + <code>merge_layout</code> front-end (and
+Surya-2 before it) had no equivalent of structure-first ordering.</p>
+</blockquote>
+<p><strong>Purpose</strong>: In one pass, localize + label every region, recognize its content, predict reading order, and persist a <code>document_layout_analysis</code> cache (<code>processing_version=&#39;paddleocr-vl&#39;</code>) that discovery, chunking, and image crops all read.</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li><strong>Page Mapping</strong>: Map catalog pages to physical PDF pages</li>
-<li><strong>YOLO Layout Detection</strong>: Detect TEXT, IMAGE, TABLE, TITLE, CAPTION regions</li>
-<li><strong>Table Extraction</strong>: Extract structured tables using Camelot (NEW!)</li>
-<li><strong>Layout Region Storage</strong>: Store detected regions for intelligent chunking</li>
+<li><strong>PaddleOCR-VL structural pass</strong> (<code>mode=page</code>): <strong>PP-DocLayoutV2</strong> (RT-DETR detector + pointer network) localizes regions + labels them + predicts reading order; the <strong>0.9B VLM</strong> recognizes content inside each region (text, tables→markdown/HTML, formulas→LaTeX, charts).</li>
+<li><strong>Layout cache persistence</strong>: Map the <code>/parse</code> JSON onto the unchanged <code>document_layout_analysis.layout_elements[]</code> schema and persist with <code>processing_version=&#39;paddleocr-vl&#39;</code>.</li>
+<li><strong>Table Extraction</strong>: Camelot extracts structured tables (table region <code>content</code> markdown/HTML is also preserved in <code>metadata.html</code>).</li>
 </ol>
 <p><strong>Services Used</strong>:</p>
 <ul>
-<li><code>YOLOLayoutDetector</code> - Layout detection using YOLO model</li>
-<li><code>TableExtractor</code> - Table extraction using Camelot (guided by YOLO)</li>
+<li><code>PaddleOCRManager.from_config</code> (<code>paddleocr_endpoint_manager.py</code>) — <code>run_structural_pass</code> (page) holds inference + retry + <code>paddleocr_metrics</code> telemetry; lifecycle (warmup <code>/health</code> probe / scale-to-zero) delegated to <code>ModalEndpointProvider</code> in <code>endpoint_providers.py</code></li>
+<li><code>paddleocr_pipeline.py</code> — maps <code>/parse</code> JSON onto <code>document_layout_analysis.layout_elements[]</code>; PP-DocLayout labels (<code>doc_title</code>/<code>paragraph_title</code>/<code>text</code>/<code>table</code>/<code>image</code>/<code>figure</code>/<code>chart</code>/…) → existing <code>region_type</code> vocab via <code>PADDLE_LABEL_TO_REGION_TYPE</code>. RT-DETR <strong>pixel</strong> bboxes → normalized 0..1 at the parser boundary → denormalized at crop render in <code>region_to_layout_element</code></li>
+<li><code>TableExtractor</code> — table extraction using Camelot</li>
 </ul>
+<p><strong>Hosting</strong>: Modal app <code>paddleocr-vl</code> at <code>https://basilakis--paddleocr-vl-paddleservice-web.modal.run</code>, GPU L4, scale-to-zero (<code>min_containers=0</code> + <code>scaledown_window=120</code> = $0 idle, <code>max_containers=4</code>). Custom contract: <code>GET /health</code> (unauth warmup probe) + <code>POST /parse {image_b64, mode}</code> → <code>{regions:[{bbox:[x0,y0,x1,y1] px, label, content, order}], width, height}</code>; <code>mode=page</code> = structural pass, <code>mode=block</code> = per-crop OCR. Cold start ~90s (paid once per job at warmup); ~1-3s/page warm.</p>
 <p><strong>Data Extracted</strong>:</p>
 <ol>
 <li><p><strong>Page Mapping</strong></p>
@@ -377,18 +411,17 @@
 <li>Handles 2-page spreads and standard layouts</li>
 </ul>
 </li>
-<li><p><strong>YOLO Layout Regions</strong></p>
+<li><p><strong>Layout Regions</strong> (PaddleOCR-VL, with content + reading order)</p>
 <ul>
-<li>TEXT regions - Body text, paragraphs</li>
-<li>IMAGE regions - Product images, diagrams</li>
-<li>TABLE regions - Specification tables, data grids</li>
-<li>TITLE regions - Headers, section titles</li>
-<li>CAPTION regions - Image captions, labels</li>
+<li><code>text</code> / <code>paragraph_title</code> / <code>doc_title</code> regions — body text, headings (content recognized inline)</li>
+<li><code>image</code> / <code>figure</code> / <code>chart</code> regions — product images, diagrams (these are the product-crop sources)</li>
+<li><code>table</code> regions — specification tables (content preserved as markdown/HTML in <code>metadata.html</code>)</li>
+<li>formula regions — recognized to LaTeX</li>
 </ul>
 </li>
-<li><p><strong>Tables</strong> (NEW!)</p>
+<li><p><strong>Tables</strong></p>
 <ul>
-<li>Structured table data with headers and rows</li>
+<li>Structured table data with headers and rows (Camelot) + markdown/HTML from the VLM in <code>metadata.html</code></li>
 <li>Table type classification (specifications, dimensions, etc.)</li>
 <li>Confidence scores for extraction quality</li>
 <li>Page numbers for linking to products</li>
@@ -397,18 +430,74 @@
 </ol>
 <p><strong>Database Storage</strong>:</p>
 <ul>
-<li><code>product_layout_regions</code> table - YOLO-detected regions</li>
-<li><code>product_tables</code> table - Extracted tables with metadata</li>
+<li><code>document_layout_analysis</code> table — PaddleOCR-VL regions + recognized content + reading order (<code>processing_version=&#39;paddleocr-vl&#39;</code>)</li>
+<li><code>product_layout_regions</code> table — per-product region slice</li>
+<li><code>product_tables</code> table — extracted tables with metadata</li>
 </ul>
-<p><strong>Returns</strong>: A dict with <code>product_pages</code> (set of physical PDF page indices), <code>layout_regions</code> (list of YOLO-detected LayoutRegion objects), <code>layout_stats</code> (total_regions, text_regions, image_regions, table_regions, title_regions counts), and <code>tables_extracted</code> (integer count).</p>
+<p><strong>Returns</strong>: A dict with <code>product_pages</code> (set of physical PDF page indices), <code>layout_regions</code> (list of LayoutRegion objects mapped from the PaddleOCR-VL <code>/parse</code> output), <code>layout_stats</code> (total_regions, text_regions, image_regions, table_regions, title_regions counts), and <code>tables_extracted</code> (integer count).</p>
 <p><strong>Benefits</strong>:</p>
 <ul>
 <li>40-60% reduction in processing time</li>
 <li>Focused on relevant content</li>
 <li>Reduced noise in embeddings</li>
-<li><strong>Layout-aware chunking</strong> - Respects document structure</li>
-<li><strong>Table extraction</strong> - Structured data for product specs</li>
+<li><strong>Layout-aware chunking</strong> — respects document structure</li>
+<li><strong>Structure-first reading order</strong> — discovery reads reading-order text from the cache instead of raw <code>page.get_text()</code></li>
+<li><strong>Table extraction</strong> — structured data for product specs</li>
+<li><strong>Tighter product crops</strong> — dedicated RT-DETR boxes → cleaner crops → better SLIG visual embeddings</li>
 </ul>
+<hr>
+<h3>Stage 1.5: Page-Level Layout + OCR cache (folded into the PaddleOCR-VL structural pass)</h3>
+<blockquote>
+<p><strong>Architecture (2026-06-13)</strong>: Layout + OCR are now a <strong>single PaddleOCR-VL pass</strong> (Stage 1
+above). There is no longer a separate YOLO-layout-plus-Chandra-OCR merge step — the VLM
+recognizes content inside every detected region in the same call, so <code>merge_layout</code> is deleted.
+This sub-section is retained to document the resume-skip / cache-status mechanics, reframed to
+PaddleOCR-VL. The historical Chandra/<code>merge_layout</code> retry mechanics below the divider are kept as
+a <strong>tombstone</strong> of the retired design.</p>
+</blockquote>
+<p><strong>Purpose</strong>: Run the PaddleOCR-VL structural pass, persist results to <code>document_layout_analysis</code> (<code>processing_version=&#39;paddleocr-vl&#39;</code>), drive resume-skip logic, and feed canonical reading-order page text into discovery + chunking (via <code>build_page_text_from_layout_cache</code>).</p>
+<p><strong>Model</strong>: <strong>PaddleOCR-VL</strong> (<code>PaddlePaddle/PaddleOCR-VL-1.6</code>, 0.9B) on <strong>Modal</strong>, called through <code>PaddleOCRManager.run_structural_pass</code> (<code>mode=page</code>).</p>
+<p><strong>Failure marker</strong>: <code>OCRResult.method=&#39;paddleocr&#39;</code> / <code>&#39;paddleocr_failed&#39;</code> (not empty list). Consumers must check <code>method</code>, not emptiness, to distinguish failure from &quot;no text on page&quot;.</p>
+<p><strong>Per-attempt metrics</strong> — <code>paddleocr_metrics</code> table (inference + retry telemetry held by <code>PaddleOCRManager</code>). The legacy <code>chandra_ocr_metrics</code> table describes the retired engine.</p>
+<p><strong><code>processing_version</code> / <code>cache_status</code> semantics</strong> — every <code>document_layout_analysis</code> row is stamped <code>processing_version=&#39;paddleocr-vl&#39;</code>. <code>analysis_metadata.cache_status</code> still distinguishes &quot;ran clean&quot; from &quot;ran but failed and should be retried&quot;:</p>
+<table>
+<thead>
+<tr>
+<th>cache_status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>success</code></td>
+<td>PaddleOCR-VL ran clean and produced regions + text</td>
+</tr>
+<tr>
+<td><code>empty_page</code></td>
+<td>the page is empty (no recovery needed)</td>
+</tr>
+<tr>
+<td><code>ocr_failed</code></td>
+<td>the structural pass failed — page should be retried, NOT skipped on resume</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Retired cache_status values</strong>: <code>yolo_only</code> (&quot;YOLO ran, Chandra produced no text&quot;) and
+<code>page_failed</code> (&quot;YOLO itself failed&quot;) belonged to the YOLO+Chandra design and no longer occur —
+there is no separate detector that can succeed while OCR fails, since one VLM does both.</p>
+</blockquote>
+<p><strong>Resume-skip query</strong> in <code>precompute_document_layout</code> filters out <code>ocr_failed</code> rows (and accepts <code>processing_version=&#39;paddleocr-vl&#39;</code>), so transient structural-pass failures no longer permanently &quot;skip&quot; pages on every subsequent run.</p>
+<p><strong>Image extraction bbox normalization</strong>: bbox is normalized 0..1 in both <code>pdf_processor.py</code> extraction paths (RT-DETR pixel boxes are normalized at the parser boundary) — fixed a Stage 3 spread-assignment bug that had been treating it as PDF-points (every image was getting mis-assigned to the left page).</p>
+<p><strong>Returns</strong>: A dict with <code>pages_processed</code>, <code>pages_succeeded</code>, <code>pages_with_ocr_failure</code>, plus per-page <code>cache_status</code>.</p>
+<hr>
+<blockquote>
+<p><strong>TOMBSTONE — retired layout/OCR front-end (history, do not implement):</strong> Before 2026-06-13 the
+backbone was YOLO + Chandra + <code>merge_layout</code> (then briefly Surya-2). Chandra v2 was the sole OCR
+engine via a HuggingFace endpoint (<code>chandra_endpoint_manager.run_inference</code>) with retry-with-jitter
+(3 attempts at temperatures 0.0 / 0.4 / 0.8, widened 2026-05-03 from 0.0/0.1/0.2 after a ~55%
+cumulative failure rate), a balanced-bracket trimmer (<code>_strip_fences_and_junk</code>), the
+<code>chandra_ocr_metrics</code> table, <code>OCRResult.method=&#39;chandra_failed&#39;</code>, and <code>MIN_CONTAINMENT_RATIO=0.30</code>
+in <code>merge_layout</code>. Pytesseract + EasyOCR were removed entirely in 2026-05. All of this is deleted.</p>
+</blockquote>
 <p><strong>Output</strong>:</p>
 <ul>
 <li>Focused PDF with product content</li>
@@ -423,7 +512,7 @@
 <ol>
 <li><strong>Per-Product Processing</strong>: Extract text for EACH product individually</li>
 <li><strong>Page Range Filtering</strong>: Only process pages in product&#39;s page range</li>
-<li><strong>Layout-Aware Chunking</strong>: Use YOLO regions to guide chunking</li>
+<li><strong>Layout-Aware Chunking</strong>: Use the PaddleOCR-VL layout regions + reading order (from the <code>document_layout_analysis</code> cache) to guide chunking</li>
 <li><strong>Semantic Boundaries</strong>: Respect paragraph/sentence structure</li>
 <li><strong>Product Context</strong>: Add product_id and product_name to each chunk</li>
 </ol>
@@ -465,18 +554,18 @@
 <hr>
 <h3>Stage 3: Product-Centric Image Extraction (40-50%)</h3>
 <p><strong>File</strong>: <code>app/api/pdf_processing/stage_3_images.py</code></p>
-<p><strong>Tool</strong>: PyMuPDF + YOLO-Guided Extraction</p>
+<p><strong>Tool</strong>: PyMuPDF + Layout-Region-Guided Extraction (PaddleOCR-VL cache)</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li><strong>Per-Product Processing</strong>: Extract images for EACH product individually</li>
-<li><strong>YOLO Region Filtering</strong>: Only extract IMAGE regions detected by YOLO</li>
+<li><strong>Region Filtering</strong>: Only extract <code>IMAGE</code> / <code>FIGURE</code> / <code>chart</code> regions from the PaddleOCR-VL <code>document_layout_analysis</code> cache (these are the product-crop sources)</li>
 <li><strong>Page Range Filtering</strong>: Only process pages in product&#39;s page range</li>
 <li><strong>Immediate Upload</strong>: Upload to Supabase Storage immediately</li>
 <li><strong>Product Linking</strong>: Link images to product via product_id</li>
 </ol>
 <p><strong>Services Used</strong>:</p>
 <ul>
-<li><code>VisionGuidedImageExtractor</code> - YOLO-guided image extraction</li>
+<li><code>VisionGuidedImageExtractor</code> - layout-region-guided image extraction (reads PaddleOCR-VL crop sources from the cache)</li>
 <li><code>PyMuPDF</code> - Image extraction from PDF</li>
 <li><code>Supabase Storage</code> - Cloud storage for images</li>
 </ul>
@@ -487,7 +576,7 @@
 <li>Image file (PNG/JPEG)</li>
 <li>Product ID: Links image to specific product</li>
 <li>Page Number: Source page for image</li>
-<li>Bounding Box: YOLO-detected region coordinates</li>
+<li>Bounding Box: PaddleOCR-VL (RT-DETR) detected region coordinates</li>
 <li>Image Type: Product image, diagram, detail shot</li>
 <li>Supabase URL: Public URL for image access</li>
 </ul>
@@ -612,13 +701,13 @@
 <p><strong>Returns</strong>: A dict with <code>products_updated</code>, <code>sizes_found</code> (list), <code>thickness_found</code>, and <code>source: &quot;document_text&quot;</code>.</p>
 <hr>
 <h3>Image OCR Dimension Extraction (inline, updated 2026-04)</h3>
-<p><strong>Note (2026-04)</strong>: The former asynchronous &quot;Phase 2 background image processor&quot; (<code>app/services/images/background_image_processor.py</code>) was deleted — it called a non-existent <code>generate_material_embeddings</code> method and produced no output. Image-text dimension extraction is now handled inline during Phase 1 image processing by <code>_enrich_product_metadata_from_spec_image()</code> in the image processing service, using the same regex patterns against Qwen vision output.</p>
+<p><strong>Note (2026-04)</strong>: The former asynchronous &quot;Phase 2 background image processor&quot; (<code>app/services/images/background_image_processor.py</code>) was deleted — it called a non-existent <code>generate_material_embeddings</code> method and produced no output. Image-text dimension extraction is now handled inline during Phase 1 image processing by <code>_enrich_product_metadata_from_spec_image()</code> in the image processing service, using the same regex patterns against the vision_analysis output.</p>
 <p><strong>Logic</strong>:</p>
 <ul>
 <li>If <code>keyword_hits &gt;= 3</code> → image is a spec table → handled by <code>_enrich_product_metadata_from_spec_image()</code> as a spec table</li>
-<li>If <code>keyword_hits &lt; 3</code> → image is a product photo with possible text overlay → regex extraction against Qwen raw output</li>
+<li>If <code>keyword_hits &lt; 3</code> → image is a product photo with possible text overlay → regex extraction against the vision_analysis OCR output</li>
 </ul>
-<p><strong>Regex patterns applied</strong> (same as Stage 4.6 but on Qwen&#39;s OCR output):</p>
+<p><strong>Regex patterns applied</strong> (same as Stage 4.6 but on the per-image OCR output):</p>
 <ul>
 <li>Size: <code>(\d+)[xX×](\d+)\s*(?:cm|CM|mm|MM)?</code></li>
 <li>Thickness: near keywords or bare <code>X.Ymm</code> pattern</li>
@@ -652,9 +741,9 @@
 <tr>
 <td>Image OCR regex</td>
 <td>Phase 1 (inline)</td>
-<td>Qwen raw_qwen_output</td>
+<td>PaddleOCR OCR output (<code>document_images.ocr_text</code>)</td>
 <td>0.70</td>
-<td>Yes (Qwen)</td>
+<td>Yes (PaddleOCR)</td>
 </tr>
 </tbody></table>
 <hr>
@@ -695,12 +784,13 @@
 <hr>
 <h3>Stage 6: AI Classification (70-75%) - URL-Based Processing</h3>
 <p><strong>🚀 ON-DEMAND DOWNLOAD ARCHITECTURE</strong></p>
-<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Model</strong>: Claude Opus 4.7 via Anthropic tool use (post-2026-05-01 — was Qwen3-VL pre-migration, but Qwen had been 404-ing for months and silently falling through to Claude anyway)</p>
+<p><strong>Schema enforcement</strong>: <code>VisionAnalysis</code> Pydantic schema + <code>VISION_ANALYSIS_TOOL</code> (<code>app/models/vision_analysis.py</code>). Tool-use guarantees the response matches the schema, so Voyage&#39;s understanding-embedding space stays clean.</p>
 <p><strong>Process (Per Image)</strong>:</p>
 <ol>
 <li><strong>Download image from Supabase URL to RAM</strong></li>
 <li>Convert to base64 on-the-fly (no disk I/O)</li>
-<li>Classify with Qwen Vision (material vs non-material)</li>
+<li>Classify with Claude Opus 4.7 (schema-locked tool call: material vs non-material)</li>
 <li><strong>Delete from RAM immediately</strong></li>
 <li>Delete non-material images from Supabase Storage</li>
 </ol>
@@ -714,21 +804,27 @@
 <p><strong>Output</strong>: A JSON result with <code>total_images_classified</code>, <code>material_images</code>, <code>non_material_images</code>, <code>classification_errors</code>, <code>non_material_deleted_from_supabase</code>, <code>memory_usage</code>, and <code>processing_time</code>.</p>
 <p><strong>Performance Metrics</strong>:</p>
 <ul>
-<li>Time per image: 2-3 seconds</li>
+<li>Time per image: 3-8 seconds (Claude Opus tool-use call)</li>
 <li>Memory per image: ~1-2MB (temporary)</li>
 <li>Disk usage: 0 images</li>
-<li>Total time for 249 images: 8-12 minutes</li>
+<li>Total time for 249 images: 12-30 minutes</li>
 </ul>
 <hr>
 <h3>Stage 7: SLIG Embeddings (75-85%) - URL-Based Processing (updated 2026-04)</h3>
 <p><strong>🚀 ZERO-DOWNLOAD ARCHITECTURE</strong></p>
-<p><strong>Model</strong>: SigLIP2 via SLIG cloud endpoint (768D). Legacy SigLIP ViT-SO400M (1152D) was retired in 2026-04 — its collections were 100% orphans.</p>
+<p><strong>Models</strong>:</p>
+<ul>
+<li>SLIG SigLIP2 (768D, raw image): produces ONE visual vector per image</li>
+<li>Voyage <code>voyage-4</code> (1024D, text): produces FOUR per-aspect vectors per image, embedding deterministic strings derived from VisionAnalysis fields</li>
+</ul>
+<p>Pre-v2: SLIG produced all 5 vectors via the blend trick (4 fixed global text prompts blended at 10-30% into the base visual vector). Legacy SigLIP ViT-SO400M (1152D) was retired in 2026-04 — its collections were 100% orphans.</p>
 <p><strong>Process (Per Image)</strong>:</p>
 <ol>
-<li><strong>Pass Supabase URL to SLIG service</strong> (no manual download!)</li>
-<li>SLIG fetches internally</li>
-<li>Generate 5 embedding types (all 768D)</li>
-<li>Save directly to VECS collections (<code>image_slig_embeddings</code>, <code>image_color_embeddings</code>, <code>image_texture_embeddings</code>, <code>image_style_embeddings</code>, <code>image_material_embeddings</code>)</li>
+<li><strong>Pass Supabase URL to SLIG service</strong> for the visual embedding (no manual download)</li>
+<li>SLIG fetches internally → 1 × 768D visual vector → <code>image_slig_embeddings</code></li>
+<li>Pull cached <code>VisionAnalysis</code> JSON from <code>document_images.vision_analysis</code> (already produced by Stage 3)</li>
+<li>Run 4 deterministic aspect serializers on the JSON → 4 short strings</li>
+<li>Voyage-embed each non-empty aspect string → 4 × 1024D vectors → <code>image_color_embeddings</code> / <code>image_texture_embeddings</code> / <code>image_style_embeddings</code> / <code>image_material_embeddings</code></li>
 <li>Auto-cleanup</li>
 </ol>
 <p><strong>Why Zero-Download?</strong></p>
@@ -737,13 +833,13 @@
 <li><strong>Faster Processing</strong>: No extra download step</li>
 <li><strong>Same Quality</strong>: URL vs base64 produces identical embeddings</li>
 </ul>
-<p><strong>5 SLIG Embedding Types Generated Per Image</strong> (SigLIP2 via SLIG cloud endpoint, 768D each):</p>
+<p><strong>Embeddings Generated Per Image</strong> (post-v2):</p>
 <ol>
-<li><strong>Visual Embeddings</strong> (768D) — Overall visual appearance, enables visual similarity search. Collection: <code>image_slig_embeddings</code>. Producer key: <code>visual_768</code>.</li>
-<li><strong>Color Embeddings</strong> (768D) — Text-guided color similarity. Collection: <code>image_color_embeddings</code>. Producer key: <code>color_slig_768</code>.</li>
-<li><strong>Texture Embeddings</strong> (768D) — Text-guided texture similarity. Collection: <code>image_texture_embeddings</code>. Producer key: <code>texture_slig_768</code>.</li>
-<li><strong>Style Embeddings</strong> (768D) — Text-guided style similarity. Collection: <code>image_style_embeddings</code>. Producer key: <code>style_slig_768</code>.</li>
-<li><strong>Material Embeddings</strong> (768D) — Text-guided material similarity. Collection: <code>image_material_embeddings</code>. Producer key: <code>material_slig_768</code>.</li>
+<li><strong>Visual</strong> (SLIG SigLIP2 768D) — Overall visual appearance, enables visual similarity search. Collection: <code>image_slig_embeddings</code>. Producer key: <code>visual_768</code>.</li>
+<li><strong>Color</strong> (Voyage 1024D) — Per-image color text from <code>VisionAnalysis.colors[]</code>. Collection: <code>image_color_embeddings</code>. Producer key: <code>color_aspect_1024</code> (was <code>color_slig_768</code> 768D pre-v2).</li>
+<li><strong>Texture</strong> (Voyage 1024D) — Per-image texture text from <code>VisionAnalysis.textures[] + finish</code>. Collection: <code>image_texture_embeddings</code>. Producer key: <code>texture_aspect_1024</code> (was <code>texture_slig_768</code> 768D pre-v2).</li>
+<li><strong>Style</strong> (Voyage 1024D) — Per-image style text from <code>VisionAnalysis.style + surface_pattern + applications</code>. Collection: <code>image_style_embeddings</code>. Producer key: <code>style_aspect_1024</code> (was <code>style_slig_768</code> 768D pre-v2).</li>
+<li><strong>Material</strong> (Voyage 1024D) — Per-image material text from <code>VisionAnalysis.material_type + category + subcategory</code>. Collection: <code>image_material_embeddings</code>. Producer key: <code>material_aspect_1024</code> (was <code>material_slig_768</code> 768D pre-v2).</li>
 </ol>
 <p><strong>Output</strong>: A JSON result with <code>material_images_processed</code>, <code>slig_embeddings_generated</code>, <code>total_embeddings</code>, <code>memory_usage</code>, <code>processing_time</code>, and <code>embeddings_by_type</code> (visual, color, texture, style, material counts).</p>
 <p><strong>Performance Metrics</strong>:</p>
@@ -754,41 +850,42 @@
 <li>Total time for 150 images: 5-8 minutes</li>
 </ul>
 <hr>
-<h3>Stage 8: Qwen Vision Analysis (85-90%) - URL-Based Processing</h3>
+<h3>Stage 8: Vision Analysis (85-90%) - URL-Based Processing</h3>
 <p><strong>🚀 ON-DEMAND DOWNLOAD ARCHITECTURE</strong></p>
-<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Model</strong>: Claude Opus 4.7 via Anthropic tool use (post-2026-05-01)</p>
+<p><strong>Schema enforcement</strong>: <code>VisionAnalysis</code> Pydantic schema + <code>VISION_ANALYSIS_TOOL</code>. The tool-use mechanism guarantees schema adherence — eliminates fragile JSON regex recovery, protects Voyage&#39;s understanding-embedding space from drift.</p>
 <p><strong>Process (Per Image)</strong>:</p>
 <ol>
 <li><strong>Download image from Supabase URL to RAM</strong></li>
 <li>Convert to base64 on-the-fly</li>
-<li>Analyze with Qwen Vision (quality, properties)</li>
+<li>Analyze with Claude Opus 4.7 (tool call → <code>VisionAnalysis</code> payload: quality, material properties, OCR-aware fields)</li>
 <li><strong>Delete from RAM immediately</strong></li>
 <li><strong>Batch cleanup after every 10 images</strong></li>
 </ol>
 <p><strong>Why On-Demand Download?</strong></p>
 <ul>
-<li><strong>Qwen Requires Base64</strong>: No URL support (yet)</li>
+<li><strong>Anthropic accepts base64</strong>: image content blocks via the SDK</li>
 <li><strong>Temporary RAM Usage</strong>: Download → Process → Delete</li>
 <li><strong>Batch Cleanup</strong>: Aggressive memory management</li>
 <li><strong>Zero Disk Usage</strong>: Everything in RAM</li>
 </ul>
-<p><strong>Output</strong>: A JSON result with <code>images_analyzed</code>, <code>quality_scores_generated</code>, <code>material_properties_extracted</code>, <code>memory_usage</code>, and <code>processing_time</code>.</p>
+<p><strong>Output</strong>: A JSON result with <code>images_analyzed</code>, <code>quality_scores_generated</code>, <code>material_properties_extracted</code>, <code>memory_usage</code>, and <code>processing_time</code>. The per-image payload conforms to the <code>VisionAnalysis</code> Pydantic schema.</p>
 <p><strong>Performance Metrics</strong>:</p>
 <ul>
-<li>Time per image: 3-5 seconds</li>
+<li>Time per image: 3-8 seconds</li>
 <li>Memory per image: ~1-2MB (temporary)</li>
 <li>Disk usage: 0 images</li>
-<li>Total time for 150 images: 8-12 minutes</li>
-<li>Success rate: 99%+</li>
+<li>Total time for 150 images: 15-30 minutes</li>
+<li>Success rate: 99%+ (schema-locked, malformed payloads are impossible)</li>
 </ul>
 <hr>
 <h3>Stage 6 (alternate): Image Analysis (80-85%) - ASYNC JOB</h3>
-<p><strong>Model</strong>: Qwen3-VL 17B Vision</p>
+<p><strong>Model</strong>: Claude Opus 4.7 via Anthropic tool use</p>
 <p><strong>Process</strong>:</p>
 <ol>
 <li>Runs as background job (non-blocking)</li>
-<li>Analyze each image for OCR</li>
-<li>Extract material properties</li>
+<li>Analyze each image for material properties</li>
+<li>Extract OCR-aware fields (Phase 3 per-image OCR via PaddleOCR — <code>ocr_service._call_paddleocr</code> / <code>run_block_ocr</code>, <code>OCRResult.method=&#39;paddleocr&#39;</code>/<code>&#39;paddleocr_failed&#39;</code>; filter rules and the <code>document_images</code> OCR columns <code>ocr_text</code>/<code>ocr_blocks</code>/<code>ocr_failed</code>/<code>ocr_attempts</code>/<code>ocr_skipped_reason</code> are unchanged — only the engine changed from Chandra)</li>
 <li>Calculate quality scores</li>
 </ol>
 <p><strong>Output</strong>: A JSON structure per image with <code>image_id</code>, <code>ocr_text</code>, <code>materials</code> (list), <code>properties</code> (dict with fields like weight and weave), and <code>quality_score</code>.</p>
@@ -802,7 +899,7 @@
 <p><strong>Note</strong>: This stage runs asynchronously and does not block pipeline completion</p>
 <hr>
 <h3>Stage 7 (alternate): Product Creation (85-92%)</h3>
-<p><strong>Models</strong>: Claude Haiku 4.5 → Claude Sonnet 4.5</p>
+<p><strong>Models</strong>: Claude Haiku 4.5 → Claude Opus 4.7</p>
 <p><strong>Two-Stage Validation</strong>:</p>
 <p><strong>Stage 1 (Haiku - Fast)</strong>:</p>
 <ul>
@@ -811,7 +908,7 @@
 <li>Extract basic information</li>
 <li>Processing time: 3-5 seconds</li>
 </ul>
-<p><strong>Stage 2 (Sonnet - Deep)</strong>:</p>
+<p><strong>Stage 2 (Opus - Deep)</strong>:</p>
 <ul>
 <li>For each candidate, perform deep analysis</li>
 <li>Validate product completeness</li>
@@ -823,17 +920,14 @@
 <h3>Stage 8 (alternate): Entity Linking (92-97%)</h3>
 <p><strong>Process</strong>:</p>
 <ol>
-<li>Link products to images (relevance scores)</li>
-<li>Link chunks to images (relevance scores)</li>
+<li>Link products to images (page-proximity based)</li>
+<li>Link chunks to images via <code>entity_linking_service.link_images_to_chunks</code> (page proximity — NOT cosine similarity)</li>
 <li>Link chunks to products (relevance scores)</li>
 <li>Create relationship records</li>
 </ol>
-<p><strong>Relevance Algorithm</strong>:</p>
-<ul>
-<li>Page overlap (40%): Same page = 0.4, adjacent = 0.2</li>
-<li>Visual similarity (40%): From AI detection</li>
-<li>Detection score (20%): Confidence from discovery</li>
-</ul>
+<blockquote>
+<p><strong>Note (2026-04)</strong>: <code>chunk_image_relationships</code> are populated by <code>entity_linking_service.link_images_to_chunks</code> using <strong>page_proximity</strong>. The former <code>create_chunk_image_relationships()</code> method in RelevancyService was deleted — it computed cosine similarity between 1024D text and 768D visual vectors, which was mathematically invalid.</p>
+</blockquote>
 <p><strong>Output</strong>: A JSON result with <code>product_image_relationships</code>, <code>chunk_image_relationships</code>, <code>chunk_product_relationships</code>, and <code>total_relationships</code> counts.</p>
 <p><strong>Database Tables</strong>:</p>
 <ul>
@@ -860,7 +954,7 @@
 <li><strong>CHUNKS_CREATED</strong> - Text chunking complete</li>
 <li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Text embeddings complete</li>
 <li><strong>IMAGES_EXTRACTED</strong> - Images uploaded to Supabase Storage ✅ UPDATED</li>
-<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - SLIG 768D embeddings + Qwen Vision complete ✅ UPDATED</li>
+<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - SLIG 768D embeddings + Claude Opus 4.7 vision_analysis (tool use) + Voyage understanding 1024D complete ✅ UPDATED</li>
 <li><strong>PRODUCTS_DETECTED</strong> - Products identified</li>
 <li><strong>PRODUCTS_CREATED</strong> - Product creation complete</li>
 <li><strong>COMPLETED</strong> - All processing complete</li>
@@ -869,7 +963,7 @@
 <p><strong>Note</strong>:</p>
 <ul>
 <li>Stage 5 (IMAGES_EXTRACTED): All images uploaded to Supabase Storage, 0 local files</li>
-<li>Stage 6 (IMAGE_EMBEDDINGS_GENERATED): All 5 SLIG embeddings (768D) + Qwen Vision analysis + understanding embedding (1024D Voyage) complete</li>
+<li>Stage 6 (IMAGE_EMBEDDINGS_GENERATED): 1× SLIG visual (768D) + 4× Voyage aspect embeddings (1024D: color/texture/style/material) + Claude Opus 4.7 vision_analysis (tool use) + understanding embedding (1024D Voyage from VisionAnalysis JSON) complete</li>
 <li>Recovery uses Supabase URLs for all subsequent processing (no local files needed)</li>
 </ul>
 <hr>
@@ -882,7 +976,7 @@
 <li>Images extracted: 249</li>
 <li>Material images: 150</li>
 <li>Non-material images: 99 (deleted from Supabase)</li>
-<li>SLIG embeddings generated: 750 (5 types × 150 material images, all 768D)</li>
+<li>SLIG embeddings generated: 150 (1 visual × 150 material images, 768D) + 600 aspect embeddings (4 × 150 images, 1024D Voyage)</li>
 <li>Processing time: 2-3 minutes (vs 30+ minutes before)</li>
 <li>Memory usage: &lt;3GB peak (vs 7.7GB OOM before)</li>
 <li>Disk usage: 0 images (vs 249 cumulative before)</li>
@@ -894,7 +988,7 @@
 <li>Material recognition: 90%+</li>
 <li>Metadata extraction: 88%+</li>
 <li>Search relevance: 85%+</li>
-<li>SLIG embedding quality: 95%+</li>
+<li>Visual embedding quality (SLIG SigLIP2): 95%+</li>
 </ul>
 <p><strong>URL-Based Architecture Impact</strong>:</p>
 <ul>
@@ -911,7 +1005,7 @@
 <h3>Service Layer</h3>
 <p><strong>ImageProcessingService</strong> (<code>app/services/image_processing_service.py</code>)</p>
 <ul>
-<li><code>classify_images()</code> - Qwen Vision + Claude validation</li>
+<li><code>classify_images()</code> - Claude Opus 4.7 via Anthropic tool use (schema-locked)</li>
 <li><code>upload_images_to_storage()</code> - Upload to Supabase Storage</li>
 <li><code>save_images_and_generate_clips()</code> - DB save + SLIG 768D embeddings (name retained for backwards compat; writes directly to VECS)</li>
 </ul>
@@ -1020,7 +1114,7 @@
 <tr>
 <td><strong>Progress Tracking</strong></td>
 <td>✅ COMPLETE</td>
-<td>Real-time progress updates via <code>job_progress</code> table</td>
+<td>Real-time progress updates via <code>background_jobs</code> table (<code>stage_history</code> JSONB; <code>job_progress</code> table was dropped 2026-04-25)</td>
 </tr>
 <tr>
 <td><strong>Checkpoint Recovery</strong></td>
@@ -1060,16 +1154,20 @@
 <li>✅ Backward compatible with optional parameter</li>
 </ul>
 <hr>
-<h2>🎯 YOLO Layout-Aware Chunking</h2>
+<h2>🎯 Layout-Aware Chunking</h2>
+<blockquote>
+<p><strong>Note (2026-06-13)</strong>: layout regions now come from the <strong>PaddleOCR-VL</strong> structural pass
+(Stage 1, before discovery), not YOLO. The chunking logic that consumes them is unchanged.</p>
+</blockquote>
 <h3>Overview</h3>
-<p>The YOLO Layout-Aware Chunking system uses detected layout regions to create intelligent, boundary-respecting chunks that preserve document structure and semantic meaning.</p>
+<p>The Layout-Aware Chunking system uses the PaddleOCR-VL layout regions (with predicted reading order) to create intelligent, boundary-respecting chunks that preserve document structure and semantic meaning.</p>
 <h3>How It Works</h3>
-<p><strong>Stage 1 (YOLO Detection)</strong> → <strong>Stage 2 (Layout-Aware Chunking)</strong></p>
+<p><strong>Stage 1 (PaddleOCR-VL structural pass)</strong> → <strong>Stage 2 (Layout-Aware Chunking)</strong></p>
 <ol>
-<li><p><strong>YOLO detects layout regions</strong> (Stage 4.5)</p>
+<li><p><strong>PaddleOCR-VL detects + labels layout regions and predicts reading order</strong> (Stage 1, before discovery)</p>
 <ul>
-<li>Stores regions in <code>product_layout_regions</code> table</li>
-<li>Each region has: type, bbox, confidence, reading_order, text_content</li>
+<li>Persists regions to the <code>document_layout_analysis</code> cache (<code>processing_version=&#39;paddleocr-vl&#39;</code>); the per-product slice lands in <code>product_layout_regions</code></li>
+<li>Each region has: type, bbox, confidence, reading_order, text_content (recognized inline by the VLM)</li>
 </ul>
 </li>
 <li><p><strong>Chunking service reads regions</strong> (Stage 2)</p>
@@ -1110,12 +1208,12 @@
 </ul>
 <p>A CAPTION region chunk contains the caption text, <code>region_type: &quot;CAPTION&quot;</code>, a <code>reading_order</code> value, and a <code>linked_image_bbox</code> reference.</p>
 <h3>Configuration</h3>
-<p>Layout-aware chunking is enabled by setting <code>strategy=ChunkingStrategy.LAYOUT_AWARE</code> in the <code>ChunkingConfig</code> passed to <code>UnifiedChunkingService</code>, with <code>max_chunk_size=1000</code> and <code>min_chunk_size=100</code>.</p>
+<p>Layout-aware chunking is activated by passing <code>layout_regions_by_page</code> (a dict mapping 1-based page_number → list of PaddleOCR-VL layout regions, read from the <code>document_layout_analysis</code> cache) into <code>chunk_pages()</code>. The chunking config stays at the default <code>HYBRID</code> strategy (<code>max_chunk_size=1000</code>, <code>min_chunk_size=100</code>); per-page, if regions are provided, <code>_chunk_with_layout_regions</code> runs instead of the strategy dispatcher.</p>
 <p><strong>Fallback Behavior:</strong></p>
 <ul>
-<li>If no <code>product_id</code> in metadata → Falls back to semantic chunking</li>
+<li>If no regions are provided for a page → falls back to the configured strategy (HYBRID by default)</li>
 <li>If no layout regions found → Falls back to semantic chunking</li>
-<li>If YOLO fails → Pipeline continues with semantic chunking</li>
+<li>If the structural pass fails → Pipeline continues with semantic chunking</li>
 </ul>
 <h3>Benefits</h3>
 <p>✅ <strong>Preserves Document Structure</strong></p>
@@ -1138,7 +1236,7 @@
 </ul>
 <h3>Performance</h3>
 <ul>
-<li><strong>Processing Time</strong>: +2-5 seconds per page (YOLO detection)</li>
+<li><strong>Processing Time</strong>: ~1-3 seconds per page warm (PaddleOCR-VL structural pass on Modal L4; ~90s cold start paid once per job at warmup)</li>
 <li><strong>Chunk Quality</strong>: 30-40% improvement in semantic coherence</li>
 <li><strong>Search Accuracy</strong>: 20-25% improvement in retrieval precision</li>
 </ul>
@@ -1173,47 +1271,50 @@
 <li>🧠 Richer embeddings (contextual information)</li>
 </ul>
 <hr>
-<h3>2. Monitoring &amp; Metrics for YOLO Performance</h3>
+<h3>2. Monitoring &amp; Metrics for Structural-Pass Performance</h3>
+<blockquote>
+<p><strong>Note (2026-06-13)</strong>: per-attempt PaddleOCR-VL inference/retry telemetry already lands in the
+<code>paddleocr_metrics</code> table; the items below are additional per-page metrics still on the roadmap.</p>
+</blockquote>
 <p><strong>Planned Metrics:</strong></p>
 <h4>Processing Metrics</h4>
-<p>Metrics to track per-page: <code>yolo_processing_time_per_page</code>, <code>regions_detected_per_page</code>, <code>confidence_score_avg</code>, <code>confidence_score_min</code>, and <code>table_extraction_success_rate</code>.</p>
+<p>Metrics to track per-page: <code>structural_pass_time_per_page</code>, <code>regions_detected_per_page</code>, <code>confidence_score_avg</code>, <code>confidence_score_min</code>, and <code>table_extraction_success_rate</code>.</p>
 <h4>Region Distribution</h4>
-<p>Region counts by type: TEXT, TITLE, TABLE, IMAGE, CAPTION, FORMULA counts per document.</p>
+<p>Region counts by type: text, title, table, image/figure, chart, formula counts per document.</p>
 <h4>Performance Tracking</h4>
 <ul>
-<li><strong>Processing time</strong> per page (identify slow pages)</li>
-<li><strong>Memory usage</strong> during YOLO processing</li>
+<li><strong>Processing time</strong> per page (identify slow pages; warm vs cold-start)</li>
+<li><strong>Modal container utilization</strong> during the structural pass</li>
 <li><strong>Error rates</strong> and failure patterns</li>
-<li><strong>Cost tracking</strong> (if using paid endpoints)</li>
+<li><strong>Cost tracking</strong> (<code>PADDLEOCR_PRICING</code>; Modal L4 scale-to-zero = $0 idle)</li>
 </ul>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>🔍 Identify performance bottlenecks</li>
 <li>📊 Optimize confidence thresholds</li>
 <li>💰 Track processing costs</li>
-<li>🐛 Detect when YOLO is struggling</li>
+<li>🐛 Detect when the structural pass is struggling</li>
 </ul>
-<p>Metrics would be stored in the <code>job_progress</code> table with a <code>stage: &#39;yolo_detection&#39;</code> key.</p>
+<p>Metrics would be stored on the <code>background_jobs</code> row (as <code>stage_history</code> events) with a <code>stage: &#39;layout_precompute&#39;</code> key. (The legacy <code>job_progress</code> table was dropped in 2026-04-25 — all stage data lives in <code>background_jobs.stage_history</code> JSONB.)</p>
 <hr>
 <h3>3. GPU Acceleration</h3>
+<blockquote>
+<p><strong>Status (2026-06-13): realized.</strong> The structural pass already runs GPU-accelerated on <strong>Modal
+GPU L4</strong> (PaddleOCR-VL forces <code>device=&quot;gpu&quot;</code> — the pipeline defaults to CPU, which is minutes/page).
+Scale-to-zero (<code>min_containers=0</code> + <code>scaledown_window=120</code>) keeps idle cost at $0, with
+<code>max_containers=4</code> for parallel fan-out. The local-CUDA auto-detect plan below is obsolete.</p>
+</blockquote>
 <p><strong>Current Performance:</strong></p>
 <ul>
-<li><strong>CPU</strong>: 8-15 seconds per page</li>
-<li><strong>Memory</strong>: ~2-4GB RAM</li>
+<li><strong>Modal GPU L4 (warm)</strong>: ~1-3 seconds per page</li>
+<li><strong>Cold start</strong>: ~90s (model load + first-call JIT), paid once per job at warmup</li>
 </ul>
-<p><strong>With GPU Acceleration:</strong></p>
-<ul>
-<li><strong>GPU</strong>: 2-5 seconds per page (3-5× faster)</li>
-<li><strong>Memory</strong>: ~4-6GB VRAM</li>
-<li><strong>Batch Processing</strong>: Process multiple pages simultaneously</li>
-</ul>
-<p><strong>Implementation Plan:</strong></p>
-<p>The system would auto-detect GPU availability using <code>torch.cuda.is_available()</code>. With GPU, it would process multiple pages in parallel batches (batch_size=4 for CUDA vs 1 for CPU), clearing GPU cache between batches with <code>torch.cuda.empty_cache()</code>. The device and batch size would be configurable via <code>YOLO_DEVICE</code> and <code>YOLO_BATCH_SIZE</code> environment variables.</p>
+<p><del>The system would auto-detect GPU availability using <code>torch.cuda.is_available()</code>...</del> <em>(obsolete — superseded by Modal GPU hosting)</em></p>
 <p><strong>Benefits:</strong></p>
 <ul>
-<li>⚡ 3-5× faster processing</li>
-<li>📦 Batch processing for efficiency</li>
-<li>💾 Better memory utilization</li>
+<li>⚡ Faster processing</li>
+<li>📦 Parallel containers for efficiency (<code>max_containers=4</code>)</li>
+<li>💾 $0 idle via scale-to-zero</li>
 <li>🎯 Production-ready performance</li>
 </ul>
 <hr>
@@ -1239,17 +1340,19 @@
 <li>🧠 Improved search quality</li>
 </ul>
 <hr>
-<p><strong>Last Updated</strong>: February 20, 2026
-<strong>Pipeline Version</strong>: Product-Centric Architecture with YOLO Layout Detection, Table Extraction &amp; Cross-Product Field Propagation
+<p><strong>Last Updated</strong>: June 13, 2026
+<strong>Pipeline Version</strong>: Product-Centric Architecture with PaddleOCR-VL structure-first Layout + OCR, Table Extraction &amp; Cross-Product Field Propagation
 <strong>Status</strong>: Production</p>
 <p><strong>Major Features</strong>:</p>
 <ul>
 <li>✅ <strong>Product-Centric Architecture</strong>: Process each product individually (Stages 1-4)</li>
-<li>✅ <strong>YOLO Layout Detection</strong>: Intelligent region detection (Stage 1)<ul>
-<li>6 region types: TEXT, TITLE, TABLE, IMAGE, CAPTION, FORMULA</li>
-<li>Enabled by default (<code>YOLO_ENABLED=true</code>)</li>
-<li>Stores regions in <code>product_layout_regions</code> table</li>
-<li>Graceful degradation if YOLO fails</li>
+<li>✅ <strong>PaddleOCR-VL Structure-First Layout + OCR</strong> (Stage 1, BEFORE discovery; replaced Surya-2 → which had replaced YOLO+Chandra+<code>merge_layout</code>)<ul>
+<li>Two-stage parser on Modal: PP-DocLayoutV2 (RT-DETR + pointer network) localizes/labels regions + predicts reading order; 0.9B VLM recognizes content (text, tables→markdown, formulas→LaTeX, charts)</li>
+<li>Persists <code>document_layout_analysis</code> rows with <code>processing_version=&#39;paddleocr-vl&#39;</code>; discovery/chunking/crops all read the cache</li>
+<li>Region labels via <code>PADDLE_LABEL_TO_REGION_TYPE</code>; <code>image</code>/<code>figure</code>/<code>chart</code> are product-crop sources</li>
+<li>Modal-hosted (GPU L4, scale-to-zero = $0 idle); only required secret <code>PADDLEOCR_MODAL_API_KEY</code></li>
+<li>OCR is also PaddleOCR (<code>OCRResult.method=&#39;paddleocr&#39;</code>/<code>&#39;paddleocr_failed&#39;</code>, <code>ocr_engine=&#39;paddleocr&#39;</code>)</li>
+<li>Graceful degradation if the structural pass fails (resume-skip via <code>cache_status=&#39;ocr_failed&#39;</code>)</li>
 </ul>
 </li>
 <li>✅ <strong>Table Extraction</strong>: Structured table data linked to products<ul>
@@ -1259,7 +1362,7 @@
 </ul>
 </li>
 <li>✅ <strong>Layout-Aware Chunking</strong>: Boundary-respecting chunks<ul>
-<li>Reads YOLO regions from database</li>
+<li>Reads PaddleOCR-VL regions from the <code>document_layout_analysis</code> cache</li>
 <li>Combines TITLE + TEXT intelligently</li>
 <li>Keeps tables intact</li>
 <li>Preserves reading order</li>
@@ -1283,7 +1386,7 @@
 <li>No AI calls, confidence 0.65, source: &quot;document_text&quot;</li>
 </ul>
 </li>
-<li>✅ <strong>Image OCR Dimension Extraction (inline, updated 2026-04)</strong>: Regex on Qwen vision output<ul>
+<li>✅ <strong>Image OCR Dimension Extraction (inline, updated 2026-04)</strong>: Regex on PaddleOCR OCR output (<code>document_images.ocr_text</code>) — moved from vision-output regex when OCR was decoupled from vision_analysis (OCR engine cut over from Chandra → PaddleOCR on 2026-06-13)<ul>
 <li>Runs inline during Phase 1 image processing (no separate Phase 2)</li>
 <li>Catches dimensions from product photo text overlays</li>
 <li>Confidence 0.70, source: &quot;image_text&quot;</li>
@@ -1301,9 +1404,10 @@
 <p><strong>Future Enhancements</strong> (Planned):</p>
 <ul>
 <li>🔮 Multi-level title hierarchy (H1, H2, H3)</li>
-<li>🔮 YOLO performance monitoring &amp; metrics</li>
-<li>🔮 GPU acceleration (3-5× faster)</li>
+<li>🔮 Structural-pass performance monitoring &amp; metrics (beyond the existing <code>paddleocr_metrics</code> table)</li>
+<li>✅ GPU acceleration — <em>realized</em> (PaddleOCR-VL on Modal GPU L4, scale-to-zero)</li>
 <li>🔮 Advanced chunking rules (lists, cross-references, formulas)</li>
+<li>🔮 Voyage <code>voyage-multimodal-3</code> page embedding → <code>vecs.page_embeddings</code> (8th fusion vector) for catalog-Q&amp;A retrieval (known residual: <code>image</code>/<code>figure</code>/<code>chart</code> regions are crop sources but not OCR&#39;d, so a product name baked inside a photo is still unread)</li>
 </ul>
 <hr>
 <h2>🩺 Document Health Panel (Admin Observability)</h2>
@@ -1358,8 +1462,8 @@
 <td>PyMuPDF Tier A</td>
 </tr>
 <tr>
-<td><code>claude_sonnet_vision</code> / <code>claude_spec_vision</code></td>
-<td>Claude Sonnet Tier B</td>
+<td><code>claude_opus_vision</code> / <code>claude_spec_vision</code></td>
+<td>Claude Opus Tier B</td>
 </tr>
 <tr>
 <td><code>catalog_legend</code></td>

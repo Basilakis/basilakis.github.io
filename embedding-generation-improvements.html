@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,16 +19,20 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Image Embedding Generation</h1>
-<p>Image embedding generation system with batching, retry logic, and checkpoint recovery for reliable CLIP embedding coverage.</p>
+<p>Image embedding generation system with batching, retry logic, and checkpoint recovery for reliable embedding coverage.</p>
+<blockquote>
+<p><strong>Architecture note (2026-04)</strong>: CLIP models (512D collections) were retired. The current system uses <strong>SigLIP2 via SLIG cloud endpoint</strong> (768D visual) + <strong>Voyage AI <code>voyage-4</code></strong> (1024D aspect + understanding embeddings). The &quot;CLIP&quot; label in some of the method names below (<code>save_images_and_generate_clips</code>, <code>clip_embeddings_generated</code>) is a legacy alias retained for backwards compatibility; they now write SigLIP2/Voyage vectors to VECS.</p>
+</blockquote>
 <hr>
 <h2>Overview</h2>
-<p>The image embedding system generates visual embeddings for all processed images using CLIP models. The system includes batch processing, automatic retry with exponential backoff, and checkpoint recovery to ensure complete embedding coverage.</p>
+<p>The image embedding system generates visual embeddings for all processed images using SigLIP2 (768D visual) and Voyage AI (1024D aspect + understanding). The system includes batch processing, automatic retry with exponential backoff, and checkpoint recovery to ensure complete embedding coverage.</p>
 <h2>Features</h2>
 <h3>1. Batch Processing</h3>
 <p><strong>Implementation:</strong></p>
@@ -153,34 +158,47 @@
 </ol>
 <h2>Monitoring</h2>
 <h3>Log Output</h3>
-<p>The log shows progress per batch: saving each image to DB with its UUID, generating CLIP embeddings per image, and batch completion messages. The final summary reports total images saved, total CLIP embeddings generated, and a list of failed images with their page numbers and error reasons (e.g., &quot;Network timeout after 3 retries&quot;, &quot;Invalid image format&quot;).</p>
+<p>The log shows progress per batch: saving each image to DB with its UUID, generating SLIG/Voyage embeddings per image (the method is still named <code>generate_clips</code> for backwards compat), and batch completion messages. The final summary reports total images saved, total embeddings generated, and a list of failed images with their page numbers and error reasons (e.g., &quot;Network timeout after 3 retries&quot;, &quot;Invalid image format&quot;).</p>
 <h2>Integration</h2>
 <h3>Pipeline Integration</h3>
 <p>The improved method is automatically used in the PDF processing pipeline at <strong>Stage 30: save-images-db</strong> (<code>POST /api/internal/save-images-db/{job_id}</code>), which calls <code>save_images_and_generate_clips</code> with the document&#39;s material images, document ID, and workspace ID.</p>
 <h3>Manual Usage</h3>
 <p>The service can also be called directly for reprocessing existing documents. After calling <code>save_images_and_generate_clips</code>, inspect the returned dict for <code>clip_embeddings_generated</code>, <code>images_saved</code>, and <code>failed_images</code> counts.</p>
-<h2>Understanding Embeddings (Qwen → Voyage AI)</h2>
+<h2>Understanding Embeddings (Claude Opus 4.7 vision_analysis → Voyage AI)</h2>
 <h3>Overview</h3>
-<p>Understanding embeddings capture the structured knowledge from Qwen3-VL&#39;s vision analysis. Rather than embedding the raw image pixels (which SLIG does), understanding embeddings embed the <strong>semantic description</strong> of what was detected: material types, colors, textures, dimensions, finishes, and OCR text.</p>
-<h3>How It Works</h3>
+<p>Understanding embeddings capture the structured knowledge from the vision_analysis pass. Rather than embedding the raw image pixels (which SLIG does), understanding embeddings embed the <strong>semantic description</strong> of what was detected: material types, colors, textures, dimensions, finishes, and OCR text.</p>
+<h3>How It Works (post-2026-05-01)</h3>
 <ol>
-<li><strong>Qwen3-VL Analysis</strong> → Produces structured JSON (<code>vision_analysis</code>) with material type, colors, textures, properties, OCR text</li>
-<li><strong>JSON → Text Conversion</strong> → Converts structured fields into descriptive text (e.g., &quot;Material: porcelain tile. Colors: white, grey. Texture: matte. Dimensions: 60x120cm.&quot;)</li>
-<li><strong>Voyage AI Embedding</strong> → Embeds the text via <code>voyage-3.5</code> with <code>input_type=&quot;document&quot;</code> → 1024D vector</li>
-<li><strong>VECS Storage</strong> → Stored in <code>image_understanding_embeddings</code> collection (1024D, HNSW index)</li>
+<li><strong>Claude Opus 4.7 Vision Analysis</strong> (Anthropic tool use) → Produces a <code>VisionAnalysis</code> Pydantic payload with material type, colors, textures, properties, OCR-aware fields. Schema-locked via <code>VISION_ANALYSIS_TOOL</code> (<code>app/models/vision_analysis.py</code>) — no JSON regex recovery needed.</li>
+<li><strong>JSON → Text Conversion</strong> → <code>serialize_vision_analysis_to_text(VisionAnalysis)</code> produces a deterministic descriptive string (e.g., <code>&quot;Material: porcelain tile. Colors: white, grey. Texture: matte. Dimensions: 60x120cm.&quot;</code>)</li>
+<li><strong>Voyage AI Embedding</strong> → Embeds the text via <code>voyage-4</code> with <code>input_type=&quot;document&quot;</code> → 1024D vector</li>
+<li><strong>VECS Storage</strong> → Stored in <code>image_understanding_embeddings</code> collection (1024D halfvec, HNSW index)</li>
 </ol>
+<blockquote>
+<p><strong>Why the migration matters (2026-05-01)</strong>: Pre-migration, this pipeline read JSON from a Qwen vision endpoint that had been 404-ing for months — every Qwen call had been silently falling through to Anthropic Claude, but with regex-based JSON recovery instead of schema enforcement. The migration to Anthropic tool use locked the schema, so Voyage no longer risks embedding malformed payloads.</p>
+</blockquote>
+<h3>Provenance + Drift Detection</h3>
+<p>Every understanding-embedding row persists <code>embedding_model</code> + <code>schema_version</code> (in VECS metadata + mirrored on <code>document_images.understanding_embedding_model</code> / <code>understanding_schema_version</code>). Same on <code>products.text_embedding_1024_model</code> / <code>text_embedding_schema_version</code>.</p>
+<p>The <strong>OpenAI fallback is disabled</strong> for the understanding path so Voyage and OpenAI vectors never co-exist in the same VECS collection. Wrong-dim or missing embedding sets <code>embedding_failed=true</code> on the return; orchestrator marks for re-embedding rather than creating a row with NULL <code>text_embedding_1024</code> (fixed audit gap C).</p>
 <h3>Search Flow</h3>
 <ol>
-<li><strong>Query</strong> → Embedded via Voyage AI with <code>input_type=&quot;query&quot;</code> → 1024D vector</li>
-<li><strong>VECS Search</strong> → Similarity search against understanding collection</li>
-<li><strong>Score Fusion</strong> → Combined with 6 other embedding scores using weighted fusion</li>
+<li><strong>Query</strong> → Embedded via Voyage AI <code>voyage-4</code> with <code>input_type=&quot;query&quot;</code> → 1024D vector</li>
+<li><strong>VECS Search</strong> → Similarity search against <code>image_understanding_embeddings</code></li>
+<li><strong>Score Fusion</strong> → Combined with 6 other embedding scores (text + visual SLIG 768D + 4× Voyage aspect 1024D) using weighted fusion (see <code>docs/search-strategies.md</code> for weight configurations)</li>
 </ol>
-<h3>Pipeline Integration (updated 2026-04)</h3>
+<h3>Pipeline Integration (updated 2026-05)</h3>
 <ul>
-<li><strong>Phase 1 image pipeline (inline)</strong>: Generates the understanding embedding directly after Qwen analysis, in the same pass that writes SLIG embeddings to VECS. The former asynchronous &quot;Phase 2 background processor&quot; (<code>background_image_processor.py</code>) was deleted in 2026-04 — it was silently broken and produced no output.</li>
-<li><strong>CLIP Job Service</strong>: Generates understanding embedding for images with existing vision_analysis</li>
+<li><strong>Phase 1 image pipeline (inline)</strong>: Generates the understanding embedding directly after Claude vision_analysis, in the same pass that writes SLIG embeddings to VECS. The former asynchronous &quot;Phase 2 background processor&quot; (<code>background_image_processor.py</code>) was deleted in 2026-04 — it was silently broken and produced no output.</li>
+<li><strong>Backfill endpoint</strong>: <code>POST /admin/understanding-embeddings/backfill</code> re-runs vision_analysis (Claude Opus 4.7 + tool use) → Voyage on stale rows (no embedding / older schema_version / non-Voyage embedding_model). Bounded by <code>batch_size</code> + <code>max_images</code>.</li>
+<li><strong>Clip Job Service</strong> (legacy name): Generates understanding embedding for images with existing vision_analysis; despite the &quot;CLIP&quot; name, it now uses Voyage AI</li>
 <li><strong>Regeneration Endpoint</strong>: Includes understanding in embedding regeneration</li>
-<li><strong>Backfill Script</strong>: <code>scripts/backfill_understanding_embeddings.py</code> for existing images</li>
+</ul>
+<h3>Hardening (2026-05-01)</h3>
+<ul>
+<li><strong>Vision schema validation</strong>: rejects malformed payloads before Voyage embeds garbage. With Anthropic tool use this is structurally impossible, but the validator stays as defense in depth.</li>
+<li><strong>Voyage 429 explicit handling</strong> with <code>Retry-After</code> honoring</li>
+<li><strong>Atomic specialized VECS upsert</strong>: writes all 4 SLIG vectors first, then sets flags only for those that landed</li>
+<li><strong><code>ai_usage_logs</code> mirror</strong>: retries twice + ERRORs on persistent failure</li>
 </ul>
 <h3>Benefits</h3>
 <ul>
@@ -199,10 +217,10 @@
 </ol>
 <h2>Related Documentation</h2>
 <ul>
-<li><a href="./pdf-processing-pipeline.md">PDF Processing Pipeline</a></li>
-<li><a href="./system-architecture.md#image-processing">Image Processing Service</a></li>
-<li><a href="./api-endpoints.md">API Endpoints</a></li>
-<li><a href="./troubleshooting-guide.md">Troubleshooting Guide</a></li>
+<li><a href="./pdf-processing-pipeline.html">PDF Processing Pipeline</a></li>
+<li><a href="./system-architecture.html#image-processing">Image Processing Service</a></li>
+<li><a href="./api-endpoints.html">API Endpoints</a></li>
+<li><a href="./troubleshooting-guide.html">Troubleshooting Guide</a></li>
 </ul>
 
 </div></body></html>
