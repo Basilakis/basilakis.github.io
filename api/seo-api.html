@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>SEO API</h1>
+<p><strong>Edge Function:</strong> <code>seo-api</code>
+<strong>Base URL:</strong> <code>https://bgbavxtjlbvgplozizxu.supabase.co/functions/v1/seo-api</code></p>
+<h2>Actions</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Purpose</th>
+<th>Engine</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>research</code></td>
+<td>DataForSEO keyword research (6 parallel API calls — expansion, related, etc.)</td>
+<td>DataForSEO</td>
+</tr>
+<tr>
+<td><code>plan</code></td>
+<td>Generate article plan (title, meta, slug, outline, FAQ) from research</td>
+<td>Gemini</td>
+</tr>
+<tr>
+<td><code>write</code></td>
+<td>Produce full SEO article from a plan</td>
+<td>Claude Opus</td>
+</tr>
+<tr>
+<td><code>analyze</code></td>
+<td>15+ SEO quality checks + auto-fix</td>
+<td>Local + Claude</td>
+</tr>
+<tr>
+<td><code>pipeline</code></td>
+<td>End-to-end orchestrator — research → plan → write → analyze → finalize. Returns <code>article_id</code> immediately, polls async.</td>
+<td>All of the above</td>
+</tr>
+<tr>
+<td><code>toolkit_audit</code></td>
+<td>Composite domain audit for <code>/admin/seo</code> dashboard</td>
+<td>MIVAA <code>/site-review</code></td>
+</tr>
+<tr>
+<td><code>toolkit_research</code></td>
+<td>User-driven research wrapper</td>
+<td>Above <code>research</code> + persistence</td>
+</tr>
+</tbody></table>
+<h2>Authentication</h2>
+<pre><code class="language-http">Authorization: Bearer &lt;supabase_access_token&gt;
+</code></pre>
+<p>Or admin secret key (<code>apikey: sb_secret_...</code>).</p>
+<h2>Request</h2>
+<pre><code class="language-http">POST /functions/v1/seo-api
+Content-Type: application/json
+
+{ &quot;action&quot;: &quot;&lt;one of the above&gt;&quot;, ...action-specific params }
+</code></pre>
+<h2>Response</h2>
+<p>Identical to the previous per-function responses. See per-handler implementation:</p>
+<ul>
+<li><code>supabase/functions/seo-api/handlers/research.ts</code></li>
+<li><code>supabase/functions/seo-api/handlers/plan.ts</code></li>
+<li><code>supabase/functions/seo-api/handlers/write.ts</code></li>
+<li><code>supabase/functions/seo-api/handlers/analyze.ts</code></li>
+<li><code>supabase/functions/seo-api/handlers/pipeline.ts</code></li>
+<li><code>supabase/functions/seo-api/handlers/toolkit-audit.ts</code></li>
+<li><code>supabase/functions/seo-api/handlers/toolkit-research.ts</code></li>
+</ul>
+<h2>Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td>Missing/unknown <code>action</code>, invalid JSON</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Unauthorized</td>
+</tr>
+<tr>
+<td>405</td>
+<td>Method not allowed (only POST)</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Handler error</td>
+</tr>
+</tbody></table>
+
+</div></body></html>

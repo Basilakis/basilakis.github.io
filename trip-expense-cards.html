@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Trip Expense Cards &amp; Customer AR Aging</h1>
+<p>Two finance features shipped together (2026-06-20):</p>
+<ol>
+<li><strong>Trip / expense cards</strong> — sales reps (and other staff) collect expenses into a &quot;card&quot;, attach receipts, submit for per-line finance approval, and (optionally) get a reimbursement payable created automatically.</li>
+<li><strong>Customer AR aging buckets</strong> — a per-customer outstanding-receivables breakdown by days-past-due, consumed across the finance Parties views.</li>
+</ol>
+<p>Both are workspace-scoped and gated by the <code>sales-finance</code> module.</p>
+<hr>
+<h2>Expense cards</h2>
+<h3>Data model</h3>
+<p><strong><code>trip_expense_reports</code></strong> — the card.</p>
+<ul>
+<li>Identity / ownership: <code>id</code>, <code>workspace_id</code>, <code>user_id</code>, <code>card_type</code> (<code>&#39;trip&#39; | &#39;monthly&#39; | &#39;other&#39;</code>).</li>
+<li>Trip details: <code>title</code>, <code>destination</code> (trip cards only), <code>purpose</code>, <code>trip_start</code>, <code>trip_end</code>, <code>currency</code> (default <code>&#39;EUR&#39;</code>).</li>
+<li>Lifecycle: <code>status</code> (<code>&#39;draft&#39; | &#39;submitted&#39; | &#39;partially_approved&#39; | &#39;approved&#39; | &#39;rejected&#39; | &#39;reimbursed&#39;</code>), <code>submitted_at</code>, <code>reviewed_at</code>, <code>reviewed_by</code>, <code>review_notes</code>.</li>
+<li>Denormalized rollups: <code>item_count</code>, <code>total_amount</code>, <code>approved_amount</code>, <code>rejected_amount</code>, <code>pending_amount</code> (recomputed by <code>_trip_expense_recompute</code>).</li>
+<li>Assignment (finance requested the card on a teammate&#39;s behalf): <code>assigned_by</code>, <code>request_note</code>.</li>
+<li>Reimbursement: <code>reimbursement_planned_payment_id</code> (FK → <code>planned_payments.id</code>), <code>reimbursed_at</code>.</li>
+</ul>
+<p><strong><code>trip_expense_items</code></strong> — one line per expense.</p>
+<ul>
+<li><code>id</code>, <code>report_id</code> (FK), <code>workspace_id</code>, <code>expense_date</code>.</li>
+<li><code>category</code> (<code>&#39;transport&#39; | &#39;fuel&#39; | &#39;hotel&#39; | &#39;meals&#39; | &#39;parking&#39; | &#39;tolls&#39; | &#39;supplies&#39; | &#39;other&#39;</code>), <code>description</code>, <code>vendor</code>, <code>amount</code>, <code>currency</code>, <code>vat_amount</code>.</li>
+<li><code>payment_method</code> (<code>&#39;cash&#39; | &#39;card&#39; | &#39;personal&#39; | &#39;company_card&#39; | &#39;other&#39;</code>), <code>billable</code>, <code>project_id</code> (optional billable link).</li>
+<li>Receipt: <code>receipt_bucket</code> (<code>&#39;pdf-documents&#39;</code>), <code>receipt_path</code>, <code>receipt_name</code>, <code>receipt_mime</code>.</li>
+<li>Per-line review: <code>approval_status</code> (<code>&#39;pending&#39; | &#39;approved&#39; | &#39;rejected&#39;</code>), <code>review_notes</code>, <code>reviewed_by</code>, <code>reviewed_at</code>, <code>sort_order</code>.</li>
+</ul>
+<h3>Lifecycle</h3>
+<ol>
+<li><strong>Create + fill</strong> — rep creates a card (<code>createReport</code>) and adds expense lines (<code>addItem</code>).</li>
+<li><strong>Submit</strong> — <code>trip_expense_submit</code> RPC flips the card to <code>submitted</code>, stamps <code>submitted_at</code>, and emits the <code>expense_card_submitted</code> flow event to workspace finance reviewers.</li>
+<li><strong>Per-line review</strong> — finance approves/rejects each line via <code>trip_expense_review_item(p_item_id, p_decision, p_note?)</code>. Each call recomputes the card rollups; the card lands on <code>approved</code> / <code>partially_approved</code> / <code>rejected</code>. When every line is decided, the <code>expense_card_reviewed</code> flow event fires back to the rep.</li>
+<li><strong>Reimbursement (optional)</strong> — <code>_trip_expense_sync_reimbursement</code> reads <code>finance_settings.trip_expense_reimbursement_mode</code>:<ul>
+<li><code>&#39;planned_payment&#39;</code> → creates/updates a payable (<code>planned_payments</code>, expense direction, counterparty = the rep, amount = approved total) and links it via <code>reimbursement_planned_payment_id</code>.</li>
+<li><code>&#39;none&#39;</code> → approval-only, no payable.
+Marking that planned payment paid flips the card to <code>reimbursed</code> and stamps <code>reimbursed_at</code>. The toggle lives in <strong>Finance → Settings</strong> (&quot;Auto-create a reimbursement payable on approval&quot;).</li>
+</ul>
+</li>
+<li><strong>Finance-requested cards</strong> — finance can open a card <em>for</em> a teammate via <code>trip_expense_request_card(...)</code> (stamps <code>assigned_by</code> / <code>request_note</code>), which emits <code>expense_card_requested</code> to that user. Assignee candidates come from <code>list_workspace_expense_assignees(p_workspace_id)</code>.</li>
+</ol>
+<h3>Edge function — <code>trip-expense-ops</code></h3>
+<p>Service-role-backed (receipts live in the private <code>pdf-documents</code> bucket). The caller is the authenticated card owner / finance manager; ownership + <code>is_workspace_finance_manager</code> are checked before writes. Action-based POST:</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Body</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>upload_receipt</code></td>
+<td><code>item_id</code>, <code>filename</code>, <code>content_type</code>, <code>data_base64</code></td>
+<td>Uploads the receipt → <code>pdf-documents/trip-expenses/{report_id}/{item_id}-{ts}.{ext}</code>, writes the <code>receipt_*</code> columns. Returns a 7-day signed URL.</td>
+</tr>
+<tr>
+<td><code>sign_receipt</code></td>
+<td><code>item_id</code></td>
+<td>Mints a fresh 7-day signed URL for the stored receipt.</td>
+</tr>
+<tr>
+<td><code>generate_pdf</code></td>
+<td><code>report_id</code></td>
+<td>Renders the A4 expense report (header + per-line table with color-coded approval status + totals) → <code>pdf-documents/trip-expenses/{report_id}/report-{ts}.pdf</code>, returns a signed URL + <code>page_count</code>.</td>
+</tr>
+</tbody></table>
+<p>Receipt paths are added to <code>build_storage_reference_set()</code> so the orphan-cleanup cron never reaps a live receipt.</p>
+<h3>Agent tools (<code>_shared/tools/trip-expense-tools.ts</code>)</h3>
+<p>Registered on KAI, gated on the <code>sales-finance</code> module, <strong>0 credits</strong>, service-role enforces the caller&#39;s <code>user_id</code>:</p>
+<ul>
+<li><code>create_trip_card</code> → <code>{ title, card_type?, destination?, purpose?, trip_start?, trip_end?, currency? }</code></li>
+<li><code>add_trip_expense</code> → <code>{ card_id? | card_title?, amount, category?, description?, vendor?, expense_date?, currency?, payment_method? }</code></li>
+<li><code>list_trip_cards</code> → <code>{ status?, card_type? }</code></li>
+<li><code>submit_trip_card</code> → <code>{ card_id? | card_title? }</code> (validates draft + ≥1 line, emits <code>expense_card_submitted</code>)</li>
+</ul>
+<p>Chunk types streamed to AgentHub: <code>trip_card_created</code>, <code>trip_expense_added</code>, <code>trip_cards_list</code>, <code>trip_card_submitted</code>.</p>
+<h3>Frontend</h3>
+<ul>
+<li>Route <strong><code>/trip-expenses</code></strong> (<a href="../src/pages/TripExpensesPage.tsx">src/pages/TripExpensesPage.tsx</a>) — any authenticated workspace member; renders <code>TripExpensesPanel</code> with <code>canReview={false}</code> (reps see only their own cards).</li>
+<li><strong>Finance → &quot;Expense cards&quot; tab</strong> (<a href="../src/pages/Admin/FinancePage.tsx">src/pages/Admin/FinancePage.tsx</a>, tab <code>trip_cards</code>) — renders the same panel with <code>canReview={true}</code> for finance/owners (read-only for accountants).</li>
+<li>Panel + dialogs: <a href="../src/modules/finance/components/TripExpensesPanel.tsx">src/modules/finance/components/TripExpensesPanel.tsx</a> (<code>TripCardDetail</code>, <code>NewTripCardDialog</code>, <code>RequestCardDialog</code>, <code>AddExpenseDialog</code>).</li>
+<li>Service: <a href="../src/modules/finance/services/tripExpenseService.ts">src/modules/finance/services/tripExpenseService.ts</a> — <code>listReports / getReport / createReport / updateReport / deleteReport / addItem / updateItem / removeItem / submit / reviewItem / requestCard / listAssignees / uploadReceipt / receiptUrl / generatePdf</code>.</li>
+</ul>
+<h3>Flow events</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Audience</th>
+<th>Action URL</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>expense_card_submitted</code></td>
+<td>workspace finance reviewers</td>
+<td><code>/finance?tab=trip_cards</code></td>
+</tr>
+<tr>
+<td><code>expense_card_reviewed</code></td>
+<td>card owner (rep)</td>
+<td><code>/trip-expenses</code></td>
+</tr>
+<tr>
+<td><code>expense_card_requested</code></td>
+<td>the assigned teammate</td>
+<td><code>/trip-expenses</code></td>
+</tr>
+</tbody></table>
+<p>(All delivered through the Flows engine — see <a href="./flows-notification-system.html">flows-notification-system.md</a>.)</p>
+<hr>
+<h2>Customer AR aging buckets</h2>
+<p><strong><code>vw_customer_aging_buckets</code></strong> — a <code>security_invoker</code> view (base-table RLS applies), one row per customer (company or contact) with outstanding receivables.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>customer_company_id</code>, <code>customer_contact_id</code>, <code>party_name</code></td>
+<td>the customer</td>
+</tr>
+<tr>
+<td><code>not_due</code></td>
+<td>amount not yet due (or no due date)</td>
+</tr>
+<tr>
+<td><code>due_0_30</code></td>
+<td>1–30 days past due</td>
+</tr>
+<tr>
+<td><code>due_31_90</code></td>
+<td>31–90 days past due</td>
+</tr>
+<tr>
+<td><code>due_90_plus</code></td>
+<td>&gt; 90 days past due</td>
+</tr>
+<tr>
+<td><code>total_outstanding</code></td>
+<td>sum of all buckets</td>
+</tr>
+<tr>
+<td><code>open_doc_count</code>, <code>max_days_overdue</code></td>
+<td>open-document count + worst overdue age</td>
+</tr>
+<tr>
+<td><code>workspace_id</code></td>
+<td>tenant scope</td>
+</tr>
+</tbody></table>
+<p>Read via <code>financeService.getCustomerAgingBuckets({ workspaceId?, companyId?, contactId? })</code> (<a href="../src/modules/finance/services/financeService.ts">src/modules/finance/services/financeService.ts</a>), ordered by <code>total_outstanding</code> desc.</p>
+<p>Consumed by:</p>
+<ul>
+<li><a href="../src/modules/finance/tabs/PartiesTab.tsx">src/modules/finance/tabs/PartiesTab.tsx</a> — headline totals + per-party breakdown.</li>
+<li><a href="../src/modules/finance/components/CustomerFinanceTabs.tsx">src/modules/finance/components/CustomerFinanceTabs.tsx</a> — <code>PartyAccountSummary</code> renders the four buckets (90+ highlighted red when non-zero).</li>
+</ul>
+<hr>
+<h2>Activation</h2>
+<p>Enable the <code>sales-finance</code> module. Deploy the <code>trip-expense-ops</code> edge function and (if not already) <code>agent-chat</code> so the trip-expense tools load. All DB objects (tables, view, RPCs, the storage-reference-set protection) are applied via MCP migrations.</p>
+
+</div></body></html>
