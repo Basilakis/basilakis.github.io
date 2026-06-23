@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Finance System (Greek e-invoicing, AADE/myDATA, AR/AP)</h1>
+<blockquote>
+<p>Module slug: <strong><code>sales-finance</code></strong> · category <code>core</code> · tier <code>pro</code> · <code>src/modules/finance/manifest.json</code>
+Multi-tenant: <strong>tenant = workspace</strong>. Every table, view, RPC, and edge function is scoped to a <code>workspace_id</code>.</p>
+</blockquote>
+<p>The finance module is the platform&#39;s multi-tenant accounting and e-invoicing layer for Greek businesses. It issues legally-compliant documents to <strong>AADE/myDATA</strong> through the <strong>Novus</strong> provider connector, tracks AR/AP, and produces the reports a Greek business needs for VAT filing and bookkeeping. It replaced a removed legacy third-party ERP connector (see <a href="#10-removed-the-legacy-erp-connector">§10</a>).</p>
+<p>Related docs: <a href="pos-retail-system.html">POS / Retail</a> · <a href="online-storefront.html">Online Storefront</a> · <a href="capabilities-and-tenancy.html">Capabilities &amp; Tenancy</a> · <a href="warehouse-and-billing.html">Warehouse &amp; Billing</a> · <a href="api/finance-api.html">Finance API reference</a> · <a href="../src/modules/myaade/README.html">myAADE module</a>.</p>
+<hr>
+<h2>1. What the module covers</h2>
+<ul>
+<li><strong>Outbound documents</strong> — sales invoices (<code>1.x</code>), service invoices (<code>2.x</code>), retail receipts (<code>11.x</code>, see <a href="pos-retail-system.html">POS</a>), delivery/dispatch notes (<code>9.3</code>), and customer credit notes (<code>5.1</code>/<code>5.2</code>). All submitted to AADE/myDATA via the Novus connector.</li>
+<li><strong>Inbound documents</strong> — pulls bills that suppliers transmitted to AADE citing this workspace&#39;s VAT (<code>RequestDocs</code>) into <code>inbound_documents</code>; convert to <code>supplier_bills</code> and/or receive into warehouse stock.</li>
+<li><strong>AP side</strong> — supplier bills, supplier credit notes, planned payments, payment allocation.</li>
+<li><strong>Payments</strong> — both cash-in (AR) and cash-out (AP) via <code>payments</code> + <code>payment_allocations</code>.</li>
+<li><strong>Reporting</strong> — VAT analysis (ΦΠΑ), myDATA reconciliation, AR/AP aging, P&amp;L, cash-flow forecast, ledgers (καρτέλα), and accounting export bridges (γέφυρες, CSV).</li>
+<li><strong>Digest</strong> — scheduled email of the AR/AP snapshot + P&amp;L + follow-up queue via the Flows engine.</li>
+<li><strong>Storefront + Stripe</strong> — anonymous mini-store (<a href="online-storefront.html">online-storefront.md</a>) + Stripe Checkout for online invoice payment.</li>
+<li><strong>Multi-branch</strong> — <code>finance_branches</code> with branch codes surfaced on PDFs and submitted to AADE.</li>
+</ul>
+<h3>Tenancy guard convention (from audit #208)</h3>
+<p>Every workspace-scoped <code>SECURITY DEFINER</code> RPC begins with:</p>
+<pre><code class="language-sql">PERFORM public.assert_workspace_member(p_workspace_id);
+</code></pre>
+<p>Edge functions enforce tenancy via <code>userCanAccessWorkspace()</code> / <code>listUserWorkspaceIds()</code> from <code>supabase/functions/_shared/auth.ts</code> — the post-#208 IDOR fix re-checks the authenticated user against the document&#39;s <code>workspace_id</code> on every document-touching path. See <a href="capabilities-and-tenancy.html">Capabilities &amp; Tenancy</a> for the guard RPC definitions.</p>
+<hr>
+<h2>2. Edge functions</h2>
+<p>All live under <code>supabase/functions/</code>. Full request/response detail in <a href="api/finance-api.html">api/finance-api.md</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Auth</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>finance-issue-invoice</code></td>
+<td><code>admin/super_admin/owner/finance/accountant</code> JWT</td>
+<td>Create invoice from quote, issue (allocate series/AA), transmit to myDATA, POS card/IRIS two-phase flow, credit notes, delivery notes</td>
+</tr>
+<tr>
+<td><code>finance-invoice-pdf</code></td>
+<td><code>admin/super_admin/owner/finance</code> JWT</td>
+<td>Render A4 PDF for invoice / credit note / delivery note (<code>pdf-lib</code> + Noto Sans)</td>
+</tr>
+<tr>
+<td><code>finance-pay-invoice</code></td>
+<td>admin JWT <strong>or</strong> public <code>pay_token</code></td>
+<td>Mint pay link / create Stripe Checkout session (routes to workspace Connect account when configured)</td>
+</tr>
+<tr>
+<td><code>finance-send-invoice-email</code></td>
+<td><code>admin/super_admin/owner/finance</code> JWT</td>
+<td>Email the invoice PDF as attachment via <code>email-api</code></td>
+</tr>
+<tr>
+<td><code>finance-send-statement</code></td>
+<td>finance JWT (single) or <code>x-cron-secret</code> (batch)</td>
+<td>Party ledger (καρτέλα) PDF + email, with pay links; cron auto-statements</td>
+</tr>
+<tr>
+<td><code>finance-inbound-sync</code></td>
+<td>finance JWT (manual, free) or <code>x-cron-secret</code> (batch, 2 cr)</td>
+<td>Pull <code>RequestDocs</code> from AADE myDATA into <code>inbound_documents</code></td>
+</tr>
+<tr>
+<td><code>finance-fiscal-offline-recovery</code></td>
+<td><code>x-cron-secret</code></td>
+<td>Backfill MARK on <code>fiscal_status=&#39;offline&#39;</code> documents via <code>RequestTransmittedDocs</code></td>
+</tr>
+<tr>
+<td><code>finance-digest-aggregate</code></td>
+<td>Flows / <code>x-cron-secret</code> / admin <code>mode:&#39;now&#39;</code></td>
+<td>Email AR/AP + P&amp;L + follow-up digest; dispatch quote follow-up reminders</td>
+</tr>
+<tr>
+<td><code>finance-storefront</code></td>
+<td>none (public, slug-keyed)</td>
+<td>Anonymous mini-store meta/products/checkout → draft retail receipt + pay link</td>
+</tr>
+<tr>
+<td><code>parse-supplier-cost-list</code></td>
+<td><code>admin/super_admin/owner</code> JWT</td>
+<td>Apply a supplier price list (KB doc) → <code>products.cost</code> (procurement cost maintenance)</td>
+</tr>
+</tbody></table>
+<h3><code>finance-issue-invoice</code> — the central document engine</h3>
+<p>Request body flags (all optional, composable):</p>
+<pre><code>quote_id?          create invoice from quote (idempotent via issue_invoice_from_quote RPC)
+invoice_id?        act on an existing invoice
+credit_note_id?    act on a credit note
+delivery_note_id?  act on a delivery note
+issue_now?         flip draft → issued (allocates series/AA via mark_invoice_issued)
+submit_fiscal?     transmit to AADE via Novus
+skip_signature?    false = POS card/IRIS flow (Law 5155)
+fiscal_overrides?  { series, aa, invoiceType, transmissionFailure }
+pos_payment?       { type, terminalId, amount } — EFT-POS Law 5155
+pos_complete?      { signatureToken } — finalize a held POS receipt
+</code></pre>
+<p><code>issue_now</code> and <code>submit_fiscal</code> are <strong>independent</strong> — you can issue without transmitting, or transmit a pre-issued invoice. Credit cost: <strong>2 credits per successful myDATA transmission</strong> (<code>TRANSMISSION_CREDITS = 2</code>); root workspace transmits free; failure refunds.</p>
+<hr>
+<h2>3. The myDATA / AADE / Novus transmission flow</h2>
+<h3>3.1 Connector resolution (master-key model)</h3>
+<p><code>supabase/functions/_shared/fiscal/registry.ts → resolveWorkspaceConnector(supabase, workspaceId, capability)</code>:</p>
+<ol>
+<li>Reads <code>workspace_fiscal_bindings WHERE workspace_id=? AND capability=?</code> for an explicit <code>connector_slug</code>.</li>
+<li>No binding → defaults to <code>&#39;novus&#39;</code> for capabilities <code>legal_invoice</code> / <code>pre_invoice_notice</code> / <code>tax_submission</code>.</li>
+<li>Loads Novus config: <code>NOVUS_API_KEY</code> + <code>NOVUS_SANDBOX</code> + <code>NOVUS_API_BASE_URL</code> via <code>resolveSecret()</code> (env-first, DB-second).</li>
+</ol>
+<p><strong>This is a master-key model</strong>: one platform-wide <code>NOVUS_API_KEY</code>. All sub-tenants transmit through it, distinguished by their own issuer VAT (<code>finance_settings.business_vat</code>). This is what makes it correct for multi-tenancy (unlike the removed legacy single-account ERP model).</p>
+<h3>3.2 Invoice payload construction</h3>
+<p><code>supabase/functions/_shared/fiscal/invoice-builder.ts</code> — <code>buildInvoiceInputFromDb</code> / <code>buildCreditNoteInputFromDb</code> / <code>buildDeliveryNoteInputFromDb</code>:</p>
+<ul>
+<li><strong>Issuer</strong> from <code>finance_settings</code> (name, VAT, address, tax office); branch address from <code>finance_branches</code> when <code>invoices.branch_code &gt; 0</code>.</li>
+<li><strong>Counterpart</strong> from <code>crm_companies</code> / <code>crm_contacts</code>. Retail receipts (<code>11.x</code>) emit <strong>no counterpart</strong> (AADE does not require it).</li>
+<li><strong>Per-line myDATA classification</strong> from <code>products.mydata_vat_category</code> / <code>mydata_income_classification_type</code> / <code>mydata_income_classification_category</code>.</li>
+<li><strong>VAT category map</strong> (canonical, post-#208): <code>{24:1, 13:2, 6:3, 17:4, 9:5, 4:6, 0:7, exempt:8}</code>. VAT amount is always recomputed as <code>net × pct/100</code> — the stored value is not trusted.</li>
+<li><strong>Series/AA</strong>: <code>series = overrides.series ?? inv.series ?? finance_settings.invoice_number_prefix ?? &#39;A&#39;</code>; <code>aa = overrides.aa ?? inv.series_number ?? inv.legal_number</code>.</li>
+<li><strong>Movement block</strong> (<code>9.3</code> / shipping invoices) when <code>has_shipping=true</code>: dispatch date/time, vehicle number, <code>movePurpose</code>, loading/delivery address.</li>
+<li>Credit notes: <code>correlated_mark</code> set → <code>correlatedInvoices: [mark]</code> → myDATA <strong>5.1</strong> (correlated); unset → <strong>5.2</strong> (standalone).</li>
+</ul>
+<h3>3.3 Novus REST</h3>
+<p><code>supabase/functions/_shared/fiscal/novus.ts</code>. Sandbox <code>https://provider-dev.timologisi.online</code>, production <code>https://provider.timologisi.online</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /api/v1/Provider/SendInvoices</code></td>
+<td>Transmit a document</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/Provider/CompletionPosInvoices</code></td>
+<td>Finalize a POS card/IRIS receipt after the terminal charge clears</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/Provider/RequestTransmittedDocs</code></td>
+<td>Poll for the MARK of an offline-queued document</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/Provider/AskSignatureForOldInvoice</code> + <code>.../CompletionAskSignatureForOldInvoice</code></td>
+<td>Retroactive Law 5155 signature on an already-issued on-credit invoice (connector-only; no UI yet)</td>
+</tr>
+</tbody></table>
+<p>Novus returns HTTP 200 on processed requests; branch on <code>response[0].statusCode</code>:</p>
+<ul>
+<li><code>Success</code> → <code>{accepted, mark, uid, authenticationCode, qrUrl, invoiceUrl, providerCredits}</code></li>
+<li><code>Offline</code> → <code>{offline, uid, qrUrl, …}</code> — AADE down; Novus queues; MARK arrives later via <code>RequestTransmittedDocs</code></li>
+<li>other → <code>rejected</code> (errorCode/errorMessage); 5XX → <code>error</code> (sets <code>transmissionFailure</code> on retry)</li>
+<li><code>providerSignature[]</code> present → <code>awaiting_payment</code> (POS Law 5155 path)</li>
+</ul>
+<h3>3.4 State machine</h3>
+<pre><code>draft
+  → issue_now → issued                 (mark_invoice_issued allocates legal series/AA)
+  → submit_fiscal → [2 cr reserved]
+      → Novus SendInvoices
+          accepted → fiscal_status=&#39;accepted&#39;, fiscal_mark stamped, credits kept
+          offline  → fiscal_status=&#39;offline&#39;  (offline-recovery cron backfills mark)
+          rejected → fiscal_status=&#39;rejected&#39;, credits refunded
+          error    → fiscal_status=&#39;error&#39;,   credits refunded, transmissionFailure on retry
+
+POS card/IRIS (Law 5155):
+  → pos_payment (skipSignature=false) → awaiting_payment, pos_signatures inserted, credits refunded
+      → terminal charged → pos_complete
+          → CompletionPosInvoices → accepted, 2 cr debited
+</code></pre>
+<p>Every attempt appends a row to <code>fiscal_submissions</code> (full request + response payload stored). The <code>finance-fiscal-offline-recovery</code> cron polls offline documents (50/batch, grouped by workspace so connectors resolve once) and stamps the MARK once AADE processes them.</p>
+<hr>
+<h2>4. Inbound document sync (<code>finance-inbound-sync</code>)</h2>
+<p>Pulls AADE&#39;s <code>RequestDocs</code> REST feed — documents <strong>other</strong> Greek businesses submitted to AADE citing this workspace&#39;s VAT as counterpart (statutory &quot;received documents&quot;).</p>
+<ul>
+<li><strong>Credentials</strong> (per-workspace) in <code>workspace_inbound_credentials</code>: <code>aade_user_id</code>, <code>subscription_key</code> (Ocp-Apim-Subscription-Key, masked in browser via <code>get_inbound_creds_status</code> RPC), <code>base_url</code>, <code>enabled</code>. These are AADE myDATA <strong>REST</strong> &quot;Special Access Code&quot; credentials — <strong>not</strong> TaxisNet, <strong>not</strong> the SOAP creds the <a href="../src/modules/myaade/README.html">myAADE module</a> uses.</li>
+<li><strong>Auth</strong>: cron path (<code>x-cron-secret</code>, 2 cr/sync debited after success) loops all enabled workspaces; manual path (finance JWT, free) scoped to caller&#39;s workspaces. Entitlement-gated on <code>sales-finance</code>.</li>
+<li><strong>Pull</strong>: <code>GET {baseUrl}/RequestDocs?mark={watermark}</code> with <code>aade-user-id</code> + <code>Ocp-Apim-Subscription-Key</code> headers. Watermark = <code>finance_settings.inbound_last_mark</code> (advances to max MARK seen).</li>
+<li><strong>Lands in</strong> <code>inbound_documents</code> (PK <code>(workspace_id, mark)</code>, upsert ignore-duplicates). <code>status</code>: <code>new</code> → <code>classified</code> → <code>received</code> (lines mapped to stock) / <code>dismissed</code>. <code>lines</code> jsonb holds per-line <code>{line_number, quantity, net_value, vat_amount, item_description}</code>.</li>
+<li><strong>Downstream</strong>: <code>inbound_doc_to_supplier_bill(p_doc_id)</code> creates a <code>supplier_bills</code> row; <code>inbound_doc_receive_to_warehouse(p_doc_id, p_mappings)</code> records stock-in (see <a href="warehouse-and-billing.html">warehouse doc</a>).</li>
+</ul>
+<h3>Supplier cost-list import (<code>parse-supplier-cost-list</code>)</h3>
+<p>Procurement-cost maintenance without editing product rows. An admin pastes a supplier&#39;s price list into a <code>kb_docs</code> row tagged <code>price_doc_type=&#39;supplier_cost_list&#39;</code> (a Markdown table), then POSTs <code>{ kb_doc_id, dry_run? }</code>. The function parses SKU/cost/currency columns (case-insensitive header detection; strips <code>€$£</code>, handles comma separators), looks up <code>products</code> by <code>sku</code> (fallback <code>external_sku</code>) within the doc&#39;s <code>workspace_id</code>, and updates <code>products.cost</code> / <code>cost_currency</code> / <code>cost_updated_at</code> / <code>cost_source=&#39;kb_price_list&#39;</code>. <code>dry_run:true</code> reports matched/unmatched without writing. Auth <code>admin/super_admin/owner</code>; 0 credits; manually invoked (no cron). Unmatched SKUs are reported, not errored.</p>
+<hr>
+<h2>5. Reports</h2>
+<h3>VAT analysis (ΦΠΑ)</h3>
+<p>RPC <code>finance_vat_report(p_workspace_id, p_from, p_to)</code> → rows of <code>{vat_rate, vat_category_code, output_vat, input_vat, net_sales, net_purchases, payable_vat}</code> — the shape needed for the Greek quarterly VAT return (Φ2). The canonical 8-code VAT table lives in <code>financeService.ts</code> (<code>VAT_CATEGORIES</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>%</th>
+<th>Label</th>
+<th></th>
+<th>Code</th>
+<th>%</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>24</td>
+<td>Standard</td>
+<td></td>
+<td>5</td>
+<td>9</td>
+<td>Island reduced</td>
+</tr>
+<tr>
+<td>2</td>
+<td>13</td>
+<td>Reduced</td>
+<td></td>
+<td>6</td>
+<td>4</td>
+<td>Island super-reduced</td>
+</tr>
+<tr>
+<td>3</td>
+<td>6</td>
+<td>Super-reduced</td>
+<td></td>
+<td>7</td>
+<td>0</td>
+<td>Zero-rated</td>
+</tr>
+<tr>
+<td>4</td>
+<td>17</td>
+<td>Island reduced</td>
+<td></td>
+<td>8</td>
+<td>0</td>
+<td>Exempt (needs <code>vatExemptionCategory</code>)</td>
+</tr>
+</tbody></table>
+<h3>myDATA reconciliation</h3>
+<p>RPC <code>finance_mydata_reconciliation(...)</code> — every issued legal document bucketed by AADE state: <code>accepted</code> / <code>offline_pending</code> / <code>rejected</code> / <code>failed</code> / <code>not_transmitted</code>.</p>
+<h3>Customer/Supplier ledger (Καρτέλα)</h3>
+<ul>
+<li><strong>In-app</strong>: <code>finance_party_ledger(...)</code> + <code>finance_party_opening_balance(...)</code> RPCs (<code>financeService.getPartyLedger</code> / <code>getPartyOpeningBalance</code>).</li>
+<li><strong>PDF + email</strong>: <code>finance-send-statement</code> builds an 8-column running ledger with carry-forward opening balance and &quot;Pay now&quot; links per open invoice; cron mode auto-sends per <code>finance_settings.auto_statement_*</code> schedule, honoring <code>crm_companies.finance_statement_opt_out</code>.</li>
+</ul>
+<h3>Accounting export bridges (Γέφυρες)</h3>
+<p><code>src/modules/finance/services/accountingExportService.ts</code> (pure client-side, RLS-scoped — the <code>accountant</code> persona reaches it via Finance → Reports):</p>
+<ul>
+<li><code>salesJournal(ws, from, to)</code> — <code>invoices</code> + <code>credit_notes</code> (sign-flipped).</li>
+<li><code>purchasesJournal(ws, from, to)</code> — <code>supplier_bills</code> + <code>supplier_credit_notes</code> (sign-flipped).</li>
+<li><code>summarize(...)</code> — groups by <code>(section × effective rate)</code>.</li>
+<li><strong>CSV</strong>: 13 columns (<code>Date, Kind, myDATA type, Number, Series, Counterpart, VAT No, Net, VAT, Total, Rate %, MARK, Status</code>), UTF-8 BOM-prefixed for Excel Greek support. Imports into Epsilon Net / SoftOne / Megasoft via column mapping — plain delimited CSV, no proprietary format.</li>
+</ul>
+<h3>Additional reports</h3>
+<p>All backed by <code>assert_workspace_member</code>-guarded RPCs: sales per day/customer/product/category/factory/designer; purchases per product; receipts per product; spend per supplier; payments in/out per counterparty; top customer/supplier outstanding; open tasks/follow-ups; customer top products. Plus views <code>vw_ar_aging</code>, <code>vw_ap_aging</code>, <code>vw_cash_flow_forecast</code>, <code>vw_monthly_pnl</code> (used by the digest + dashboard).</p>
+<hr>
+<h2>6. Credit notes</h2>
+<h3>Customer credit notes (<code>credit_notes</code>)</h3>
+<p>Issued via <code>issue_credit_note(p_invoice_id, p_reason, p_lines, p_document_type)</code> RPC. Transmitted via <code>finance-issue-invoice</code> with <code>credit_note_id</code>. <code>correlated_mark</code> (source invoice&#39;s MARK) → myDATA <strong>5.1</strong> (correlated); absent → <strong>5.2</strong> (standalone). PDF at <code>pdf-documents/credit-note-output/{id}/cn-{id}.pdf</code>.</p>
+<h3>Supplier credit notes (<code>supplier_credit_notes</code>)</h3>
+<p>Issued via <code>issue_supplier_credit_note(p_bill_id, p_reason, p_amount, p_lines)</code>. <strong>NOT transmitted to AADE</strong> — they are the supplier&#39;s document (already in AADE under the supplier&#39;s VAT). <code>external_mark</code> captures the MARK the supplier reported, for reconciliation against <code>inbound_documents</code>. Recorded for AP ledger accuracy and the purchases journal only.</p>
+<hr>
+<h2>7. Key DB tables</h2>
+<p>All workspace-scoped; RLS enforces <code>is_workspace_member</code> for read and <code>is_workspace_finance_manager</code> for write on document tables.</p>
+<p><strong>Documents:</strong> <code>invoices</code> (78 cols — <code>internal_number</code>/<code>legal_number</code>/<code>series</code>/<code>series_number</code>, <code>document_type</code>, <code>status</code>, <code>fiscal_status</code>, <code>fiscal_mark</code>/<code>uid</code>/<code>qr_url</code>, <code>subtotal_net</code>/<code>vat_amount</code>/<code>total</code>/<code>amount_paid</code>/<code>amount_due</code>, per-line tax totals, <code>has_shipping</code>+movement fields, <code>pay_token</code>, <code>stripe_*</code>, <code>project_id</code>, <code>invoice_kind</code>, <code>pos_session_id</code>), <code>invoice_items</code>, <code>credit_notes</code>+<code>credit_note_items</code>, <code>delivery_notes</code>+<code>delivery_note_items</code>, <code>supplier_bills</code>, <code>supplier_credit_notes</code>(+items).</p>
+<p><strong>Payments:</strong> <code>payments</code> (AR cash-in + AP cash-out), <code>payment_allocations</code> (M2M to invoices/bills — its insert fires the status-keeper that derives <code>invoices.status</code>), <code>planned_payments</code>.</p>
+<p><strong>Fiscal:</strong> <code>fiscal_submissions</code> (one row per attempt, full payloads), <code>workspace_fiscal_bindings</code> (capability → connector), <code>fiscal_connectors</code> (registry; currently <code>novus</code>), <code>pos_*</code> (see <a href="pos-retail-system.html">POS doc</a>).</p>
+<p><strong>Inbound:</strong> <code>inbound_documents</code>, <code>workspace_inbound_credentials</code>.</p>
+<p><strong>Config:</strong> <code>finance_settings</code> (~80 cols — business identity incl. EN variants, invoice numbering, banking, myDATA defaults, statement/digest schedules, template paths, FX), <code>finance_branches</code>, <code>finance_categories</code>.</p>
+<p><strong>Views:</strong> <code>vw_ar_aging</code>, <code>vw_ap_aging</code>, <code>vw_cash_flow_forecast</code>, <code>vw_monthly_pnl</code>, <code>vw_finance_parties</code>, <code>vw_customer_account_summary</code>, <code>vw_supplier_account_summary</code>, <code>vw_quote_followup_queue</code>.</p>
+<hr>
+<h2>8. Frontend</h2>
+<p>Module root <code>src/modules/finance/</code> (manifest slug <code>sales-finance</code>). Route <code>/finance</code> is double-gated: <code>CapabilityGuard capability=&quot;finance.manage&quot;</code> then <code>EntitlementGuard moduleSlug=&quot;sales-finance&quot;</code>.</p>
+<ul>
+<li><strong>Pages</strong>: <code>DocumentsPage</code> (Invoices / Credit Notes / Delivery Notes / Supplier Bills / Inbound / Parties / Planning / Reports / Settings), <code>PosPage</code> (see <a href="pos-retail-system.html">POS doc</a>).</li>
+<li><strong>Tabs</strong>: <code>ReportsTab</code> (18 report kinds + <code>AccountingExportCard</code>), <code>PartiesTab</code> (ledgers + send statement), <code>SettingsTab</code> (identity, numbering, banking, myDATA defaults, digest/statement schedules, inbound creds, branches, POS terminals, storefront), <code>PlanningTab</code> (cash-flow/aging/planned payments), <code>TimeBillingTab</code> (see <a href="warehouse-and-billing.html">billing doc</a>).</li>
+<li><strong>Services</strong>: <code>financeService</code> (single merged service, ~1700 lines — all document CRUD, fiscal, payments, reports, statement, pay, digest, canonical VAT constants), <code>accountingExportService</code>, <code>inboundService</code>, <code>posSessionService</code>, <code>timeTrackingService</code>, <code>warehouseService</code>, <code>deliveryNotesService</code>.</li>
+</ul>
+<hr>
+<h2>9. Secrets &amp; environment</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Where</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NOVUS_API_KEY</code></td>
+<td><code>platform_secrets</code> / env</td>
+<td>Master Novus key (one for the platform). Issuer identity comes from each tenant&#39;s <code>finance_settings.business_vat</code>.</td>
+</tr>
+<tr>
+<td><code>NOVUS_SANDBOX</code></td>
+<td><code>platform_secrets</code> / env</td>
+<td><code>&#39;true&#39;</code> → <code>provider-dev.timologisi.online</code></td>
+</tr>
+<tr>
+<td><code>NOVUS_API_BASE_URL</code></td>
+<td><code>platform_secrets</code> / env</td>
+<td>Override base URL</td>
+</tr>
+<tr>
+<td><code>AADE_MYDATA_BASE_URL</code></td>
+<td><code>platform_secrets</code> / env</td>
+<td>Inbound REST endpoint, default <code>https://mydatapi.aade.gr/myDATA</code></td>
+</tr>
+<tr>
+<td><code>aade_user_id</code>, <code>subscription_key</code></td>
+<td><code>workspace_inbound_credentials</code> (per tenant)</td>
+<td>AADE myDATA REST creds (not TaxisNet)</td>
+</tr>
+<tr>
+<td><code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code></td>
+<td><code>platform_secrets</code> / env</td>
+<td>Tenant invoice/storefront payments (workspace Connect account via <code>get_workspace_payout_account</code>)</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td><code>platform_secrets</code> / env</td>
+<td><code>x-cron-secret</code> for inbound-sync / offline-recovery / digest crons</td>
+</tr>
+<tr>
+<td><code>PUBLIC_APP_URL</code></td>
+<td>env</td>
+<td>Pay links (<code>/pay/:token</code>), default <code>https://app.materialshub.gr</code></td>
+</tr>
+</tbody></table>
+<p>Resolution is env-first, DB-second via <code>resolveSecret()</code>. Admin manages keys at <code>/admin/operations → Keys</code>. Note <code>STRIPE_BILLING_SECRET_KEY</code> is a <strong>separate</strong> dedicated account for platform SaaS revenue (#200) — see <a href="online-storefront.html">online-storefront.md §5</a>.</p>
+<hr>
+<h2>10. Removed: the legacy ERP connector</h2>
+<p>The legacy third-party ERP connector was <strong>removed entirely (2026-06-07)</strong>: its module folder, edge functions, shared client, API docs, the <code>push_to_*</code> path in <code>finance-issue-invoice</code>, its <code>platform_secrets</code> rows + <code>modules</code> row, and all of its columns (0 data rows). It used a single platform-wide API key — architecturally wrong for multi-tenancy (every tenant&#39;s pre-invoices would land in the one operator account). Its purpose is fully replaced by the per-tenant Novus → AADE/myDATA path.</p>
+<hr>
+<h2>11. Known open issues (audit #208)</h2>
+<p>These are documented, currently-open bugs — do not assume they are fixed:</p>
+<ol>
+<li><strong>Legal numbering allocated at draft-create, not at issue</strong> — <code>NewInvoiceDialog</code> / <code>PosPage</code> / <code>duplicateInvoice</code> allocate <code>series_number</code> at insert, so abandoned drafts gap the series. Correct fix: allocate only at issue. Legally sensitive — requires a live myDATA smoke test before changing.</li>
+<li><strong>Dialog-issued invoices get no <code>legal_number</code></strong> — the <code>NewInvoiceDialog</code> path sets <code>status:&#39;issued&#39;</code> inline without calling <code>mark_invoice_issued</code>. The quote→invoice path through <code>finance-issue-invoice</code> is correct.</li>
+<li><strong>Commission ledger bills from live <code>list_price</code>, not <code>cost_snapshot</code></strong> — <code>record_invoice_commissions</code> diverges from the quote when base price changed.</li>
+<li><strong>Nav vs route gating mismatch</strong> — nav shows Settings for <code>staff</code> even though the route is guarded by <code>network.manage</code>.</li>
+<li><strong><code>debit_user_credits</code> failure after successful transmission</strong> is logged (<code>console.warn</code>), not hard-failed; a pre-check mitigates but full fix needs atomic reservation.</li>
+<li><strong><code>VAT_CATEGORIES</code> duplicated</strong> across <code>NewInvoiceDialog</code> / <code>ProductMydataCard</code> / <code>ServicesCard</code> with inconsistent string-vs-numeric codes (canonical copy now in <code>financeService.ts</code>).</li>
+</ol>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09 · Covers #207, #208, #185, #206, #193, #200, #174.</p>
+
+</div></body></html>

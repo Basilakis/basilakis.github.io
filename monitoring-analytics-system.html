@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Monitoring &amp; Analytics System</h1>
 <p>Comprehensive real-time monitoring and analytics infrastructure for the Material Kai Vision Platform.</p>
 <hr>
@@ -51,8 +53,7 @@
 </ul>
 <p><strong>Data Sources</strong>:</p>
 <ul>
-<li><code>background_jobs</code> table - Main job tracking</li>
-<li><code>job_checkpoints</code> table - Stage-by-stage progress</li>
+<li><code>background_jobs</code> table - Main job tracking (including <code>stage_history</code> JSONB for stage-by-stage progress; <code>job_checkpoints</code> was dropped 2026-04-25)</li>
 </ul>
 <p><strong>Metrics Tracked</strong>: For <code>pdf_processing</code>, the system tracks pending, processing, completed, failed, retrying, and total job counts, plus success rate and average processing time. At the platform level it tracks total documents, total products created, total chunks created, and total images extracted.</p>
 <p><strong>Real-Time Updates</strong>:</p>
@@ -110,7 +111,7 @@
 <p><strong>Purpose</strong>: Track AI model usage, costs, and performance</p>
 <p><strong>Metrics</strong>:</p>
 <ul>
-<li><strong>Cost Tracking</strong>: Real-time cost per model (Claude, GPT, Qwen)</li>
+<li><strong>Cost Tracking</strong>: Real-time cost per model (Claude, GPT). Qwen pricing entries retired 2026-05-01 alongside the Qwen-removal migration — vision is now Anthropic-only, chunking moved to Claude Sonnet 4.6.</li>
 <li><strong>Model Usage</strong>: API calls by model and endpoint</li>
 <li><strong>Confidence Scores</strong>: Distribution of AI confidence scores</li>
 <li><strong>Latency Metrics</strong>: Response times per model</li>
@@ -119,13 +120,15 @@
 <p><strong>Time Periods</strong>: 24h, 7d, 30d, 90d</p>
 <p><strong>Models Tracked</strong>:</p>
 <ul>
-<li>Claude Sonnet 4.5</li>
+<li>Claude Opus 4.7</li>
 <li>Claude Haiku 4.5</li>
 <li>GPT-4o</li>
 <li>GPT-5</li>
-<li>Qwen3-VL 17B Vision</li>
-<li>Voyage AI voyage-3.5 (updated 2026-04 — replaced OpenAI text-embedding-3-small)</li>
+<li>Claude Sonnet 4.6 (chunking — replaced Qwen 2026-05-01)</li>
+<li>Voyage AI voyage-4 (updated 2026-04 — replaced OpenAI text-embedding-3-small)</li>
+<li>PaddleOCR-VL on Modal (layout+OCR backbone post-2026-06-13; replaced Surya-2, which had replaced Chandra v2)</li>
 </ul>
+<p>(Qwen3-VL was retired 2026-05-01 — the HF endpoint had been 404-ing for months and silently falling through to Claude. Vision is now Anthropic-only via Claude Opus 4.7 tool use, schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code>. Operations dashboard widgets for Qwen were removed in the same migration.)</p>
 <hr>
 <h2>🔄 Real-Time Job Tracking</h2>
 <h3>Background Jobs System</h3>
@@ -181,21 +184,18 @@
 </ul>
 <p>Stage 4 logs products consolidated, sources merged, and AI calls made.</p>
 <hr>
-<h2>🎯 Checkpoint System</h2>
-<h3>9 Processing Checkpoints</h3>
-<p>All stages save comprehensive metrics to checkpoints for recovery:</p>
-<ol>
-<li><strong>INITIALIZED</strong> - Job created</li>
-<li><strong>PDF_EXTRACTED</strong> - Stage 1 complete (focused extraction)</li>
-<li><strong>CHUNKS_CREATED</strong> - Stage 2 complete (chunking)</li>
-<li><strong>TEXT_EMBEDDINGS_GENERATED</strong> - Stage 3 complete (text embeddings)</li>
-<li><strong>IMAGES_EXTRACTED</strong> - Stage 5 complete (image extraction)</li>
-<li><strong>IMAGE_EMBEDDINGS_GENERATED</strong> - Stage 7 complete (CLIP embeddings)</li>
-<li><strong>PRODUCTS_DETECTED</strong> - Stage 0 complete (product discovery)</li>
-<li><strong>PRODUCTS_CREATED</strong> - Stage 9 complete (product creation)</li>
-<li><strong>COMPLETED</strong> - All stages complete</li>
-</ol>
-<p>Each checkpoint saves a <code>stage</code> identifier, <code>checkpoint_data</code> (e.g., <code>document_id</code>, <code>images_extracted</code>, <code>material_images</code>), and <code>metadata</code> (e.g., <code>processing_time_ms</code>, <code>ai_model</code>, <code>success_rate</code>).</p>
+<h2>🎯 Stage History &amp; Checkpoint System</h2>
+<h3>Stage-level audit via background_jobs JSONB (post 2026-04-25)</h3>
+<blockquote>
+<p>The <code>job_checkpoints</code> table was <strong>dropped</strong> in the 2026-04-25 single-table migration. All stage data now lives as JSONB on <code>background_jobs</code>:</p>
+</blockquote>
+<ul>
+<li><strong><code>stage_history</code></strong> — append-only array of stage events. Each entry carries <code>stage</code>, <code>status</code>, <code>started_at</code>, <code>completed_at</code>, <code>attempt</code>, <code>data</code>, <code>metadata</code>, <code>source</code>. Capped at 100 entries.</li>
+<li><strong><code>last_checkpoint</code></strong> — the resume snapshot (last successfully completed stage data). Used by auto-recovery to know where to restart.</li>
+<li><strong><code>recovery_history</code></strong> — append-only log of auto-recovery attempts.</li>
+</ul>
+<p>Stage names written to <code>stage_history</code> include: <code>initialized</code>, <code>pdf_extracted</code>, <code>chunks_created</code>, <code>text_embeddings_generated</code>, <code>images_extracted</code>, <code>image_embeddings_generated</code>, <code>products_detected</code>, <code>products_created</code>, <code>completed</code>.</p>
+<p>Each stage event carries a <code>data</code> payload (e.g., <code>document_id</code>, <code>images_extracted</code>, <code>material_images</code>) and a <code>metadata</code> payload (e.g., <code>processing_time_ms</code>, <code>ai_model</code>, <code>success_rate</code>).</p>
 <hr>
 <h2>📊 Sentry Integration</h2>
 <h3>Exception Tracking</h3>
@@ -226,12 +226,12 @@
 <h3>AI Model Costs</h3>
 <p><strong>Per Model Pricing</strong>:</p>
 <ul>
-<li>Claude Sonnet 4.5: $3.00 / 1M input tokens, $15.00 / 1M output tokens</li>
+<li>Claude Opus 4.7: $15.00 / 1M input tokens, $75.00 / 1M output tokens</li>
 <li>Claude Haiku 4.5: $0.80 / 1M input tokens, $4.00 / 1M output tokens</li>
 <li>GPT-4o: $2.50 / 1M input tokens, $10.00 / 1M output tokens</li>
-<li>Qwen3-VL 17B: $0.30 / 1M tokens</li>
-<li>Voyage AI voyage-3.5: $0.06 / 1M tokens (sole production text embedder as of 2026-04)</li>
+<li>Voyage AI voyage-4: $0.06 / 1M tokens (sole production text embedder as of 2026-04)</li>
 </ul>
+<p>(Qwen3-VL pricing entry retired 2026-05-01 alongside the Qwen-removal migration. Vision is now billed under Claude Opus 4.7 / Haiku 4.5 line items via Anthropic tool use.)</p>
 <p>Cost calculation multiplies token counts by per-million rates for input and output separately, then sums them.</p>
 <hr>
 <h2>📈 Performance Metrics</h2>
@@ -358,17 +358,9 @@
 <li>Partial index for completed jobs only</li>
 </ul>
 </li>
-<li><p><strong>Checkpoint Queries</strong> (<code>idx_job_checkpoints_job_created</code>)</p>
-<ul>
-<li>Query: <code>WHERE job_id = ? ORDER BY created_at DESC</code></li>
-<li>Composite index on (job_id, created_at DESC)</li>
-</ul>
+<li><p><strong>stage_history / last_checkpoint</strong> — these are JSONB columns on <code>background_jobs</code> (the <code>job_checkpoints</code> table was dropped 2026-04-25); no separate index needed — queries access them via the row&#39;s primary key.</p>
 </li>
-<li><p><strong>Progress Tracking</strong> (<code>idx_job_progress_document_updated</code>)</p>
-<ul>
-<li>Query: <code>WHERE document_id = ? ORDER BY updated_at DESC</code></li>
-<li>Composite index on (document_id, updated_at DESC)</li>
-</ul>
+<li><p><strong>Progress Tracking</strong> — progress percent is a column on <code>background_jobs</code> itself; the <code>job_progress</code> table was dropped 2026-04-25.</p>
 </li>
 </ol>
 <p><strong>Impact</strong>:</p>
