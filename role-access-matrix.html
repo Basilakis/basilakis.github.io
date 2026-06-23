@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Role &amp; Access Matrix</h1>
+<p>Single source of truth for <strong>who can see/do what</strong> on the platform. Reflects the
+code as of this writing — where the model is <em>not</em> enforced, it says so explicitly.</p>
+<blockquote>
+<p>TL;DR — there are <strong>two different &quot;role&quot; concepts</strong>, and day-to-day access is driven
+by the <strong>persona</strong> (derived from workspace membership), not by the global account role.</p>
+</blockquote>
+<hr>
+<h2>1. The two &quot;role&quot; concepts</h2>
+<h3>a) Account role — <code>roles</code> table (<code>user_profiles.role_id</code>)</h3>
+<p>A global, per-user value. Levels: <code>user</code>(1) · <code>dealer</code>(2) · <code>factory</code>(3) · <code>finance</code>(4) · <code>admin</code>(5) · <code>super_admin</code>(6).</p>
+<p>What it <strong>actually</strong> gates:</p>
+<ul>
+<li><code>admin</code> / <code>super_admin</code> (and <code>owner</code> of the <strong>root</strong> workspace) ⇒ <strong>Platform Operator</strong> — full <code>/admin/*</code> access.</li>
+<li><code>admin</code> specifically ⇒ passes the <code>is_admin_user()</code> RLS check on admin-governed tables.</li>
+<li><strong><code>dealer</code> and <code>factory</code> as <em>global</em> account roles are essentially vestigial</strong> — the frontend does not branch on them (the <code>FACTORY_OR_ADMIN_ROLES</code> constant is unused). Dealer/architect behaviour comes from <strong>workspace ownership + marketplace rank</strong>, not this column. The <code>dealer</code>↔<code>factory</code> values are still used by the role-upgrade-request approval flow.</li>
+</ul>
+<p>Managed in <strong>Admin → CRM → Users</strong> (inline Role dropdown).</p>
+<h3>b) Workspace membership role — <code>workspace_members.role</code></h3>
+<p>Per workspace: <code>owner</code> · <code>admin</code> · <code>member</code> · <code>client</code> · <code>accountant</code> · <code>sales</code>. Combined with the workspace&#39;s <strong>marketplace rank</strong> (<code>operator</code> / <code>dealer</code> / <code>architect</code>) and the platform-operator flag, this resolves to a single <strong>persona</strong>, which is what gates features.</p>
+<p>Source of truth: <a href="../src/auth/capabilities.ts"><code>src/auth/capabilities.ts</code></a>.</p>
+<hr>
+<h2>2. Personas (the real access tiers)</h2>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Who</th>
+<th>How it&#39;s resolved</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>operator</strong></td>
+<td>Platform team</td>
+<td><code>owner</code>/<code>admin</code>/<code>super_admin</code> (account role) of the <strong>root</strong> workspace → <code>isPlatformOperator</code></td>
+</tr>
+<tr>
+<td><strong>dealer</strong></td>
+<td>Supplier node owner</td>
+<td>workspace <code>owner</code>/<code>admin</code> + rank <code>dealer</code> (or root-rank, non-operator)</td>
+</tr>
+<tr>
+<td><strong>architect</strong></td>
+<td>Architect node owner</td>
+<td>workspace <code>owner</code>/<code>admin</code> + rank <code>architect</code></td>
+</tr>
+<tr>
+<td><strong>staff</strong></td>
+<td>Business team member</td>
+<td>workspace <code>member</code></td>
+</tr>
+<tr>
+<td><strong>accountant</strong></td>
+<td>Invited external accountant</td>
+<td>workspace role <code>accountant</code></td>
+</tr>
+<tr>
+<td><strong>sales</strong></td>
+<td>Invited sales rep</td>
+<td>workspace role <code>sales</code></td>
+</tr>
+<tr>
+<td><strong>end_user</strong></td>
+<td>Project client / referral</td>
+<td>workspace role <code>client</code></td>
+</tr>
+</tbody></table>
+<p>Resolution order is in <code>resolvePersona()</code> — <code>client</code> → <code>accountant</code> → <code>sales</code> → owner/admin(by rank) → <code>staff</code>.</p>
+<hr>
+<h2>3. Capability matrix (persona → what they can do)</h2>
+<p>✓ = granted. From <code>PERSONA_CAPABILITIES</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th align="center">operator</th>
+<th align="center">dealer</th>
+<th align="center">architect</th>
+<th align="center">staff</th>
+<th align="center">accountant</th>
+<th align="center">sales</th>
+<th align="center">end_user</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>platform.admin</code> (/admin shell)</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>catalog.import</code></td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>downstream.view</code></td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>network.manage</code> (/network)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>pricing.manage</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>finance.manage</code> (/finance)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>invoice.issue</code> (/pos)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>crm.view</code> (/crm)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>warehouse.manage</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>marketplace.browse</code> (/discover)</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>quotes.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>sales.portal</code> (/sales)</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><code>projects.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>moodboards.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>agent.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+</tr>
+<tr>
+<td><code>inbox.use</code></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center"></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+</tr>
+</tbody></table>
+<p>Notes:</p>
+<ul>
+<li><strong>operator</strong> = everything <strong>except</strong> <code>sales.portal</code> (the Sales portal is the rep&#39;s surface only).</li>
+<li><strong>dealer</strong> and <strong>architect</strong> are identical today (full business set); they differ only in marketplace position (dealer sells downstream, architect sells to end users).</li>
+<li><strong>accountant</strong> is intentionally narrow — Finance surface only; within Finance, write-ops are further gated by <code>isWorkspaceManager</code> / <code>canOperateFinance</code>.</li>
+<li><strong>sales</strong> sees only their <strong>own</strong> quotes (RLS on <code>user_id</code>); customer financials are workspace-scoped reads.</li>
+</ul>
+<hr>
+<h2>4. Enforcement layers (where it&#39;s actually checked)</h2>
+<ol>
+<li><strong><code>AuthGuard</code></strong> — authenticated or not. Wraps the user-facing app.</li>
+<li><strong><code>CapabilityGuard</code> / <code>usePermissions().can(cap)</code></strong> — per-route/per-feature persona capability check (the table above). e.g. <code>/finance</code> needs <code>finance.manage</code>, <code>/network</code> needs <code>network.manage</code>.</li>
+<li><strong><code>AdminGuard</code></strong> — wraps all <code>/admin/*</code>. Passes only for <strong>Platform Operator</strong> (<code>owner</code>/<code>admin</code>/<code>super_admin</code> of the <strong>root</strong> workspace). A dealer/architect who owns their own workspace does <strong>not</strong> pass.</li>
+<li><strong>Edge-function <code>allowedRoles</code></strong> (server, <code>_shared/auth.ts</code> — additive: global account role <strong>or</strong> any workspace role):<ul>
+<li><code>admin</code> / <code>super_admin</code> / <code>owner</code> → all admin/CRM/email/messaging functions.</li>
+<li><code>crm-api</code> also allows <code>factory</code>.</li>
+<li>Finance functions allow <code>finance</code>; issuing also allows <code>accountant</code>.</li>
+<li>Agents: KAI / Interior Designer → <code>viewer/member/admin/owner</code>; Demo + <code>insights</code>/<code>seo</code> aliases → <code>admin/owner</code> only.</li>
+</ul>
+</li>
+<li><strong>Postgres RLS</strong> — <code>is_admin_user()</code> (account role = <strong><code>admin</code></strong> only — note: not <code>super_admin</code>), <code>is_workspace_member(workspace_id)</code> (row belongs to a workspace you&#39;re in). Used by CRM/activity/notes/finance tables.</li>
+</ol>
+<hr>
+<h2>5. Public (no auth) surfaces</h2>
+<p><code>/tools</code> (IP-quota), <code>/knowledge-base</code>, <code>/brand/:slug</code>, <code>/u/:userId</code>, <code>/ar/:productId</code>, and token-gated links (<code>/board/:id</code>, <code>/q/:token</code>, <code>/c/:slug</code>, <code>/cv/:token</code>, <code>/pay/:token</code>).</p>
+<hr>
+<h2>6. Known gaps / not-enforced (be honest)</h2>
+<ul>
+<li>The <strong>global role <em>hierarchy</em> is not a ladder</strong> — there&#39;s no &quot;level ≥ N grants X&quot;. Access is <code>auth</code> + persona-capability + platform-operator + edge <code>allowedRoles</code>.</li>
+<li><strong>Global <code>dealer</code>/<code>factory</code> account roles</strong> don&#39;t drive frontend access (dealer/architect behaviour is workspace-rank based). They&#39;re effectively labels + inputs to the upgrade-request flow.</li>
+<li><strong><code>is_admin_user()</code> matches <code>admin</code> only, not <code>super_admin</code></strong> — a <code>super_admin</code> who isn&#39;t also a workspace member can miss some RLS-gated reads. Workspace membership + <code>owner</code>/<code>admin</code> cover the normal operator case.</li>
+<li>Agent <strong>sub-agent orchestration</strong> is documented as admin/owner-only, but tool-list filtering by role at injection time should be re-verified.</li>
+</ul>
+<hr>
+<p><em>Last verified against <code>src/auth/capabilities.ts</code>, <code>src/components/core/{AuthGuard,AdminGuard,CapabilityGuard}.tsx</code>, <code>supabase/functions/_shared/auth.ts</code>, and the live <code>roles</code> table. Update this file when <code>PERSONA_CAPABILITIES</code> or the guards change.</em></p>
+
+</div></body></html>
