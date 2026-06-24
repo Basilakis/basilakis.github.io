@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Async Processing &amp; Concurrency Limits</h1>
 <p>Complete documentation for async processing architecture and concurrency limits across all product generation methods.</p>
 <hr>
@@ -74,14 +76,19 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Qwen Vision Concurrent</strong></td>
-<td>5</td>
-<td>Fast material classification</td>
+<td><strong>Claude Vision Concurrent</strong></td>
+<td>2</td>
+<td>Vision analysis (post-2026-05-01: schema-locked via tool use)</td>
 </tr>
 <tr>
-<td><strong>Claude Validation Concurrent</strong></td>
-<td>2</td>
-<td>Validation for uncertain cases</td>
+<td><strong>SLIG Cloud Concurrent</strong></td>
+<td>20</td>
+<td>Visual + specialized embeddings</td>
+</tr>
+<tr>
+<td><strong>PaddleOCR-VL Concurrent</strong></td>
+<td>8</td>
+<td>Layout + page/block OCR (Modal-hosted structural pass)</td>
 </tr>
 <tr>
 <td><strong>Batch Size</strong></td>
@@ -91,9 +98,11 @@
 </tbody></table>
 <p><strong>Why these limits?</strong></p>
 <ul>
-<li><strong>HuggingFace/Qwen (5)</strong>: HuggingFace Endpoint (Qwen3-VL 32B) → higher concurrency</li>
-<li><strong>Claude (2)</strong>: Expensive, rate-limited → lower concurrency</li>
+<li><strong>Claude (2)</strong>: vision-via-tool-use is the sole vision path post-2026-05-01; rate-limited → low concurrency</li>
+<li><strong>SLIG (20)</strong>: Modal endpoint (scale-to-zero) → high concurrency</li>
+<li><strong>PaddleOCR-VL (8)</strong>: Modal-hosted endpoint (GPU L4, scale-to-zero, <code>max_containers=4</code>); concurrency bounded so warm containers aren&#39;t oversubscribed (post-2026-06-13: replaced the Surya-2 backbone, which had replaced YOLO + Chandra + merge_layout)</li>
 <li><strong>Batch (15)</strong>: Prevents OOM on large PDFs with 500+ images</li>
+<li><strong>Qwen retired</strong>: pre-2026-05-01 had a &quot;5 Qwen concurrent&quot; gate; the HF Qwen endpoint had been 404-ing for months, falling through to Claude. Gate deleted along with <code>endpoint_controller.qwen</code> AdaptiveConcurrency.</li>
 </ul>
 <hr>
 <h3>2. Image Upload to Storage</h3>
@@ -119,7 +128,7 @@
 <li>Higher values cause connection pool exhaustion</li>
 </ul>
 <hr>
-<h3>3. CLIP Embeddings Generation</h3>
+<h3>3. Embedding Generation (SLIG + Voyage)</h3>
 <p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
 <strong>Service</strong>: <code>ImageProcessingService</code></p>
 <table>
@@ -143,7 +152,7 @@
 </tbody></table>
 <p><strong>Why 20?</strong></p>
 <ul>
-<li>CLIP model processes ~20 images in 10-15 seconds</li>
+<li>SLIG/Voyage batch processes ~20 images in 10-15 seconds</li>
 <li>Larger batches cause memory spikes</li>
 </ul>
 <hr>
@@ -316,7 +325,7 @@
 <hr>
 <h3>4. AI Classification Timeouts</h3>
 <p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
-<strong>Service</strong>: <code>QwenEndpointService</code>, <code>AIClientService</code></p>
+<strong>Service</strong>: <code>AIClientService</code> (Anthropic), <code>paddleocr_endpoint_manager</code>, <code>slig_client</code></p>
 <table>
 <thead>
 <tr>
@@ -326,21 +335,30 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Qwen Vision Request</strong></td>
+<td><strong>Claude Vision Request</strong></td>
 <td>120s</td>
-<td>Image classification</td>
+<td>Vision analysis via Anthropic tool use</td>
 </tr>
 <tr>
-<td><strong>Claude Request</strong></td>
-<td>120s</td>
-<td>Validation</td>
+<td><strong>PaddleOCR-VL Request</strong></td>
+<td>60s per attempt</td>
+<td>Layout + page/block OCR (Modal <code>/parse</code>; ~1-3s/page warm, ~90s cold start paid once at warmup)</td>
+</tr>
+<tr>
+<td><strong>SLIG Embedding Request</strong></td>
+<td>30s</td>
+<td>1× visual 768D vector (SigLIP2)</td>
 </tr>
 </tbody></table>
 <hr>
 <h2>Rate Limiting</h2>
-<h3>1. HuggingFace Endpoint (Qwen3-VL Vision)</h3>
+<h3>1. Inference Endpoints (SLIG SigLIP2 + PaddleOCR-VL, both on Modal)</h3>
 <p><strong>Applies to</strong>: PDF, Web Scraping, XML Import
-<strong>Service</strong>: <code>QwenEndpointService</code></p>
+<strong>Services</strong>: <code>slig_client</code>, <code>paddleocr_endpoint_manager</code></p>
+<blockquote>
+<p><strong>Note (2026-06-13)</strong>: The layout+OCR backbone is <strong>PaddleOCR-VL</strong> (<code>PaddlePaddle/PaddleOCR-VL-1.6</code>, two-stage: PP-DocLayoutV2 RT-DETR detector + 0.9B VLM), hosted on <strong>Modal</strong> (app <code>paddleocr-vl</code>, GPU L4, scale-to-zero). It replaced Surya-2 (which had replaced YOLO + Chandra + <code>merge_layout</code>). Both SLIG and PaddleOCR-VL run on <strong>Modal</strong>; HuggingFace hosts nothing.
+<strong>Note (2026-05-01)</strong>: The <code>QwenEndpointService</code> and <code>Settings.qwen_*</code> are gone. Vision moved to Anthropic Claude Opus 4.7 via tool use.</p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -406,11 +424,17 @@
 <p>All three methods use the <strong>SAME</strong> services with <strong>SAME</strong> limits:</p>
 <h3>1. ImageProcessingService</h3>
 <p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
-<p>Shared limits across all methods: 5 concurrent HuggingFace Endpoint (Qwen3-VL) requests, 2 concurrent Claude requests, 10 concurrent uploads, classification batch size of 15 images, and CLIP batch size of 20 images.</p>
+<p>Shared limits across all methods (post-2026-06-13): 2 concurrent Claude vision requests, 20 concurrent SLIG embedding requests, 8 concurrent PaddleOCR-VL layout/OCR requests, 10 concurrent uploads, classification batch size of 15 images, SLIG batch size of 20 images.</p>
 <hr>
 <h3>2. RealEmbeddingsService</h3>
 <p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
-<p>Uses SigLIP2 via the SLIG cloud endpoint (HuggingFace Inference Endpoint, 768D) and generates five specialized 768D embedding types written directly to VECS: <code>image_slig_embeddings</code> (visual), <code>image_color_embeddings</code>, <code>image_texture_embeddings</code>, <code>image_style_embeddings</code>, and <code>image_material_embeddings</code>. Plus an understanding embedding (1024D Voyage AI from Qwen3-VL vision_analysis) → <code>image_understanding_embeddings</code>. Updated 2026-04: legacy <code>google/siglip-so400m-patch14-384</code> (1152D) and CLIP 512D collections were dropped.</p>
+<p>Generates 6 embedding types written directly to VECS:</p>
+<ul>
+<li><code>image_slig_embeddings</code> (visual, <strong>768D</strong> SigLIP2 via SLIG cloud endpoint)</li>
+<li><code>image_color_embeddings</code>, <code>image_texture_embeddings</code>, <code>image_style_embeddings</code>, <code>image_material_embeddings</code> (aspect embeddings, <strong>1024D</strong> Voyage AI from deterministic per-image <code>VisionAnalysis</code> field serializations — post-2026-05-04; pre-v2 these were 768D SLIG-blend vectors)</li>
+<li><code>image_understanding_embeddings</code> (<strong>1024D</strong> Voyage AI from Claude Opus 4.7 <code>VisionAnalysis</code> JSON via <code>serialize_vision_analysis_to_text</code>)</li>
+</ul>
+<p>Updated 2026-04: legacy <code>google/siglip-so400m-patch14-384</code> (1152D) and CLIP 512D collections were dropped. Updated 2026-05-01: vision pass migrated from Qwen to Claude Opus 4.7 tool use (Qwen had been silently 404-ing for months).</p>
 <hr>
 <h3>3. AsyncQueueService</h3>
 <p><strong>Used by</strong>: PDF, Web Scraping, XML Import</p>
@@ -437,7 +461,7 @@
 <td>~500MB per batch</td>
 </tr>
 <tr>
-<td><strong>CLIP Embeddings</strong></td>
+<td><strong>SLIG+Voyage Embeddings</strong></td>
 <td>20 images</td>
 <td>~300MB per batch</td>
 </tr>
@@ -481,19 +505,29 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>HuggingFace (Qwen3-VL)</strong></td>
-<td>10 req/min</td>
-<td>Semaphore (5 concurrent)</td>
+<td><strong>Modal (SLIG SigLIP2)</strong></td>
+<td>scale-to-zero</td>
+<td>Semaphore (20 concurrent)</td>
 </tr>
 <tr>
-<td><strong>Claude</strong></td>
+<td><strong>Modal (PaddleOCR-VL)</strong></td>
+<td>scale-to-zero, <code>max_containers=4</code></td>
+<td>Semaphore (8 concurrent) + retry</td>
+</tr>
+<tr>
+<td><strong>Anthropic Claude</strong></td>
 <td>Circuit breaker</td>
-<td>Semaphore (2 concurrent)</td>
+<td>Semaphore (2 concurrent — sole vision path)</td>
+</tr>
+<tr>
+<td><strong>Voyage AI</strong></td>
+<td>429 with Retry-After</td>
+<td>Honors header, 2 retries</td>
 </tr>
 <tr>
 <td><strong>OpenAI</strong></td>
 <td>No limit</td>
-<td>Batch processing</td>
+<td>Batch processing (optional alternatives only)</td>
 </tr>
 </tbody></table>
 <hr>
@@ -557,16 +591,22 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Qwen Vision</strong></td>
-<td>5 concurrent</td>
-<td>5 concurrent</td>
-<td>5 concurrent</td>
+<td><strong>Claude Vision (tool use)</strong></td>
+<td>2 concurrent</td>
+<td>2 concurrent</td>
+<td>2 concurrent</td>
 </tr>
 <tr>
-<td><strong>Claude Validation</strong></td>
-<td>2 concurrent</td>
-<td>2 concurrent</td>
-<td>2 concurrent</td>
+<td><strong>SLIG Embeddings</strong></td>
+<td>20 concurrent</td>
+<td>20 concurrent</td>
+<td>20 concurrent</td>
+</tr>
+<tr>
+<td><strong>PaddleOCR-VL</strong></td>
+<td>8 concurrent</td>
+<td>8 concurrent</td>
+<td>8 concurrent</td>
 </tr>
 <tr>
 <td><strong>Image Classification Batch</strong></td>
@@ -581,7 +621,7 @@
 <td>10 concurrent</td>
 </tr>
 <tr>
-<td><strong>CLIP Batch</strong></td>
+<td><strong>SLIG Batch</strong></td>
 <td>20 images</td>
 <td>20 images</td>
 <td>20 images</td>
@@ -654,9 +694,9 @@
 <hr>
 <h2>Summary</h2>
 <p>✅ <strong>All methods fully async</strong>: PDF, Web Scraping, XML Import
-✅ <strong>Same concurrency limits</strong>: 5 HuggingFace/Qwen, 2 Claude, 10 uploads, 20 SLIG
+✅ <strong>Same concurrency limits</strong>: 2 Claude (sole vision path), 20 SLIG, 8 PaddleOCR-VL, 10 uploads
 ✅ <strong>Same timeout guards</strong>: 300s discovery, 120s AI, 30s downloads
-✅ <strong>Same rate limiting</strong>: 10 req/min HuggingFace/Qwen, circuit breaker Claude
+✅ <strong>Same rate limiting</strong>: SLIG (Modal) / PaddleOCR-VL (Modal) endpoint-paced, circuit breaker on Claude, Voyage 429 with Retry-After
 ✅ <strong>Same shared services</strong>: ImageProcessingService, RealEmbeddingsService, AsyncQueueService
 ✅ <strong>Memory optimized</strong>: Batch processing prevents OOM
 ✅ <strong>Network optimized</strong>: Semaphores prevent congestion

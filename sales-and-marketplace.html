@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Sales Portal, Marketplace Catalog Access &amp; Procurement Routing</h1>
+<p>Three related B2B surfaces that sit on top of the <a href="capabilities-and-tenancy.html">capability system</a> and the workspace hierarchy:</p>
+<ol>
+<li><strong>Sales Portal (#201)</strong> — a stripped-down quote/order surface for invited sales reps.</li>
+<li><strong>Marketplace catalog access (#196)</strong> — supplier→factory catalog access requests with operator approval.</li>
+<li><strong>Master-request parent inbox (#177)</strong> — procurement routing/escalation up the workspace tree.</li>
+</ol>
+<blockquote>
+<p>⚠️ Naming caution: there are <strong>two unrelated &quot;catalog access&quot; concepts</strong> — the B2B factory-access request flow (<code>factory_access_requests</code>, §2) and the public presentation-catalog <strong>email gate</strong> (<code>catalog-access</code> edge function, §3). They share a word but nothing else.</p>
+</blockquote>
+<hr>
+<h2>1. Sales Portal (#201)</h2>
+<p>A rep sees only their own orders (RLS: <code>quotes.user_id = auth.uid()</code>), picks or quick-creates a CRM customer, names the order, and is handed off to the standard quote detail page to add catalog line items. No finance, pricing, warehouse, or network surfaces.</p>
+<h3>Persona &amp; access</h3>
+<ul>
+<li>Workspace role <code>sales</code> resolves to persona <code>&#39;sales&#39;</code> (<code>resolvePersona</code>, checked <strong>before</strong> the member/staff fallback). Capabilities: <code>sales.portal</code>, <code>quotes.use</code>, <code>crm.view</code>, <code>marketplace.browse</code>, <code>agent.use</code> — see the <a href="capabilities-and-tenancy.html#13-personacapability-matrix">capability matrix</a>. <code>usePermissions()</code> also exposes <code>isSalesRep</code>.</li>
+<li><strong>Onboarding</strong>: workspace owner generates an invite via <code>TeamInviteCard</code> (roles <code>accountant | sales | member</code>); invitee signs up at <code>/auth?mode=signup&amp;invite=CODE</code> and auto-joins as <code>sales</code>.</li>
+</ul>
+<h3>Routes</h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Guard</th>
+<th>Component</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/sales</code></td>
+<td><code>CapabilityGuard capability=&quot;sales.portal&quot;</code></td>
+<td><code>SalesPage</code></td>
+</tr>
+<tr>
+<td><code>/crm/contacts/:id</code></td>
+<td><code>CapabilityGuard capability=&quot;crm.view&quot;</code></td>
+<td><code>CrmContactDetailPage</code></td>
+</tr>
+<tr>
+<td><code>/crm/companies/:id</code></td>
+<td><code>CapabilityGuard capability=&quot;crm.view&quot;</code></td>
+<td><code>CrmCompanyDetailPage</code></td>
+</tr>
+</tbody></table>
+<p>Nav item <code>{ id:&#39;sales&#39;, path:&#39;/sales&#39;, requireCapability:&#39;sales.portal&#39; }</code> (visible only to the <code>sales</code> persona).</p>
+<h3><code>SalesPage</code> (<code>src/pages/Sales/SalesPage.tsx</code>)</h3>
+<ul>
+<li>Stats (total / submitted / accepted / drafts) + orders table (RLS scopes to the rep&#39;s rows).</li>
+<li><code>NewOrderDialog</code>: debounced customer search across <code>crm_contacts</code>/<code>crm_companies</code> (6 each), &quot;Quick add&quot; inline contact create, required order name → <code>quotesService.createQuote({ name, workspace_id, customer_* })</code> (writes <code>user_id = auth.uid()</code>) → navigates to <code>/quotes/:id</code>.</li>
+</ul>
+<h3>CRM access for reps</h3>
+<p>The CRM contact/company detail pages render an <strong>Account</strong> tab mounting <code>CustomerAccountOverview</code> (<code>src/modules/finance/components/CustomerFinanceTabs.tsx</code>): reads <code>vw_customer_account_summary</code> + payments + <code>report_customer_top_products</code>, renders KPI tiles (Owed / Total sales / Revenue / Open orders / Last payment), a &quot;top products to push&quot; table, and an &quot;Email account info&quot; button (<code>financeService.sendStatement()</code>). Gated only by route-level <code>crm.view</code>.</p>
+<h3>Quotes RLS</h3>
+<p><code>consolidated_quotes_select_public</code>: <code>auth.uid() = user_id OR is_workspace_admin(workspace_id)</code>. Reps see only their own quotes; can only UPDATE while <code>status=&#39;draft&#39;</code>.</p>
+<hr>
+<h2>2. Marketplace catalog access — factory access requests (#196)</h2>
+<p>A <code>factory</code> (a <code>user_profiles</code> row with <code>factory_verified=true</code>, <code>professional_type=&#39;supplier&#39;</code>) exposes its catalog; a supplier workspace requests access; the <strong>platform operator</strong> (root-workspace admin) approves/rejects. The approved request <strong>is</strong> the grant.</p>
+<h3>Flow</h3>
+<ol>
+<li><strong>Supplier applies</strong> — <code>RequestFactoryAccessButton</code> (<code>src/components/features/discover/RequestFactoryAccessButton.tsx</code>) → <code>factoryAccessService.requestAccess(workspaceId, factoryUserId, message?)</code> inserts a <code>pending</code> <code>factory_access_requests</code> row. Button reflects state (request / requested / approved).</li>
+<li><strong>Operator reviews</strong> — <code>FactoryAccessRequestsTab</code> (<code>src/components/Admin/FactoryAccessRequestsTab.tsx</code>) in <code>AdminPanel</code> → <code>factoryAccessService.review(requestId, decision, reason?)</code> → <code>review_factory_access_request(p_request_id, p_decision, p_reason)</code> RPC (validates caller is admin of the root workspace; sets status + <code>decided_by</code>/<code>decided_at</code>/<code>rejection_reason</code>).</li>
+<li><strong>Grant takes effect</strong> — <code>get_accessible_factory_products(p_workspace_id)</code> (SECURITY DEFINER, validates <code>is_workspace_member</code>) returns <code>products</code> from the factory&#39;s workspace for every <code>approved</code> request. It finds the factory&#39;s workspace by joining <code>workspace_members WHERE user_id=factory_user_id AND role IN (&#39;owner&#39;,&#39;admin&#39;)</code>.</li>
+</ol>
+<h3><code>factory_access_requests</code></h3>
+<p><code>requester_workspace_id</code>, <code>requester_user_id</code>, <code>factory_user_id</code>, <code>status</code> (pending/approved/rejected/revoked), <code>message</code>, <code>decided_by</code>, <code>decided_at</code>, <code>rejection_reason</code>. RLS: requester members insert + withdraw (pending only); factory user reads own; root admin reads all. Approval/rejection only via RPC.</p>
+<blockquote>
+<p>Separate axis: <code>workspaces.catalog_access</code> (<code>operator_catalog</code> | <code>own_products_only</code>, default <code>operator_catalog</code>) is an operator-set per-workspace policy (managed via <code>MarketplaceNetworkPage</code>) controlling whether a child can browse the full operator catalog — distinct from factory access requests.</p>
+</blockquote>
+<h3>Gaps</h3>
+<ul>
+<li><code>get_accessible_factory_products</code> assumes the factory user is owner/admin of their workspace (a <code>member</code>-only factory returns nothing).</li>
+<li>No notification on submit or on approve/reject (operator/requester must poll).</li>
+<li>No DB UNIQUE on <code>(requester_workspace_id, factory_user_id)</code> — multiple pending requests possible.</li>
+</ul>
+<hr>
+<h2>3. Presentation-catalog email gate (<code>catalog-access</code> edge function)</h2>
+<p>A <strong>customer-facing</strong> email gate for published marketing catalogs shared at <code>/c/:slug</code> — unrelated to §2. Edge function <code>supabase/functions/catalog-access/index.ts</code>, service-role, anonymous.</p>
+<p>Actions: <code>public_meta</code> (landing meta, no body), <code>request</code> (<code>{slug, email}</code> → email match → 30-day token), <code>verify</code> (<code>{slug, token}</code> → full payload incl. 7-day signed PDF URL), <code>track_view</code>, <code>track_download</code>.</p>
+<p><strong>Email matching</strong> (priority): platform user who is a workspace_member of the owner → CRM contact → CRM company → <code>catalog_email_grants</code> allowlist → denied (no catalog-existence leak). Token: 48 hex chars, 30-day TTL, stored in <code>catalog_access_log.cookie_token</code>.</p>
+<p>Tables: <code>catalog_access_log</code> (one row per attempt), <code>catalog_email_grants</code> (admin allowlist), <code>catalog_view_events</code> (page_view/pdf_download). All admin-read-only RLS; writes service-role. RPCs <code>catalog_bump_unique_email_count</code>, <code>catalog_increment_view_count</code>. Operator analytics: <code>CatalogOperationsTab</code> at <code>/admin/operations</code>.</p>
+<blockquote>
+<p>Gaps: tokens stored plaintext; no rate limiting on <code>request</code> (unlike the Turnstile-gated <a href="../CLAUDE.html">public tools</a>); <code>pdf_view</code> enum value defined but never emitted.</p>
+</blockquote>
+<p>See also <a href="presentation-catalogs.html">presentation-catalogs.md</a>.</p>
+<hr>
+<h2>4. Master-request parent inbox (#177)</h2>
+<p>Procurement routing for marketplace networks: a child workspace submits a quote to its parent node for pricing; the parent prices it or escalates it further up the tree (to the root operator). The &quot;inbox&quot; is a tab on <code>/quotes</code> gated on <code>network.manage</code>.</p>
+<p>All writes go through SECURITY DEFINER RPCs (<code>master_requests</code> has a <code>false</code>-for-ALL direct-write policy):</p>
+<ul>
+<li><strong><code>submit_procurement_request(p_quote_id)</code></strong> — validates <code>is_workspace_member(quote.workspace_id)</code>; targets <code>workspaces.parent_workspace_id</code> (falls back to the root workspace); idempotent for <code>new</code>/<code>in_review</code>; inserts <code>master_requests</code>.</li>
+<li><strong><code>return_priced_request(p_request_id, p_note?)</code></strong> — only the receiving parent (<code>is_workspace_member(parent_workspace_id)</code>) sets <code>status=&#39;priced&#39;</code>.</li>
+<li><strong><code>escalate_request(p_request_id)</code></strong> — the current parent escalates to its own parent (or root); marks the original <code>escalated</code>, inserts a new row with <code>escalated_from</code> (audit chain).</li>
+</ul>
+<p>Status: <code>new → in_review → priced | escalated</code>.</p>
+<p><code>master_requests</code>: <code>quote_id</code>, <code>requester_workspace_id</code>, <code>parent_workspace_id</code>, <code>status</code>, <code>note</code>, <code>amount</code>, <code>currency</code>, <code>priced_by/at</code>, <code>escalated_from</code>. RLS SELECT: member of requester OR parent.</p>
+<p><strong>Frontend</strong>: <code>RequestsInboxPanel</code> (<code>src/modules/quotes/components/RequestsInboxPanel.tsx</code>) mounts as <code>/quotes?tab=requests</code> when <code>can(&#39;network.manage&#39;)</code> — incoming (with Return-priced / Escalate buttons) + sent-upward sections. Child side: &quot;Submit to parent&quot; button on <code>QuoteDetailAdminPage</code>. <code>/requests</code> redirects to <code>/quotes?tab=requests</code>.</p>
+<blockquote>
+<p>Gaps: <code>in_review</code>/<code>cancelled</code> statuses have no write path; escalation copies a possibly-stale <code>amount</code> from the original request; the inbox &quot;open quote&quot; link targets the admin route <code>/admin/quotes/:id</code>.</p>
+</blockquote>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09 · Covers #201, #196, #177.</p>
+
+</div></body></html>

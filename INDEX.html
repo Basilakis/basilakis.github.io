@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,17 +19,18 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Documentation Index</h1>
 <p>Complete documentation for Material Kai Vision Platform.</p>
 <hr>
 <h2>📚 Documentation Structure</h2>
 <h3>🎯 Getting Started</h3>
-<p><strong><a href="app-details.md">app-details.md</a></strong> - Business &amp; Product Overview (Investor Document) ✨ NEW</p>
+<p><strong><a href="app-details.html">app-details.md</a></strong> - Business &amp; Product Overview (Investor Document) ✨ NEW</p>
 <ul>
 <li>Full business model, credit system, pricing tiers</li>
 <li>User segments, access control, supplier vs buyer side</li>
@@ -36,7 +38,7 @@
 <li>Competitive landscape and roadmap</li>
 <li>Production metrics and platform architecture</li>
 </ul>
-<p><strong><a href="overview.md">overview.md</a></strong> - Complete platform overview</p>
+<p><strong><a href="overview.html">overview.md</a></strong> - Complete platform overview</p>
 <ul>
 <li>Executive summary</li>
 <li>Architecture overview</li>
@@ -46,7 +48,7 @@
 <li>Database architecture</li>
 <li>Production metrics</li>
 </ul>
-<p><strong><a href="features-guide.md">features-guide.md</a></strong> - All platform features</p>
+<p><strong><a href="features-guide.html">features-guide.md</a></strong> - All platform features</p>
 <ul>
 <li>Intelligent PDF processing</li>
 <li>Multi-modal search</li>
@@ -63,7 +65,7 @@
 <li>Security features</li>
 <li>Analytics &amp; reporting</li>
 </ul>
-<p><strong><a href="platform-flows.md">platform-flows.md</a></strong> - User workflows &amp; feature flows ✨ UPDATED</p>
+<p><strong><a href="platform-flows.html">platform-flows.md</a></strong> - User workflows &amp; feature flows ✨ UPDATED</p>
 <ul>
 <li>PDF Processing Flow</li>
 <li>Search &amp; Discovery Flow</li>
@@ -75,7 +77,7 @@
 <li>Flow Automation Flow ✨ NEW</li>
 <li>Social Media Publishing Flow ✨ NEW</li>
 </ul>
-<p><strong><a href="duplicate-detection-merging.md">duplicate-detection-merging.md</a></strong> - Duplicate detection system</p>
+<p><strong><a href="duplicate-detection-merging.html">duplicate-detection-merging.md</a></strong> - Duplicate detection system</p>
 <ul>
 <li>Factory-based duplicate detection</li>
 <li>Product merging with undo</li>
@@ -83,10 +85,10 @@
 <li>Merge history tracking</li>
 <li>API endpoints (7 total)</li>
 </ul>
-<p><strong><a href="data-import-system.md">data-import-system.md</a></strong> - Data import system ✨ NEW</p>
+<p><strong><a href="data-import-system.html">data-import-system.md</a></strong> - Data import system ✨ NEW</p>
 <ul>
 <li>XML import with AI-powered field mapping</li>
-<li>Dynamic field mapping (Claude Sonnet 4.5)</li>
+<li>Dynamic field mapping (Claude Opus 4.7)</li>
 <li>Batch processing (10 products at a time)</li>
 <li>Concurrent image downloads (5 parallel)</li>
 <li>Cron-based scheduling for recurring imports</li>
@@ -96,12 +98,12 @@
 <li>API endpoints (4 total)</li>
 <li>Phase 1 &amp; 2 complete</li>
 </ul>
-<p><strong><a href="async-processing-and-limits.md">async-processing-and-limits.md</a></strong> - Async processing &amp; concurrency limits ✨ NEW</p>
+<p><strong><a href="async-processing-and-limits.html">async-processing-and-limits.md</a></strong> - Async processing &amp; concurrency limits ✨ NEW</p>
 <ul>
 <li>Fully async architecture across all methods (PDF, Web, XML)</li>
-<li>Unified concurrency limits (5 Qwen/HuggingFace, 2 Claude, 10 uploads, 20 SLIG)</li>
+<li>Unified concurrency limits (2 Claude, 10 uploads, 20 SLIG, PaddleOCR-VL on Modal with scale-to-zero — Chandra/Qwen gates retired)</li>
 <li>Timeout configuration (300s discovery, 120s AI, 30s downloads)</li>
-<li>Rate limiting (10 req/min Qwen/HuggingFace, circuit breaker Claude)</li>
+<li>Rate limiting (circuit breaker on Claude; PaddleOCR-VL inference retry in the Modal endpoint manager)</li>
 <li>Shared services (ImageProcessingService, RealEmbeddingsService, AsyncQueueService)</li>
 <li>Memory optimization (batch processing prevents OOM)</li>
 <li>Network optimization (semaphores prevent congestion)</li>
@@ -109,7 +111,7 @@
 <li>Performance comparison table</li>
 <li>Best practices and monitoring</li>
 </ul>
-<p><strong><a href="unified-product-generation-flow.md">unified-product-generation-flow.md</a></strong> - Unified product generation flow ✨ NEW</p>
+<p><strong><a href="unified-product-generation-flow.html">unified-product-generation-flow.md</a></strong> - Unified product generation flow ✨ NEW</p>
 <ul>
 <li>Complete architecture diagram (all 3 methods → unified storage → unified search)</li>
 <li>Method comparison (PDF vs Web vs XML)</li>
@@ -119,7 +121,7 @@
 <li>Verification checklist (product generation, storage, search, async)</li>
 <li>Visual flow diagrams and code examples</li>
 </ul>
-<p><strong><a href="collaborative-filtering-recommendations.md">collaborative-filtering-recommendations.md</a></strong> - Collaborative filtering recommendations ✨ NEW</p>
+<p><strong><a href="collaborative-filtering-recommendations.html">collaborative-filtering-recommendations.md</a></strong> - Collaborative filtering recommendations ✨ NEW</p>
 <ul>
 <li>User-user collaborative filtering (&quot;Users like you also liked...&quot;)</li>
 <li>Item-item collaborative filtering (&quot;Materials similar to this...&quot;)</li>
@@ -132,18 +134,18 @@
 <li>Database schema (2 tables with indexes and RLS)</li>
 <li>Cosine similarity and matrix factorization algorithms</li>
 </ul>
-<p><strong><a href="social-media-system.md">social-media-system.md</a></strong> - Social media creation &amp; monitoring system</p>
+<p><strong><a href="social-media-system.html">social-media-system.md</a></strong> - Social media creation &amp; monitoring system</p>
 <ul>
 <li>KAI agent tools for social content (captions, images, videos)</li>
-<li>Late.dev OAuth integration for per-user platform connections</li>
-<li>Publishing, scheduling, analytics via Late.dev API</li>
+<li>Zernio OAuth integration for per-user platform connections</li>
+<li>Publishing, scheduling, analytics via Zernio API</li>
 <li>xAI Aurora / Gemini Flash / FLUX Dev image generation routing</li>
 <li>Multi-model interior video (Veo 2, Kling 1.6 Pro, Wan, Runway)</li>
 <li>Background agents for analytics sync</li>
 <li>Admin panel at /admin/social-media/*</li>
 <li>Deployment checklist + required secrets</li>
 </ul>
-<p><strong><a href="flow-engine.md">flow-engine.md</a></strong> - Workflow Automation System ✨ NEW</p>
+<p><strong><a href="flow-engine.html">flow-engine.md</a></strong> - Workflow Automation System ✨ NEW</p>
 <ul>
 <li>Visual drag-and-drop flow builder at <code>/admin/flows</code></li>
 <li>Trigger types: cron, webhook, event, manual</li>
@@ -152,7 +154,7 @@
 <li>Template variable resolution <code>{{trigger.data.field}}</code></li>
 <li>Dry-run / test mode, execution logs</li>
 </ul>
-<p><strong><a href="background-agents.md">background-agents.md</a></strong> - Background Agent Framework ✨ NEW</p>
+<p><strong><a href="background-agents.html">background-agents.md</a></strong> - Background Agent Framework ✨ NEW</p>
 <ul>
 <li>6 registered agent types (kai-task, product-enrichment, material-tagger, social sync, factory-enrichment)</li>
 <li>Trigger types: cron, event, manual, chain</li>
@@ -160,43 +162,70 @@
 <li>Delegation to Python backend for long tasks</li>
 <li>Admin UI at <code>/admin/background-agents</code></li>
 </ul>
-<p><strong><a href="virtual-staging.md">virtual-staging.md</a></strong> - Virtual Staging ✨ NEW</p>
+<p><strong><a href="virtual-staging.html">virtual-staging.md</a></strong> - Virtual Staging ✨ NEW</p>
 <ul>
 <li>Replicate proplabs model, 20 credits, ~56s</li>
 <li>8 room types, 8 furniture styles</li>
 </ul>
-<p><strong><a href="interior-video-generation.md">interior-video-generation.md</a></strong> - Interior Video Generation ✨ NEW</p>
+<p><strong><a href="gemini-image-generation.html">gemini-image-generation.md</a></strong> - Gemini image generation patterns ✨ NEW (2026-05-02)</p>
+<ul>
+<li>Models, costs, response shape (<code>gemini-3.1-flash-image-preview</code>, <code>gemini-3-pro-image-preview</code>)</li>
+<li>Minimal copy-paste skeleton for new image-generation endpoints</li>
+<li>Reference implementation: <code>seed-sheet-references</code> (admin static-asset seeder)</li>
+<li>Admin-secret pattern, bucket conventions, prompt-engineering notes</li>
+<li>Pitfalls hit in production (mimeType, response modalities, idle timeout)</li>
+</ul>
+<p><strong><a href="moodboard-presentation-sheets.html">moodboard-presentation-sheets.md</a></strong> - Moodboard Presentation Sheets ✨ NEW (2026-05-02)</p>
+<ul>
+<li>8 client-ready sheet types: Material Board, Color Palette, Concept Board, Lighting Plan, Annotated Render, Elevation+Render Pair, FF&amp;E Schedule, Full Deck</li>
+<li>A3-landscape PDFs via pdf-lib in <code>generate-moodboard-sheet-pdf</code> edge function</li>
+<li>Generated through KAI agent chat via <code>generate_presentation_sheet</code> tool (0/2/3 cr per type)</li>
+<li>Interactive types open canvas widgets in chat (CalloutCanvas, DimensionCanvas, FixtureSymbolCanvas)</li>
+<li>Persistent + editable: every sheet is a row in <code>moodboard_presentation_sheets</code> with JSONB <code>data</code></li>
+<li>Sheets tab on every moodboard at <code>/moodboard/:id</code></li>
+</ul>
+<p><strong><a href="presentation-catalogs.html">presentation-catalogs.md</a></strong> - Presentation Catalogs ✨ NEW (2026-05-08)</p>
+<ul>
+<li>Admin-only catalog builder driven by 8 KAI tools: create / attach_pdfs / extract / translate / add_material / find_image / generate_pdf / publish</li>
+<li>Source PDFs uploaded to <code>pdf-documents/catalog-source/</code> (post 2026-05-23 consolidation); Sonnet 4.6 PDF Vision extracts sections + bbox per material</li>
+<li>Per-candidate page rasterization via MIVAA PyMuPDF (<code>/api/internal/catalog/rasterize-pdf-page</code>) — every extracted material has a real cropped image</li>
+<li>Editable JSONB body renders BOTH as A4 PDF (cover + body + back cover via pdf-lib) AND as live web page at <code>/c/:slug</code></li>
+<li>Email-gate on public pages: matched against <code>auth.users</code> + <code>crm_contacts</code> + <code>crm_companies</code> + per-catalog allowlist (<code>catalog_email_grants</code>); 30-day signed cookie</li>
+<li>Operations dashboard at <code>/admin/operations?tab=catalogs</code> — gate attempts (granted/denied), page views, PDF downloads, per-catalog rollup with linked user profiles</li>
+<li>5 tables, 3 RPCs, 1 view, 5 storage buckets, 6 edge functions, 1 MIVAA endpoint</li>
+</ul>
+<p><strong><a href="interior-video-generation.html">interior-video-generation.md</a></strong> - Interior Video Generation ✨ NEW</p>
 <ul>
 <li>4 models: Veo-2 (30cr), Kling v3.0 (20cr), Wan 2.1 (12cr), Runway Gen4 (40cr)</li>
 <li>5 video types with auto model routing</li>
 <li>Async polling pattern for long renders</li>
 </ul>
-<p><strong><a href="segmentation-inpainting.md">segmentation-inpainting.md</a></strong> - Segmentation &amp; Inpainting ✨ NEW</p>
+<p><strong><a href="segmentation-inpainting.html">segmentation-inpainting.md</a></strong> - Segmentation &amp; Inpainting ✨ NEW</p>
 <ul>
 <li>SAM 2 pixel-perfect masks + Pillow fallback</li>
 <li>Grok Aurora region edit (20cr), AnyDoor product placement, FLUX Fill Pro</li>
 <li><code>/api/segment/mask</code> and <code>generate-region-edit</code> edge function</li>
 </ul>
-<p><strong><a href="billing-credits-system.md">billing-credits-system.md</a></strong> - Billing &amp; Credits System ✨ NEW</p>
+<p><strong><a href="billing-credits-system.html">billing-credits-system.md</a></strong> - Billing &amp; Credits System ✨ NEW</p>
 <ul>
 <li>Stripe subscription plans + credit packages</li>
 <li>stripe-checkout, stripe-customer-portal, crm-stripe-api</li>
 <li>Per-workspace credit balance tracking</li>
 <li>Frontend: <code>/billing/credits</code> and <code>/billing/subscriptions</code></li>
 </ul>
-<p><strong><a href="ai-reranking.md">ai-reranking.md</a></strong> - AI Search Re-ranking ✨ NEW</p>
+<p><strong><a href="ai-reranking.html">ai-reranking.md</a></strong> - AI Search Re-ranking ✨ NEW</p>
 <ul>
 <li>Claude-powered post-retrieval result re-ordering</li>
 <li>Optional per-result explanations</li>
-<li>sonnet or haiku model choice</li>
+<li>opus or haiku model choice</li>
 </ul>
-<p><strong><a href="crm-system.md">crm-system.md</a></strong> - CRM System ✨ NEW</p>
+<p><strong><a href="crm-system.html">crm-system.md</a></strong> - CRM System ✨ NEW</p>
 <ul>
 <li>Contacts, companies, platform user management</li>
 <li>Integration with messaging and quotes</li>
 <li>Role-based access control</li>
 </ul>
-<p><strong><a href="campaign-system.md">campaign-system.md</a></strong> - Email campaign management system ✨ NEW</p>
+<p><strong><a href="campaign-system.html">campaign-system.md</a></strong> - Email campaign management system ✨ NEW</p>
 <ul>
 <li>Campaign creation and management</li>
 <li>Audience targeting and segmentation</li>
@@ -209,7 +238,7 @@
 <li>Complete API reference and usage examples</li>
 <li>Best practices and troubleshooting</li>
 </ul>
-<p><strong><a href="vr-world-generation.md">vr-world-generation.md</a></strong> - VR World generation with WorldLabs Marble ✨</p>
+<p><strong><a href="vr-world-generation.html">vr-world-generation.md</a></strong> - VR World generation with WorldLabs Marble ✨</p>
 <ul>
 <li>WorldLabs Marble API integration (mini + plus models)</li>
 <li>Spark.js Gaussian Splat renderer via <code>@sparkjsdev/spark</code> + <code>three@0.178</code> (code-split, ~496KB)</li>
@@ -221,7 +250,7 @@
 <li>Integrated into Interior Designer agent chat via DesignCanvas &quot;Generate VR&quot; button</li>
 <li>Requires <code>WORLDLABS_API_KEY</code> in Supabase Edge Function secrets</li>
 </ul>
-<p><strong><a href="search-strategies.md">search-strategies.md</a></strong> - Complete search system guide ✨ UPDATED</p>
+<p><strong><a href="search-strategies.html">search-strategies.md</a></strong> - Complete search system guide ✨ UPDATED</p>
 <ul>
 <li>6 search strategies (100% implemented)</li>
 <li>Semantic, Vector, Multi-Vector, Hybrid, Material, Image</li>
@@ -231,7 +260,7 @@
 <li>Performance metrics and benchmarks</li>
 <li>Usage examples and best practices</li>
 </ul>
-<p><strong><a href="image-relevancy-and-search.md">image-relevancy-and-search.md</a></strong> - Image search &amp; multi-vector architecture ✨ UPDATED</p>
+<p><strong><a href="image-relevancy-and-search.html">image-relevancy-and-search.md</a></strong> - Image search &amp; multi-vector architecture ✨ UPDATED</p>
 <ul>
 <li><strong>7-embedding fusion system</strong> (text, visual, understanding, color, texture, style, material)</li>
 <li>True async parallel execution with asyncio.gather() and thread pools</li>
@@ -241,12 +270,12 @@
 <li>Complete technical implementation details</li>
 <li>Search response format with individual scores and weight_profile</li>
 </ul>
-<p><strong><a href="comprehensive-metadata-fields-guide.md">comprehensive-metadata-fields-guide.md</a></strong> - Comprehensive metadata fields guide ✨ NEW</p>
+<p><strong><a href="comprehensive-metadata-fields-guide.html">comprehensive-metadata-fields-guide.md</a></strong> - Comprehensive metadata fields guide ✨ NEW</p>
 <ul>
 <li>200+ metadata fields across 9 categories</li>
 <li>Material Properties, Dimensions, Appearance, Performance</li>
 <li>Application, Compliance, Design, Manufacturing, Commercial</li>
-<li>AI-powered dynamic extraction (Claude Sonnet 4.5 / GPT-4o)</li>
+<li>AI-powered dynamic extraction (Claude Opus 4.7 / GPT-4o)</li>
 <li>Complete field reference with examples</li>
 <li>API usage and frontend display</li>
 <li>Step-by-step extraction process</li>
@@ -254,26 +283,44 @@
 <li>Best practices and troubleshooting</li>
 </ul>
 <h3>🆕 New Features</h3>
-<p><strong><a href="ar-material-preview.md">ar-material-preview.md</a></strong> - AR Material Preview ✨ NEW</p>
+<p><strong>myAADE Module — Greek Business Registry (ΑΑΔΕ)</strong> ✨ NEW (2026-05-24) — see <code>src/modules/myaade/README.md</code></p>
+<ul>
+<li>Family of <code>myaade-*</code> edge functions wrapping ΑΑΔΕ web services (SOAP 1.2 + WS-Security)</li>
+<li>Today: <code>myaade-rgwspublic2</code> — Greek business lookup by ΑΦΜ. Auto-fills legal name, ΔΟΥ, ΚΑΔ, legal form, structured address into the Business profile</li>
+<li>Shared <code>_shared/aade/soap.ts</code> helpers: a new ΑΑΔΕ service is ~80 lines</li>
+<li>90-day cache on <code>crm_companies.aade_data_at</code> + TAXISnet quota-aware</li>
+<li>Mounted in <code>BusinessSection.tsx</code> (Greek users) + admin overview at <code>/admin/modules/myaade</code></li>
+<li>Secrets via <code>platform_secrets</code> (env-first → DB): <code>AADE_USERNAME</code>, <code>AADE_PASSWORD</code>, <code>AADE_AFM_CALLED_BY</code></li>
+</ul>
+<p><strong>Business Entity + Role Upgrade Requests</strong> ✨ NEW (2026-05-23 / 24)</p>
+<ul>
+<li>Users pick <strong>Solo</strong> or <strong>Business</strong> in their profile (<code>user_profiles.entity_type</code>); Business entities are linked to a <code>crm_companies</code> row (<code>business_id</code>)</li>
+<li>&quot;Apply for Dealer / Factory&quot; card on the Subscription tab → opens a request, admin reviews on the user detail page → approve flips <code>user_profiles.role_id</code></li>
+<li><code>role_upgrade_requests</code> table + <code>role-upgrade-requests</code> edge function (submit / approve / reject) — emails admins + user, bell notifications</li>
+<li>VIES validation on every VAT entry (<code>vies-validate</code> edge function) — pre-fills name + address from EU VAT registry</li>
+<li>ΑΑΔΕ enrichment for Greek users (see myAADE above)</li>
+<li>Role <code>manager</code> removed (collapsed: user → dealer → factory → admin)</li>
+</ul>
+<p><strong><a href="ar-material-preview.html">ar-material-preview.md</a></strong> - AR Material Preview ✨ NEW</p>
 <ul>
 <li>WebXR AR on Android, 3D swatch viewer on iOS/desktop</li>
 <li>PBR map generation (albedo, normal, roughness, metalness)</li>
 <li>QR code handoff for desktop-to-mobile AR</li>
 <li>8 credits per PBR generation, viewing free</li>
 </ul>
-<p><strong><a href="lighting-simulation.md">lighting-simulation.md</a></strong> - Lighting Simulation ✨ NEW</p>
+<p><strong><a href="lighting-simulation.html">lighting-simulation.md</a></strong> - Lighting Simulation ✨ NEW</p>
 <ul>
 <li>AI room re-lighting (6 presets via Gemini edit)</li>
 <li>3D PBR material viewer with time-of-day and orientation controls</li>
 <li>Material category defaults (ceramic, wood, metal, fabric, stone, glass)</li>
 </ul>
-<p><strong><a href="pinterest-integration.md">pinterest-integration.md</a></strong> - Pinterest Integration ✨ NEW</p>
+<p><strong><a href="pinterest-integration.html">pinterest-integration.md</a></strong> - Pinterest Integration ✨ NEW</p>
 <ul>
 <li>Phase 1: URL paste → oEmbed import → auto material matching</li>
 <li>Phase 2: OAuth board browsing → bulk pin import</li>
 <li>Integration with moodboards and visual search</li>
 </ul>
-<p><strong><a href="manufacturer-analytics.md">manufacturer-analytics.md</a></strong> - Manufacturer Analytics (Enhanced) ✨ NEW</p>
+<p><strong><a href="manufacturer-analytics.html">manufacturer-analytics.md</a></strong> - Manufacturer Analytics (Enhanced) ✨ NEW</p>
 <ul>
 <li>Batched event tracking (view, save, quote, search, click, compare)</li>
 <li>Geographic demand, designer engagement, competitive positioning</li>
@@ -281,9 +328,9 @@
 </ul>
 <hr>
 <h3>🏗️ Architecture &amp; Design</h3>
-<p><strong><a href="design-system.md">design-system.md</a></strong> - Dark-mode theme, horizontal top nav, typography, button/tab/card/table patterns, image optimization helper. Summary + pointer to full reference at <code>.claude/design-system.md</code>.</p>
-<p><strong><a href="category-field-registry.md">category-field-registry.md</a></strong> - Frontend display config for the 10 material categories (<code>tiles</code>, <code>wood</code>, <code>decor</code>, <code>furniture</code>, <code>general_materials</code>, <code>paint_wall_decor</code>, <code>heating</code>, <code>sanitary</code>, <code>kitchen</code>, <code>lighting</code>). How sections render in <code>ProductDetailModal</code>, <code>controlledVocab</code> resolution, editing rules, drift-with-Python warnings.</p>
-<p><strong><a href="system-architecture.md">system-architecture.md</a></strong> - Complete system architecture</p>
+<p><strong><a href="design-system.html">design-system.md</a></strong> - Dark-mode theme, horizontal top nav, typography, button/tab/card/table patterns, image optimization helper. Summary + pointer to full reference at <code>.claude/design-system.md</code>.</p>
+<p><strong><a href="category-field-registry.html">category-field-registry.md</a></strong> - Frontend display config for the 10 material categories (<code>tiles</code>, <code>wood</code>, <code>decor</code>, <code>furniture</code>, <code>general_materials</code>, <code>paint_wall_decor</code>, <code>heating</code>, <code>sanitary</code>, <code>kitchen</code>, <code>lighting</code>). How sections render in <code>ProductDetailModal</code>, <code>controlledVocab</code> resolution, editing rules, drift-with-Python warnings.</p>
+<p><strong><a href="system-architecture.html">system-architecture.md</a></strong> - Complete system architecture</p>
 <ul>
 <li>Three-tier architecture</li>
 <li>Hybrid architecture pattern</li>
@@ -298,7 +345,7 @@
 <li>Security measures</li>
 <li>Production metrics</li>
 </ul>
-<p><strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Metadata management system</p>
+<p><strong><a href="metadata-management-system.html">metadata-management-system.md</a></strong> - Metadata management system</p>
 <ul>
 <li>Dynamic metadata extraction</li>
 <li>JSONB storage architecture</li>
@@ -307,7 +354,7 @@
 <li>API endpoints for metadata operations</li>
 <li>Best practices and guidelines</li>
 </ul>
-<p><strong><a href="meta-field-aggregation.md">meta-field-aggregation.md</a></strong> - Meta field aggregation system ✨ NEW</p>
+<p><strong><a href="meta-field-aggregation.html">meta-field-aggregation.md</a></strong> - Meta field aggregation system ✨ NEW</p>
 <ul>
 <li><strong>3-source redundancy strategy</strong> for maximum coverage</li>
 <li>Product Discovery + AI Extraction + Chunk Aggregation</li>
@@ -316,7 +363,7 @@
 <li>Same architecture as dimension aggregation</li>
 <li>Prevents data loss from scattered information</li>
 </ul>
-<p><strong><a href="metadata-normalization-system.md">metadata-normalization-system.md</a></strong> - Metadata normalization system ✨ NEW</p>
+<p><strong><a href="metadata-normalization-system.html">metadata-normalization-system.md</a></strong> - Metadata normalization system ✨ NEW</p>
 <ul>
 <li>Two-layer normalization architecture (prevention + correction)</li>
 <li>Semantic similarity-based field standardization (60% threshold)</li>
@@ -325,7 +372,7 @@
 <li>Migration script for existing products</li>
 <li>95%+ field standardization accuracy</li>
 </ul>
-<p><strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job queue &amp; async processing</p>
+<p><strong><a href="job-queue-system.html">job-queue-system.md</a></strong> - Job queue &amp; async processing</p>
 <ul>
 <li>Supabase-native job queue architecture</li>
 <li>Checkpoint-based recovery system</li>
@@ -333,13 +380,13 @@
 <li>Real-time progress tracking</li>
 <li>Priority-based job processing</li>
 <li>Health monitoring &amp; observability</li>
-<li>Database tables (background_jobs, job_progress, job_checkpoints)</li>
+<li>Single-table design: <code>background_jobs</code> with JSONB <code>stage_history</code> / <code>recovery_history</code> / <code>last_checkpoint</code> (the legacy <code>job_progress</code> + <code>job_checkpoints</code> tables were dropped 2026-04-25)</li>
 <li>Processing flow &amp; lifecycle</li>
 <li>Key services (AsyncQueueService, CheckpointRecoveryService, JobMonitorService)</li>
 <li>Configuration &amp; tuning</li>
 <li>Production metrics &amp; reliability</li>
 </ul>
-<p><strong><a href="monitoring-analytics-system.md">monitoring-analytics-system.md</a></strong> - Monitoring &amp; analytics system ✨ NEW</p>
+<p><strong><a href="monitoring-analytics-system.html">monitoring-analytics-system.md</a></strong> - Monitoring &amp; analytics system ✨ NEW</p>
 <ul>
 <li>Real-time PDF processing monitor (<code>/admin/async-queue-monitor</code>)</li>
 <li>Comprehensive analytics dashboard (<code>/admin/analytics</code>)</li>
@@ -356,21 +403,22 @@
 </ul>
 <hr>
 <h3>🤖 AI &amp; Processing</h3>
-<p><strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models integration</p>
+<p><strong><a href="ai-models-guide.html">ai-models-guide.md</a></strong> - AI models integration</p>
 <ul>
-<li>12+ AI models across 5 providers</li>
-<li>Anthropic: Claude Sonnet 4.5, Claude Haiku 4.5</li>
-<li>OpenAI: GPT-4o, GPT-4o-mini</li>
-<li>Voyage AI: voyage-3.5 (primary text + understanding embeddings, 1024D)</li>
-<li>HuggingFace Endpoint: Qwen3-VL 32B Vision + SigLIP2 (5 visual embedding types, 768D each)</li>
+<li>Anthropic: Claude Opus 4.7 (vision via tool use), Sonnet 4.6 (chunking), Haiku 4.5 (classifiers)</li>
+<li>Voyage AI: voyage-4 (sole text + understanding embedder, 1024D)</li>
+<li>Modal: PaddleOCR-VL 1.6 (0.9B, PP-DocLayoutV2 detector + VLM) — layout + OCR backbone, structure-first</li>
+<li>Modal: SLIG SigLIP2 (5 visual embedding types, 768D each — <code>siglip2-base-patch16-512</code>, native 768D; migrated off HuggingFace 2026-06-14, so HuggingFace now hosts nothing)</li>
+<li>OpenAI: GPT-4o, GPT-5 (optional alternatives — NOT vision)</li>
 <li>WorldLabs Marble: 3D Gaussian Splat generation</li>
+<li>PaddleOCR-VL replaced Surya-2 (2026-06-13), which had replaced YOLO + Chandra; Qwen vision retired 2026-05-01</li>
 <li>7 embedding types (text, visual, understanding, color, texture, style, material) — halfvec float16</li>
 <li>Model usage by pipeline stage</li>
 <li>Cost optimization</li>
 <li>API keys &amp; configuration</li>
 <li>Performance benchmarks</li>
 </ul>
-<p><strong><a href="agent-system.md">agent-system.md</a></strong> - AI Agent system architecture ✨ UPDATED (2026-02-19)</p>
+<p><strong><a href="agent-system.html">agent-system.md</a></strong> - AI Agent system architecture ✨ UPDATED (2026-02-19)</p>
 <ul>
 <li>Database-driven agent prompts</li>
 <li><strong>3 agents</strong>: Jarvis (unified), Interior Designer, Demo</li>
@@ -384,7 +432,7 @@
 <li>RBAC tool gating</li>
 <li>Multimodal image support (data URL → vision content blocks)</li>
 </ul>
-<p><strong><a href="langgraph-implementation.md">langgraph-implementation.md</a></strong> - LangGraph implementation guide ✨ NEW</p>
+<p><strong><a href="langgraph-implementation.html">langgraph-implementation.md</a></strong> - LangGraph implementation guide ✨ NEW</p>
 <ul>
 <li>StateGraph-based agent execution</li>
 <li>AgentStateAnnotation with reducers (append, replace, sum)</li>
@@ -397,7 +445,7 @@
 <li>Human-in-the-loop patterns (planned)</li>
 <li>Database schema (agent_checkpoints, agent_memories)</li>
 </ul>
-<p><strong><a href="prompt-enhancement-system.md">prompt-enhancement-system.md</a></strong> - Dynamic prompt system ✨ NEW</p>
+<p><strong><a href="prompt-enhancement-system.html">prompt-enhancement-system.md</a></strong> - Dynamic prompt system ✨ NEW</p>
 <ul>
 <li>Database-driven extraction prompts (extraction_prompts table)</li>
 <li>Custom vs default prompt priority (is_custom flag)</li>
@@ -407,39 +455,32 @@
 <li>Automatic placeholder replacement</li>
 <li>Phase 1 complete (metadata extraction), Phases 2-4 pending</li>
 </ul>
-<p><strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - 14-stage PDF processing ✨ UPDATED</p>
+<p><strong><a href="pdf-processing-pipeline.html">pdf-processing-pipeline.md</a></strong> - 14-stage PDF processing ✨ UPDATED</p>
 <ul>
 <li>Product-centric architecture (process each product individually)</li>
-<li>Stage 0A: Product Discovery (0-10%) - Products + Metadata extraction</li>
-<li>Stage 0B: Document Entity Discovery (10-15%) - Certificates, Logos, Specs</li>
-<li>Stage 1: Extract Product Pages (15-25%)</li>
-<li>Stage 2: Text Extraction (25-35%)</li>
-<li>Stage 3: Image Extraction (35-45%)</li>
-<li>Stage 4: Product Creation (45-50%)</li>
-<li><strong>Stage 4.5: YOLO Layout Detection + Table Extraction (50-65%)</strong> ✨ NEW<ul>
-<li>6 region types: TEXT, TITLE, TABLE, IMAGE, CAPTION, FORMULA</li>
-<li>Automatic table extraction (Camelot)</li>
-<li>Enabled by default (YOLO_ENABLED=true)</li>
-<li>Stores in product_layout_regions and product_tables</li>
-</ul>
-</li>
-<li>Stage 5: Entity Linking (65-70%)</li>
-<li>Stage 6: AI Classification (70-75%)</li>
-<li>Stage 7: CLIP Embeddings (75-85%)</li>
-<li>Stage 8: Qwen Vision Analysis (85-90%)</li>
-<li><strong>Layout-Aware Chunking</strong> ✨ NEW<ul>
-<li>Uses YOLO regions for intelligent chunking</li>
+<li><strong>Stage 1: PaddleOCR-VL layout + OCR pass (structure-first, BEFORE discovery)</strong> — PP-DocLayoutV2 localizes/labels regions + predicts reading order; the 0.9B VLM recognizes content (text, tables→markdown, formulas→LaTeX). Persists <code>document_layout_analysis</code> rows (<code>processing_version=&quot;paddleocr-vl&quot;</code>); tables preserved as markdown/HTML</li>
+<li>Stage 0A: Product Discovery — reads reading-order text from the PaddleOCR layout cache (not raw <code>page.get_text()</code>)</li>
+<li>Stage 0B: Document Entity Discovery - Certificates, Logos, Specs</li>
+<li>Stage 2: Text Extraction / Chunking — reads the same PaddleOCR layout cache</li>
+<li>Stage 3: Image Extraction — product crops sourced from PaddleOCR <code>IMAGE</code>/<code>FIGURE</code>/<code>chart</code> regions</li>
+<li>Stage 4: Product Creation</li>
+<li>Stage 5: Entity Linking</li>
+<li>Stage 6: AI Classification — Claude Opus 4.7 via Anthropic tool use</li>
+<li>Stage 7: SLIG Embeddings — SigLIP2 cloud endpoint, 5×768D specialized</li>
+<li>Stage 8: Vision Analysis — Claude Opus 4.7 schema-locked via <code>VisionAnalysis</code> Pydantic + <code>VISION_ANALYSIS_TOOL</code></li>
+<li><strong>Structure-first chunking</strong> ✨<ul>
+<li>Uses the PaddleOCR-VL layout cache for intelligent chunking</li>
 <li>Respects region boundaries</li>
 <li>Combines TITLE + TEXT</li>
 <li>Keeps tables intact</li>
-<li>Preserves reading order</li>
+<li>Preserves model-predicted reading order</li>
 </ul>
 </li>
 <li>Checkpoint recovery (9 checkpoints)</li>
 <li>Performance metrics</li>
 <li>API endpoint</li>
 </ul>
-<p><strong><a href="product-discovery-architecture.md">product-discovery-architecture.md</a></strong> - Product discovery system</p>
+<p><strong><a href="product-discovery-architecture.html">product-discovery-architecture.md</a></strong> - Product discovery system</p>
 <ul>
 <li>Products + Metadata architecture (inseparable)</li>
 <li>Document entities (certificates, logos, specifications)</li>
@@ -451,7 +492,7 @@
 </ul>
 <hr>
 <h3>💼 Business Features</h3>
-<p><strong><a href="professional-marketplace.md">professional-marketplace.md</a></strong> - Professional Marketplace ✨ NEW</p>
+<p><strong><a href="professional-marketplace.html">professional-marketplace.md</a></strong> - Professional Marketplace ✨ NEW</p>
 <ul>
 <li>Public profiles for architects, designers, consultants &amp; all professional types</li>
 <li>Discover directory (<code>/discover</code>) with search + tag filtering</li>
@@ -460,7 +501,7 @@
 <li>Social: follow/unfollow, profile views, moodboard comments</li>
 <li>DB tables: <code>user_profiles</code>, <code>profile_contact_requests</code>, <code>user_follows</code></li>
 </ul>
-<p><strong><a href="email-system.md">email-system.md</a></strong> - Email system with Amazon SES</p>
+<p><strong><a href="email-system.html">email-system.md</a></strong> - Email system with Amazon SES</p>
 <ul>
 <li>Domain verification and management</li>
 <li>React Email template system</li>
@@ -470,7 +511,7 @@
 <li>Admin dashboard at /admin/emails</li>
 <li>Complete API reference</li>
 </ul>
-<p><strong><a href="campaign-system.md">campaign-system.md</a></strong> - Email campaign management ✨ NEW</p>
+<p><strong><a href="campaign-system.html">campaign-system.md</a></strong> - Email campaign management ✨ NEW</p>
 <ul>
 <li>Bulk email campaigns with targeting</li>
 <li>Recipient tracking and analytics</li>
@@ -479,7 +520,7 @@
 <li>Real-time delivery monitoring</li>
 <li>Admin interface for campaign management</li>
 </ul>
-<p><strong><a href="quotes-system-architecture.md">quotes-system-architecture.md</a></strong> - Quotes management system</p>
+<p><strong><a href="quotes-system-architecture.html">quotes-system-architecture.md</a></strong> - Quotes management system</p>
 <ul>
 <li>Multiple independent quotes per user</li>
 <li>Custom requests and product quotes</li>
@@ -488,11 +529,61 @@
 <li>Quote acceptance workflow</li>
 <li>Admin management interface</li>
 </ul>
+<p><strong><a href="finance-system.html">finance-system.md</a></strong> - Greek e-invoicing &amp; AR/AP ✨ NEW (2026-06)</p>
+<ul>
+<li>Multi-tenant AADE/myDATA transmission via the Novus connector</li>
+<li>Invoices, credit notes (5.1/5.2), delivery notes (9.3), retail receipts (11.1)</li>
+<li>Inbound <code>RequestDocs</code> sync, supplier bills + credit notes</li>
+<li>Reports: VAT (ΦΠΑ), myDATA reconciliation, ledgers (καρτέλα), accounting export (γέφυρες)</li>
+<li>Replaced a removed legacy ERP connector</li>
+</ul>
+<p><strong><a href="orders-system.html">orders-system.md</a></strong> - Orders (sales &amp; purchase hub) ✨ NEW (2026-06)</p>
+<ul>
+<li>Sales/purchase orders tie quotes, invoices, payments/receipts, dispatch, products &amp; profit together</li>
+<li>Accepted quote → order + draft pre-invoice; POS sale → order; payment_status + profit per order</li>
+<li>First Finance → Documents tab; replaces the per-doc tabs on the CRM company page</li>
+</ul>
+<p><strong><a href="pos-retail-system.html">pos-retail-system.md</a></strong> - POS / retail ✨ NEW (2026-06)</p>
+<ul>
+<li>vPOS shifts + cash drawer + X/Z reports; Law 5155 card/IRIS signature flow; EFT-POS registry; thermal receipt</li>
+</ul>
+<p><strong><a href="online-storefront.html">online-storefront.md</a></strong> - Public <code>/store/:slug</code> ✨ NEW (2026-06)</p>
+<ul>
+<li>Anonymous catalog → cart → Stripe Connect checkout → draft receipt; platform revenue model (#200)</li>
+</ul>
+<p><strong><a href="warehouse-and-billing.html">warehouse-and-billing.md</a></strong> - Inventory &amp; billing ✨ NEW (2026-06)</p>
+<ul>
+<li>Multi-warehouse stock + transfers + inbound intake; time-tracking → invoice; project → invoice (full/progress/milestone)</li>
+</ul>
+<p><strong><a href="sales-and-marketplace.html">sales-and-marketplace.md</a></strong> - B2B surfaces ✨ NEW (2026-06)</p>
+<ul>
+<li>Sales rep portal (#201); supplier→factory catalog access (#196); procurement routing inbox (#177)</li>
+</ul>
+<p><strong><a href="capabilities-and-tenancy.html">capabilities-and-tenancy.md</a></strong> - Authorization backbone ✨ NEW (2026-06)</p>
+<ul>
+<li>7 personas × 15 capabilities matrix; <code>usePermissions</code>/<code>CapabilityGuard</code></li>
+<li>Module entitlements (#212); workspace tenancy, hierarchy &amp; guard RPCs</li>
+</ul>
+<p><strong><a href="trip-expense-cards.html">trip-expense-cards.md</a></strong> - Trip/expense cards &amp; customer AR aging ✨ NEW (2026-06)</p>
+<ul>
+<li>Expense cards with per-line finance approval + reimbursement→planned_payment; receipts via <code>trip-expense-ops</code>; KAI tools</li>
+<li><code>vw_customer_aging_buckets</code> (not_due / 0–30 / 31–90 / 90+) across the finance Parties views</li>
+</ul>
+<p><strong><a href="surplus-marketplace.html">surplus-marketplace.md</a></strong> - 0%-commission last-stock marketplace (#219) ✨ NEW (2026-06)</p>
+<ul>
+<li>Cross-tenant <code>marketplace_listings</code> browse under Discover (first read-across-workspaces RLS surface)</li>
+<li>Buyer inquiry bridged into the seller&#39;s Inbox; want-list alerts; warehouse-sourced listings + expiry cron</li>
+</ul>
+<p><strong><a href="purchase-items-doors-windows.html">purchase-items-doors-windows.md</a></strong> - Project purchase items (doors/windows) ✨ NEW (2026-06)</p>
+<ul>
+<li><code>project_purchase_items</code> + <code>generate-purchase-sheet-pdf</code> (schedule / per-item spec sheets with door-swing &amp; window glyphs)</li>
+<li>Quote-referenced (not PO); frontend/agent wiring still pending</li>
+</ul>
 <hr>
 <h3>🔌 API Reference</h3>
-<p><strong><a href="api-master-reference.md">api-master-reference.md</a></strong> ✨ <strong>START HERE</strong> — Single-page master index covering <strong>all 68 Supabase edge functions + MIVAA Python endpoints</strong>. Auth models, categories (AI agents / generation / SEO / KB / CRM / messaging / social / pinterest / scraping / flows / crons / admin), and standard call patterns.</p>
-<p><strong><a href="api/README.md">api/README.md</a></strong> — Per-edge-function deep docs index (25 dedicated function pages).</p>
-<p><strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - Complete MIVAA Python API reference</p>
+<p><strong><a href="api-master-reference.html">api-master-reference.md</a></strong> ✨ <strong>START HERE</strong> — Single-page master index covering <strong>all 90+ Supabase edge functions + MIVAA Python endpoints</strong>. Auth models, categories (AI agents / generation / SEO / KB / CRM / finance / messaging / social / pinterest / scraping / flows / crons / admin), and standard call patterns.</p>
+<p><strong><a href="api/README.html">api/README.md</a></strong> — Per-edge-function deep docs index (25 dedicated function pages).</p>
+<p><strong><a href="api-endpoints.html">api-endpoints.md</a></strong> - Complete MIVAA Python API reference</p>
 <ul>
 <li>114 endpoints across 14 categories</li>
 <li>RAG Routes (25 endpoints)</li>
@@ -505,7 +596,7 @@
 <li>PDF Routes (4 endpoints)</li>
 <li>Products Routes (3 endpoints)</li>
 <li>Embeddings Routes (3 endpoints)</li>
-<li>HuggingFace/Qwen Routes (3 endpoints)</li>
+<li>Model Endpoint Routes (SLIG SigLIP2 visual embeddings on Modal; layout + OCR is PaddleOCR-VL on Modal — both GPU endpoints are Modal-hosted as of 2026-06-14)</li>
 <li>Anthropic Routes (3 endpoints)</li>
 <li>Monitoring Routes (3 endpoints)</li>
 <li>AI Metrics Routes (2 endpoints)</li>
@@ -515,7 +606,7 @@
 </ul>
 <hr>
 <h3>🚀 Deployment &amp; Operations</h3>
-<p><strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Production deployment</p>
+<p><strong><a href="deployment-guide.html">deployment-guide.md</a></strong> - Production deployment</p>
 <ul>
 <li>Deployment architecture</li>
 <li>Frontend deployment (Vercel)</li>
@@ -529,7 +620,7 @@
 <li>Performance targets</li>
 <li>Deployment links</li>
 </ul>
-<p><strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues &amp; solutions</p>
+<p><strong><a href="troubleshooting-guide.html">troubleshooting-guide.md</a></strong> - Common issues &amp; solutions</p>
 <ul>
 <li>Critical issues (API down, database connection, OOM)</li>
 <li>Common issues (PDF processing, search, latency, auth, images)</li>
@@ -540,32 +631,32 @@
 <h2>🎓 Learning Path</h2>
 <h3>For New Developers</h3>
 <ol>
-<li>Start with <strong><a href="overview.md">overview.md</a></strong> - Understand the platform</li>
-<li>Read <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Learn the architecture</li>
-<li>Study <strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - Understand the core pipeline</li>
-<li>Review <strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - Learn the API</li>
-<li>Check <strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Understand deployment</li>
+<li>Start with <strong><a href="overview.html">overview.md</a></strong> - Understand the platform</li>
+<li>Read <strong><a href="system-architecture.html">system-architecture.md</a></strong> - Learn the architecture</li>
+<li>Study <strong><a href="pdf-processing-pipeline.html">pdf-processing-pipeline.md</a></strong> - Understand the core pipeline</li>
+<li>Review <strong><a href="api-endpoints.html">api-endpoints.md</a></strong> - Learn the API</li>
+<li>Check <strong><a href="deployment-guide.html">deployment-guide.md</a></strong> - Understand deployment</li>
 </ol>
 <h3>For API Integration</h3>
 <ol>
-<li>Read <strong><a href="api-endpoints.md">api-endpoints.md</a></strong> - All endpoints</li>
-<li>Check <strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI models used</li>
-<li>Review <strong><a href="metadata-management-system.md">metadata-management-system.md</a></strong> - Data structure</li>
-<li>Study <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Authentication</li>
+<li>Read <strong><a href="api-endpoints.html">api-endpoints.md</a></strong> - All endpoints</li>
+<li>Check <strong><a href="ai-models-guide.html">ai-models-guide.md</a></strong> - AI models used</li>
+<li>Review <strong><a href="metadata-management-system.html">metadata-management-system.md</a></strong> - Data structure</li>
+<li>Study <strong><a href="system-architecture.html">system-architecture.md</a></strong> - Authentication</li>
 </ol>
 <h3>For Operations</h3>
 <ol>
-<li>Read <strong><a href="deployment-guide.md">deployment-guide.md</a></strong> - Deployment process</li>
-<li>Study <strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong> - Common issues</li>
-<li>Review <strong><a href="system-architecture.md">system-architecture.md</a></strong> - Monitoring</li>
-<li>Check <strong><a href="job-queue-system.md">job-queue-system.md</a></strong> - Job monitoring and recovery</li>
+<li>Read <strong><a href="deployment-guide.html">deployment-guide.md</a></strong> - Deployment process</li>
+<li>Study <strong><a href="troubleshooting-guide.html">troubleshooting-guide.md</a></strong> - Common issues</li>
+<li>Review <strong><a href="system-architecture.html">system-architecture.md</a></strong> - Monitoring</li>
+<li>Check <strong><a href="job-queue-system.html">job-queue-system.md</a></strong> - Job monitoring and recovery</li>
 </ol>
 <h3>For Product Managers</h3>
 <ol>
-<li>Start with <strong><a href="overview.md">overview.md</a></strong> - Platform overview</li>
-<li>Read <strong><a href="features-guide.md">features-guide.md</a></strong> - All features</li>
-<li>Review <strong><a href="pdf-processing-pipeline.md">pdf-processing-pipeline.md</a></strong> - Processing pipeline</li>
-<li>Check <strong><a href="ai-models-guide.md">ai-models-guide.md</a></strong> - AI capabilities</li>
+<li>Start with <strong><a href="overview.html">overview.md</a></strong> - Platform overview</li>
+<li>Read <strong><a href="features-guide.html">features-guide.md</a></strong> - All features</li>
+<li>Review <strong><a href="pdf-processing-pipeline.html">pdf-processing-pipeline.md</a></strong> - Processing pipeline</li>
+<li>Check <strong><a href="ai-models-guide.html">ai-models-guide.md</a></strong> - AI capabilities</li>
 </ol>
 <hr>
 <h2>📊 Quick Reference</h2>
@@ -573,7 +664,7 @@
 <ul>
 <li><strong>5,000+</strong> users in production</li>
 <li><strong>99.5%+</strong> uptime SLA</li>
-<li><strong>20+</strong> AI models across 8 providers (Anthropic, OpenAI, Voyage AI, HuggingFace, WorldLabs, Replicate, Google Gemini, xAI)</li>
+<li><strong>20+</strong> AI models across 8 providers (Anthropic, OpenAI, Voyage AI, Modal, WorldLabs, Replicate, Google Gemini, xAI)</li>
 <li><strong>14</strong> processing pipeline stages</li>
 <li><strong>170+</strong> API endpoints (20 categories)</li>
 <li><strong>60+</strong> Supabase Edge Functions</li>
@@ -589,7 +680,7 @@
 <p><strong>Frontend</strong>: React 18, TypeScript, Vite, Shadcn/ui, Vercel
 <strong>Backend</strong>: FastAPI, Python 3.11, Uvicorn, self-hosted
 <strong>Database</strong>: PostgreSQL 15 + pgvector 0.8.0 (halfvec), Supabase
-<strong>AI</strong>: Claude 4.5 (Sonnet + Haiku), GPT-4o/mini, Voyage AI (voyage-3.5), Qwen3-VL 32B (HuggingFace), SigLIP2 (HuggingFace), WorldLabs Marble, Google Gemini, xAI Aurora (Grok), Kling, Replicate models</p>
+<strong>AI</strong>: Claude (Opus 4.7 vision tool use + Sonnet 4.6 chunking + Haiku 4.5 classifiers), Voyage AI (voyage-4 sole text + understanding embedder), PaddleOCR-VL 1.6 (Modal — layout + OCR backbone), SLIG SigLIP2 (Modal, 5×768D visual), GPT-4o/GPT-5 (optional alternatives — not vision), WorldLabs Marble, Google Gemini, xAI Aurora (Grok), Kling, Replicate models</p>
 <h3>API Categories</h3>
 <ol>
 <li>PDF Processing (12 endpoints)</li>
@@ -636,9 +727,15 @@
 <hr>
 <h2>Documentation Updates</h2>
 <p><strong>Last Updated</strong>: April 2026
-<strong>Version</strong>: 3.6.0
+<strong>Version</strong>: 3.7.0
 <strong>Status</strong>: Production
 <strong>Maintainer</strong>: Development Team</p>
+<p><strong>Recent Changes (2026-04-25):</strong></p>
+<ul>
+<li>✨ <strong>NEW</strong>: <strong>Modular Architecture</strong> — platform now ships as 7 toggleable modules. Each module owns its routes/services/agents/admin-cards and is gated by a row in <code>public.modules</code>. Toggle from <code>/admin/modules</code>. Modules: <code>greek-marketplaces</code>, <code>crm</code>, <code>email</code>, <code>messaging</code>, <code>quotes</code>, <code>notifications</code>, <code>social-media</code>. See <code>.claude/plans/modular-architecture.md</code> + <code>.claude/plans/modules-extraction-roadmap.md</code>.</li>
+<li>✨ <strong>NEW</strong>: <code>POST /api/v1/modules/_invalidate</code> — admin endpoint that drops MIVAA&#39;s enabled-flag cache so toggle changes propagate in ~1s. Documented in <code>api-master-reference.md</code> §2.1.</li>
+<li>✨ <strong>CHANGED</strong>: Frontend module file paths — Email moved to <code>src/modules/email/</code>, Messaging to <code>src/modules/messaging/</code>, CRM to <code>src/modules/crm/</code>, Quotes to <code>src/modules/quotes/</code>, In-App Notifications panel to <code>src/modules/notifications/</code>, Social Media admin UI + the 11 KAI agent tools + 2 background agents to <code>src/modules/social-media/</code> and <code>supabase/functions/_shared/modules/social-media/</code>. Old paths under <code>src/services/email/</code>, <code>src/services/messaging/</code>, <code>src/components/Admin/{CRMManagement,EmailManagement,MessagingManagement,SocialMedia}/</code>, etc. are deleted.</li>
+</ul>
 <p><strong>Recent Changes (2026-04):</strong></p>
 <ul>
 <li>✨ <strong>NEW</strong>: AR Material Preview — WebXR + 3D swatch + PBR maps (<code>ar-material-preview.md</code>)</li>
@@ -654,7 +751,7 @@
 <li>✨ <strong>NEW</strong>: Interior Video Generation — 4 AI models: Veo-2, Kling v3, Wan 2.1, Runway Gen4 (<code>interior-video-generation.md</code>)</li>
 <li>✨ <strong>NEW</strong>: Virtual Staging — Replicate proplabs room staging (<code>virtual-staging.md</code>)</li>
 <li>✨ <strong>NEW</strong>: Region Editing — Grok Aurora masked inpainting + SAM 2 (<code>segmentation-inpainting.md</code>)</li>
-<li>✨ <strong>NEW</strong>: Social Media Suite — Content/image/video + Late.dev publishing (see <code>social-media-system.md</code>)</li>
+<li>✨ <strong>NEW</strong>: Social Media Suite — Content/image/video + Zernio publishing (see <code>social-media-system.md</code>)</li>
 <li>✨ <strong>NEW</strong>: Background Agents — Scheduled autonomous agents with chain triggers (<code>background-agents.md</code>)</li>
 <li>✨ <strong>NEW</strong>: Gemini Interior Generation — 4 modes including floor plan rendering</li>
 <li>✨ <strong>NEW</strong>: AI Re-ranking — Claude post-retrieval result re-ordering (<code>ai-reranking.md</code>)</li>
@@ -669,8 +766,8 @@
 <h2>📞 Support</h2>
 <p>For questions or issues:</p>
 <ul>
-<li>Check <strong><a href="troubleshooting-guide.md">troubleshooting-guide.md</a></strong></li>
-<li>Review <strong><a href="api-endpoints.md">api-endpoints.md</a></strong></li>
+<li>Check <strong><a href="troubleshooting-guide.html">troubleshooting-guide.md</a></strong></li>
+<li>Review <strong><a href="api-endpoints.html">api-endpoints.md</a></strong></li>
 <li>Contact: <a href="mailto:support@materialkaivision.com">support@materialkaivision.com</a></li>
 <li>GitHub Issues: <a href="https://github.com/creativeghq/material-kai-vision-platform/issues">https://github.com/creativeghq/material-kai-vision-platform/issues</a></li>
 </ul>

@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,15 +19,19 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>MIVAA API Documentation</h1>
-<p><strong>Version:</strong> 2.5.0
-<strong>Last Updated:</strong> 2025-12-30
+<p><strong>Version:</strong> 2.6.0
+<strong>Last Updated:</strong> 2026-06-22
 <strong>Base URL:</strong> <code>https://v1api.materialshub.gr</code></p>
+<blockquote>
+<p><strong>This is a hand-written index.</strong> The authoritative, always-current schema is the FastAPI-generated <strong>OpenAPI</strong> at <code>/openapi.json</code> below (the MIVAA Python backend lives in a separate repo, <code>creativeghq/mivaa-pdf-extractor</code>). For the <strong>Supabase Edge Functions</strong> surface (a separate Deno runtime with no auto-generated schema), see the companion hand-maintained spec at <a href="./api/openapi-edge.json">docs/api/openapi-edge.json</a> (served live at <code>/api/edge-swagger.html</code>).</p>
+</blockquote>
 <hr>
 <h2>📚 Interactive Documentation</h2>
 <ul>
@@ -35,14 +40,10 @@
 <li><strong>OpenAPI Schema</strong>: <a href="https://v1api.materialshub.gr/openapi.json">https://v1api.materialshub.gr/openapi.json</a></li>
 </ul>
 <hr>
-<h2>🎯 Latest Enhancement: Image Re-classification (v2.5.0)</h2>
-<p><strong>New in v2.5.0:</strong></p>
-<ul>
-<li><strong>Image Re-classification Endpoint</strong>: <code>/api/images/reclassify/{image_id}</code> - Re-run AI classification on specific images</li>
-<li><strong>Force Validation</strong>: Optional secondary model validation for improved accuracy</li>
-<li><strong>Updated Classification Results</strong>: Real-time updates to database with new classification data</li>
-</ul>
-<p><strong>Previous Enhancement: Multi-Vector Search (v2.3.0)</strong></p>
+<h2>🧱 PDF structural backbone: PaddleOCR-VL (since 2026-06-13)</h2>
+<p>The catalog/PDF pipeline&#39;s layout + OCR backbone is <strong>PaddleOCR-VL</strong> (<code>PaddlePaddle/PaddleOCR-VL-1.6</code>, 0.9B), a two-stage document parser hosted on <strong>Modal</strong>: <strong>PP-DocLayoutV2</strong> localizes/labels regions and predicts reading order, then the 0.9B VLM recognizes content inside each region (text, tables→markdown, formulas→LaTeX, charts). It <strong>replaced Surya-2</strong> (which had earlier replaced YOLO + Chandra). The structural pass runs as <strong>Stage 1, before product discovery</strong>, persisting <code>document_layout_analysis</code> rows with <code>processing_version=&quot;paddleocr-vl&quot;</code>; discovery, chunking, and crop stages all read from that cache. Per-image OCR also runs on PaddleOCR. There is <strong>no longer any HuggingFace-hosted model</strong> — both GPU endpoints (PaddleOCR-VL and SLIG/SigLIP2) are <strong>Modal-only</strong> (SLIG moved off HF 2026-06-14). See <code>CLAUDE.md</code> and <code>docs/pdf-processing-pipeline.md</code> for the full architecture.</p>
+<hr>
+<h2>🎯 Multi-Vector Search (the comprehensive search solution)</h2>
 <h3>Overview</h3>
 <p>The multi-vector search has been <strong>significantly enhanced</strong> to be the single comprehensive search solution for the MIVAA platform.</p>
 <h3>What&#39;s New</h3>
@@ -50,11 +51,11 @@
 <ul>
 <li>text_embedding (15%) - Semantic understanding (Voyage AI 1024D, dict key <code>text_1024</code>, stored in document_chunks.text_embedding)</li>
 <li>visual_768 / image_slig_embeddings (15%) - Visual similarity (SigLIP2 cloud 768D)</li>
-<li>understanding_1024 / image_understanding_embeddings (20%) - Spec-based semantic (Voyage AI 1024D from Qwen3-VL vision_analysis JSON)</li>
-<li>color_slig_768 / image_color_embeddings (12.5%) - Color palette matching (SLIG text-guided 768D)</li>
-<li>texture_slig_768 / image_texture_embeddings (12.5%) - Texture pattern matching (SLIG text-guided 768D)</li>
-<li>style_slig_768 / image_style_embeddings (12.5%) - Design style matching (SLIG text-guided 768D)</li>
-<li>material_slig_768 / image_material_embeddings (12.5%) - Material type matching (SLIG text-guided 768D)</li>
+<li>understanding_1024 / image_understanding_embeddings (20%) - Spec-based semantic (Voyage AI 1024D from Claude Opus 4.7 vision_analysis JSON via Anthropic tool use → <code>serialize_vision_analysis_to_text</code> → Voyage. Pre-2026-05-01 used Qwen3-VL JSON; migration retired Qwen vision (HF endpoint 404-ing for months). Provenance fields <code>embedding_model</code> + <code>schema_version</code> persisted on every row.)</li>
+<li>color_aspect_1024 / image_color_embeddings (12.5%) - Color matching (Voyage 1024D of <code>VisionAnalysis.colors[]</code>)</li>
+<li>texture_aspect_1024 / image_texture_embeddings (12.5%) - Texture matching (Voyage 1024D of <code>VisionAnalysis.textures[] + finish</code>)</li>
+<li>style_aspect_1024 / image_style_embeddings (12.5%) - Style matching (Voyage 1024D of <code>VisionAnalysis.style + surface_pattern + applications</code>)</li>
+<li>material_aspect_1024 / image_material_embeddings (12.5%) - Material matching (Voyage 1024D of <code>VisionAnalysis.material_type + category + subcategory</code>)</li>
 </ul>
 <p><strong>Note (2026-04)</strong>: All image embeddings now live <strong>exclusively in the VECS collections</strong> (<code>vecs.image_*_embeddings</code>, halfvec). The former dual-store columns on <code>document_images</code> (<code>visual_clip_embedding_512</code>, <code>color_embedding_256</code>, <code>texture_embedding_256</code>, <code>application_embedding_512</code>, <code>multimodal_fusion_embedding_2688</code>) were dropped — they had been broken since the CLIP→SLIG dimension change. Presence is tracked via boolean flags on <code>document_images</code> (<code>has_slig_embedding</code>, <code>has_understanding_embedding</code>, <code>has_color_slig</code>, <code>has_texture_slig</code>, <code>has_style_slig</code>, <code>has_material_slig</code>) for O(1) lookup. Text embeddings remain in <code>document_chunks.text_embedding</code>.</p>
 <p>✅ <strong>JSONB Metadata Filtering</strong></p>
@@ -116,7 +117,7 @@
 <p><strong>Endpoint:</strong> <code>POST /api/rag/search?strategy=multi_vector</code></p>
 <p><strong>Features:</strong></p>
 <ul>
-<li>6 specialized CLIP embeddings with intelligent weighting</li>
+<li>7 VECS-based embeddings with intelligent weighting (SLIG SigLIP2 768D + Voyage AI 1024D × 6)</li>
 <li>JSONB metadata filtering</li>
 <li>Query understanding (enabled by default)</li>
 <li>Best accuracy and performance for general queries</li>
@@ -220,10 +221,10 @@
 <hr>
 <h2>📖 Additional Resources</h2>
 <ul>
-<li><strong>Search Strategies Guide</strong>: <a href="./search-strategies.md">docs/search-strategies.md</a></li>
-<li><strong>Multi-Vector Enhancement Summary</strong>: <a href="./multi-vector-enhancement-summary.md">docs/multi-vector-enhancement-summary.md</a></li>
-<li><strong>Platform Overview</strong>: <a href="./README.md">docs/README.md</a></li>
-<li><strong>Deployment Guide</strong>: <a href="./deployment-guide.md">docs/deployment-guide.md</a></li>
+<li><strong>Search Strategies Guide</strong>: <a href="./search-strategies.html">docs/search-strategies.md</a></li>
+<li><strong>Multi-Vector Enhancement Summary</strong>: <a href="./multi-vector-enhancement-summary.html">docs/multi-vector-enhancement-summary.md</a></li>
+<li><strong>Platform Overview</strong>: <a href="./README.html">docs/README.md</a></li>
+<li><strong>Deployment Guide</strong>: <a href="./deployment-guide.html">docs/deployment-guide.md</a></li>
 </ul>
 <hr>
 <p><strong>Questions?</strong> Contact support or check the interactive documentation at <code>/docs</code>.</p>

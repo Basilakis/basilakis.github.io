@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,29 +19,36 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>CRM System</h1>
 <p>Customer Relationship Management — contacts, companies, and user account management for workspace admins.</p>
 <hr>
 <h2>Overview</h2>
-<p>The CRM provides workspace admins with a unified view of contacts, companies, and platform users. It integrates with the messaging system (SMS/email campaigns) and quotes system.</p>
+<p>The CRM provides workspace admins with a unified view of contacts, companies, and platform users. It integrates with the messaging system (SMS/email campaigns), the quotes system, and the <a href="orders-system.html">Finance / Orders</a> layer.</p>
 <p><strong>Admin Route:</strong> <code>/admin/crm</code></p>
-<p><strong>Edge Functions:</strong></p>
+<h3>Finance / Orders integration</h3>
 <ul>
-<li><code>crm-contacts-api</code> — Contact CRUD, user linking</li>
-<li><code>crm-companies-api</code> — Company records, contact associations</li>
-<li><code>crm-users-api</code> — Platform user management and role control</li>
-<li><code>crm-stripe-api</code> — Subscription and credit billing (see <a href="billing-credits-system.md">billing-credits-system.md</a>)</li>
+<li><strong>Company page tabs:</strong> <strong>Account</strong> (balance + ledger) and <strong>Orders</strong> (the company&#39;s orders; quotes/invoices/payments are now viewed <em>inside</em> each order, not as separate tabs). The net figure is labelled <strong>&quot;Account balance (they owe us / we owe them / settled)&quot;</strong>.</li>
+<li><strong>Business-contact rollup:</strong> a quote/invoice for a contact who belongs to a business is attributed to the <strong>company</strong> (quotes enforce an at-most-one-party constraint, so the contact is dropped on a quote; invoices keep both with company precedence). Linking a contact to a company re-points their existing contact-level quotes/invoices to it.</li>
+<li><strong>Parties (Finance):</strong> contacts that belong to a business are <strong>hidden</strong> from the Customers &amp; Suppliers list — the business represents them.</li>
+<li><strong>Contacts list:</strong> the company column shows the <strong>attached business</strong> (via the <code>crm_company_contacts</code> junction), not only the legacy free-text field.</li>
+<li><strong>Company role:</strong> Customer / Supplier are <strong>editable checkboxes</strong> (a company can be both); set at creation, adjustable on the company page.</li>
 </ul>
-<p><strong>Individual API Docs:</strong></p>
+<p><strong>Edge Function:</strong> <code>crm-api</code> — a single router with resource handlers (the former separate <code>crm-*-api</code> functions were consolidated):</p>
 <ul>
-<li><a href="api/crm-contacts-api.md">crm-contacts-api.md</a></li>
-<li><a href="api/crm-companies-api.md">crm-companies-api.md</a></li>
-<li><a href="api/crm-users-api.md">crm-users-api.md</a></li>
+<li><code>companies</code> — Company records, contact associations</li>
+<li><code>contacts</code> — Contact CRUD, user linking, potential-matches</li>
+<li><code>users</code> — Platform user management and role control</li>
+<li><code>stripe</code> — Subscription and credit billing (see <a href="billing-credits-system.html">billing-credits-system.md</a>)</li>
+</ul>
+<p><strong>API Docs:</strong></p>
+<ul>
+<li><a href="api/crm-api.html">api/crm-api.md</a></li>
 </ul>
 <hr>
 <h2>Entities</h2>
@@ -55,8 +63,11 @@
 <li><code>ContactDetailPage.tsx</code></li>
 </ul>
 <h3>Companies</h3>
-<p>Organisation records (manufacturers, suppliers, clients).</p>
+<p>Organisation records (manufacturers, suppliers, clients). Also where a user&#39;s own business lives once they switch their profile to <code>entity_type=&#39;business&#39;</code> — the platform creates a <code>crm_companies</code> row owned by the user and links it via <code>user_profiles.business_id</code>.</p>
 <p><strong>Key fields:</strong> name, domain, industry, address, website, contact_count, linked_contacts[]</p>
+<p><strong>Business-profile fields</strong> (populated by VIES + ΑΑΔΕ auto-fill): <code>vat_number</code>, <code>tax_office</code>, <code>profession</code>, <code>country_code</code>, <code>street</code>, <code>street_number</code>, <code>postal_code</code>, <code>city</code>, <code>country</code>.</p>
+<p><strong>VAT validation cache</strong> (written by <code>vies-validate</code> and <code>myaade-rgwspublic2</code>): <code>vat_validated boolean</code>, <code>vat_validated_at timestamptz</code>, <code>vat_validated_name text</code>, <code>vat_validated_address text</code>, <code>vat_validation_source text</code> (today: <code>vies</code> or <code>aade</code>).</p>
+<p><strong>ΑΑΔΕ (Greek-business) fields</strong> (written by <code>myaade-rgwspublic2</code>, see <a href="../src/modules/myaade/README.html"><code>src/modules/myaade/README.md</code></a>): <code>commercial_title</code>, <code>legal_status</code>, <code>kad_primary</code>, <code>kad_primary_description</code>, <code>kad_secondary jsonb</code>, <code>business_start_date</code>, <code>aade_data jsonb</code>, <code>aade_data_at</code> (90-day cache).</p>
 <p><strong>Routes:</strong></p>
 <ul>
 <li><code>/admin/crm</code> (companies tab)</li>
@@ -65,8 +76,8 @@
 </ul>
 <h3>Users</h3>
 <p>Platform user accounts. Admins can view all workspace users, update roles, and manage permissions.</p>
-<p><strong>Key fields:</strong> email, role, workspace_id, created_at, last_sign_in_at, subscription status</p>
-<p><strong>Roles:</strong> <code>admin</code>, <code>owner</code>, <code>manager</code>, <code>member</code>, <code>factory</code></p>
+<p><strong>Key fields:</strong> email, role, workspace_id, entity_type (<code>solo</code> | <code>business</code>), business_id (FK → <code>crm_companies</code>), created_at, last_sign_in_at, subscription status</p>
+<p><strong>Platform roles:</strong> <code>admin</code>, <code>owner</code>, <code>super_admin</code> (admin tier) + <code>factory</code>, <code>dealer</code>, <code>user</code>. The <code>manager</code> role was removed 2026-05-23 (collapsed into admin). <code>dealer</code> and <code>factory</code> are <strong>admin-granted only</strong> — users self-apply via the Role Upgrade Requests flow on the Subscription tab; admins approve on the user detail page. See <a href="user-levels-access.html">user-levels-access.md</a> for the full role table.</p>
 <p><strong>Routes:</strong></p>
 <ul>
 <li><code>/admin/crm/users/:id</code> (user detail)</li>
