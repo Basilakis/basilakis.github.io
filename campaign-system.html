@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,20 +19,21 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Campaign System</h1>
 <p>Complete documentation for the email campaign management system with audience targeting, recipient tracking, and comprehensive analytics.</p>
 <blockquote>
 <p><strong>📚 Related Documentation:</strong></p>
 <ul>
-<li><a href="./email-system.md">Email System</a> - Email sending and template management</li>
-<li><a href="./ses-webhook-setup.md">SES Webhook Setup</a> - Bounce and complaint handling</li>
-<li><a href="./system-architecture.md">System Architecture</a> - Platform overview</li>
-<li><a href="./api-endpoints.md">API Endpoints</a> - Complete API reference</li>
+<li><a href="./email-system.html">Email System</a> - Email sending and template management</li>
+<li><a href="./ses-webhook-setup.html">SES Webhook Setup</a> - Bounce and complaint handling</li>
+<li><a href="./system-architecture.html">System Architecture</a> - Platform overview</li>
+<li><a href="./api-endpoints.html">API Endpoints</a> - Complete API reference</li>
 </ul>
 </blockquote>
 <hr>
@@ -77,7 +79,7 @@
 <h3>System Overview</h3>
 <p>┌─────────────────────────────────────────────────────────────┐
 │ FRONTEND (React)                                            │
-│ ├─ Campaign Service (src/services/email/campaignService.ts)│
+│ ├─ Campaign Service (src/modules/email/services/campaignService.ts) │
 │ ├─ Admin Dashboard (/admin/emails → Campaigns tab)         │
 │ └─ Campaign Components (CampaignsTab, CreateCampaignModal) │
 └─────────────────────────────────────────────────────────────┘
@@ -104,7 +106,7 @@
 └─────────────────────────────────────────────────────────────┘</p>
 <h3>Components</h3>
 <h4>1. Frontend Service Layer</h4>
-<p><strong>Location:</strong> <code>src/services/email/campaignService.ts</code></p>
+<p><strong>Location:</strong> <code>src/modules/email/services/campaignService.ts</code></p>
 <p>Complete campaign management service with methods:</p>
 <ul>
 <li>Campaign CRUD operations</li>
@@ -114,7 +116,7 @@
 <li>Statistics and analytics</li>
 </ul>
 <h4>2. Admin Dashboard</h4>
-<p><strong>Location:</strong> <code>src/components/Admin/EmailManagement/</code></p>
+<p><strong>Location:</strong> <code>src/modules/email/components/</code></p>
 <p><strong>CampaignsTab.tsx</strong> - Main campaigns list</p>
 <ul>
 <li>View all campaigns with status</li>
@@ -271,7 +273,7 @@
 <hr>
 <h2>Campaign Service API</h2>
 <h3>Location</h3>
-<p><code>src/services/email/campaignService.ts</code></p>
+<p><code>src/modules/email/services/campaignService.ts</code></p>
 <h3>Methods</h3>
 <h4>Campaign Management</h4>
 <p><strong>getCampaigns(filters?)</strong> — Get all campaigns with optional filtering by status, limit, and offset. Returns a Promise of Campaign array.</p>
@@ -603,8 +605,8 @@
 <h2>Support</h2>
 <p>For questions or issues:</p>
 <ul>
-<li>Check <a href="./email-system.md">Email System</a> documentation</li>
-<li>Review <a href="./ses-webhook-setup.md">SES Webhook Setup</a> guide</li>
+<li>Check <a href="./email-system.html">Email System</a> documentation</li>
+<li>Review <a href="./ses-webhook-setup.html">SES Webhook Setup</a> guide</li>
 <li>Check <a href="#troubleshooting">Troubleshooting</a> section</li>
 <li>Contact: <a href="mailto:support@materialkaivision.com">support@materialkaivision.com</a></li>
 </ul>

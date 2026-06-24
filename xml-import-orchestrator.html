@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,55 +19,152 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>XML Import Orchestrator Edge Function</h1>
 <h2>Overview</h2>
 <p>Edge Function for parsing XML files and orchestrating product imports into Material-KAI platform. This function handles the initial XML parsing, validation, and job creation, then delegates to the Python API for batch processing.</p>
 <h2>Architecture</h2>
-<p>┌─────────────────────────────────────────────────────────────┐
-│ LAYER 1: DATA INGESTION (EDGE FUNCTION)                    │
-│ ├─ Parse XML file (Deno XML parser)                        │
-│ ├─ Validate structure                                      │
-│ ├─ Extract product elements                                │
-│ ├─ Create data_import_jobs record                          │
-│ └─ Return job_id to frontend                               │
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ STAGE 0: UPLOAD SCREEN (XMLImportTab.tsx)                  │
+│ ├─ Operator picks Material Category up-front (job-level)   │
+│ ├─ Selects file or pastes feed URL                         │
+│ └─ Clicks Detect Fields                                    │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ LAYER 2: DATA PROCESSING (PYTHON API)                      │
-│ ├─ Batch process products (10 at a time)                   │
-│ ├─ Download images (5 concurrent)                          │
-│ ├─ Extract metadata (AI-based)                             │
-│ ├─ Normalize to NormalizedProductData                      │
-│ ├─ Queue for product creation                              │
-│ └─ Update job status in real-time                          │
-└─────────────────────────────────────────────────────────────┘</p>
+│ STAGE 1: FIELD DETECTION (EDGE FUNCTION, preview_only)     │
+│ ├─ Parse XML (fast-xml-parser)                             │
+│ ├─ Walk ALL product nodes → per-field coverage stats       │
+│ │   (present_count, coverage_pct, distinct_values)         │
+│ ├─ Dictionary-first classification                         │
+│ │   (_shared/xml-field-dictionary.ts, ~150 entries +       │
+│ │    regex rules; ≥0.85 confidence skips AI)               │
+│ ├─ AI residual on Haiku for ambiguous/unknown only         │
+│ └─ Return detected_fields[] with coverage + suggestions    │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ STAGE 2: FILL-THE-GAPS PANEL (XMLFieldMappingModal.tsx)    │
+│ ├─ Per-target dynamic rendering by case:                   │
+│ │     🔴 blocking required (no mapping or 0% coverage)     │
+│ │     🟡 partial coverage (textarea for empty-row fallback)│
+│ │     🟠 conflict (≥2 XML tags → same target, picker)      │
+│ │     ✅ present (collapsed in &quot;Auto-mapped&quot; accordion)    │
+│ │     ⚪ optional missing/partial (optional textarea)      │
+│ ├─ Conflict-resolution: losing tags route to metadata      │
+│ └─ Submit blocked until no blocking required + no conflict │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ STAGE 3: PREVIEW + IMPORT (EDGE FUNCTION)                  │
+│ ├─ generate_preview: build sample product +                │
+│ │     preview_value_sources (xml | default per field)      │
+│ ├─ import: extract all products via buildProductWithMappings│
+│ │     - mapped tag → top-level + metadata under target name│
+│ │     - empty mapped tag → manual_values[target] fallback  │
+│ │     - job-level category → every product&#39;s category      │
+│ ├─ Chunk-insert into data_import_job_products              │
+│ ├─ Create data_import_jobs row                             │
+│ └─ POST /api/import/process to Python (auth header now     │
+│     correctly forwarded — was a latent bug pre-2026-05-23) │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ STAGE 4: PYTHON PROCESSING                                 │
+│ ├─ Page-read product_data from job_products (no full load) │
+│ ├─ Stage 4 product insert: top-level keys → columns,       │
+│ │     metadata → JSONB; external_sku dedup from product_id │
+│ │     / sku / metadata.product_id                          │
+│ ├─ Download images from product_data.images[]              │
+│ ├─ Voyage 1024D text embedding from top-level + metadata   │
+│ ├─ Facet canonicalization on whitelisted metadata keys     │
+│ └─ Update background_jobs status + heartbeat               │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
 <h2>Supported XML Formats</h2>
-<p>The function supports multiple common XML schemas. Each format uses a different root and item element name (e.g., <code>&lt;products&gt;/&lt;product&gt;</code>, <code>&lt;items&gt;/&lt;item&gt;</code>, <code>&lt;materials&gt;/&lt;material&gt;</code>), and each item may contain varying field names for name, manufacturer, category, description, and image URLs.</p>
+<p><code>findProductNodes()</code> does a BFS for any of these container tags: <code>&lt;product&gt;</code>, <code>&lt;item&gt;</code>, <code>&lt;material&gt;</code>, <code>&lt;producto&gt;</code>, <code>&lt;articulo&gt;</code>, <code>&lt;produit&gt;</code> — the root element doesn&#39;t matter. Common roots seen in production: <code>&lt;products&gt;</code>, <code>&lt;catalog&gt;</code>, <code>&lt;items&gt;</code>, <code>&lt;materials&gt;</code>, <code>&lt;catalogo&gt;</code>, <code>&lt;PanagoulasStore&gt;</code>, etc.</p>
 <h2>Required Fields</h2>
-<p>Each product must have:</p>
+<p>Per product:</p>
 <ul>
-<li><strong>name</strong> (or title, product_name)</li>
-<li><strong>factory_name</strong> (or manufacturer, supplier, factory)</li>
-<li><strong>material_category</strong> (or category, material_type, type)</li>
+<li><strong>name</strong> (or title, product_name, nombre, όνομα, etc.) — must come from the XML</li>
+<li><strong>factory_name</strong> (or manufacturer, supplier, brand, fabricante, κατασκευαστής, etc.) — from XML OR job-level <code>manual_values.factory_name</code> fallback</li>
+</ul>
+<p>Job-level (NOT mapped from XML):</p>
+<ul>
+<li><strong>material_category</strong> — picked once on the upload screen, applied to every product</li>
 </ul>
 <h2>Optional Fields</h2>
-<ul>
-<li>description (or desc)</li>
-<li>factory_group_name (or factory_group, group)</li>
-<li>images (image, img, picture tags)</li>
-<li>price</li>
-<li>color/colors</li>
-<li>dimensions/size</li>
-<li>designer</li>
-<li>collection</li>
-<li>finish</li>
-<li>material</li>
-</ul>
+<p>All resolved via the same dictionary + AI residual pipeline. Mapped + present in XML → top-level on ProductData + mirrored in metadata. Mapped + empty → optional <code>manual_values[target]</code> fallback.</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Common aliases</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>description</code></td>
+<td>desc, descripcion, περιγραφή</td>
+</tr>
+<tr>
+<td><code>factory_group_name</code></td>
+<td>factory_group, group, brand_group</td>
+</tr>
+<tr>
+<td><code>factory_address</code> / <code>factory_city</code> / <code>factory_country</code> / <code>factory_postal_code</code></td>
+<td>address, city, country, zip, διεύθυνση, πόλη, χώρα, τκ</td>
+</tr>
+<tr>
+<td><code>factory_phone</code> / <code>factory_email</code> / <code>factory_website</code></td>
+<td>phone/tel, email, website/url/homepage, τηλέφωνο, ιστοσελίδα</td>
+</tr>
+<tr>
+<td><code>factory_country_of_origin</code></td>
+<td>origin, made_in, χώρα_προέλευσης</td>
+</tr>
+<tr>
+<td><code>images</code></td>
+<td>image, img, picture, photo, imagen, image_link, εικόνα, image1/image2/etc. (regex)</td>
+</tr>
+<tr>
+<td><code>external_sku</code></td>
+<td>sku, product_id, product_code, item_id, mtrl, code, kodikos</td>
+</tr>
+<tr>
+<td><code>price</code></td>
+<td>price, cost, precio, prix, preis, pricew, priceretail, τιμή</td>
+</tr>
+<tr>
+<td><code>color</code> / <code>colors</code></td>
+<td>colour, colours, χρώμα, χρώματα</td>
+</tr>
+<tr>
+<td><code>dimensions</code> / <code>size</code></td>
+<td>dimension, dim, dimensiones, sizes, διαστάσεις, μέγεθος, dim1/dim2/etc. (regex)</td>
+</tr>
+<tr>
+<td><code>designer</code></td>
+<td>disenador, σχεδιαστής</td>
+</tr>
+<tr>
+<td><code>collection</code></td>
+<td>coleccion, serie, series, model, modelname, συλλογή, σειρά</td>
+</tr>
+<tr>
+<td><code>finish</code></td>
+<td>acabado, φινίρισμα, τελείωμα</td>
+</tr>
+<tr>
+<td><code>material</code></td>
+<td>materia, υλικό</td>
+</tr>
+</tbody></table>
+<p>The full dictionary lives at <a href="../supabase/functions/_shared/xml-field-dictionary.ts">_shared/xml-field-dictionary.ts</a> — add new entries there to extend coverage for new languages or supplier-specific naming conventions.</p>
 <h2>API Endpoint</h2>
 <p><code>POST /functions/v1/xml-import-orchestrator</code></p>
 <h2>Request Format</h2>
@@ -99,14 +197,44 @@
 <li><code>Product validation failed</code> - Missing required fields</li>
 <li><code>No product elements found</code> - Unsupported XML schema</li>
 </ul>
-<h2>Performance</h2>
-<ul>
-<li><strong>Timeout</strong>: 600 seconds (Edge Function limit)</li>
-<li><strong>Memory</strong>: 128MB (Edge Function limit)</li>
-<li><strong>Recommended file size</strong>: &lt; 10MB</li>
-<li><strong>Recommended product count</strong>: &lt; 1000 products per file</li>
-</ul>
-<p>For larger files, split into multiple smaller files.</p>
+<h2>Performance / Safety Envelope</h2>
+<p>Tunable via env vars on the edge-function deployment:</p>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Default</th>
+<th>Env var</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Max decoded XML size</td>
+<td>25 MB</td>
+<td><code>XML_IMPORT_MAX_MB</code></td>
+</tr>
+<tr>
+<td>Max products per import</td>
+<td>20,000</td>
+<td><code>XML_IMPORT_MAX_PRODUCTS</code></td>
+</tr>
+<tr>
+<td>PostgREST INSERT chunk size</td>
+<td>100 rows</td>
+<td><code>XML_IMPORT_INSERT_CHUNK</code></td>
+</tr>
+<tr>
+<td>Edge Function memory</td>
+<td>256 MB (Deno Deploy cap)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Synchronous CPU per invocation</td>
+<td>~2 s</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p>The chunk-insert into <code>data_import_job_products</code> happens in batches of <code>XML_IMPORT_INSERT_CHUNK</code> so a 20K-product feed doesn&#39;t exceed PostgREST&#39;s body limit. After the edge function returns, the Python service page-reads products via index and never holds more than one batch in memory.</p>
+<p>For files larger than the limits: split into multiple smaller imports.</p>
 <h2>Environment Variables</h2>
 <p>Required in Supabase Edge Function settings:</p>
 <ul>
@@ -206,10 +334,10 @@
 <hr>
 <h2>Related Documentation</h2>
 <ul>
-<li><a href="../../../docs/data-import-hub.md">Data Import Hub Architecture</a></li>
-<li><a href="../../../mivaa-pdf-extractor/docs/import-api.md">Python API Import Endpoints</a></li>
+<li><a href="../../../docs/data-import-hub.html">Data Import Hub Architecture</a></li>
+<li><a href="../../../mivaa-pdf-extractor/docs/import-api.html">Python API Import Endpoints</a></li>
 <li><a href="../../../supabase/migrations/20251110_create_data_import_tables.sql">Database Schema</a></li>
-<li><a href="../../../docs/unified-product-generation-flow.md">Unified Product Generation Flow</a> - Complete production hardening details</li>
+<li><a href="../../../docs/unified-product-generation-flow.html">Unified Product Generation Flow</a> - Complete production hardening details</li>
 </ul>
 
 </div></body></html>
