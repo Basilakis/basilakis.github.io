@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>Orders System</h1>
+<p>Orders are the <strong>commercial hub</strong> that ties together quotes, invoices, receivables/payables,
+payments/receipts, dispatch, products/warehouse and projects. Sales orders (to customers) and
+purchase orders (to suppliers) both live in one model; every money/document/fulfilment event hangs
+off an order so you can see, per order, what was invoiced, what was received, what was paid to
+suppliers, what&#39;s been delivered, and the <strong>profit</strong>.</p>
+<blockquote>
+<p><strong>Money vocabulary</strong> (used throughout the order UI)</p>
+<ul>
+<li><strong>Invoice / Pre-invoice</strong> — the demand (what they owe). A <em>pre-invoice</em> is a <strong>draft invoice</strong> (<code>status=&#39;draft&#39;</code>, no gapless myDATA series until issued).</li>
+<li><strong>Receivable</strong> — an un-invoiced amount owed.</li>
+<li><strong>Payment (received)</strong> — money actually in; moves the order&#39;s <code>payment_status</code>.</li>
+<li><strong>Receipt</strong> — the myDATA document for a received payment (Finance → Documents → Receipts).</li>
+</ul>
+</blockquote>
+<h2>Data model</h2>
+<h3><code>orders</code></h3>
+<p><code>order_type</code> (<code>sales</code> | <code>purchase</code>), party (<code>customer_company_id</code>/<code>customer_contact_id</code> for sales,
+<code>supplier_company_id</code>/<code>supplier_contact_id</code> for purchase — person→business rollup applies), optional
+<code>project_id</code>, <code>source_quote_id</code>, <code>order_number</code>, <code>status</code>, <code>payment_status</code>, <code>currency</code>,
+<code>subtotal_net</code>/<code>vat_amount</code>/<code>total</code>, <code>notes</code>.</p>
+<ul>
+<li><code>status</code>: <code>draft</code> (= <strong>Pre-order</strong>) → <code>confirmed</code> → <code>partially_fulfilled</code> → <code>fulfilled</code> (= <strong>Completed</strong>) → <code>cancelled</code>.</li>
+<li><code>payment_status</code> (derived): <code>unpaid</code> / <code>partial</code> / <code>paid</code> — recomputed from order-linked payments.</li>
+</ul>
+<h3><code>order_items</code></h3>
+<p><code>product_id</code> (<strong>nullable → ad-hoc product</strong>, not in the warehouse/catalog), <code>description</code>, <code>quantity</code>,
+<code>unit_price</code>, <code>net_value</code>/<code>vat_amount</code>/<code>line_total</code>, <code>quantity_delivered</code>, <strong><code>update_warehouse</code></strong>
+(when false the line never touches stock counts), <code>sort_order</code>.</p>
+<h3>Attach points (every finance/fulfilment doc links to an order)</h3>
+<p><code>orders.source_quote_id</code> → quotes · <code>invoices.order_id</code> · <code>supplier_bills.order_id</code> ·
+<code>finance_manual_entries.order_id</code> · <code>payments.order_id</code> · <code>delivery_notes.order_id</code> ·
+<code>credit_notes.order_id</code> · <code>supplier_credit_notes.order_id</code>.</p>
+<p>RLS mirrors invoices: read = <code>is_workspace_member(workspace_id)</code>, write = <code>is_workspace_finance_manager(workspace_id)</code>; <code>order_items</code> carry <code>workspace_id</code> for the same policy.</p>
+<h2>Flows</h2>
+<h3>Quote accepted → Order + Pre-invoice (automatic)</h3>
+<p>Trigger <code>generate_order_from_quote(quote_id)</code> fires <code>AFTER UPDATE OF status ON quotes</code> when a quote
+becomes <code>accepted</code> (admin or public path). It creates a <strong>sales order</strong> (<code>confirmed</code>,
+<code>source_quote_id</code>, party + project copied) with <code>order_items</code> from <code>quote_items</code>, then — best-effort
+(never blocks the accept) — a <strong>draft pre-invoice</strong> (<code>next_invoice_number</code>, <code>status=&#39;draft&#39;</code>,
+<code>quote_id</code> + <code>order_id</code>) with its items. Idempotent (one order per quote). Issuing that draft later
+runs the normal &quot;Issue invoice&quot; path (gapless number + myDATA transmit).</p>
+<h3>POS checkout → Order (automatic)</h3>
+<p><code>generate_order_from_invoice(invoice_id, mark_delivered)</code> builds a sales order from an invoice + its
+items (idempotent, links <code>invoices.order_id</code>). POS <code>finalizeSale</code> calls it with <code>mark_delivered=true</code>,
+so every POS receipt becomes a <strong>fulfilled, paid, delivered</strong> order.</p>
+<h3>Payments → <code>payment_status</code></h3>
+<p>Trigger on <code>payments</code> calls <code>recompute_order_payment_status(order_id)</code>: sales order paid = Σ
+payments(<code>in</code>, order_id); purchase order paid = Σ payments(<code>out</code>, order_id) → <code>unpaid</code>/<code>partial</code>/<code>paid</code>.</p>
+<h3>Profit per order</h3>
+<p>On the order detail: <strong>Received</strong> (payments in) − <strong>Paid to suppliers</strong> (payments out on the order)
+= <strong>Profit</strong>, alongside the attached invoices and payments.</p>
+<h3>Dispatch (invoice-driven — not duplicated)</h3>
+<p>Dispatch + warehouse stock is the existing flow: a <strong>paid invoice flagged for shipping</strong> appears on
+the <strong>Dispatch board</strong>, which cuts the delivery note and writes <code>stock_movements</code>. Catalog lines
+(<code>product_id</code>) move stock; ad-hoc lines (and <code>update_warehouse=false</code>) stay off-warehouse. The order
+detail links to the Dispatch board for sales orders.</p>
+<h3>Business-contact rollup (XOR-aware)</h3>
+<p>A quote/invoice created for a contact who belongs to a business rolls up to that <strong>company</strong>
+(<code>quote_rollup_to_company</code>, <code>invoice_rollup_to_company</code>). <strong>Quotes</strong> enforce <code>quotes_customer_xor</code>
+(at most one of contact/company), so on a quote the rollup sets the company <strong>and nulls the contact</strong>;
+invoices allow both (company takes billing precedence). Linking a contact to a company
+(<code>reassign_contact_financials_to_company</code>) re-points their existing contact-level quotes/invoices to
+the company the same way.</p>
+<h2>UI</h2>
+<ul>
+<li><strong>Finance → Documents → Orders</strong> (first tab): list with <strong>type</strong> (sales/purchase) + <strong>status</strong>
+filters + search; <strong>New order</strong> / <strong>Pre-order</strong> / <strong>Purchase order</strong> create modal (CRM party
+search, catalog product search + ad-hoc lines); order detail (items, delivered, status incl. <strong>Mark
+completed</strong>, Received/Paid/Profit, attached invoices + payments, Dispatch-board link).</li>
+<li><strong>CRM company page → Orders tab</strong> (scoped to that company). The old per-doc tabs (Quotes / Invoices
+/ Payments) are gone — those documents are now viewed <strong>inside each order</strong>. The <strong>Account</strong> tab
+stays (balance + ledger).</li>
+<li><strong>Account balance</strong> — the CRM/Account net figure reads <em>&quot;Account balance (they owe us / we owe
+them / settled)&quot;</em>.</li>
+<li><strong>Cash in bank</strong> — Finance dashboard KPI = Σ payments in − out.</li>
+</ul>
+<h2>RPCs</h2>
+<p><code>generate_order_from_quote(uuid)</code> · <code>generate_order_from_invoice(uuid, boolean)</code> ·
+<code>recompute_order_payment_status(uuid)</code>.</p>
+<h2>Not an edge function</h2>
+<p>Orders are accessed via direct, RLS-gated Supabase table access (<code>ordersService.ts</code>) + the DB
+triggers/RPCs above — there is <strong>no <code>orders</code> edge function</strong>, so orders do not appear in the edge
+OpenAPI (<code>docs/api/openapi-edge.json</code>).</p>
+<h2>Known follow-ups (not yet built)</h2>
+<ul>
+<li>&quot;Record payment / issue Receipt&quot; action <strong>on the order</strong> (today payments are recorded elsewhere and
+linked; the order shows them).</li>
+<li>AR / AP tabs grouped <strong>by order</strong> (received-vs-owed + profit per order).</li>
+<li>Planning: per-customer expected payments by due-day with tick-when-paid, linked to the settling payment.</li>
+<li>Honoring <code>order_items.update_warehouse</code> inside the dispatch stock-matching (today product_id presence already gates it).</li>
+</ul>
+
+</div></body></html>

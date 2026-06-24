@@ -11,6 +11,7 @@
         h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
         code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
         pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
         a { color: #3498db; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-bottom: 20px; }
@@ -18,11 +19,12 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="back-link"><a href="../index.html">← Back to Documentation Home</a></div>
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
 <h1>Flow Engine — Workflow Automation System</h1>
 <p>Visual drag-and-drop workflow automation built on xyflow. Create flows that connect triggers, conditions, and actions into automated pipelines.</p>
 <hr>
@@ -46,7 +48,7 @@ Triggered by: cron schedule | incoming webhook | manual | event emission
 flow-engine edge function walks the graph:
   - Resolves {{template}} variables from execution context
   - Evaluates condition nodes (branches to true/false/case_N)
-  - Executes action nodes (SMS, email, HTTP, notification, etc.)
+  - Executes action nodes (WhatsApp, email, HTTP, notification, etc.)
     ↓
 Execution log written to flow_runs table
 </code></pre>
@@ -165,8 +167,13 @@ Execution log written to flow_runs table
 </thead>
 <tbody><tr>
 <td><code>send_sms</code></td>
-<td>Sends SMS via <code>messaging-api</code></td>
-<td>Twilio per-message</td>
+<td><strong>Legacy alias for <code>send_whatsapp</code></strong> — both route to <code>messaging-api</code> debiting <code>zernio-whatsapp</code> (~0.005/msg). SMS (Twilio) removed 2026-06-08. Old saved flows using <code>send_sms</code> continue to work via this alias.</td>
+<td>~0.005/msg</td>
+</tr>
+<tr>
+<td><code>send_whatsapp</code></td>
+<td>Sends WhatsApp message via <code>messaging-api</code> (Zernio). Requires a Meta-approved template outside the 24h session window.</td>
+<td>~0.005/msg</td>
 </tr>
 <tr>
 <td><code>send_email</code></td>
@@ -195,11 +202,11 @@ Execution log written to flow_runs table
 <pre><code>{{trigger.data.field}}          — data from the trigger event
 {{node_id.output.field}}        — output of a previous node
 </code></pre>
-<p><strong>Example:</strong> An SMS action with <code>to: &quot;{{trigger.data.customer_phone}}&quot;</code> resolves the phone number from whatever data triggered the flow.</p>
+<p><strong>Example:</strong> A <code>send_whatsapp</code> (or its <code>send_sms</code> alias) action with <code>to: &quot;{{trigger.data.customer_phone}}&quot;</code> resolves the phone number from whatever data triggered the flow.</p>
 <hr>
 <h2>Execution Modes</h2>
 <h3><code>execute-flow</code></h3>
-<p>Runs the flow for real. All actions fire (SMS sent, emails sent, etc.).</p>
+<p>Runs the flow for real. All actions fire (WhatsApp messages sent, emails sent, etc.).</p>
 <pre><code class="language-json">POST /functions/v1/flow-engine
 {
   &quot;action&quot;: &quot;execute-flow&quot;,
@@ -264,7 +271,7 @@ Content-Type: application/json
 </tbody></table>
 <hr>
 <h2>Credit Usage</h2>
-<p>Individual actions may consume credits (e.g., <code>send_sms</code> via Twilio, <code>http_request</code> to paid APIs). Credit deduction is handled by the individual invoked functions, not the flow engine itself.</p>
+<p>Individual actions may consume credits (e.g., <code>send_sms</code>/<code>send_whatsapp</code> via Zernio (~0.005/msg), <code>http_request</code> to paid APIs). Credit deduction is handled by the individual invoked functions, not the flow engine itself.</p>
 <hr>
 <h2>Error Handling</h2>
 <ul>

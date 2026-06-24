@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Kai Vision Platform</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        code { background: #f1f2f6; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Consolas', monospace; }
+        pre { background: #f1f2f6; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        pre code { background: transparent; padding: 0; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { background: #3498db; color: white; padding: 8px 16px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link"><a href="/index.html">← Back to Documentation Home</a></div>
+<h1>POS / Retail System (Law 5155, vPOS shifts, EFT-POS, thermal receipts)</h1>
+<p>Part of the <a href="finance-system.html">Finance module</a>. A lightweight B2C walk-in point of sale that issues legally-compliant Greek <strong>myDATA simplified retail receipts</strong> (document type <code>11.1</code>) in real time, through the same Novus → AADE transmission path used for B2B invoices.</p>
+<p>Route <code>/pos</code> — <code>AuthGuard</code> + <code>CapabilityGuard capability=&quot;invoice.issue&quot;</code> (<code>src/App.tsx</code>). Page: <code>src/modules/finance/pages/PosPage.tsx</code>.</p>
+<p>Related: <a href="finance-system.html">Finance system</a> · <a href="capabilities-and-tenancy.html">Capabilities &amp; Tenancy</a> · <a href="api/finance-api.html">Finance API</a>.</p>
+<hr>
+<h2>1. Overview</h2>
+<p>The POS is deliberately minimal: no customer record required, software-tracked cash drawer, thermal receipt printed via the browser. A retail receipt is an <code>invoices</code> row with <code>document_type=&#39;11.1&#39;</code> that flows through the identical fiscal machinery as a <code>1.1</code> invoice. The POS adds three concerns on top of the shared engine:</p>
+<ol>
+<li><strong>Cloud vPOS sessions</strong> — cashier shifts with a Z-number, cash drawer movements, X/Z reports.</li>
+<li><strong>Law 5155 card/IRIS signature flow</strong> — EFT-POS terminal registry + two-phase AADE transmission.</li>
+<li><strong>Thermal receipt rendering</strong> — 80 mm CSS <code>@media print</code> fragment.</li>
+</ol>
+<p>A receipt cannot be issued until a shift is open (<code>PosPage.issue()</code> blocks with &quot;Open a shift first&quot;).</p>
+<p>Every POS sale also becomes a <a href="orders-system.html">sales <strong>Order</strong></a>: <code>finalizeSale</code> calls <code>generate_order_from_invoice(invoice_id, mark_delivered=true)</code>, creating a fulfilled/paid/delivered order from the receipt + its items (best-effort, idempotent).</p>
+<hr>
+<h2>2. Cloud vPOS shifts</h2>
+<p>All via <code>posSessionService</code> (<code>src/modules/finance/services/posSessionService.ts</code>), backed by <code>is_workspace_member</code>-guarded RPCs:</p>
+<ul>
+<li><strong><code>open_pos_session(workspace_id, branch_code, opening_float)</code></strong> — idempotent (returns the existing open session for that workspace+branch). Inserts <code>pos_sessions</code>, stamps <code>opened_by</code>.</li>
+<li><strong><code>close_pos_session(session_id, counted_cash?)</code></strong> — assigns the next sequential <code>z_number</code> (per-workspace <code>max+1</code>), computes <code>cash_variance = counted − expected</code>, sets <code>status=&#39;closed&#39;</code>, returns the report.</li>
+<li><strong><code>pos_session_report(session_id)</code></strong> — callable anytime: an <strong>X report</strong> while open, or read-back on a closed session.</li>
+</ul>
+<p><strong>Cash drawer</strong>: <code>posSessionService.recordCash(sessionId, workspaceId, direction, amount, reason?)</code> inserts <code>pos_cash_movements</code> (<code>direction ∈ {&#39;in&#39;,&#39;out&#39;}</code>).</p>
+<p><strong>Report aggregation</strong> (<code>pos_session_report</code>): <code>receipt_count</code> + <code>total_sales</code> (over non-draft/void invoices for the session), <code>by_payment</code> (cash/card/other split via <code>payment_method_code</code>), <code>by_vat</code> (net + VAT per rate), <code>cash_in</code>/<code>cash_out</code>, <code>expected_cash = opening_float + cash_sales + cash_in − cash_out</code>, <code>counted_cash</code>, <code>cash_variance</code>.</p>
+<blockquote>
+<p><strong>Note</strong>: <code>z_number</code> is workspace-scoped, not branch-scoped — multi-branch workspaces share one Z sequence.</p>
+</blockquote>
+<hr>
+<h2>3. Law 5155 card / IRIS signature flow</h2>
+<p>Greek Law 5155/2023 requires card (payment type <code>7</code>) and IRIS (type <code>8</code>) receipts to carry a digital signature from the Payment Service Provider&#39;s Network Service Provider (NSP) <strong>before</strong> AADE transmission. The flow is inherently two-phase.</p>
+<pre><code>PosPage.issue()  (card/IRIS)
+  → invoices INSERT (11.1, payment_method_code=7|8, pos_session_id) + invoice_items
+  → fiscalConnectorService.submitInvoice(invoiceId, { posPayment:{terminal_id, pos_nsp_id, payment_type} })
+      → finance-issue-invoice { submit_fiscal, pos_payment } → Novus SendInvoices?skipSignature=false
+      → Novus returns providerSignature[] → status &#39;awaiting_payment&#39;
+      → pos_signatures INSERT (signature_token, terminal_id, pos_nsp_id, payment_type, expiry_date)
+      → invoices.fiscal_status=&#39;awaiting_payment&#39;; reserved credits REFUNDED (not charged yet)
+  → UI shows amber &quot;awaiting payment&quot; panel
+
+Operator charges the physical terminal, types the transaction_id:
+PosPage.chargeAndComplete()
+  → fiscalConnectorService.completePos({ pos_signature_id, invoice_id, transaction_id, payment_amount })
+      → finance-issue-invoice { pos_complete }
+      → expiry check (expired → status &#39;expired&#39;, 409 &quot;re-issue the receipt&quot;)
+      → reserve 2 credits → Novus CompletionPosInvoices → MARK
+      → fiscal_submissions INSERT (accepted, mark); pos_signatures → &#39;completed&#39; (+final_mark, transaction_id)
+      → invoices.fiscal_status=&#39;accepted&#39;, fiscal_mark stamped
+</code></pre>
+<h3>EFT-POS terminal registry (<code>pos_terminals</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>workspace_id</code>, <code>branch_code</code></td>
+<td>tenant scope (0 = HQ)</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>display name</td>
+</tr>
+<tr>
+<td><code>terminal_id</code></td>
+<td>physical device ID</td>
+</tr>
+<tr>
+<td><code>pos_nsp_id</code></td>
+<td>NSP provider code (drives token encoding)</td>
+</tr>
+<tr>
+<td><code>is_active</code>, <code>notes</code>, <code>created_by</code></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>NSP provider codes (<code>src/services/fiscalConnectorService.ts → POS_NSP_PROVIDERS</code>): 1 Mellon (HEX), 2 Viva (HEX), 3 Cardlink (B64), 4 Euronet (B64), 5 Nexi (B64), 6 EDPS (B64), 7 Worldline (HEX), 98 Other (HEX→B64), 99 Other (B64).</p>
+<p>Managed by <code>PosTerminalsCard</code> in <code>SettingsTab</code> (write gated to <code>is_workspace_finance_manager</code>). When no terminal is registered, card/IRIS receipts still transmit but <strong>without</strong> a provider signature (<code>skipSignature=true</code>) — the UI warns.</p>
+<blockquote>
+<p>The platform never touches the bank/NSP terminal API directly. The physical charge happens out-of-band; the platform handles only the Novus signature token and the operator-typed <code>transaction_id</code> confirmation. IRIS is identical to card at the Novus level (<code>payment_type=8</code> vs <code>7</code>).</p>
+</blockquote>
+<hr>
+<h2>4. Thermal retail receipt</h2>
+<p>Pure CSS <code>@media print</code> fragment in <code>PosPage.tsx</code> — <strong>no edge function</strong>. A hidden <code>&lt;div id=&quot;pos-receipt&quot;&gt;</code> (<code>display:none</code>) becomes the only visible element on <code>window.print()</code>. Layout: <code>width:80mm</code>, <code>font:&#39;Courier New&#39; 12px</code>, <code>@page { size: 80mm auto; margin:0 }</code>.</p>
+<p>Fields: title &quot;ΑΠΟΔΕΙΞΗ / RECEIPT&quot;, receipt number, timestamp, line items (<code>qty × name — amount</code>), net subtotal, VAT, <strong>TOTAL</strong>, payment method, and the MARK (printed only when <code>result.mark</code> is present, i.e. AADE accepted — for the two-phase card flow, reprint after completion).</p>
+<blockquote>
+<p>Known gap: no QR code on the thermal receipt (Novus returns <code>qrUrl</code> on <code>fiscal_submissions</code>, not rendered here).</p>
+</blockquote>
+<hr>
+<h2>5. DB tables</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>RLS</th>
+<th>Key columns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pos_sessions</code></td>
+<td><code>is_workspace_member</code> (ALL)</td>
+<td><code>branch_code</code>, <code>opened_by/at</code>, <code>opening_float</code>, <code>closed_by/at</code>, <code>closing_counted_cash</code>, <code>cash_variance</code>, <code>z_number</code>, <code>status</code></td>
+</tr>
+<tr>
+<td><code>pos_cash_movements</code></td>
+<td><code>is_workspace_member</code> (ALL)</td>
+<td><code>session_id</code>, <code>direction</code>, <code>amount</code>, <code>reason</code></td>
+</tr>
+<tr>
+<td><code>pos_terminals</code></td>
+<td>read <code>is_workspace_member</code>, write <code>is_workspace_finance_manager</code></td>
+<td><code>branch_code</code>, <code>label</code>, <code>terminal_id</code>, <code>pos_nsp_id</code>, <code>is_active</code></td>
+</tr>
+<tr>
+<td><code>pos_signatures</code></td>
+<td><code>is_workspace_member</code> (ALL)</td>
+<td><code>invoice_id</code>, <code>signature_token</code>, <code>pos_nsp_id</code>, <code>payment_type</code>, <code>expiry_date</code>, <code>status</code>, <code>transaction_id</code>, <code>final_mark</code>, <code>completed_at</code></td>
+</tr>
+</tbody></table>
+<p>Receipts link to a shift via <code>invoices.pos_session_id</code>; the Z-report aggregates <code>invoices</code>, not <code>pos_signatures</code>.</p>
+<hr>
+<h2>6. Credits &amp; fiscal integration</h2>
+<ul>
+<li><strong>2 credits per myDATA transmission</strong> (<code>TRANSMISSION_CREDITS</code>), same as B2B. Root workspace free.</li>
+<li>Card/IRIS flow: <strong>0 credits</strong> at <code>pos_payment</code> (the reservation is refunded while held), <strong>2 credits</strong> at <code>pos_complete</code>.</li>
+<li><code>submit_fiscal</code> is gated on <code>is_workspace_entitled(&#39;sales-finance&#39;)</code>. A non-entitled workspace can still open the POS and issue receipts locally — they just get no MARK.</li>
+</ul>
+<p>Frontend: <code>PosPage.tsx</code> (full UI — shift bar, product/service grid from <code>product_prices</code>, cart, VAT-inclusive toggle, movement-document toggle, branch picker, payment selector, terminal picker, awaiting-payment panel, X/Z modal); <code>posSessionService.ts</code>; <code>fiscalConnectorService.ts</code> (<code>submitInvoice</code> / <code>completePos</code> / <code>posTerminalService</code>); <code>PosTerminalsCard.tsx</code>.</p>
+<hr>
+<h2>7. Known gaps / follow-ups</h2>
+<ul>
+<li><strong>Old-invoice deferred signature</strong> (<code>askSignatureForOldInvoice</code> / <code>completeOldInvoicePosPayment</code>) is implemented at the Novus connector layer but has <strong>no UI</strong> — needed when a customer pays by card after an on-credit invoice was issued.</li>
+<li><strong>Signature expiry</strong> is checked server-side but not surfaced as a countdown; an expired token returns 409 and forces re-issuing the receipt.</li>
+<li><strong>No QR on thermal receipt</strong> (§4).</li>
+<li><strong><code>/pos</code> not in <code>nav-items.ts</code></strong> — reachable by direct URL / capability, not listed in nav.</li>
+<li><strong>No offline mode</strong> — if Supabase is unreachable the receipt INSERT fails (no client queue).</li>
+<li><strong>VAT-inclusive toggle</strong> is per-page local state (defaults <code>true</code>), not persisted per shift.</li>
+</ul>
+<hr>
+<p><strong>Last updated</strong>: 2026-06-09 · Covers #185, #205, #207.</p>
+
+</div></body></html>
